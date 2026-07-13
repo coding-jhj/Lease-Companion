@@ -1,0 +1,20 @@
+[project]
+name = "lease-companion-backend"
+version = "0.0.0"
+description = "슬기로운 계약생활 API 서버 (FastAPI)"
+requires-python = ">=3.11"
+# FastAPI 사용 확정. 서버 런타임(uvicorn 등)·검증 라이브러리는 구성 확정 시 고정.
+# 그 외 라이브러리는 미확정이므로 임의 추가하지 않는다.
+dependencies = [
+    "fastapi",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+# TODO: ASGI 서버(uvicorn), 파일 검증, 린터·포매터·테스트 도구 확정 후 추가.
+# TODO: DB·인증 미확정 — 관련 의존성 추가 금지.

@@ -1,0 +1,76 @@
+# === 환경변수 / 비밀 ===
+.env
+.env.*
+!.env.example
+CLAUDE.local.md
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# === Node / 프론트엔드 (스택 미정, 사전 제외) ===
+node_modules/
+.next/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# === 실제 데이터 / 개인정보 (커밋 금지) ===
+# data/raw 내부 실제 데이터는 전부 제외, README는 예외
+data/raw/*
+!data/raw/README.md
+data/uploads/
+uploads/
+data/processed/**/*
+!data/processed/**/README.md
+# 계약 문서/개인정보 포함 가능 파일은 data 경로에서만 제외
+# (frontend/public/assets, docs 등의 정상 이미지는 허용)
+data/**/*.pdf
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.png
+data/**/*.tif
+data/**/*.tiff
+data/**/*.heic
+data/**/*.webp
+
+# === 생성된 벡터 인덱스 / 벡터 DB ===
+data/rag/index/
+*.faiss
+*.index
+*.pkl
+chroma/
+*.sqlite3
+
+# === 분석 중간 결과 / 결과 리포트 ===
+data/tmp/
+outputs/
+reports/
+*.report.json
+
+# === 로그 / 임시 ===
+logs/
+*.log
+tmp/
+.cache/
+
+# === IDE / OS ===
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
