@@ -5,12 +5,20 @@
 - 프롬프트를 코드에 길게 하드코딩하지 않는다. 원본은 `ai/prompts/`에 둔다.
 - 용도별로 분리한다: `extraction/` `questions/` `checklists/` `summaries/`.
 - 프롬프트를 버전으로 관리한다.
-- 프롬프트 변경 시 버전과 **평가 결과**를 함께 확인한다. (`evaluation-plan.md`)
+- 프롬프트 변경 시 버전과 **평가 결과**를 함께 확인한다. (`evaluation-plan.md`, `evaluation-matrix.md`)
+- Guardrail을 통과한 출력만 저장한다.
+
+## 적용 대상
+
+- **추출 (`extraction`)**: 상용 LLM/VLM 필드 추출 프롬프트. 구조화 출력 스키마와 연동한다.
+- **생성 (`generation`)**: 쉬운 설명·질문·체크리스트·행동 프롬프트. 상용 LLM 호출용.
+- **재검토 (`routing`→`providers`)**: 저신뢰 결과 재검토 프롬프트.
+- 로컬 7B(`local_model`)의 조항 분류 입출력 형식은 파인튜닝 과제 정의를 따르며, 프롬프트 원본과 별도로 관리한다. (`fine-tuning-plan.md`)
 
 ## 구조 (권장)
 
 - 프롬프트마다 버전 식별자와 변경 이력을 남긴다.
-- 추출용 프롬프트는 구조화 출력 스키마와 연동한다.
+- 추출·생성 프롬프트는 구조화 출력 스키마(`ai/src/lease_companion_ai/schemas/`)와 연동한다.
 
 ## 미정 (TODO)
 

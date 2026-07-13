@@ -1,6 +1,6 @@
 """FastAPI 진입점.
 
-현재는 헬스체크 스텁만 제공한다. 실제 엔드포인트(세션·업로드·분석·결과)는
+현재는 헬스체크 스텁만 제공한다. 실제 엔드포인트(회원·계약 건·문서·추출·분석·결과)는
 `app/api/routes/` 에서 구현 예정. 실행 명령은 서버 런타임 확정 후 README에 기록한다.
 """
 
@@ -15,5 +15,5 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# TODO: api/routes 라우터 등록 (계약 단계·업로드·추출 확인·분석·결과 리포트)
+# TODO: api/routes 라우터 등록 (auth·users·contracts·documents·extractions·analyses·results·checklists·feedback)
 # TODO: core 설정(.env 로드)·공통 오류 핸들러 연결

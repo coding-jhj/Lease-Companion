@@ -55,17 +55,36 @@ data/rag/index/
 chroma/
 *.sqlite3
 
+# === 모델 가중치 / 체크포인트 / 어댑터 (Git 금지, 메타데이터만 커밋) ===
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+adapter_model.*
+data/model-metadata/**/checkpoints/
+ai/training/**/checkpoints/
+ai/training/**/outputs/
+ai/training/**/runs/
+
 # === 분석 중간 결과 / 결과 리포트 ===
 data/tmp/
 outputs/
 reports/
 *.report.json
 
-# === 로그 / 임시 ===
+# === 로그 / 임시 / 스크래치 ===
 logs/
 *.log
 tmp/
+work/
 .cache/
+
+# === 에이전트·에디터 툴링 (로컬 전용) ===
+.claude/
+.agents/
 
 # === IDE / OS ===
 .idea/

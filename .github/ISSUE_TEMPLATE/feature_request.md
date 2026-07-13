@@ -14,7 +14,7 @@ assignees: ''
 
 ## 사용자 흐름 관련성
 
-<!-- 기준 6단계 중 어디에 해당하는지 (docs/planning/user-flow.md) -->
+<!-- 기준 8단계 중 어디에 해당하는지 (docs/planning/user-flow.md) -->
 
 ## 범위
 

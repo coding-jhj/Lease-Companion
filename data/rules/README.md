@@ -4,15 +4,19 @@
 
 ## 규칙 레코드 필드
 
-각 규칙은 다음을 기록한다. (정의: [`../../docs/data/rule-definition.md`](../../docs/data/rule-definition.md))
+각 규칙은 다음을 기록한다. (정의: [`../../docs/data/rule-definition.md`](../../docs/data/rule-definition.md), 판정: [`../../docs/data/judgment-spec.md`](../../docs/data/judgment-spec.md))
 
 - `rule_id` — 규칙 식별자
-- `stage` — 적용 단계 (확인 중 / 서명 직전 / 계약 직후)
+- `judgment_id` — 연결 판정 (J01–J12)
+- `stage` — 적용 계약 단계 (user-flow 3단계 "계약 단계 선택" 입력값. 값 목록 미확정 — TODO)
 - `input_fields` — 입력 필드
 - `condition` — 조건
-- `result` — 결과 상태 (누락 / 모호 / 불일치 / 확인 필요)
-- `source` — 근거 (공식 자료)
+- `result` — 결과 상태 (공통 9개: 일치 / 불일치 / 명확 / 불명확 / 미기재 / 상충 가능 / 확인 필요 / 확인 불가 / 적용 제외)
+- `urgency` — 시급도 (즉시 확인 / 계약 전 확인 / 계약 직후 조치 / 참고 / 분석 불가)
+- `source` — 근거 유형 (공식 자료)
 - `version` — 버전
+
+판정별 허용 상태 집합은 판정 명세를 단일 기준으로 한다.
 
 ## 현재 상태 / TODO
 

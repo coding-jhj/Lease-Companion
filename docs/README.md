@@ -10,14 +10,20 @@
 
 ```
 planning/       service-overview.md user-flow.md poc-scope.md mvp-scope.md
-architecture/   system-architecture.md ai-pipeline.md data-flow.md
+architecture/   system-architecture.md ai-pipeline.md data-flow.md deployment.md
 api/            api-overview.md error-format.md
+backend/        auth-and-persistence.md(예정)
 data/           document-fields.md rule-definition.md rag-sources.md privacy-policy.md
+                judgment-spec.md(예정) training-dataset.md(예정)
 ai/             extraction-design.md rule-engine-design.md rag-design.md
                 prompt-management.md evaluation-plan.md
+                local-model-plan.md(예정) fine-tuning-plan.md(예정)
+                model-routing.md(예정) evaluation-matrix.md(예정)
 decisions/      기술·기획 결정 기록
 meetings/       회의록
 ```
+
+`(예정)` 표시 문서는 아직 작성 전이다. 계획된 문서 지도이며 파일 존재를 뜻하지 않는다.
 
 ## 저장해야 하는 파일
 

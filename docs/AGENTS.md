@@ -17,9 +17,10 @@
 ## 문서 지도
 
 - `planning/` — service-overview, user-flow, poc-scope, mvp-scope
-- `architecture/` — system-architecture, ai-pipeline, data-flow
+- `architecture/` — system-architecture, ai-pipeline, data-flow, deployment
 - `api/` — api-overview, error-format
-- `data/` — document-fields, rule-definition, rag-sources, privacy-policy
-- `ai/` — extraction-design, rule-engine-design, rag-design, prompt-management, evaluation-plan
+- `backend/` — auth-and-persistence
+- `data/` — document-fields, judgment-spec, rule-definition, rag-sources, privacy-policy, training-dataset
+- `ai/` — extraction-design, rule-engine-design, rag-design, prompt-management, evaluation-plan, local-model-plan, fine-tuning-plan, model-routing, evaluation-matrix
 - `decisions/` — 기술·기획 결정 기록
 - `meetings/` — 회의록
