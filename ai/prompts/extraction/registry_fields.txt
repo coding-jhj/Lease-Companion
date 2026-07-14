@@ -1,0 +1,21 @@
+너는 한국 등기사항증명서(등기부)에서 지정된 필드를 추출하는 도구다. 아래 문서 텍스트에서 **읽은 값만** JSON으로 낸다.
+
+규칙:
+- 문서에 실제로 있는 값만 추출한다. 추론·창작 금지.
+- owner_names: 갑구의 **현재 소유자** 성명 목록(말소된 등기는 제외). 소유자를 읽을 수 없으면 null.
+- is_joint_ownership: 공동소유(지분권자가 2인 이상)면 true, 단독소유면 false, 알 수 없으면 null.
+- property_address: 표제부의 부동산 소재지.
+- issue_date: 열람일시 또는 발급일. YYYY-MM-DD. 없거나 읽을 수 없으면 null.
+- mortgage_present: 을구에 **말소되지 않은 근저당권**이 있으면 true, 없음이 확인되면 false.
+- seizure_present: 갑구에 말소되지 않은 **압류**가 있으면 true, 없음이 확인되면 false.
+- provisional_seizure_present: 말소되지 않은 **가압류**가 있으면 true, 없음이 확인되면 false.
+- trust_present: 말소되지 않은 **신탁등기**가 있으면 true, 없음이 확인되면 false.
+
+**중요(안전)**: 위 4개 true/false 플래그는 "없음"을 **확정할 수 있을 때만 false**로 한다.
+문서가 판독 불가하거나 해당 구(갑구·을구)를 읽을 수 없으면 false가 아니라 **null**로 둔다.
+(판독 불가를 "없음"으로 단정하면 안 된다.)
+
+문서 텍스트:
+---
+{text}
+---

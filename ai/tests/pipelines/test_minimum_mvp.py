@@ -92,3 +92,43 @@ def test_parser_flags_none_when_registry_fully_unreadable():
     assert fields["owner_names"] is None and fields["property_address"] is None
     assert fields["mortgage_present"] is None
     assert fields["trust_present"] is None
+
+
+def test_gemini_field_shape_feeds_run_rules():
+    # Gemini 구조화 출력(스키마 필드)이 run_rules 계약을 지키는지 — tri-state·enum 포함. (API 미호출)
+    from lease_companion_ai.extraction.gemini_extractor import ContractFields, RegistryFields
+
+    contract = ContractFields(
+        contract_type="전세", landlord_name="김민준", tenant_name="이임차", agent_name=None,
+        property_address="서울특별시 샘플구 202호", deposit=100000000, monthly_rent=None,
+        contract_payment=10000000, balance_payment=90000000, account_holder="김민준",
+        start_date="2026-08-01", end_date="2028-07-31", move_in_date="2026-08-01",
+        deposit_return_condition="명확", repair_responsibility="명확", rights_change_clause_present=True,
+    ).model_dump()
+    registry = RegistryFields(
+        owner_names=["김민준"], is_joint_ownership=False, property_address="서울특별시 샘플구 202호",
+        issue_date="2026-07-01", mortgage_present=None, seizure_present=False,
+        provisional_seizure_present=False, trust_present=None,
+    ).model_dump()
+
+    by_id = {r.rule_id: r for r in run_rules(contract, registry)}
+    assert len(by_id) == 10
+    assert by_id["R01"].status == "일치"        # landlord ∈ owners
+    assert by_id["R03"].status == "확인 불가"    # mortgage_present=None (tri-state)
+    assert by_id["R05"].status == "확인 불가"    # trust_present=None
+    assert by_id["R08"].status == "명확"         # enum 값 그대로 status
+
+
+def test_structure_falls_back_to_regex(monkeypatch):
+    # 키 없음·API 실패(GeminiExtractError) 시 정규식 파서로 폴백. (API 미호출)
+    from lease_companion_ai.extraction.gemini_extractor import GeminiExtractError
+    from lease_companion_ai.pipelines import minimum_mvp as pipe
+
+    def _raise(_text):
+        raise GeminiExtractError("no key")
+
+    monkeypatch.setattr(pipe, "extract_contract_fields", _raise)
+    text = (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
+    result = pipe._structure(text, "contract")
+    assert result["document_type"] == "contract"
+    assert result["fields"]["landlord_name"] == "이정훈"  # 정규식 파서 폴백 동작
