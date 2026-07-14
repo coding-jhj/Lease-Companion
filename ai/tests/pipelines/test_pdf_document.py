@@ -37,3 +37,5 @@ def test_digital_pdf_text_layer_is_extracted_end_to_end():
     assert extraction["contract"]["fields"]["landlord_name"] == "이정훈"
     assert extraction["registry"]["fields"]["owner_names"] == ["이정훈"]
     assert extraction["registry"]["fields"]["mortgage_present"] is True
+    assert extraction["contract"]["read_method"] == "digital"  # 텍스트 레이어 PDF → OCR 아님
+    assert extraction["registry"]["read_method"] == "digital"

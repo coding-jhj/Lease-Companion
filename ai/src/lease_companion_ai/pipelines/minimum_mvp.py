@@ -37,12 +37,13 @@ def extract_documents(contract_content: bytes, contract_filename: str, registry_
     for content in (contract_content, registry_content):
         if len(content) > MAX_FILE_SIZE:
             raise ValueError("파일당 최대 크기는 최소 MVP에서 10MB입니다.")
-    contract_text = extract_document_text(contract_content, contract_filename)
-    registry_text = extract_document_text(registry_content, registry_filename)
-    return {
-        "contract": _structure(contract_text, "contract"),
-        "registry": _structure(registry_text, "registry"),
-    }
+    contract_text, contract_method = extract_document_text(contract_content, contract_filename)
+    registry_text, registry_method = extract_document_text(registry_content, registry_filename)
+    contract = _structure(contract_text, "contract")
+    registry = _structure(registry_text, "registry")
+    contract["read_method"] = contract_method  # 디지털 추출 vs OCR — UI 배지·투명성
+    registry["read_method"] = registry_method
+    return {"contract": contract, "registry": registry}
 
 
 def analyze_verified_fields(contract_fields: dict[str, Any], registry_fields: dict[str, Any]) -> list[dict[str, Any]]:

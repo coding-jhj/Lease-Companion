@@ -7,7 +7,8 @@ class DocumentReadError(ValueError):
     """업로드 문서를 텍스트로 읽을 수 없을 때 발생한다."""
 
 
-def extract_document_text(content: bytes, filename: str) -> str:
+def extract_document_text(content: bytes, filename: str) -> tuple[str, str]:
+    """(텍스트, 읽은 방식) 반환. 방식 = "digital"(텍스트 레이어·txt) 또는 "ocr"(스캔·이미지)."""
     if not content:
         raise DocumentReadError("빈 파일은 처리할 수 없습니다.")
 
@@ -20,7 +21,7 @@ def extract_document_text(content: bytes, filename: str) -> str:
         text = text.strip()
         if not text:
             raise DocumentReadError("빈 텍스트 파일입니다.")
-        return text
+        return text, "digital"
 
     if lowered.endswith(".pdf"):
         try:
@@ -38,11 +39,11 @@ def extract_document_text(content: bytes, filename: str) -> str:
             raise DocumentReadError("유효한 PDF 파일을 읽지 못했습니다.") from exc
         text = text.strip()
         if text:
-            return text  # 디지털 PDF: 텍스트 레이어 사용(OCR 불필요 — 비용·정확도 우위)
-        return _ocr_text(content, filename)  # 텍스트 레이어 없음 = 스캔 PDF → OCR
+            return text, "digital"  # 디지털 PDF: 텍스트 레이어 사용(OCR 불필요 — 비용·정확도 우위)
+        return _ocr_text(content, filename), "ocr"  # 텍스트 레이어 없음 = 스캔 PDF → OCR
 
     if lowered.endswith((".jpg", ".jpeg", ".png")):
-        return _ocr_text(content, filename)
+        return _ocr_text(content, filename), "ocr"
 
     raise DocumentReadError("PDF·이미지(jpg·png)·UTF-8 TXT 파일만 업로드할 수 있습니다.")
 
