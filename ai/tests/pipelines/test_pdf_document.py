@@ -39,3 +39,15 @@ def test_digital_pdf_text_layer_is_extracted_end_to_end():
     assert extraction["registry"]["fields"]["mortgage_present"] is True
     assert extraction["contract"]["read_method"] == "digital"  # 텍스트 레이어 PDF → OCR 아님
     assert extraction["registry"]["read_method"] == "digital"
+    assert extraction["contract"]["read_ok"] is True
+    assert extraction["registry"]["read_ok"] is True
+
+
+def test_one_document_read_failure_does_not_block_the_other():
+    contract = _pdf_bytes("주택임대차계약서\n임대인: 이정훈 (서명)")
+
+    extraction = extract_documents(contract, "contract.pdf", b"%not a valid pdf%", "registry.pdf")
+
+    assert extraction["contract"]["read_ok"] is True  # 정상 문서는 그대로 추출
+    assert extraction["registry"]["read_ok"] is False  # 깨진 문서만 실패 격리
+    assert extraction["registry"]["error"]  # 사용자에게 전달할 사유 존재

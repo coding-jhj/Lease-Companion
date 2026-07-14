@@ -10,7 +10,7 @@ from lease_companion_ai.extraction.gemini_extractor import (
     extract_registry_fields,
 )
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
-from lease_companion_ai.ingestion.pdf_text import extract_document_text
+from lease_companion_ai.ingestion.pdf_text import DocumentReadError, extract_document_text
 from lease_companion_ai.rules.minimum_mvp import run_rules
 from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction
 
@@ -33,17 +33,26 @@ def _structure(text: str, doc_type: str) -> dict[str, Any]:
         return parser(text).to_dict()
 
 
+def _read_and_structure(content: bytes, filename: str, doc_type: str) -> dict[str, Any]:
+    """문서 1건 읽기·구조화. 읽기/OCR 실패를 개별 격리 — 한 문서 실패가 다른 문서를 막지 않는다."""
+    try:
+        text, method = extract_document_text(content, filename)
+    except DocumentReadError as exc:
+        return {"read_ok": False, "read_method": None, "error": str(exc)}
+    doc = _structure(text, doc_type)
+    doc["read_method"] = method  # 디지털 추출 vs OCR — UI 배지·투명성
+    doc["read_ok"] = True
+    return doc
+
+
 def extract_documents(contract_content: bytes, contract_filename: str, registry_content: bytes, registry_filename: str) -> dict[str, Any]:
     for content in (contract_content, registry_content):
         if len(content) > MAX_FILE_SIZE:
             raise ValueError("파일당 최대 크기는 최소 MVP에서 10MB입니다.")
-    contract_text, contract_method = extract_document_text(contract_content, contract_filename)
-    registry_text, registry_method = extract_document_text(registry_content, registry_filename)
-    contract = _structure(contract_text, "contract")
-    registry = _structure(registry_text, "registry")
-    contract["read_method"] = contract_method  # 디지털 추출 vs OCR — UI 배지·투명성
-    registry["read_method"] = registry_method
-    return {"contract": contract, "registry": registry}
+    return {
+        "contract": _read_and_structure(contract_content, contract_filename, "contract"),
+        "registry": _read_and_structure(registry_content, registry_filename, "registry"),
+    }
 
 
 def analyze_verified_fields(contract_fields: dict[str, Any], registry_fields: dict[str, Any]) -> list[dict[str, Any]]:
