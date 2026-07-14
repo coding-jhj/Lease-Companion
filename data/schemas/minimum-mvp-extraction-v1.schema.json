@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lease-companion.local/schemas/minimum-mvp-extraction-v1.schema.json",
+  "title": "MinimumMvpExtractionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "document_id", "document_type", "fields"],
+  "properties": {
+    "schema_version": { "const": "minimum-mvp-extraction-v1" },
+    "document_id": { "type": "string", "minLength": 1 },
+    "document_type": { "enum": ["contract", "registry_record"] },
+    "fields": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/extractedField" }
+    }
+  },
+  "$defs": {
+    "sourceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page", "text"],
+      "properties": {
+        "page": { "type": ["integer", "null"], "minimum": 1 },
+        "text": { "type": ["string", "null"] }
+      }
+    },
+    "extractedField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field_name",
+        "extracted_value",
+        "normalized_value",
+        "source_evidence",
+        "verification_status",
+        "failure_reason"
+      ],
+      "properties": {
+        "field_name": {
+          "enum": [
+            "landlord_name",
+            "property_address",
+            "account_holder_name",
+            "deposit_return_clause",
+            "repair_restoration_clause",
+            "rights_change_clause",
+            "registry_owner_name",
+            "registry_property_address",
+            "registry_issue_date",
+            "mortgage_entry",
+            "seizure_provisional_seizure_entry",
+            "trust_registration_entry"
+          ]
+        },
+        "extracted_value": {
+          "type": ["string", "number", "boolean", "array", "object", "null"]
+        },
+        "normalized_value": {
+          "type": ["string", "number", "boolean", "array", "object", "null"]
+        },
+        "source_evidence": { "$ref": "#/$defs/sourceEvidence" },
+        "verification_status": {
+          "enum": ["unverified", "confirmed", "corrected"]
+        },
+        "failure_reason": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
