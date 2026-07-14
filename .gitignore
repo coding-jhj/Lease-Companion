@@ -74,6 +74,7 @@ data/tmp/
 outputs/
 reports/
 *.report.json
+data/evaluation/ocr/_output/
 
 # === 로그 / 임시 / 스크래치 ===
 logs/

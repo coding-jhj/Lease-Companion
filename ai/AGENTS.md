@@ -6,7 +6,7 @@
 
 ```
 문서 입력
-  → PDF 직접 추출(PyMuPDF·PDF.js) 또는 OCR(PaddleOCR-VL-1.6, VLM 통합) (ingestion)
+  → PDF 직접 추출(PyMuPDF·PDF.js) 또는 OCR(상용 LLM Gemini 3.5 Flash VLM 통합) (ingestion)
   → 핵심 필드 추출 (extraction, Gemini 3.5 Flash)
   → 정규화 (normalization)
   → 사용자 확인·수정            ← 분석 전, backend/frontend 경유
@@ -54,7 +54,7 @@
 
 | 모듈 | 책임 |
 |------|------|
-| `ingestion/` | 문서 인식: PDF 직접 추출(PyMuPDF·PDF.js), OCR(PaddleOCR-VL-1.6, VLM 통합 — 별도 VLM 단계 없음) |
+| `ingestion/` | 문서 인식: PDF 직접 추출(PyMuPDF·PDF.js), OCR(상용 LLM Gemini VLM 통합 — 별도 OCR/VLM 단계 없음) |
 | `extraction/` | 인식 결과에서 핵심 필드 추출 |
 | `normalization/` | 추출값 정규화(주소·금액·날짜·이름) |
 | `local_model/` | 로컬 7B 조항 유형·명확성 후보 분류 — (선택) 성능비교 실험용, MVP 크리티컬 패스 아님 (최종 판정 안 함) |
@@ -91,7 +91,7 @@
 확정(2026-07-14 팀 선정):
 - 조항 구조화·필드 추출: 상용 LLM Gemini 3.5 Flash
 - 쉬운 설명·질문·행동 생성·재검토: 상용 LLM GPT-5.6 Sol
-- OCR: PaddleOCR-VL-1.6 (VLM 통합, 별도 VLM 단계 없음). 디지털 PDF는 PyMuPDF·PDF.js
+- OCR: 상용 LLM(Gemini 3.5 Flash) VLM 통합 (2026-07-14 변경, → ../docs/decisions/2026-07-14-ocr-gemini-integration.md). 디지털 PDF는 PyMuPDF·PDF.js. PaddleOCR-VL은 (선택) 비교실험
 - 임베딩·검색: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro
 
 미정 (TODO — 임의 확정·설치 금지):
