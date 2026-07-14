@@ -105,6 +105,8 @@ ai 파이프라인
 
 ### 1. 의존성 설치
 
+최소 MVP는 Python 3.10을 사용한다.
+
 저장소 루트에서 PowerShell을 열고 실행한다.
 
 ```powershell
