@@ -2,7 +2,7 @@
 name = "lease-companion-ai"
 version = "0.0.0"
 description = "슬기로운 계약생활 AI 처리 계층 (추출·정규화·규칙·RAG·생성·guardrail)"
-requires-python = ">=3.11"
+requires-python = ">=3.10,<3.11"
 # TODO: 의존성 미확정. LLM 제공자·임베딩·벡터 저장소 확정 후 추가.
 #       (특정 LLM SDK를 임의로 추가하지 않는다.)
 dependencies = []

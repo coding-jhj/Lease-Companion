@@ -2,7 +2,7 @@
 name = "lease-companion-backend"
 version = "0.0.0"
 description = "슬기로운 계약생활 API 서버 (FastAPI)"
-requires-python = ">=3.11"
+requires-python = ">=3.10,<3.11"
 # FastAPI 사용 확정. 서버 런타임(uvicorn 등)·검증 라이브러리는 구성 확정 시 고정.
 # 그 외 라이브러리는 미확정이므로 임의 추가하지 않는다.
 dependencies = [
