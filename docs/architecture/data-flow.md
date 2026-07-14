@@ -21,7 +21,7 @@
 - 추출값 (`data/processed/extracted-fields/`) — 문서 인식·추출 결과
 - 정규화 문서 (`data/processed/normalized-documents/`)
 - **사용자 확인·수정본** — 분석은 원 추출값이 아니라 사용자가 확인·수정한 값을 입력으로 사용한다
-- 로컬 7B 조항 분류·불명확성 후보
+- 상용 LLM 조항 구조화·불명확성 후보(Gemini 3.5 Flash) — (선택)로컬 7B 성능비교 실험은 MVP 크리티컬 패스 제외
 - RAG 청크 (`data/rag/chunks/`)
 
 ## 3. 결과 데이터 (판정·근거)

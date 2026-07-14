@@ -1,6 +1,6 @@
 # data/datasets/
 
-로컬 7B 조항 분류 **파인튜닝 데이터셋** 보관 위치. 설계 기준: [`../../docs/data/training-dataset.md`](../../docs/data/training-dataset.md).
+(선택) 로컬 7B 성능비교 실험용 조항 분류 **파인튜닝 데이터셋** 보관 위치. 설계 기준: [`../../docs/data/training-dataset.md`](../../docs/data/training-dataset.md).
 
 > 비식별·합성 데이터만 둔다. 실제 개인정보 금지.
 

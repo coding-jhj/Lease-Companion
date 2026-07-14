@@ -6,17 +6,16 @@
 
 ```
 문서 입력
-  → PDF 직접 추출 또는 OCR (ingestion)
-  → 필요 시 VLM 보조 (ingestion)
-  → 핵심 필드 추출 (extraction)
+  → PDF 직접 추출(PyMuPDF·PDF.js) 또는 OCR(PaddleOCR-VL-1.6, VLM 통합) (ingestion)
+  → 핵심 필드 추출 (extraction, Gemini 3.5 Flash)
   → 정규화 (normalization)
   → 사용자 확인·수정            ← 분석 전, backend/frontend 경유
-  → 로컬 7B 조항 분류·불명확성 후보 (local_model)
-  → 조항 유형·명확성 후보 구조화 (classification)
+  → 상용 LLM 조항 구조화·명확성 후보 (classification, Gemini 3.5 Flash)
+     ※ (선택) 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외 (local_model)
   → Python 규칙 엔진 문서 내부 판정·교차검증 (rules)  ← 최종 판정
-  → 공식자료 RAG 근거 (rag)
-  → 저신뢰 결과 상용 LLM 재검토 (routing → providers)
-  → 쉬운 설명·질문·체크리스트·행동 생성 (generation)
+  → 공식자료 RAG 근거 (rag, gemini-embedding-001+BM25 · Cohere rerank-v4.0-pro)
+  → 저신뢰 결과 상용 LLM 재검토 (routing → providers, GPT-5.6 Sol)
+  → 쉬운 설명·질문·체크리스트·행동 생성 (generation, GPT-5.6 Sol)
   → guardrail (guardrails)
   → 저장                        ← backend
 ```
@@ -25,10 +24,11 @@
 
 ## 컴포넌트 책임 구분
 
-- **로컬 7B 모델 (`local_model`)**: 조항 유형·명확성(명확/불명확/확인 필요) 후보 **1차 분류**, 책임 주체·조건 구조화. 상용 LLM 호출 전 처리. **최종 판정을 내리지 않고, 규칙 엔진 결과를 변경하지 않으며, 근거 없이 사용자 행동을 확정하지 않는다.**
+- **상용 LLM 구조화 (`classification`)**: MVP 조항 유형·명확성(명확/불명확/확인 필요) 후보 구조화와 필드 추출은 상용 LLM(Gemini 3.5 Flash)이 담당한다.
+- **로컬 7B 모델 (`local_model`)**: **(선택) 상용 vs 로컬 성능비교 실험용 — MVP 크리티컬 패스 제외.** 파인튜닝(B/C안)으로 조항 유형·명확성 후보 분류, 책임 주체·조건 구조화를 검증한다. **최종 판정을 내리지 않고, 규칙 엔진 결과를 변경하지 않으며, 근거 없이 사용자 행동을 확정하지 않는다.**
 - **Python 규칙 엔진 (`rules`)**: 문서 내부 판정과 문서 교차검증의 **명시적 최종 판정**. 결정론적 규칙으로 동작한다. 로컬 모델·상용 LLM이 규칙 결과를 임의로 변경하지 않는다.
 - **RAG (`rag`)**: 공식 자료 기반 **근거 검색**만 담당한다. 판정하지 않는다. 근거가 없으면 `확인 불가` 또는 `확인 필요`로 반환한다.
-- **상용 LLM (`providers`)**: 저신뢰 결과 재검토, 근거 기반 쉬운 설명·질문·행동 생성. 규칙 판정을 바꾸지 않는다. 제공자·모델 미정(TODO).
+- **상용 LLM (`providers`)**: 조항 구조화·필드 추출은 Gemini 3.5 Flash, 저신뢰 결과 재검토·근거 기반 쉬운 설명·질문·행동 생성은 GPT-5.6 Sol. 규칙 판정을 바꾸지 않는다.
 - **생성 (`generation`)**: 쉬운 설명·확인 질문·서명 전 체크리스트·계약 직후 행동 생성. 상용 LLM을 `routing` 경유로 호출한다.
 - **guardrails**: 단정 표현(가능·안전·사기·합법 판정)과 근거 없는 출력을 차단한다.
 - **routing**: 단계별 처리 모델·fallback 선택. 상용 LLM 우선, 할당량·장애 시 fallback. (`docs/ai/model-routing.md`)
@@ -54,10 +54,10 @@
 
 | 모듈 | 책임 |
 |------|------|
-| `ingestion/` | 문서 인식: PDF 직접 추출, OCR, 필요 시 VLM 보조 |
+| `ingestion/` | 문서 인식: PDF 직접 추출(PyMuPDF·PDF.js), OCR(PaddleOCR-VL-1.6, VLM 통합 — 별도 VLM 단계 없음) |
 | `extraction/` | 인식 결과에서 핵심 필드 추출 |
 | `normalization/` | 추출값 정규화(주소·금액·날짜·이름) |
-| `local_model/` | 로컬 7B 조항 유형·명확성 후보 1차 분류 (최종 판정 안 함) |
+| `local_model/` | 로컬 7B 조항 유형·명확성 후보 분류 — (선택) 성능비교 실험용, MVP 크리티컬 패스 아님 (최종 판정 안 함) |
 | `classification/` | `local_model` 출력을 조항 유형·명확성 후보 구조로 정리 (판정 안 함) |
 | `rules/` | 문서 내부 판정·문서 교차검증 (최종 판정) |
 | `rag/` | 공식 근거 검색 (판정 안 함) |
@@ -74,7 +74,7 @@
 | 디렉터리 | 책임 |
 |----------|------|
 | `prompts/` | 프롬프트 원본·버전 (extraction/questions/checklists/summaries) |
-| `training/` | 로컬 7B QLoRA 파인튜닝 설정·전처리·평가·메타데이터 (가중치·체크포인트 제외) |
+| `training/` | 로컬 7B QLoRA 파인튜닝(선택 성능비교 실험 — MVP 크리티컬 패스 아님) 설정·전처리·평가·메타데이터 (가중치·체크포인트 제외) |
 | `tests/` | 컴포넌트별·전체 흐름 테스트 |
 
 로컬 모델 기능은 `local_model/` 인터페이스로 분리해 결합도를 낮춘다. 별도 모델 서버 배포가 확정되면 추후 `services/model-api`로 분리할 수 있게 한다. 지금은 최상위 서비스를 추가하지 않는다.
@@ -86,12 +86,16 @@
 - 인식·추출·정규화·로컬 분류·규칙·검색·생성·전체 흐름 테스트를 `tests/` 하위에서 분리한다.
 - 테스트하지 않은 내용을 통과했다고 쓰지 않는다.
 
-## 미정 (TODO — 임의 확정·설치 금지)
+## 확정 / 미정
 
-- 상용 LLM 제공자·모델
-- 로컬 7B 베이스 모델
-- OCR 라이브러리
-- VLM 모델
-- 임베딩 모델·벡터 저장소
+확정(2026-07-14 팀 선정):
+- 조항 구조화·필드 추출: 상용 LLM Gemini 3.5 Flash
+- 쉬운 설명·질문·행동 생성·재검토: 상용 LLM GPT-5.6 Sol
+- OCR: PaddleOCR-VL-1.6 (VLM 통합, 별도 VLM 단계 없음). 디지털 PDF는 PyMuPDF·PDF.js
+- 임베딩·검색: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro
+
+미정 (TODO — 임의 확정·설치 금지):
+- 벡터 DB 제품
+- 로컬 7B 베이스 모델 (선택 성능비교 실험용 — MVP 크리티컬 패스 아님)
 
 특정 SDK·라이브러리를 임의로 추가하지 않고 TODO로 둔다.

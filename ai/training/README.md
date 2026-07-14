@@ -2,6 +2,8 @@
 
 ## 책임
 
+> **(선택) 상용 vs 로컬 성능비교 실험용 — MVP 크리티컬 패스 제외.** 파인튜닝 B/C안 검증 목적이며, MVP 조항 구조화·필드 추출은 상용 LLM(Gemini 3.5 Flash)이 담당한다.
+
 로컬 7B 모델 QLoRA 파인튜닝 코드·설정·메타데이터를 관리한다. 입력=임대차 계약서·특약 문장, 출력=`clause_type`·`clarity`·`responsible_party`·`condition`·`review_required`. 7B 4bit QLoRA로 조항 유형·명확성 후보 분류를 학습한다. **모델 가중치·체크포인트는 Git에 커밋하지 않는다.** 학습 설정·전처리·평가 코드·메타데이터만 커밋한다.
 
 ## 하위 구조

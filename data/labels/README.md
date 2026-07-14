@@ -1,6 +1,6 @@
 # data/labels/
 
-로컬 7B 조항 분류 **라벨 체계** 정의 보관 위치. 데이터셋: [`../datasets/`](../datasets/), 기준: [`../../docs/data/training-dataset.md`](../../docs/data/training-dataset.md).
+(선택) 로컬 7B 성능비교 실험용 조항 분류 **라벨 체계** 정의 보관 위치. 데이터셋: [`../datasets/`](../datasets/), 기준: [`../../docs/data/training-dataset.md`](../../docs/data/training-dataset.md).
 
 ## 라벨 5종 ↔ 폴더
 

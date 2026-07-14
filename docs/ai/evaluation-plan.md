@@ -1,13 +1,13 @@
 # AI 평가 계획
 
-각 단계를 분리해 평가한다. 서비스 파이프라인 평가는 `ai/src/lease_companion_ai/evaluation/`이 실행하고, 테스트는 `ai/tests/` 하위에서 단계별로 구분한다. 로컬 7B 파인튜닝 평가(베이스 vs 파인튜닝)는 `ai/training/evaluation/`이 담당하며 역할을 구분한다. 지표 정의·대상·측정 방법·기록 형식은 [`evaluation-matrix.md`](evaluation-matrix.md)에서 표로 관리한다.
+각 단계를 분리해 평가한다. 서비스 파이프라인 평가는 `ai/src/lease_companion_ai/evaluation/`이 실행하고, 테스트는 `ai/tests/` 하위에서 단계별로 구분한다. 로컬 7B 파인튜닝 평가(베이스 vs 파인튜닝)는 `ai/training/evaluation/`이 담당하며 역할을 구분한다 — 단, 로컬 7B는 MVP 크리티컬 패스에서 제외되어(선정표), 이 평가는 **상용 vs 로컬 성능비교 실험(파인튜닝 B/C안)을 진행할 경우에만** 유효하다. 지표 정의·대상·측정 방법·기록 형식은 [`evaluation-matrix.md`](evaluation-matrix.md)에서 표로 관리한다.
 
 ## 평가 구분
 
 | 구분 | 대상 모듈 | 평가 관점 (초안) |
 |------|-----------|------------------|
 | 인식·추출 | `ingestion` · `extraction` | 문서 인식·핵심 필드 추출 정확도, 구조화 JSON 스키마 준수 |
-| 로컬 분류 | `local_model` · `classification` | 조항 유형·명확성 분류 성능, 베이스 7B vs 파인튜닝 7B, 신뢰도 |
+| 로컬 분류 (선택 실험) | `local_model` · `classification` | 조항 유형·명확성 분류 성능, 베이스 7B vs 파인튜닝 7B, 신뢰도. MVP 크리티컬 패스 아님 — 성능비교 실험 시에만 측정 |
 | 규칙 | `rules` | 문서 내부 판정·교차검증 정확도(9개 상태·J01–J12 기준) |
 | 검색 | `rag` | 공식 근거 검색 적합성, 정답 근거 포함률, 인용 정확성 |
 | 생성 | `generation` | 쉬운 설명·질문·체크리스트·행동 품질, 단정 표현·근거 없는 출력 비율 |

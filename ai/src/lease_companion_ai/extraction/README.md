@@ -2,12 +2,12 @@
 
 ## 책임
 
-인식된 문서에서 핵심 필드를 **추출**한다. 상용 LLM으로 텍스트 기반 추출을 하고, 텍스트만으로 부족한 표·서식·도장 영역은 VLM 보조를 받으며, 추출 결과를 판정 스키마의 필드에 매핑한다. **판정·정규화는 하지 않는다.**
+인식된 문서에서 핵심 필드를 **추출**한다. 상용 LLM(Gemini 3.5 Flash) 멀티모달 추출로 텍스트·표·서식 영역을 처리하고(시각 보조는 OCR PaddleOCR-VL에 통합 — 별도 VLM 단계 없음), 추출 결과를 판정 스키마의 필드에 매핑한다. **판정·정규화는 하지 않는다.**
 
 ## 하위 구조
 
-- `commercial_llm/` — 상용 LLM 멀티모달 추출 (제공자·모델 TODO)
-- `vlm/` — 텍스트 추출로 부족한 영역 VLM 보조 추출 (모델 TODO)
+- `commercial_llm/` — 상용 LLM 멀티모달 추출 (Gemini 3.5 Flash)
+- `vlm/` — (선정표: VLM은 OCR PaddleOCR-VL에 통합 — 별도 VLM 추출 단계 없음. 이 하위 모듈은 미사용)
 - `field_mapper/` — 추출 결과를 문서별 필드 스키마(`schemas/`)에 매핑
 
 ## 입력
@@ -20,8 +20,7 @@
 - 각 필드의 원문 위치·근거, 추출 신뢰도
 - 추출값은 사용자 확인·수정(사용자 흐름 5단계) 전 상태
 
-## TODO
+## 확정 / TODO
 
-- 상용 LLM 제공자·모델 미정
-- VLM 모델 미정
-- 문서별 필드 스키마 확정(`docs/data/document-fields.md`) 후 `field_mapper/` 구현
+- 확정(2026-07-14 선정표): 추출·구조화=상용 LLM Gemini 3.5 Flash(멀티모달). VLM은 OCR(PaddleOCR-VL)에 통합 — 별도 VLM 모델 없음.
+- 문서별 필드 스키마 확정(`docs/data/document-fields.md`) 후 `field_mapper/` 구현 (TODO)

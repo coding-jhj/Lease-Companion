@@ -1,5 +1,7 @@
 # 파인튜닝 데이터셋 구조 (로컬 7B)
 
+> **[2026-07-14 선정표 반영]** 로컬 7B는 **MVP 크리티컬 패스에서 제외**됨. MVP 조항 구조화는 상용 LLM(Gemini 3.5 Flash)이 담당한다([`../ai/model-routing.md`](../ai/model-routing.md)). 아래 데이터셋 정의는 **상용 vs 로컬 성능 비교(파인튜닝 B/C안) 병렬 실험**에 한해 유효하며, 실험을 진행하지 않으면 비활성 상태로 둔다. 파인튜닝 방식(QLoRA 등) 세부는 [`../ai/fine-tuning-plan.md`](../ai/fine-tuning-plan.md).
+
 > 로컬 7B 모델의 조항 분류 파인튜닝 데이터셋 정의. 데이터는 [`data/datasets/`](../../data/datasets/), 라벨 체계는 [`data/labels/`](../../data/labels/).
 > 로컬 7B는 **조항 유형·명확성·책임 주체·조건·확인 필요 후보를 분류**한다. **최종 판정은 내리지 않는다**(최종 판정은 규칙 엔진, [`judgment-spec.md`](judgment-spec.md)).
 

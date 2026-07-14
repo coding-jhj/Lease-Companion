@@ -21,7 +21,7 @@ processed/               가공 산출물 (Git 제외, 각 README만 커밋)
   extracted-fields/ normalized-documents/ training-records/
 schemas/                 문서 필드 JSON 스키마
 rules/                   문서 비교 규칙 (정의: docs/data/rule-definition.md)
-labels/                  로컬 7B 라벨 체계
+labels/                  (선택) 로컬 7B 성능비교 실험 라벨 체계
   clause-types/ clarity/ responsible-party/ judgment-status/
 datasets/                파인튜닝 데이터셋 (docs/data/training-dataset.md)
   source/ labeled/ train/ validation/ test/

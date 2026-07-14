@@ -17,7 +17,7 @@
 | 3 | 계약 상황 입력 | `contract-create` |
 | 4 | 계약서·등기 등 문서 업로드 | `document-upload` |
 | 5 | 추출값 확인·수정 | `extraction-review` |
-| 6 | 분석 (로컬 모델·규칙 엔진·RAG·상용 LLM) | `analysis-progress` |
+| 6 | 분석 (상용 LLM 구조화 → 규칙 엔진 → RAG → 상용 LLM 생성, 로컬 7B는 선택적 성능비교 실험) | `analysis-progress` |
 | 7 | 판정·원문 증거·공식 근거·질문·행동 리포트 | `result-report` |
 | 8 | 체크리스트·계약 직후 행동 관리 | `contract-detail` |
 

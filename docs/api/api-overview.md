@@ -14,7 +14,7 @@
 | `contracts` | 계약 건 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | TODO: 경로 미정 |
 | `documents` | 계약서·등기 등 문서 업로드, 형식·크기·개수 검증 | Document | TODO: 경로 미정 |
 | `extractions` | AI 추출값 반환, 사용자 확인·수정 반영 | ExtractedField | TODO: 경로 미정 |
-| `analyses` | 분석 실행(로컬 7B·규칙 엔진·RAG·상용 LLM), 상태 조회 | AnalysisRun | TODO: 경로·상태 전달 방식 미정 |
+| `analyses` | 분석 실행(상용 LLM 구조화(Gemini 3.5 Flash)·규칙 엔진·RAG·상용 LLM 생성(GPT-5.6 Sol); 선택 로컬 7B 실험), 상태 조회 | AnalysisRun | TODO: 경로·상태 전달 방식 미정 |
 | `results` | 판정·원문 증거·공식 근거·질문 리포트 조회 | JudgmentResult, EvidenceSource, QuestionCard | TODO: 경로 미정 |
 | `checklists` | 서명 전 체크리스트·계약 직후 행동 상태 관리 | ChecklistItem, PostContractAction | TODO: 경로 미정 |
 | `feedback` | 사용자 피드백 수집 | UserFeedback | TODO: 경로 미정 |

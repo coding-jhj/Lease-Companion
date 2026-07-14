@@ -54,4 +54,4 @@
 
 - 대체 CLI 모델 우선순위·전환 임계(할당량/타임아웃) 정책, 비용 상한.
 - 3단계 문맥형 PII 탐지(privacy-filter-korean)의 "조건부 확정" 조건 명시.
-- **문서 정렬 필요**: 루트 `AGENTS.md`·[`local-model-plan.md`](local-model-plan.md)·[`fine-tuning-plan.md`](fine-tuning-plan.md)은 로컬 7B를 1차 처리 컴포넌트로 기술 → 선정표(로컬 7B 크리티컬 패스 제외)와 불일치. 팀 확인 후 정렬.
+- 문서 정렬 완료(2026-07-14): 로컬 7B "MVP 크리티컬 패스 제외 · 선택적 성능비교 실험" 프레이밍을 저장소 전 문서(루트·`ai/`·`backend/`·`data/` AGENTS·README, `docs/planning`·`architecture`·`ai`·`data`)에 반영.
