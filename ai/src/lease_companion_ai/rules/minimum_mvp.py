@@ -73,6 +73,28 @@ def _clean_reason(rule_id: str) -> str:
     }.get(rule_id, "추가 확인이 필요한 사실 플래그입니다.")
 
 
+def _presentation(
+    rule_id: str, status: str, definition: dict[str, str]
+) -> tuple[str, str, str | None, list[str]]:
+    """상태 종류별 (시급도, 이유, 질문, 행동). 반환: 판정 상태를 단정으로 오표시하지 않도록 분리."""
+    if status in _CLEAN_STATUSES:
+        return "참고", _clean_reason(rule_id), None, []
+    if status == "확인 불가":
+        # 정보가 없어 비교·판정을 못 한 경우 — 발동(불일치 등) 문구를 붙이지 않는다.
+        return (
+            "분석 불가",
+            "이 항목을 판정할 정보를 문서에서 확인하지 못해 비교할 수 없습니다.",
+            None,
+            ["필요한 문서·값(예: 등기사항증명서, 해당 항목)을 확인한 뒤 다시 분석하세요."],
+        )
+    return (
+        definition["urgency"],
+        definition["report_reason"],
+        definition["question_template"],
+        [definition["action_template"]],
+    )
+
+
 def run_rules(contract: dict[str, Any], registry: dict[str, Any]) -> list[RuleResult]:
     definitions = _read_csv("rule_spec.csv")
     catalog = _evidence_catalog()
@@ -82,7 +104,7 @@ def run_rules(contract: dict[str, Any], registry: dict[str, Any]) -> list[RuleRe
     for definition in definitions:
         rule_id = definition["rule_id"]
         status = statuses[rule_id]
-        is_clean = status in _CLEAN_STATUSES
+        urgency, reason, question, actions = _presentation(rule_id, status, definition)
         evidence = [
             catalog[source_id]
             for source_id in definition["official_source_ids"].split(";")
@@ -94,10 +116,10 @@ def run_rules(contract: dict[str, Any], registry: dict[str, Any]) -> list[RuleRe
                 rule_name=definition["rule_name"],
                 judgment_id=definition["judgment_id"] or None,
                 status=status,
-                urgency="참고" if is_clean else definition["urgency"],
-                reason=_clean_reason(rule_id) if is_clean else definition["report_reason"],
-                question=None if is_clean else definition["question_template"],
-                recommended_actions=[] if is_clean else [definition["action_template"]],
+                urgency=urgency,
+                reason=reason,
+                question=question,
+                recommended_actions=actions,
                 evidence_sources=evidence,
                 limitations=definition["limitations"],
             )

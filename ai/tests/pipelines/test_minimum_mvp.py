@@ -50,3 +50,18 @@ def test_rules_return_all_ten_results_without_safety_score():
     assert by_id["R03"].status == "확인 필요"
     assert by_id["R05"].status == "적용 제외"
     assert not any("사기 가능성 점수" in result.reason for result in results)
+
+
+def test_registry_parser_handles_colon_format():
+    # 생성 데이터(CASE-006~)는 "소유자: 이름" 콜론 표기 — 통합 파서가 처리해야 한다.
+    registry = (ROOT / "data/sample/registry-records/registry_CASE-006.txt").read_text(encoding="utf-8")
+    assert parse_registry(registry).fields["owner_names"] == ["강지훈"]
+
+
+def test_unanalyzable_rule_avoids_fired_wording():
+    # 등기 소유자를 못 읽으면 R01은 확인 불가 — 불일치 문구·즉시 확인을 붙이지 않는다.
+    by_id = {r.rule_id: r for r in run_rules({"landlord_name": "김철수", "account_holder": "김철수"}, {"owner_names": None})}
+    assert by_id["R01"].status == "확인 불가"
+    assert by_id["R01"].urgency == "분석 불가"
+    assert "다르" not in by_id["R01"].reason
+    assert by_id["R01"].question is None

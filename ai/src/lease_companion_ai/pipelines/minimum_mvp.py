@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from lease_companion_ai.extraction.minimum_mvp_v3 import parse_contract, parse_registry
+from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
 from lease_companion_ai.ingestion.pdf_text import extract_document_text
 from lease_companion_ai.rules.minimum_mvp import run_rules
 

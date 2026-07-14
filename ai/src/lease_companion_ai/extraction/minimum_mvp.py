@@ -1,4 +1,9 @@
-"""표준 계약서·등기사항증명서 텍스트용 결정론적 필드 파서."""
+"""표준 계약서·등기사항증명서 텍스트용 결정론적 필드 파서.
+
+정규식 기반 **데모 스탠드인**이다. 실제 MVP 추출은 상용 LLM(Gemini 3.5 Flash)로
+교체 예정(최종 모델·기술 선정표). 공백/콜론 표기 변형과 '(판독 불가)' 마커를
+한 파서에서 함께 처리한다.
+"""
 
 from __future__ import annotations
 
@@ -8,8 +13,14 @@ from datetime import date
 from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction
 
 
-_DATE = re.compile(r"(20\d{2})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일")
+_DATE_KR = re.compile(r"(20\d{2})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일")
+_DATE_NUM = re.compile(r"(20\d{2})[-./](\d{1,2})[-./](\d{1,2})")
 _VAGUE = ("협의", "추후", "상황에 따라", "적절히", "필요시")
+_UNREADABLE = ("판독", "불가")
+
+
+def _unreadable(value: str | None) -> bool:
+    return bool(value) and any(mark in value for mark in _UNREADABLE)
 
 
 def _first(patterns: tuple[str, ...], text: str, flags: int = 0) -> str | None:
@@ -41,10 +52,41 @@ def _clause_status(line: str | None, responsibility: bool = False) -> str:
     return "명확" if has_timing else "불명확"
 
 
+def _parse_date(text: str) -> str | None:
+    match = _DATE_KR.search(text) or _DATE_NUM.search(text)
+    if not match:
+        return None
+    try:
+        return date(*(int(part) for part in match.groups())).isoformat()
+    except ValueError:
+        return None
+
+
+def _active_lines(text: str) -> list[str]:
+    return [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip() and "없음" not in line and "말소" not in line
+    ]
+
+
+def _finalize(document_type: str, fields: dict) -> DocumentExtraction:
+    """'(판독 불가)' 마커를 값으로 인정하지 않고, 미확인 필드를 재계산한다."""
+    for key, value in list(fields.items()):
+        if isinstance(value, str) and _unreadable(value):
+            fields[key] = None
+        elif isinstance(value, list):
+            cleaned = [item for item in value if not _unreadable(item)]
+            fields[key] = cleaned or None
+    unconfirmed = [key for key, value in fields.items() if value is None]
+    return DocumentExtraction(document_type, fields, unconfirmed)
+
+
 def parse_contract(text: str) -> DocumentExtraction:
     property_address = _first(
         (
             r"(?:소재지|목적물\s*주소)\s*[:：]\s*([^\r\n]+)",
+            r"목적물\s*[:：]\s*([^\r\n(]+)",
             r"부동산의\s*표시[^\r\n]*\r?\n\s*([^\r\n]+)",
         ),
         text,
@@ -57,9 +99,7 @@ def parse_contract(text: str) -> DocumentExtraction:
         text,
         re.MULTILINE,
     )
-    account_holder = _first(
-        (r"(?:예금주|계좌\s*명의)\s*[:：]\s*([^/\r\n]+)",), text
-    )
+    account_holder = _first((r"(?:예금주|계좌\s*명의)\s*[:：]\s*([^/\r\n]+)",), text)
     return_line = _line_containing(text, "보증금", "반환")
     repair_line = next(
         (
@@ -88,49 +128,28 @@ def parse_contract(text: str) -> DocumentExtraction:
         "repair_responsibility": _clause_status(repair_line, responsibility=True),
         "rights_change_clause_present": rights_line is not None,
     }
-    unconfirmed = [key for key, value in fields.items() if value is None]
-    return DocumentExtraction("contract", fields, unconfirmed)
-
-
-def _parse_date(text: str) -> str | None:
-    match = _DATE.search(text)
-    if not match:
-        return None
-    try:
-        return date(*(int(part) for part in match.groups())).isoformat()
-    except ValueError:
-        return None
-
-
-def _active_lines(text: str) -> list[str]:
-    return [
-        line.strip()
-        for line in text.splitlines()
-        if line.strip() and "없음" not in line and "말소" not in line
-    ]
+    return _finalize("contract", fields)
 
 
 def parse_registry(text: str) -> DocumentExtraction:
     property_address = _first(
-        (
-            r"(?:소재지번[^:：\r\n]*|소재지|부동산의\s*표시)\s*[:：]\s*([^\r\n]+)",
-        ),
+        (r"(?:소재지번[^:：\r\n]*|소재지|부동산의\s*표시)\s*[:：]\s*([^\r\n]+)",),
         text,
     )
-    owner_names = re.findall(r"소유자\s+([가-힣A-Za-z0-9㈜()]+)", text)
-    owner_names = list(dict.fromkeys(owner_names))
+    # 공백·콜론 표기 모두 허용: "소유자 홍길동" / "소유자: 홍길동"
+    owner_names = re.findall(r"소유자\s*[:：]?\s*([가-힣A-Za-z0-9㈜()]+)", text)
+    owner_names = list(dict.fromkeys(owner_names)) or None
     issue_line = next(
-        (line for line in text.splitlines() if "열람일시" in line or "발급일" in line), None
+        (line for line in text.splitlines() if "열람" in line or "발급일" in line), ""
     )
     active = "\n".join(_active_lines(text))
     fields = {
-        "owner_names": owner_names or None,
+        "owner_names": owner_names,
         "property_address": property_address,
-        "issue_date": _parse_date(issue_line or ""),
+        "issue_date": _parse_date(issue_line),
         "mortgage_present": bool(re.search(r"근저당권(?:설정)?", active)),
         "seizure_present": bool(re.search(r"(?<!가)압류", active)),
         "provisional_seizure_present": "가압류" in active,
         "trust_present": bool(re.search(r"신탁(?:등기|원부)?", active)),
     }
-    unconfirmed = [key for key, value in fields.items() if value is None]
-    return DocumentExtraction("registry_record", fields, unconfirmed)
+    return _finalize("registry_record", fields)
