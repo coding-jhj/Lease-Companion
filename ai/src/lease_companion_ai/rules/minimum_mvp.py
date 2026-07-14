@@ -45,14 +45,21 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
     registry_address = normalize_address(registry.get("property_address"))
     account_holder = normalize_name(contract.get("account_holder"))
 
+    # 등기 존재/기재 플래그는 tri-state: True=있음, False=(읽고) 없음, None=판독불가·미확인.
+    # None → "확인 불가"로 일관 처리(판독불가 등기부를 "이상 없음"으로 오판하지 않도록).
+    mortgage = registry.get("mortgage_present")
+    seizure = registry.get("seizure_present")
+    provisional = registry.get("provisional_seizure_present")
+    trust = registry.get("trust_present")
+    issue_date = registry.get("issue_date")
     return {
         "R01": "확인 불가" if not landlord or not owners else "일치" if landlord in owners else "불일치",
         "R02": "확인 불가" if not contract_address or not registry_address else "일치" if contract_address == registry_address else "불일치",
-        "R03": "확인 불가" if not registry else "확인 필요" if registry.get("mortgage_present") else "적용 제외",
-        "R04": "확인 불가" if not registry else "확인 필요" if registry.get("seizure_present") or registry.get("provisional_seizure_present") else "적용 제외",
-        "R05": "확인 불가" if not registry else "확인 필요" if registry.get("trust_present") else "적용 제외",
+        "R03": "확인 불가" if not registry else "확인 필요" if mortgage else "적용 제외" if mortgage is False else "확인 불가",
+        "R04": "확인 불가" if not registry else "확인 필요" if seizure or provisional else "적용 제외" if seizure is False and provisional is False else "확인 불가",
+        "R05": "확인 불가" if not registry else "확인 필요" if trust else "적용 제외" if trust is False else "확인 불가",
         "R06": "확인 불가" if not landlord else "확인 필요" if not account_holder else "일치" if landlord == account_holder else "불일치",
-        "R07": "확인 불가" if not registry else "확인 필요" if registry.get("issue_date") else "미기재",
+        "R07": "확인 불가" if not registry else "확인 필요" if issue_date else "확인 불가",
         "R08": contract.get("deposit_return_condition") or "확인 필요",
         "R09": contract.get("repair_responsibility") or "확인 필요",
         "R10": "명확" if contract.get("rights_change_clause_present") else "미기재",

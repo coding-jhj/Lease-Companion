@@ -152,4 +152,14 @@ def parse_registry(text: str) -> DocumentExtraction:
         "provisional_seizure_present": "가압류" in active,
         "trust_present": bool(re.search(r"신탁(?:등기|원부)?", active)),
     }
-    return _finalize("registry_record", fields)
+    result = _finalize("registry_record", fields)
+    # 등기 전체 판독불가(소유자·소재지 모두 미확인)면 존재 플래그의 False는
+    # "(읽고) 없음"이 아니라 "판독불가"다 → None으로 되돌려 규칙이 '확인 불가'를 내게 한다.
+    # 개별 필드만 판독불가(예: 소유자만)면 나머지가 읽히므로 플래그 유지(무회귀).
+    resolved = result.fields
+    if resolved["owner_names"] is None and resolved["property_address"] is None:
+        for key in ("mortgage_present", "seizure_present", "provisional_seizure_present", "trust_present"):
+            if resolved[key] is False:
+                resolved[key] = None
+        result.unconfirmed_fields = [key for key, value in resolved.items() if value is None]
+    return result

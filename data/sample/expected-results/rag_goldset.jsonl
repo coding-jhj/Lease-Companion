@@ -28,3 +28,7 @@
 {"case_id": "CASE-028", "expected_evidence": [{"rule_id": "R05", "expected_source_ids": ["SRC-REGISTRY-SAMPLE", "SRC-MOLIT-CHECKLIST"]}, {"rule_id": "R09", "expected_source_ids": ["SRC-HTA-LAW", "SRC-STD-LEASE"]}]}
 {"case_id": "CASE-029", "expected_evidence": [{"rule_id": "R05", "expected_source_ids": ["SRC-REGISTRY-SAMPLE", "SRC-MOLIT-CHECKLIST"]}, {"rule_id": "R07", "expected_source_ids": ["SRC-REGISTRY-APPLY", "SRC-MOLIT-CHECKLIST"]}, {"rule_id": "R10", "expected_source_ids": ["SRC-STD-LEASE", "SRC-HTA-LAW", "SRC-MOLIT-CHECKLIST"]}]}
 {"case_id": "CASE-030", "expected_evidence": [{"rule_id": "R05", "expected_source_ids": ["SRC-REGISTRY-SAMPLE", "SRC-MOLIT-CHECKLIST"]}, {"rule_id": "R07", "expected_source_ids": ["SRC-REGISTRY-APPLY", "SRC-MOLIT-CHECKLIST"]}, {"rule_id": "R08", "expected_source_ids": ["SRC-HTA-LAW", "SRC-STD-LEASE"]}]}
+{"case_id": "CASE-031", "expected_evidence": [{"rule_id": "R07", "expected_source_ids": ["SRC-REGISTRY-APPLY", "SRC-MOLIT-CHECKLIST"]}]}
+{"case_id": "CASE-032", "expected_evidence": [{"rule_id": "R07", "expected_source_ids": ["SRC-REGISTRY-APPLY", "SRC-MOLIT-CHECKLIST"]}]}
+{"case_id": "CASE-033", "expected_evidence": [{"rule_id": "R07", "expected_source_ids": ["SRC-REGISTRY-APPLY", "SRC-MOLIT-CHECKLIST"]}]}
+{"case_id": "CASE-034", "expected_evidence": [{"rule_id": "R07", "expected_source_ids": ["SRC-REGISTRY-APPLY", "SRC-MOLIT-CHECKLIST"]}]}

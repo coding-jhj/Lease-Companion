@@ -184,6 +184,23 @@ def build_test():
     return specs
 
 
+def build_extra():
+    """CASE-031~034: '확인 불가' 상태 커버 보강.
+    규칙 엔진이 판독불가 필드(등기 소유자·소재지)에 '확인 불가'를 ≥5회 정확히 산출하는지
+    검증하기 위한 케이스. 기존 CASE-026/027과 동일 메커니즘(unreadable)이되 엔티티는 별개.
+    (issue_date 판독불가는 엔진이 아직 '확인 불가'를 못 내는 알려진 결함이라 제외.)"""
+    plan = ["owner", "reg_addr", "owner", "reg_addr"]
+    specs = []
+    for j, unread in enumerate(plan):
+        i = 31 + j
+        cid = f"CASE-{i:03d}"
+        ctype = ["전세", "보증부월세", "일반월세"][i % 3]
+        s = clean_spec(cid, ctype, i, DEV_FULL, DEV_GU, DEV_RO, style=i % 2)
+        s["unreadable"] = unread
+        specs.append(s)
+    return specs
+
+
 # ── 도출: 규칙 판정 ───────────────────────────────────────────────
 def derive_rules(s):
     unread = s["unreadable"]
@@ -421,7 +438,7 @@ def backfill_pilot_ledgers():
 
 
 def main():
-    dev, test = build_dev(), build_test()
+    dev, test = build_dev() + build_extra(), build_test()
 
     # dev goldset: 파일럿 5줄 보존 + 생성 25줄
     pilots = {f"CASE-{n:03d}" for n in range(1, 6)}
@@ -467,7 +484,12 @@ def _self_check():
     assert derive_extraction(s3)["gold_extraction"]["registry"]["owner_names"] is None
     # rag는 발동 규칙만
     assert derive_rag(s)["expected_evidence"][0]["rule_id"] == "R07"  # clean이라도 R07은 발동
-    print("gen self-check OK: 발동조건↔상태, OCR변형, rag 도출 일관")
+    # build_extra: 확인 불가 커버 보강 4건, 각 R01 또는 R02가 확인 불가
+    extra = build_extra()
+    assert len(extra) == 4 and {x["case_id"] for x in extra} == {f"CASE-{n:03d}" for n in (31, 32, 33, 34)}
+    cu = sum(1 for s2 in extra for r in derive_rules(s2)["gold_rules"] if r["status"] == "확인 불가")
+    assert cu == 4, f"build_extra 확인 불가 {cu} != 4"
+    print("gen self-check OK: 발동조건↔상태, OCR변형, rag 도출, build_extra 확인불가 일관")
 
 
 if __name__ == "__main__":

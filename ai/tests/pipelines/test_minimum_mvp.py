@@ -65,3 +65,30 @@ def test_unanalyzable_rule_avoids_fired_wording():
     assert by_id["R01"].urgency == "분석 불가"
     assert "다르" not in by_id["R01"].reason
     assert by_id["R01"].question is None
+
+
+def test_unreadable_registry_flag_is_confirm_needed_not_excluded():
+    # 안전: 판독불가(None) 존재 플래그는 '없음(적용 제외)'이 아니라 '확인 불가'여야 한다.
+    contract = {"landlord_name": "김철수", "account_holder": "김철수"}
+    unread = {"mortgage_present": None, "seizure_present": None,
+              "provisional_seizure_present": None, "trust_present": None, "issue_date": None}
+    by_id = {r.rule_id: r for r in run_rules(contract, unread)}
+    assert by_id["R03"].status == "확인 불가"  # None → 없음으로 단정 금지
+    assert by_id["R04"].status == "확인 불가"
+    assert by_id["R05"].status == "확인 불가"
+    assert by_id["R07"].status == "확인 불가"
+    # 읽고 없음(False)은 여전히 적용 제외 — 무회귀
+    readable = {"mortgage_present": False, "seizure_present": False,
+                "provisional_seizure_present": False, "trust_present": False, "issue_date": "2026-07-01"}
+    ok = {r.rule_id: r for r in run_rules(contract, readable)}
+    assert ok["R03"].status == "적용 제외" and ok["R05"].status == "적용 제외"
+
+
+def test_parser_flags_none_when_registry_fully_unreadable():
+    # 등기 전체 판독불가(소유자·소재지 모두) → 존재 플래그를 False로 단정하지 않고 None.
+    text = ("등기사항전부증명서 (건물)\n부동산의 표시: (판독 불가)\n열람·발급일: (판독 불가)\n"
+            "【갑구】\n   소유자: (판독 불가)\n【을구】\n   (판독 불가)\n")
+    fields = parse_registry(text).fields
+    assert fields["owner_names"] is None and fields["property_address"] is None
+    assert fields["mortgage_present"] is None
+    assert fields["trust_present"] is None
