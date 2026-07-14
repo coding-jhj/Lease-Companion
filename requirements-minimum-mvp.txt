@@ -1,0 +1,5 @@
+# Minimum MVP browser demo dependencies
+-e ./ai
+-e ./backend
+PyMuPDF>=1.24,<2
+uvicorn>=0.30,<1

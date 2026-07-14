@@ -99,14 +99,38 @@ ai 파이프라인
 - 인증 세부 기술(회원 기능은 확정, 구현 기술 미정)
 - 로컬 7B 베이스 모델 (상용 대비 선택적 성능비교 실험 — 베이스 미정)
 
-## 개발 환경 설정 (예정)
+## 최소 MVP 실행
 
-- TODO: `ai/` 실행·의존성 설치 방식 (패키지 매니저 확정 후)
-- TODO: `backend/` FastAPI 실행 명령 (구성 확정 후)
-- TODO: `frontend/` 스택 확정 후 초기화 방식
-- 환경변수는 `.env.example`를 복사해 `.env`로 사용
+현재 최소 MVP는 계약서와 등기사항증명서를 업로드하고, 추출값을 확인·수정한 뒤 R01~R10 결과와 질문·행동·근거 후보를 확인하는 브라우저 데모다.
 
-> 아직 구현되지 않은 실행 명령은 만들지 않는다. 확정 시 이 절을 갱신한다.
+### 1. 의존성 설치
+
+저장소 루트에서 PowerShell을 열고 실행한다.
+
+```powershell
+python -m pip install -r requirements-minimum-mvp.txt
+```
+
+### 2. 서버 실행
+
+```powershell
+.\scripts\run-minimum-mvp.ps1
+```
+
+### 3. 브라우저 접속
+
+```text
+http://127.0.0.1:8000
+```
+
+개발 확인에는 다음 합성 TXT 샘플을 사용할 수 있다.
+
+- 계약서: `data/sample/contracts/contract_001.txt`
+- 등기사항증명서: `data/sample/registry-records/registry_001.txt`
+
+텍스트 레이어가 있는 PDF와 UTF-8 TXT를 지원한다. 스캔·사진 PDF OCR, 회원·DB 저장, 상용 LLM 연동은 아직 포함하지 않는다. 상세한 실행 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
+
+전체 MVP의 프론트엔드 스택·DB·인증 방식은 여전히 미정(TODO)이다. 환경변수가 필요한 후속 기능은 `.env.example`을 복사해 `.env`로 사용한다.
 
 ## 데이터 / 개인정보 보호 원칙
 
@@ -118,4 +142,6 @@ ai 파이프라인
 
 ## 현재 프로젝트 상태
 
-모노레포 구조·공통 지시서·설계 문서·스캐폴딩만 존재한다. **AI·API·DB·프론트엔드 기능은 아직 구현하지 않았다.** 각 폴더 README의 TODO 참조.
+구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
+
+회원·계약 건 영속 저장·전체 12개 판정·OCR·상용 LLM·정식 프론트엔드는 아직 구현되지 않았다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
