@@ -1,0 +1,36 @@
+{
+  "$schema_version": "0.1.0",
+  "document_type": "registry",
+  "_field_attributes": [
+    "extracted",
+    "normalized",
+    "evidence_text",
+    "page",
+    "confidence",
+    "user_verified",
+    "extraction_failed"
+  ],
+  "_note": "모든 리프 필드는 7속성 객체. 권리관계 항목(mortgage/seizure/provisional_seizure/trust)은 각 항목이 {entry_type, holder, amount, registered_date, source_text}를 갖는 배열. 존재 탐지용이며 위험도 계산값을 저장하지 않는다.",
+  "property_address": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+  "owners": [
+    {
+      "name": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+      "share": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+    }
+  ],
+  "is_joint_ownership": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+  "issue_date": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+  "mortgage_entries": [],
+  "seizure_entries": [],
+  "provisional_seizure_entries": [],
+  "trust_entries": [],
+  "_entry_shape": {
+    "entry_type": null,
+    "holder": null,
+    "amount": null,
+    "registered_date": null,
+    "source_page": null,
+    "source_text": null
+  },
+  "unconfirmed_fields": []
+}

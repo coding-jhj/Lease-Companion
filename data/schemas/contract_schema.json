@@ -1,0 +1,63 @@
+{
+  "$schema_version": "0.1.0",
+  "document_type": "lease_contract",
+  "_field_attributes": [
+    "extracted",
+    "normalized",
+    "evidence_text",
+    "page",
+    "confidence",
+    "user_verified",
+    "extraction_failed"
+  ],
+  "_note": "모든 리프 필드는 위 7속성 객체를 갖는다. extracted=원문값, normalized=비교용 표준형, evidence_text=원문 증거, page=출처 페이지, confidence=추출 신뢰도(0~1), user_verified=사용자 확인 여부, extraction_failed=추출 실패 여부. 생성값(설명·질문·행동)은 이 스키마에 넣지 않는다.",
+  "contract_type": {
+    "extracted": null,
+    "normalized": null,
+    "evidence_text": null,
+    "page": null,
+    "confidence": null,
+    "user_verified": false,
+    "extraction_failed": false,
+    "_enum": ["전세", "보증부월세", "일반월세"]
+  },
+  "landlord": {
+    "name": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "tenant": {
+    "name": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "agent": {
+    "name": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "relation": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "authority_document_mentioned": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "property": {
+    "address": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "payment": {
+    "deposit": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "deposit_hangeul": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "monthly_rent": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "contract_payment": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "balance_payment": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "management_fee": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "management_fee_items": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "account_holder": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "contract_period": {
+    "start_date": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "end_date": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "move_in_date": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "contract_payment_date": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "balance_payment_date": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "clauses": {
+    "deposit_return_condition": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "repair_responsibility": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+    "rights_change_clause": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false}
+  },
+  "special_terms": [],
+  "signature_block_present": {"extracted": null, "normalized": null, "evidence_text": null, "page": null, "confidence": null, "user_verified": false, "extraction_failed": false},
+  "unconfirmed_fields": []
+}
