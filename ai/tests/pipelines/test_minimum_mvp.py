@@ -322,6 +322,67 @@ def test_registry_address_stops_before_unlabeled_building_structure():
     assert fields["property_address"] == "가상광역시 맑음구 새싹로 136"
 
 
+def test_registry_rank_rows_merged_into_one_line_still_apply_ownership_history():
+    # PyMuPDF sort=True가 '효력' 열 셀과 다음 순위 행을 앞 행 끝에 이어붙인 실제 레이아웃.
+    # 순위 2(이전)가 줄 중간에 있어도 이력을 적용해 현재 소유자만 남겨야 한다.
+    registry = """등기사항전부증명서
+(말소사항 포함)갑구 소유권에 관한 사항       없음
+순위번호    등기목적       접수        등기원인               권리자 및 기타사항         효력
+1   소유권보존        2022년 8월 28일  2022년 8월 25일      소유자 윤든든 900804-1******
+제37245호                  가상광역시 금융로 68       법적        ·    2   소유권이전        2024년 5월 27일  2024년 2월 28일      소유자 강안전 730401-2******
+제10013호    매매           가상광역시 데이터로 59
+3   압류            2026년 11월 11   2026년 7월 18일      권리자 가상세무서     등기부                일          압류(체납처분)
+제10014호   모의
+— 이 하 여 백 —
+"""
+
+    fields = parse_registry(registry).fields
+
+    assert fields["owner_names"] == ["강안전"]
+    assert fields["seizure_present"] is True
+
+
+def test_registry_owner_mention_before_first_rank_entry_returns_unresolved():
+    # 순위 항목으로 안 잡힌 구간에 소유자가 남아 있으면 확정하지 말고 직접 확인을 요구해야 한다.
+    registry = """등기사항전부증명서
+[갑구]
+소유자 윤든든 900804-1******
+2   소유권이전   2024년 5월 27일   매매   소유자 강안전
+"""
+
+    result = parse_registry(registry)
+
+    assert result.fields["owner_names"] is None
+    assert any("직접 확인" in warning for warning in result.warnings)
+
+
+def test_contract_extracts_tenant_name_from_signature_line():
+    contract = (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
+
+    fields = parse_contract(contract).fields
+
+    assert fields["tenant_name"] == "강해린"
+
+
+def test_contract_extracts_tenant_name_from_table_layout():
+    contract = """주택임대차계약서
+임
+대
+인
+성 명
+안 이 름
+임
+차
+인
+성 명
+김 임 차
+"""
+
+    fields = parse_contract(contract).fields
+
+    assert fields["tenant_name"] == "김임차"
+
+
 def test_contract_extracts_landlord_name_separated_from_signature_cell():
     contract = """주택임대차계약서
 임

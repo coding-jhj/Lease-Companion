@@ -138,13 +138,14 @@ def _standalone_name_near_signature(block: str) -> str | None:
     return None
 
 
-def _extract_landlord_name(text: str) -> str | None:
+def _extract_party_name(text: str, role: str, block_end: str) -> str | None:
+    spaced_role = r"\s*".join(role)
     direct = _first(
         (
-            r"임\s*대\s*인(?:\s*\([^\n)]*\))?\s*[:：]?\s*"
+            rf"{spaced_role}(?:\s*\([^\n)]*\))?\s*[:：]?\s*"
             r"(?:\n\s*)?(?:성\s*명\s*[:：]?\s*(?:\n\s*)?)?"
             r"([가-힣A-Za-z0-9㈜()]{2,30})(?=\s*(?:\(|서명|날인|\n|$))",
-            r"임대인\s*(?:성명|이름)\s*[:：]?\s*"
+            rf"{role}\s*(?:성명|이름)\s*[:：]?\s*"
             r"(?:\n\s*)?([가-힣A-Za-z0-9㈜()]{2,30})",
         ),
         text,
@@ -152,23 +153,23 @@ def _extract_landlord_name(text: str) -> str | None:
     )
     if direct and direct not in _NON_NAME_VALUES:
         return direct
-    landlord_block = re.search(
-        r"임\s*대\s*인(?P<body>.*?)(?=임\s*차\s*인|중\s*개|\Z)",
-        text,
-        re.DOTALL,
-    )
-    if not landlord_block:
-        return None
-    block = landlord_block.group("body")
-    explicit = _first(
-        (
-            rf"성\s*명\s*[:：]?\s*(?:\n\s*)?({_PERSON_NAME})(?=\s*(?:\(|서명|날인|\n|$))",
-            rf"(?:성명|이름)\s*[:：]?\s*(?:\n\s*)?({_PERSON_NAME})",
-        ),
-        block,
-        re.MULTILINE,
-    )
-    return explicit or _standalone_name_near_signature(block)
+    # 본문 서두("임대인과 임차인은…")처럼 이름 없는 언급을 건너뛰고, 이름이 나오는 첫 구획을 쓴다.
+    for party_block in re.finditer(
+        rf"{spaced_role}(?P<body>.*?)(?={block_end}|\Z)", text, re.DOTALL
+    ):
+        block = party_block.group("body")
+        explicit = _first(
+            (
+                rf"성\s*명\s*[:：]?\s*(?:\n\s*)?({_PERSON_NAME})(?=\s*(?:\(|서명|날인|\n|$))",
+                rf"(?:성명|이름)\s*[:：]?\s*(?:\n\s*)?({_PERSON_NAME})",
+            ),
+            block,
+            re.MULTILINE,
+        )
+        name = explicit or _standalone_name_near_signature(block)
+        if name:
+            return name
+    return None
 
 
 def _extract_account_holder(text: str) -> str | None:
@@ -227,14 +228,22 @@ def _ownership_section(text: str) -> str:
     return match.group("body") if match else text
 
 
-def _ranked_ownership_entries(section: str) -> list[tuple[str, str]]:
-    """순위번호 단위로 갑구를 분리한다."""
+# PDF 표 추출(sort=True)이 '효력' 열 셀·다음 순위 행을 앞 행 끝에 이어붙이는 경우,
+# 줄 중간의 "순위번호 + 등기목적" 앞에서 줄을 갈라 행 경계를 복원한다.
+_MIDLINE_RANK = re.compile(
+    r"[ \t]+(?=\d+(?:-\d+)?[ \t]+(?:소유권|공유자|등기명의인|말소|경정|변경|압류|가압류|신탁|경매))"
+)
+
+
+def _ranked_ownership_entries(section: str) -> tuple[list[tuple[str, str]], str]:
+    """순위번호 단위로 갑구를 분리한다. (항목 목록, 첫 항목 이전의 앞부분) 반환."""
+    section = _MIDLINE_RANK.sub("\n", section)
     pattern = re.compile(
         r"(?m)^[ \t]*(?:순위번호\s*)?(\d+(?:-\d+)?)\s+"
-        r"(?=[^\r\n]*(?:소유권|공유자|등기명의인|말소|경정|변경))"
+        r"(?=[^\r\n]*(?:소유권|공유자|등기명의인|말소|경정|변경|압류|신탁|경매))"
     )
     matches = list(pattern.finditer(section))
-    return [
+    entries = [
         (
             match.group(1),
             section[
@@ -245,6 +254,8 @@ def _ranked_ownership_entries(section: str) -> list[tuple[str, str]]:
         )
         for index, match in enumerate(matches)
     ]
+    prefix = section[: matches[0].start()] if matches else ""
+    return entries, prefix
 
 
 def _parse_share(text: str) -> Fraction | None:
@@ -350,7 +361,13 @@ def _apply_owner_change(state: dict[str, Fraction | None], body: str) -> bool:
 def _current_owner_names(text: str) -> tuple[list[str] | None, list[str]]:
     """갑구 소유권 사건을 적용해 현재 소유자 후보와 안전 경고를 반환한다."""
     section = _ownership_section(text)
-    entries = _ranked_ownership_entries(section)
+    entries, prefix = _ranked_ownership_entries(section)
+    if entries and _holders(prefix):
+        # 순위 항목으로 잡히지 않은 구간에 소유자·권리자가 남아 있다 = 행 분리 실패.
+        # 일부 이력만으로 확정하면 과거 소유자를 현재로 오판할 수 있어 확정하지 않는다.
+        return None, [
+            "소유권 사건 일부를 읽지 못했습니다. 현재 소유자를 직접 확인하세요."
+        ]
     if not entries:
         names = list(dict.fromkeys(name for name, _ in _holders(section)))
         if len(names) <= 1:
@@ -420,7 +437,8 @@ def _finalize(document_type: str, fields: dict) -> DocumentExtraction:
 def parse_contract(text: str) -> DocumentExtraction:
     text = _normalize_extraction_text(text)
     property_address = _extract_contract_address(text)
-    landlord_name = _extract_landlord_name(text)
+    landlord_name = _extract_party_name(text, "임대인", r"임\s*차\s*인|중\s*개")
+    tenant_name = _extract_party_name(text, "임차인", r"임\s*대\s*인|중\s*개")
     account_holder = _extract_account_holder(text)
     return_line = _line_containing(text, "보증금", "반환")
     repair_line = next(
@@ -444,6 +462,7 @@ def parse_contract(text: str) -> DocumentExtraction:
 
     fields = {
         "landlord_name": landlord_name,
+        "tenant_name": tenant_name,
         "property_address": property_address,
         "account_holder": account_holder,
         "deposit_return_condition": _clause_status(return_line),
