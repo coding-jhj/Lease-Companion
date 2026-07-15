@@ -48,7 +48,9 @@ def extract_document_text(content: bytes, filename: str, force_ocr: bool = False
         # force_ocr여도 먼저 연다 — 깨진 PDF를 OCR로 넘기면 ocr.py의 fitz.open이 그대로 터진다.
         try:
             with fitz.open(stream=content, filetype="pdf") as document:
-                text = "\n".join(page.get_text("text") for page in document)
+                # sort=True: 표 셀을 읽기 순서로 정렬한다. extraction의 표 파서가
+                # 라벨 다음 줄에서 값을 찾으므로 좌표 순서가 아니라 읽기 순서여야 한다.
+                text = "\n".join(page.get_text("text", sort=True) for page in document)
                 page_count = document.page_count
         except Exception as exc:  # PyMuPDF가 세부 예외를 여러 형식으로 반환한다.
             raise DocumentReadError("유효한 PDF 파일을 읽지 못했습니다.") from exc

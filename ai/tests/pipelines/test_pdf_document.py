@@ -105,3 +105,29 @@ def test_force_ocr_on_broken_pdf_still_reports_read_error(monkeypatch):
 
     assert extraction["registry"]["read_ok"] is False
     assert extraction["registry"]["error"]
+
+
+def test_table_style_contract_extracts_landlord_and_property_address():
+    contract = _pdf_bytes(
+        "주택임대차계약서\n"
+        "임차주택의 표시\n"
+        "소 재 지\n"
+        "서울특별시 가온구 나래로 12, 305동 1201호\n"
+        "임 대 인\n"
+        "성 명\n"
+        "홍길동\n"
+        "임 차 인\n"
+        "성 명\n"
+        "김임차"
+    )
+    registry = _pdf_bytes(
+        "등기사항전부증명서\n"
+        "소재지: 서울특별시 가온구 나래로 12, 305동 1201호\n"
+        "소유자: 홍길동"
+    )
+
+    extraction = extract_documents(contract, "contract.pdf", registry, "registry.pdf")
+    fields = extraction["contract"]["fields"]
+
+    assert fields["landlord_name"] == "홍길동"
+    assert fields["property_address"] == "서울특별시 가온구 나래로 12, 305동 1201호"

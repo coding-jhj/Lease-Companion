@@ -132,3 +132,218 @@ def test_structure_falls_back_to_regex(monkeypatch):
     result = pipe._structure(text, "contract")
     assert result["document_type"] == "contract"
     assert result["fields"]["landlord_name"] == "이정훈"  # 정규식 파서 폴백 동작
+
+
+def test_registry_parser_keeps_only_latest_full_transfer_owner():
+    text = """등기사항전부증명서
+부동산의 표시: 서울특별시 가온구 나래로 1
+【갑구】 소유권에 관한 사항
+순위번호 1 소유권보존
+  소유자: 임안전
+순위번호 2 소유권이전
+  소유자: 권이름
+순위번호 3 소유권이전
+  소유자: 오든든
+【을구】 소유권 이외의 권리에 관한 사항
+(기재 사항 없음)
+"""
+    result = parse_registry(text)
+    assert result.fields["owner_names"] == ["오든든"]
+    assert result.warnings == []
+    by_id = {
+        item.rule_id: item
+        for item in run_rules({"landlord_name": "권이름"}, result.fields)
+    }
+    assert by_id["R01"].status == "불일치"
+
+
+def test_registry_parser_restores_previous_owner_when_latest_transfer_is_cancelled():
+    text = """등기사항전부증명서
+부동산의 표시: 서울특별시 가온구 나래로 1
+【갑구】 소유권에 관한 사항
+순위번호 1 소유권보존
+  소유자: 임안전
+순위번호 2 소유권이전
+  소유자: 권이름
+순위번호 3 소유권이전
+  소유자: 오든든
+순위번호 4 3번 소유권이전등기 말소
+【을구】 소유권 이외의 권리에 관한 사항
+(기재 사항 없음)
+"""
+    assert parse_registry(text).fields["owner_names"] == ["권이름"]
+
+
+def test_registry_parser_preserves_joint_owners_and_explicit_partial_transfer():
+    text = """등기사항전부증명서
+부동산의 표시: 서울특별시 가온구 나래로 1
+【갑구】 소유권에 관한 사항
+순위번호 1 소유권보존
+  소유자: 김하나 지분 2분의 1
+  소유자: 이두리 지분 2분의 1
+순위번호 2 소유권일부이전
+  공유자: 김하나 지분 2분의 1 중 4분의 1 이전
+  소유자: 박세모 지분 4분의 1
+【을구】 소유권 이외의 권리에 관한 사항
+(기재 사항 없음)
+"""
+    result = parse_registry(text)
+    assert result.fields["owner_names"] == ["김하나", "이두리", "박세모"]
+    assert result.warnings == []
+
+
+def test_registry_parser_applies_explicit_owner_name_correction():
+    text = """등기사항전부증명서
+부동산의 표시: 서울특별시 가온구 나래로 1
+【갑구】 소유권에 관한 사항
+순위번호 1 소유권보존
+  소유자: 김하나
+순위번호 2 등기명의인표시경정
+  소유자 김하나를 김하늘로 경정
+【을구】 소유권 이외의 권리에 관한 사항
+(기재 사항 없음)
+"""
+    assert parse_registry(text).fields["owner_names"] == ["김하늘"]
+
+def test_registry_parser_does_not_guess_ambiguous_partial_transfer():
+    text = """등기사항전부증명서
+부동산의 표시: 서울특별시 가온구 나래로 1
+【갑구】 소유권에 관한 사항
+순위번호 1 소유권보존
+  소유자: 김하나
+순위번호 2 소유권일부이전
+  소유자: 박세모
+【을구】 소유권 이외의 권리에 관한 사항
+(기재 사항 없음)
+"""
+    result = parse_registry(text)
+    assert result.fields["owner_names"] is None
+    assert result.warnings
+
+
+def test_registry_parser_does_not_treat_unordered_history_as_joint_ownership():
+    text = """등기사항전부증명서
+부동산의 표시: 서울특별시 가온구 나래로 1
+【갑구】 소유권에 관한 사항
+소유자: 과거주인
+소유자: 현재주인
+【을구】 소유권 이외의 권리에 관한 사항
+(기재 사항 없음)
+"""
+    result = parse_registry(text)
+    assert result.fields["owner_names"] is None
+    assert result.warnings
+
+
+def test_table_labels_extract_requested_contract_and_registry_fields():
+    contract = """주택임대차계약서
+소 재 지
+(도로명주소) 가상광역시 맑음구 새싹로 136
+임 대 인
+주 소
+가상광역시 맑음구 새싹로 136
+성 명
+안이름 (서명 또는 날인)
+임 차 인
+성 명
+김임차
+입금 계좌
+예 금 주
+안이름
+"""
+    registry = """등기사항전부증명서
+[표제부]
+표시번호
+접수
+소재지번, 건물명칭 및 번호
+(도로명주소) 가상광역시 맑음구 새싹로 136
+[갑구]
+소유자: 안이름
+"""
+
+    contract_fields = parse_contract(contract).fields
+    registry_fields = parse_registry(registry).fields
+
+    assert contract_fields["landlord_name"] == "안이름"
+    assert contract_fields["account_holder"] == "안이름"
+    assert registry_fields["property_address"] == "가상광역시 맑음구 새싹로 136"
+
+
+def test_registry_address_excludes_adjacent_building_details_and_notes():
+    registry = """등기사항전부증명서
+[표제부]
+소재지번, 건물명칭 및 번호
+(도로명주소) 가상광역시 맑음구 새싹로 136 건물내역 철근콘크리트조 84.97㎡ 등기원인 및 기타사항 2020년 1월 2일
+[갑구]
+소유자: 안이름
+"""
+
+    fields = parse_registry(registry).fields
+
+    assert fields["property_address"] == "가상광역시 맑음구 새싹로 136"
+
+
+def test_contract_address_excludes_location_and_road_address_labels():
+    contract = """주택임대차계약서
+소 재 지 [도로명주소] 가상광역시 안전구 이룸로 18층 공동주택 138
+임 대 인
+성 명 안이름
+"""
+
+    fields = parse_contract(contract).fields
+
+    assert fields["property_address"] == "가상광역시 안전구 이룸로 18층 공동주택 138"
+
+
+def test_registry_address_excludes_document_number_and_effect_cell():
+    registry = """등기사항전부증명서 [표제부]
+소재지번, 건물명칭 및 번호
+제 19402호 [도로명주소] 가상광역시 안전구 이룸로 18층 공동주택 138 1층 258.62효력
+[갑구]
+소유자: 안이름
+"""
+
+    fields = parse_registry(registry).fields
+
+    assert fields["property_address"] == "가상광역시 안전구 이룸로 18층 공동주택 138"
+
+
+def test_registry_address_stops_before_unlabeled_building_structure():
+    registry = """등기사항전부증명서
+[표제부]
+소재지번, 건물명칭 및 번호
+(도로명주소) 가상광역시 맑음구 새싹로 136 철근콘크리트조 84.97㎡
+[갑구]
+소유자: 안이름
+"""
+
+    fields = parse_registry(registry).fields
+
+    assert fields["property_address"] == "가상광역시 맑음구 새싹로 136"
+
+
+def test_contract_extracts_landlord_name_separated_from_signature_cell():
+    contract = """주택임대차계약서
+임
+대
+인
+주 소
+가상광역시 한빛구 다음로 265
+주민등록번호
+000000-0000000
+전 화
+010-0000-0000
+성 명
+(서명 또는 인)
+안 이 름
+임
+차
+인
+성 명
+김 임 차
+"""
+
+    fields = parse_contract(contract).fields
+
+    assert fields["landlord_name"] == "안이름"
+    assert fields["account_holder"] is None
