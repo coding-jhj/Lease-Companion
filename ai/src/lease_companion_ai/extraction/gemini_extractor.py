@@ -13,6 +13,7 @@ ponytail: 스캔 문서는 (OCR→텍스트)+(구조화) 2콜이 된다. VLM 이
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -82,17 +83,25 @@ def _extract(text: str, prompt_file: str, schema: type[BaseModel]) -> dict:
     from google.genai import errors, types
 
     prompt = (_PROMPTS / prompt_file).read_text(encoding="utf-8").replace("{text}", text)
-    try:
-        resp = client.models.generate_content(
-            model=_MODEL,
-            contents=[prompt],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=schema,
-            ),
-        )
-    except errors.APIError as exc:
-        raise GeminiExtractError(f"구조화 추출 API 오류: {exc}") from exc
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=schema,
+        # 고정 스키마 필드 추출에 thinking 불필요 — 끄면 지연 대폭 감소(OCR 실측 5.8배).
+        # 품질은 E2E 필드 비교로 확인. 복잡 문서에서 필드 오추출이 늘면 이 줄만 제거.
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
+    # 503 등 일시 장애는 재시도(ocr.py와 동일 패턴). 재시도 없이 바로 정규식 폴백으로
+    # 떨어지면 스캔 문서에서 쓰레기 필드가 나온다 — 폴백은 최후, 재시도가 먼저다.
+    for attempt in range(4):
+        try:
+            resp = client.models.generate_content(model=_MODEL, contents=[prompt], config=config)
+            break
+        except errors.ServerError as exc:
+            if attempt == 3:
+                raise GeminiExtractError(f"구조화 추출 API 호출 실패: {exc}") from exc
+            time.sleep(5 * (attempt + 1))
+        except errors.APIError as exc:  # 4xx·쿼터 등 비재시도
+            raise GeminiExtractError(f"구조화 추출 API 오류: {exc}") from exc
 
     parsed = resp.parsed
     if isinstance(parsed, schema):

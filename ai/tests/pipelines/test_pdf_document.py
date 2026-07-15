@@ -1,8 +1,26 @@
 import fitz
+import pytest
 
+from lease_companion_ai.extraction.gemini_extractor import GeminiExtractError
 from lease_companion_ai.ingestion import pdf_text
 from lease_companion_ai.ingestion.pdf_text import extract_document_text
+from lease_companion_ai.pipelines import minimum_mvp as pipe
 from lease_companion_ai.pipelines.minimum_mvp import extract_documents
+
+# 디지털 판정 임계값(100자/쪽)을 넘기는 본문 채움. 실제 계약서·등기부는 쪽당 수천 자 —
+# 한두 줄짜리 픽스처는 실문서가 아니라 스캔본 부스러기로 오판된다. 파서 키워드(소유자·
+# 임대인·보증금·근저당 등)가 없는 중립 문장만 쓴다.
+_FILLER = "\n" + ("본 문서는 교육 및 실습 목적의 가상 자료로서 어떠한 법적 효력도 발생하지 아니한다.\n" * 10)
+
+
+@pytest.fixture(autouse=True)
+def _regex_parser_only(monkeypatch):
+    """Gemini 구조화 차단 → 정규식 파서 경로 고정. API 키가 있어도 테스트가 실호출·과금·비결정성을 만들지 않는다."""
+    def _no_api(_text):
+        raise GeminiExtractError("test: gemini disabled")
+
+    monkeypatch.setattr(pipe, "extract_contract_fields", _no_api)
+    monkeypatch.setattr(pipe, "extract_registry_fields", _no_api)
 
 
 def _pdf_bytes(text: str) -> bytes:
@@ -32,6 +50,7 @@ def test_digital_pdf_text_layer_is_extracted_end_to_end():
         "등기사항전부증명서\n"
         "소재지: 서울특별시 가온구 나래로 12, 305동 1201호\n"
         "소유자: 이정훈\n근저당권설정\n열람일시: 2026년 7월 28일"
+        + _FILLER
     )
 
     extraction = extract_documents(contract, "contract.pdf", registry, "registry.pdf")
@@ -46,7 +65,7 @@ def test_digital_pdf_text_layer_is_extracted_end_to_end():
 
 
 def test_one_document_read_failure_does_not_block_the_other():
-    contract = _pdf_bytes("주택임대차계약서\n임대인: 이정훈 (서명)")
+    contract = _pdf_bytes("주택임대차계약서\n임대인: 이정훈 (서명)" + _FILLER)
 
     extraction = extract_documents(contract, "contract.pdf", b"%not a valid pdf%", "registry.pdf")
 
@@ -119,11 +138,13 @@ def test_table_style_contract_extracts_landlord_and_property_address():
         "임 차 인\n"
         "성 명\n"
         "김임차"
+        + _FILLER
     )
     registry = _pdf_bytes(
         "등기사항전부증명서\n"
         "소재지: 서울특별시 가온구 나래로 12, 305동 1201호\n"
         "소유자: 홍길동"
+        + _FILLER
     )
 
     extraction = extract_documents(contract, "contract.pdf", registry, "registry.pdf")
