@@ -55,12 +55,17 @@ def _ocr_images(images: list[bytes], mime: str) -> str:
     client = _client()  # 가드된 import 먼저 — google-genai 없으면 여기서 OcrError
     from google.genai import errors, types
 
+    # 전사(옮겨쓰기)는 추론이 필요 없다 — thinking 끄면 호출당 15초→2.6초(실측),
+    # 숫자 토큰 완전 동일. 켜진 기본값은 순수 시간 낭비.
+    config = types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_budget=0))
+
     def _one_page(idx: int, img: bytes) -> str:
         for attempt in range(4):
             try:
                 resp = client.models.generate_content(
                     model=_MODEL,
                     contents=[_PROMPT, types.Part.from_bytes(data=img, mime_type=mime)],
+                    config=config,
                 )
                 return resp.text or ""
             except errors.ServerError as exc:  # 503 과부하 등 일시적 → 백오프 재시도
