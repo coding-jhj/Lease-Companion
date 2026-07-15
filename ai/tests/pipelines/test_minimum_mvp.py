@@ -1,10 +1,48 @@
 from pathlib import Path
 
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
+from lease_companion_ai.pipelines.minimum_mvp import extract_documents
 from lease_companion_ai.rules.minimum_mvp import run_rules
 
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_swapped_documents_are_flagged_with_guidance():
+    # 계약서 자리에 등기부, 등기부 자리에 계약서를 넣은 경우 — 빈 추출값 대신 안내를 낸다.
+    contract = (ROOT / "data/sample/contracts/contract_001.txt").read_bytes()
+    registry = (ROOT / "data/sample/registry-records/registry_001.txt").read_bytes()
+
+    out = extract_documents(registry, "registry.txt", contract, "contract.txt")
+
+    assert out["contract"]["read_ok"] is False
+    assert "등기사항증명서" in out["contract"]["error"] and "확인" in out["contract"]["error"]
+    assert out["registry"]["read_ok"] is False
+    assert "계약서" in out["registry"]["error"]
+
+
+def test_swapped_registry_with_spaced_pdf_title_is_flagged_in_contract_slot():
+    # 실제 PDF 텍스트 레이어는 제목이 "등 기 사 항 전 부 증 명 서"처럼 글자 간 공백으로 나온다.
+    registry_text = """등 기 사 항 전 부 증 명 서
+(말소사항 포함)갑구 소유권에 관한 사항
+1 소유권보존 소유자 윤든든
+""".encode("utf-8")
+    contract = (ROOT / "data/sample/contracts/contract_001.txt").read_bytes()
+
+    out = extract_documents(registry_text, "registry.txt", contract, "contract.txt")
+
+    assert out["contract"]["read_ok"] is False
+    assert "등기사항증명서" in out["contract"]["error"]
+
+
+def test_correct_documents_are_not_flagged_as_swapped():
+    contract = (ROOT / "data/sample/contracts/contract_001.txt").read_bytes()
+    registry = (ROOT / "data/sample/registry-records/registry_001.txt").read_bytes()
+
+    out = extract_documents(contract, "contract.txt", registry, "registry.txt")
+
+    assert out["contract"]["read_ok"] is True
+    assert out["registry"]["read_ok"] is True
 
 
 def test_sample_case_001_extracts_core_fields():
