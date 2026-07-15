@@ -15,5 +15,6 @@
 
 ## 현재 상태 / TODO
 
-- `.gitkeep`만 존재. 스키마 없음.
-- TODO: `document-fields.md`를 JSON 스키마로 확정, 판정 리포트 스키마 작성.
+- `contract_schema.json` / `registry_schema.json` — 계약서·등기사항증명서 추출 필드 스키마.
+- `minimum-mvp-extraction-v1.schema.json` — 최소 MVP 추출값 확인·수정 스키마(field_name enum 12개, verification_status: unverified·confirmed·corrected).
+- TODO: 확인설명서·건축물대장 스키마, 판정 리포트 스키마 작성.

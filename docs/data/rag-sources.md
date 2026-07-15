@@ -30,7 +30,11 @@
 - 원본(`data/rag/sources`)·청크(`data/rag/chunks`)·메타데이터(`data/rag/metadata`)·검색 평가(`data/rag/evaluation`)를 분리한다.
 - 근거가 없으면 판정을 유지하되 설명을 `근거 확인 필요`로 반환한다.
 
+## 확정 (2026-07-14 선정표)
+
+- 임베딩: gemini-embedding-001 + BM25 하이브리드, 재랭킹: Cohere rerank-v4.0-pro. (`../ai/model-routing.md`)
+
 ## 미정 (TODO)
 
-- 청킹 전략, 임베딩 모델, 벡터 저장소 → 임의 확정 금지.
-- 실제 출처 목록·조문 매핑(판정 근거 유형 ↔ 자료).
+- 청킹 전략, 벡터 저장소 → 임의 확정 금지.
+- 실제 출처 목록·조문 매핑(판정 근거 유형 ↔ 자료). 1차 후보: `data/rules/source_inventory.csv` 16개 출처(시행일·URL 일부 확인 필요).

@@ -52,6 +52,7 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
     provisional = registry.get("provisional_seizure_present")
     trust = registry.get("trust_present")
     issue_date = registry.get("issue_date")
+    rights_change = contract.get("rights_change_clause_present")
     return {
         "R01": "확인 불가" if not landlord or not owners else "일치" if landlord in owners else "불일치",
         "R02": "확인 불가" if not contract_address or not registry_address else "일치" if contract_address == registry_address else "불일치",
@@ -62,7 +63,7 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
         "R07": "확인 불가" if not registry else "확인 필요" if issue_date else "확인 불가",
         "R08": contract.get("deposit_return_condition") or "확인 필요",
         "R09": contract.get("repair_responsibility") or "확인 필요",
-        "R10": "명확" if contract.get("rights_change_clause_present") else "미기재",
+        "R10": "명확" if rights_change else "미기재" if rights_change is False else "확인 불가",
     }
 
 

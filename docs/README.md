@@ -10,20 +10,19 @@
 
 ```
 planning/       service-overview.md user-flow.md poc-scope.md mvp-scope.md
+                differentiation.md minimum-mvp-v1.md minimum-mvp-runbook.md
 architecture/   system-architecture.md ai-pipeline.md data-flow.md deployment.md
 api/            api-overview.md error-format.md
-backend/        auth-and-persistence.md(예정)
+backend/        auth-and-persistence.md
 data/           document-fields.md rule-definition.md rag-sources.md privacy-policy.md
-                judgment-spec.md(예정) training-dataset.md(예정)
+                judgment-spec.md training-dataset.md
 ai/             extraction-design.md rule-engine-design.md rag-design.md
                 prompt-management.md evaluation-plan.md
-                local-model-plan.md(예정) fine-tuning-plan.md(예정)
-                model-routing.md(예정) evaluation-matrix.md(예정)
+                local-model-plan.md fine-tuning-plan.md
+                model-routing.md evaluation-matrix.md
 decisions/      기술·기획 결정 기록
 meetings/       회의록
 ```
-
-`(예정)` 표시 문서는 아직 작성 전이다. 계획된 문서 지도이며 파일 존재를 뜻하지 않는다.
 
 ## 저장해야 하는 파일
 
@@ -41,4 +40,5 @@ meetings/       회의록
 
 ## 현재 상태
 
-- 초기 설계 문서 작성됨(확정 범위만). 미정 항목은 각 문서에서 TODO로 표시.
+- 위 지도 문서 전부 작성됨. 미정 항목은 각 문서에서 TODO로 표시.
+- 판정 단일 기준: `data/judgment-spec.md`. 모델 라우팅 확정표: `ai/model-routing.md`. 최소 MVP 실행 기준: `planning/minimum-mvp-runbook.md`.

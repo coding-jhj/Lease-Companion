@@ -130,7 +130,7 @@ http://127.0.0.1:8000
 - 계약서: `data/sample/contracts/contract_001.txt`
 - 등기사항증명서: `data/sample/registry-records/registry_001.txt`
 
-텍스트 레이어가 있는 PDF와 UTF-8 TXT를 지원한다. 스캔·사진 PDF OCR, 회원·DB 저장, 상용 LLM 연동은 아직 포함하지 않는다. 상세한 실행 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
+텍스트 레이어가 있는 PDF·UTF-8 TXT와 스캔·사진 PDF(OCR — Gemini VLM, `GEMINI_API_KEY` 필요)를 지원한다. 구조화는 상용 LLM(Gemini 3.5 Flash)이 기본이며 키가 없거나 호출 실패 시 정규식 파서로 폴백한다. 회원·DB 저장은 아직 포함하지 않는다. 상세한 실행 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
 
 전체 MVP의 프론트엔드 스택·DB·인증 방식은 여전히 미정(TODO)이다. 환경변수가 필요한 후속 기능은 `.env.example`을 복사해 `.env`로 사용한다.
 
@@ -144,6 +144,6 @@ http://127.0.0.1:8000
 
 ## 현재 프로젝트 상태
 
-구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
+구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
 
-회원·계약 건 영속 저장·전체 12개 판정·OCR·상용 LLM·정식 프론트엔드는 아직 구현되지 않았다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
+회원·계약 건 영속 저장·전체 12개 판정·RAG·생성(GPT-5.6 Sol)·정식 프론트엔드는 아직 구현되지 않았다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.

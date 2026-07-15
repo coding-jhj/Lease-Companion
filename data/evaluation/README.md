@@ -24,5 +24,6 @@
 
 ## 현재 상태 / TODO
 
-- `.gitkeep`만 존재. 평가 데이터 없음.
-- TODO: 단계별 지표·정답셋 정의(`docs/ai/evaluation-plan.md` 기준), 샘플 `expected-results` 연동.
+- `end-to-end/` — held-out test 10쌍(TEST-001~010: 계약서·등기부·건축물대장 txt) + 최종 정답셋 3종(`final_testset_extraction.jsonl`·`final_testset_rule.jsonl`·`final_testset_rag.jsonl`). dev(`../sample/`)와 엔티티·표기 스타일 분리.
+- `extraction/` — `eval_extraction.py` 추출 평가 스크립트.
+- TODO: rules·retrieval·generation·routing 단계별 평가셋 작성(`docs/ai/evaluation-plan.md` 기준).
