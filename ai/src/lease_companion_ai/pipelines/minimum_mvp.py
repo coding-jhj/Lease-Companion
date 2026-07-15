@@ -49,10 +49,14 @@ def extract_documents(contract_content: bytes, contract_filename: str, registry_
     for content in (contract_content, registry_content):
         if len(content) > MAX_FILE_SIZE:
             raise ValueError("파일당 최대 크기는 최소 MVP에서 10MB입니다.")
-    return {
-        "contract": _read_and_structure(contract_content, contract_filename, "contract", force_ocr),
-        "registry": _read_and_structure(registry_content, registry_filename, "registry", force_ocr),
-    }
+    # 두 문서는 독립 → 동시 처리. OCR·구조화가 각각 수십 초짜리 API 호출이라
+    # 순차 실행은 스캔 입력에서 체감 2배 느리다. 실패 격리는 _read_and_structure 내부 그대로.
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        contract_job = pool.submit(_read_and_structure, contract_content, contract_filename, "contract", force_ocr)
+        registry_job = pool.submit(_read_and_structure, registry_content, registry_filename, "registry", force_ocr)
+        return {"contract": contract_job.result(), "registry": registry_job.result()}
 
 
 def analyze_verified_fields(contract_fields: dict[str, Any], registry_fields: dict[str, Any]) -> list[dict[str, Any]]:

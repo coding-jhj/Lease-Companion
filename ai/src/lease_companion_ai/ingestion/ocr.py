@@ -55,23 +55,31 @@ def _ocr_images(images: list[bytes], mime: str) -> str:
     client = _client()  # 가드된 import 먼저 — google-genai 없으면 여기서 OcrError
     from google.genai import errors, types
 
-    out = []
-    for idx, img in enumerate(images):
+    def _one_page(idx: int, img: bytes) -> str:
         for attempt in range(4):
             try:
                 resp = client.models.generate_content(
                     model=_MODEL,
                     contents=[_PROMPT, types.Part.from_bytes(data=img, mime_type=mime)],
                 )
-                out.append(resp.text or "")
-                break
+                return resp.text or ""
             except errors.ServerError as exc:  # 503 과부하 등 일시적 → 백오프 재시도
                 if attempt == 3:
                     raise OcrError(f"OCR API 호출 실패(p{idx + 1}): {exc}") from exc
                 time.sleep(5 * (attempt + 1))
             except errors.APIError as exc:  # 4xx·쿼터 등 비재시도 → OcrError로 변환(500 방지)
                 raise OcrError(f"OCR API 오류(p{idx + 1}): {exc}") from exc
-    return "\n".join(out)
+        raise OcrError(f"OCR 재시도 소진(p{idx + 1})")  # 도달 불가 — 타입 체커용
+
+    if len(images) == 1:
+        return _one_page(0, images[0])
+    # 페이지는 서로 독립 → 동시 호출. 지연의 대부분이 Gemini 출력 생성 시간이라
+    # 순차 실행은 페이지 수만큼 배로 느리다(3쪽 실측 ~55초 → 병렬 ~1쪽 시간).
+    # ponytail: 상한 8 — 대형 PDF가 쿼터(RPM)를 한 번에 태우는 것 방지. 429가 보이면 낮춘다.
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=min(len(images), 8)) as pool:
+        return "\n".join(pool.map(_one_page, range(len(images)), images))  # map = 페이지 순서 보존
 
 
 def ocr_document(content: bytes, filename: str) -> str:
