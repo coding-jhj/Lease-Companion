@@ -94,4 +94,5 @@ tests/               api/services/repositories 테스트
 
 ## 현재 상태
 
-- `main.py` 헬스체크 스텁만 존재. 엔드포인트·서비스·저장소·모델·워커 미구현.
+- `main.py`(헬스체크 스텁)와 `mvp_app.py`(최소 MVP 데모 앱 — 정적 UI + `/api/minimum-mvp/extract`·`/analyze` 라우트, `services/minimum_mvp.py` 경유 `ai/` 호출) 병존.
+- 회원·계약 건 영속 저장·저장소·모델·워커는 미구현. 실행 방법은 루트 README·`docs/planning/minimum-mvp-runbook.md` 참조.

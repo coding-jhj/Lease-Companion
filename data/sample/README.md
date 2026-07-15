@@ -21,5 +21,6 @@
 
 ## 현재 상태 / TODO
 
-- `.gitkeep`만 존재. 실제 샘플 없음.
-- TODO: 계약 유형별(전세/보증부 월세/일반 월세) 비식별 샘플 세트, 매칭 `expected-results` 작성.
+- 합성 dev 세트 34쌍 커밋됨: `contracts/`·`registry-records/` 각 34건(파일럿 001~005 + 생성 CASE-006~034, `../gen_dataset.py`로 생성), `expected-results/`에 goldset 3종(`extraction_goldset.jsonl`·`rule_goldset.jsonl`·`rag_goldset.jsonl`).
+- held-out test 10쌍은 `../evaluation/end-to-end/`에 분리(엔티티·표기 스타일 dev와 분리).
+- TODO: 확인설명서·건축물대장 샘플 확충, Phase 4 검수.

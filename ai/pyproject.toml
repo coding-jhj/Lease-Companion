@@ -3,9 +3,13 @@ name = "lease-companion-ai"
 version = "0.0.0"
 description = "슬기로운 계약생활 AI 처리 계층 (추출·정규화·규칙·RAG·생성·guardrail)"
 requires-python = ">=3.10,<3.11"
-# TODO: 의존성 미확정. LLM 제공자·임베딩·벡터 저장소 확정 후 추가.
-#       (특정 LLM SDK를 임의로 추가하지 않는다.)
-dependencies = []
+# 최소 MVP 실사용 의존성 (2026-07-14 선정표 기준: Gemini 3.5 Flash 구조화·OCR).
+# TODO: 임베딩·벡터 저장소·생성(GPT-5.6 Sol) 의존성은 해당 기능 구현 시 추가.
+dependencies = [
+    "PyMuPDF>=1.24,<2",
+    "google-genai>=2,<3",
+    "pydantic>=2,<3",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
