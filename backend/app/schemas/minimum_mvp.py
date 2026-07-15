@@ -15,6 +15,9 @@ class EncodedDocument(BaseModel):
 class ExtractionRequest(BaseModel):
     contract: EncodedDocument
     registry: EncodedDocument
+    # 데모·OCR 충실도 비교용. 켜면 디지털 PDF도 이미지로 렌더링해 OCR로 읽는다.
+    # ⚠️ 원문 이미지가 PII 비식별 전에 외부 API로 나간다 — 평시 기본값 유지.
+    force_ocr: bool = False
 
 
 class ExtractionResponse(BaseModel):

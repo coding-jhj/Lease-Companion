@@ -10,6 +10,9 @@ main { width:min(900px,calc(100% - 28px)); margin:-30px auto 80px; }
 .step { display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:var(--green); color:white; font-weight:800; }
 h2 { margin:3px 0 8px; font-size:1.35rem; }.hint { margin:0 0 20px; color:var(--muted); line-height:1.55; }
 .upload-grid,.field-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.force-ocr { display:flex; align-items:center; gap:8px; margin-top:14px; font-weight:600; font-size:.9rem; }
+.force-ocr input { width:auto; margin:0; }
+.force-ocr .warn { color:var(--muted); font-weight:400; font-size:.76rem; }
 label { display:block; font-weight:700; } label span { color:var(--green); font-size:.76rem; }
 input[type="file"],input[type="text"],select { width:100%; margin-top:8px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fbfcfa; color:var(--ink); }
 button { margin-top:18px; padding:13px 18px; border:0; border-radius:12px; background:var(--green); color:white; font-size:1rem; font-weight:800; cursor:pointer; }

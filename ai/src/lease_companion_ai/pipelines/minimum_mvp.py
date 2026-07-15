@@ -33,10 +33,10 @@ def _structure(text: str, doc_type: str) -> dict[str, Any]:
         return parser(text).to_dict()
 
 
-def _read_and_structure(content: bytes, filename: str, doc_type: str) -> dict[str, Any]:
+def _read_and_structure(content: bytes, filename: str, doc_type: str, force_ocr: bool = False) -> dict[str, Any]:
     """문서 1건 읽기·구조화. 읽기/OCR 실패를 개별 격리 — 한 문서 실패가 다른 문서를 막지 않는다."""
     try:
-        text, method = extract_document_text(content, filename)
+        text, method = extract_document_text(content, filename, force_ocr=force_ocr)
     except DocumentReadError as exc:
         return {"read_ok": False, "read_method": None, "error": str(exc)}
     doc = _structure(text, doc_type)
@@ -45,13 +45,13 @@ def _read_and_structure(content: bytes, filename: str, doc_type: str) -> dict[st
     return doc
 
 
-def extract_documents(contract_content: bytes, contract_filename: str, registry_content: bytes, registry_filename: str) -> dict[str, Any]:
+def extract_documents(contract_content: bytes, contract_filename: str, registry_content: bytes, registry_filename: str, force_ocr: bool = False) -> dict[str, Any]:
     for content in (contract_content, registry_content):
         if len(content) > MAX_FILE_SIZE:
             raise ValueError("파일당 최대 크기는 최소 MVP에서 10MB입니다.")
     return {
-        "contract": _read_and_structure(contract_content, contract_filename, "contract"),
-        "registry": _read_and_structure(registry_content, registry_filename, "registry"),
+        "contract": _read_and_structure(contract_content, contract_filename, "contract", force_ocr),
+        "registry": _read_and_structure(registry_content, registry_filename, "registry", force_ocr),
     }
 
 

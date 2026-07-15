@@ -27,6 +27,7 @@ def extract(request: Any) -> dict[str, Any]:
         return extract_documents(
             _decode(request.contract.content_base64), request.contract.filename,
             _decode(request.registry.content_base64), request.registry.filename,
+            force_ocr=request.force_ocr,
         )
     except ValueError as exc:
         raise MinimumMvpInputError(str(exc)) from exc
