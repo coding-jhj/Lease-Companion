@@ -28,6 +28,14 @@ _ADDRESS_TRAILING_FIELD = re.compile(
     r"구조[·ㆍ]?용도|면적\s*[:：]?|철근콘크리트|벽돌조|블록조|목조|"
     r"시멘트|세멘|\d+(?:\.\d+)?\s*㎡|20\d{2}\s*년))"
 )
+_ADDRESS_LEADING_LABEL = re.compile(
+    r"^\s*(?:(?:소\s*재\s*지|목적물\s*주소)\s*[:：]?\s*)?"
+    r"(?:[\[(]\s*도로명주소\s*[\])]|도로명주소\s*[:：]?)\s*"
+)
+_REGISTRY_DOCUMENT_NUMBER = re.compile(r"^\s*제\s*\d+\s*호\s*")
+_REGISTRY_TRAILING_EFFECT = re.compile(
+    r"\s+\d+\s*층\s+\d+(?:\.\d+)?(?:\s*㎡)?\s*효력(?:\s.*)?$"
+)
 
 
 def _unreadable(value: str | None) -> bool:
@@ -65,8 +73,12 @@ def _looks_like_address(value: str) -> bool:
     )
 
 def _clean_address_candidate(value: str) -> str:
-    """PDF 표의 같은 행에 붙은 건물내역·기타사항을 주소에서 제외한다."""
-    return _ADDRESS_TRAILING_FIELD.split(value, maxsplit=1)[0].strip(" \t:：")
+    """PDF 표의 같은 행에 붙은 문서번호·표시 라벨·기타 셀을 주소에서 제외한다."""
+    value = _REGISTRY_DOCUMENT_NUMBER.sub("", value, count=1)
+    value = _ADDRESS_LEADING_LABEL.sub("", value, count=1)
+    value = _ADDRESS_TRAILING_FIELD.split(value, maxsplit=1)[0]
+    value = _REGISTRY_TRAILING_EFFECT.sub("", value, count=1)
+    return value.strip(" \t:：")
 
 
 

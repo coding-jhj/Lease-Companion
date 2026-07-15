@@ -227,7 +227,7 @@ def test_table_labels_extract_requested_contract_and_registry_fields():
 
     assert contract_fields["landlord_name"] == "안이름"
     assert contract_fields["account_holder"] == "안이름"
-    assert registry_fields["property_address"] == "(도로명주소) 가상광역시 맑음구 새싹로 136"
+    assert registry_fields["property_address"] == "가상광역시 맑음구 새싹로 136"
 
 
 def test_registry_address_excludes_adjacent_building_details_and_notes():
@@ -241,7 +241,32 @@ def test_registry_address_excludes_adjacent_building_details_and_notes():
 
     fields = parse_registry(registry).fields
 
-    assert fields["property_address"] == "(도로명주소) 가상광역시 맑음구 새싹로 136"
+    assert fields["property_address"] == "가상광역시 맑음구 새싹로 136"
+
+
+def test_contract_address_excludes_location_and_road_address_labels():
+    contract = """주택임대차계약서
+소 재 지 [도로명주소] 가상광역시 안전구 이룸로 18층 공동주택 138
+임 대 인
+성 명 안이름
+"""
+
+    fields = parse_contract(contract).fields
+
+    assert fields["property_address"] == "가상광역시 안전구 이룸로 18층 공동주택 138"
+
+
+def test_registry_address_excludes_document_number_and_effect_cell():
+    registry = """등기사항전부증명서 [표제부]
+소재지번, 건물명칭 및 번호
+제 19402호 [도로명주소] 가상광역시 안전구 이룸로 18층 공동주택 138 1층 258.62효력
+[갑구]
+소유자: 안이름
+"""
+
+    fields = parse_registry(registry).fields
+
+    assert fields["property_address"] == "가상광역시 안전구 이룸로 18층 공동주택 138"
 
 
 def test_registry_address_stops_before_unlabeled_building_structure():
@@ -255,7 +280,7 @@ def test_registry_address_stops_before_unlabeled_building_structure():
 
     fields = parse_registry(registry).fields
 
-    assert fields["property_address"] == "(도로명주소) 가상광역시 맑음구 새싹로 136"
+    assert fields["property_address"] == "가상광역시 맑음구 새싹로 136"
 
 
 def test_contract_extracts_landlord_name_separated_from_signature_cell():
