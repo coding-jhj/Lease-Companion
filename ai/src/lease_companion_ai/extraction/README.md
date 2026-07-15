@@ -2,12 +2,12 @@
 
 ## 책임
 
-인식된 문서에서 핵심 필드를 **추출**한다. 상용 LLM(Gemini 3.5 Flash) 멀티모달 추출로 텍스트·표·서식 영역을 처리하고(시각 보조는 OCR PaddleOCR-VL에 통합 — 별도 VLM 단계 없음), 추출 결과를 판정 스키마의 필드에 매핑한다. **판정·정규화는 하지 않는다.**
+인식된 문서에서 핵심 필드를 **추출**한다. 상용 LLM(Gemini 3.5 Flash) 멀티모달 추출로 텍스트·표·서식 영역을 처리하고(시각 보조는 OCR과 동일한 Gemini VLM에 통합 — 별도 VLM 단계 없음), 추출 결과를 판정 스키마의 필드에 매핑한다. **판정·정규화는 하지 않는다.**
 
 ## 하위 구조
 
 - `commercial_llm/` — 상용 LLM 멀티모달 추출 (Gemini 3.5 Flash)
-- `vlm/` — (선정표: VLM은 OCR PaddleOCR-VL에 통합 — 별도 VLM 추출 단계 없음. 이 하위 모듈은 미사용)
+- `vlm/` — (VLM은 OCR과 동일한 Gemini 3.5 Flash에 통합 — 별도 VLM 추출 단계 없음. 이 하위 모듈은 미사용)
 - `field_mapper/` — 추출 결과를 문서별 필드 스키마(`schemas/`)에 매핑
 
 ## 입력
@@ -22,5 +22,5 @@
 
 ## 확정 / TODO
 
-- 확정(2026-07-14 선정표): 추출·구조화=상용 LLM Gemini 3.5 Flash(멀티모달). VLM은 OCR(PaddleOCR-VL)에 통합 — 별도 VLM 모델 없음.
+- 확정(2026-07-14): 추출·구조화=상용 LLM Gemini 3.5 Flash(멀티모달). VLM은 OCR과 동일한 Gemini에 통합 — 별도 VLM 모델 없음.
 - 문서별 필드 스키마 확정(`docs/data/document-fields.md`) 후 `field_mapper/` 구현 (TODO)

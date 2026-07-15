@@ -23,7 +23,7 @@
 
 - 계약서·특약: **필수**
 - 등기사항증명서·중개대상물 확인설명서: **선택**
-- 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js) / 스캔 PDF·사진 OCR(PaddleOCR-VL-1.6, VLM 통합)
+- 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js) / 스캔 PDF·사진 OCR(상용 LLM Gemini 3.5 Flash VLM 통합)
 
 ## 5. 추출값 확인·수정
 

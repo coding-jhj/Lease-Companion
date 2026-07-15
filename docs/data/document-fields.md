@@ -5,7 +5,7 @@
 
 ## 필드 구분 원칙
 
-- **추출값(extracted)**: 문서에서 그대로 읽은 값. 상용 LLM 구조화(Gemini 3.5 Flash)·OCR(PaddleOCR-VL-1.6, VLM 통합)·디지털 PDF 텍스트 추출(PyMuPDF·PDF.js)이 담당한다(선택적으로 로컬 7B 성능비교 실험).
+- **추출값(extracted)**: 문서에서 그대로 읽은 값. 상용 LLM 구조화(Gemini 3.5 Flash)·OCR(상용 LLM Gemini 3.5 Flash VLM 통합)·디지털 PDF 텍스트 추출(PyMuPDF·PDF.js)이 담당한다(선택적으로 로컬 7B 성능비교 실험).
 - **정규화값(normalized)**: 문서 간 비교를 위해 표준형으로 변환한 값(`ai/normalization`).
 - **생성값(generated)**: 설명·질문·행동 등 LLM이 만든 값. 추출값과 절대 섞지 않는다.
 - 근거 부족 필드는 `정보 부족`으로 표기한다. 값을 지어내지 않는다.

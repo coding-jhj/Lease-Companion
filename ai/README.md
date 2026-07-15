@@ -4,12 +4,12 @@
 
 ## 목적
 
-계약 문서를 인식(PDF 직접 추출·OCR PaddleOCR-VL-1.6)해 핵심 필드를 추출·정규화하고, 상용 LLM(Gemini 3.5 Flash)이 조항 유형·불명확성 후보를 구조화한다. Python 규칙 엔진이 문서 내부 판정과 문서 교차검증으로 최종 판정을 내리고, 공식자료 RAG가 근거를 검색한다. 저신뢰 결과 재검토와 쉬운 설명·확인 질문·체크리스트·계약 직후 행동 생성은 상용 LLM(GPT-5.6 Sol)이 담당한다. guardrail이 단정 표현·근거 없는 출력을 차단한다. 로컬 7B 조항 분류는 (선택) 상용 vs 로컬 성능비교 실험으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
+계약 문서를 인식(디지털 PDF 직접 추출·스캔/사진 OCR은 상용 LLM Gemini 3.5 Flash VLM 통합)해 핵심 필드를 추출·정규화하고, 상용 LLM(Gemini 3.5 Flash)이 조항 유형·불명확성 후보를 구조화한다. Python 규칙 엔진이 문서 내부 판정과 문서 교차검증으로 최종 판정을 내리고, 공식자료 RAG가 근거를 검색한다. 저신뢰 결과 재검토와 쉬운 설명·확인 질문·체크리스트·계약 직후 행동 생성은 상용 LLM(GPT-5.6 Sol)이 담당한다. guardrail이 단정 표현·근거 없는 출력을 차단한다. 로컬 7B 조항 분류는 (선택) 상용 vs 로컬 성능비교 실험으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
 
 ## 파이프라인
 
 ```
-문서 입력 → 인식(PDF 직접 추출·OCR PaddleOCR-VL, VLM 통합) → 필드 추출 → 정규화
+문서 입력 → 인식(PDF 직접 추출·OCR Gemini 3.5 Flash VLM 통합) → 필드 추출 → 정규화
   → 사용자 확인·수정
   → 상용 LLM 조항 구조화·불명확성 후보 (Gemini 3.5 Flash)
      ※ (선택) 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외
@@ -35,7 +35,7 @@
 
 ```
 src/lease_companion_ai/
-  ingestion/      문서 인식: PDF 직접 추출(PyMuPDF·PDF.js)·OCR(PaddleOCR-VL, VLM 통합)
+  ingestion/      문서 인식: PDF 직접 추출(PyMuPDF·PDF.js)·OCR(Gemini 3.5 Flash VLM 통합)
   extraction/     인식 결과에서 핵심 필드 추출 (Gemini 3.5 Flash)
   normalization/  추출값 정규화(주소·금액·날짜·이름)
   local_model/    로컬 7B 조항 분류 — (선택) 성능비교 실험, MVP 크리티컬 패스 아님
@@ -80,7 +80,7 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 - 패키지 스캐폴딩 단계. 모듈 구현 없음.
 - 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토) → `providers`/`extraction`/`generation` 구현
-- 확정(2026-07-14): OCR PaddleOCR-VL-1.6(VLM 통합)·디지털 PDF PyMuPDF·PDF.js → `ingestion` 구현
+- 확정(2026-07-14 변경): OCR 상용 LLM Gemini 3.5 Flash VLM 통합·디지털 PDF PyMuPDF → `ingestion` 구현 완료(`ingestion/ocr.py`·`pdf_text.py`). PaddleOCR-VL은 (선택) 비교실험 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`)
 - 확정(2026-07-14): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro → `rag` 구현. 벡터 DB 제품은 미정(TODO)
 - TODO: 로컬 7B 베이스 모델(선택 성능비교 실험 — MVP 크리티컬 패스 아님) → `local_model`/`training` 구현 (`../docs/ai/fine-tuning-plan.md`)
 - TODO: 규칙 스키마 확정(`../docs/data/rule-definition.md`) → `rules` 구현

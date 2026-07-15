@@ -25,7 +25,7 @@
 - 사용자별 계약 건 생성·조회·삭제
 - 계약 단계·계약 상황 입력
 - 계약서·특약 필수 업로드 / 등기사항증명서·중개대상물 확인설명서 선택 업로드
-- 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js), 스캔 PDF·사진 OCR(PaddleOCR-VL-1.6, VLM 통합)
+- 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js), 스캔 PDF·사진 OCR(상용 LLM Gemini 3.5 Flash VLM 통합)
 - 핵심 정보 구조화 + 사용자 추출값 확인·수정
 - 상용 LLM(Gemini 3.5 Flash) 조항 유형·명확성 후보 구조화 (선택: 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외)
 - Python 규칙 엔진 문서 내부 판정과 문서 교차검증 (12개 판정)
@@ -53,5 +53,5 @@ J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../dat
 ## 비고
 
 - 인증 세부 기술·DB 제품·프론트 프레임워크는 미정(TODO). 회원 기능·영속 저장 필요성 자체는 확정.
-- OCR은 PaddleOCR-VL-1.6(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 PaddleOCR-VL에 통합되어 별도 단계 없음. 벡터 DB 제품은 미정(TODO).
+- OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB 제품은 미정(TODO).
 - 파인튜닝 로컬 7B 베이스 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.

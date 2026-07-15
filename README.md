@@ -23,7 +23,7 @@
 - 사용자별 계약 건 생성·조회·삭제
 - 계약 단계·계약 상황 입력
 - 계약서·특약 필수 업로드 / 등기사항증명서·중개대상물 확인설명서 선택 업로드
-- 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js), 스캔 PDF·사진 OCR(PaddleOCR-VL, 표·체크박스·배치 VLM 통합)
+- 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js), 스캔 PDF·사진 OCR(상용 LLM Gemini 3.5 Flash VLM 통합 — 표·체크박스·레이아웃 포함)
 - 핵심 정보 구조화 + 사용자 추출값 확인·수정
 - 상용 LLM(Gemini 3.5 Flash) 기반 조항 유형·명확성 후보 구조화 (로컬 7B는 선택적 성능비교 실험 — MVP 크리티컬 패스 제외)
 - Python 규칙 엔진 문서 내부 판정과 문서 교차검증
@@ -50,7 +50,7 @@
 
 PoC와 MVP는 서로 다른 기능 목록이 아니다. **PoC는 기술 검증 단계**, **MVP는 검증된 기술을 통합한 실제 사용자 서비스**다.
 
-- **PoC**: 샘플 계약서·등기 입력 → PDF·OCR 처리(PaddleOCR-VL) → 추출·정규화 → 상용 LLM 구조화(Gemini 3.5 Flash, 로컬 7B는 선택적 성능비교) → 핵심 판정 6개 → 규칙 교차검증 → RAG → 구조화 JSON → 모델 비교평가. 상세: [docs/planning/poc-scope.md](docs/planning/poc-scope.md)
+- **PoC**: 샘플 계약서·등기 입력 → PDF·OCR 처리(디지털 PyMuPDF·PDF.js / 스캔·사진 Gemini 3.5 Flash VLM) → 추출·정규화 → 상용 LLM 구조화(Gemini 3.5 Flash, 로컬 7B는 선택적 성능비교) → 핵심 판정 6개 → 규칙 교차검증 → RAG → 구조화 JSON → 모델 비교평가. 상세: [docs/planning/poc-scope.md](docs/planning/poc-scope.md)
 - **MVP**: 회원·계약 건·업로드·확인 수정·12개 판정·등기 교차검증·근거·질문·행동 리포트·저장 재조회·체크리스트·계약 직후 행동 상태 관리. 상세: [docs/planning/mvp-scope.md](docs/planning/mvp-scope.md)
 
 ## 전체 시스템 구성
@@ -61,7 +61,7 @@ frontend (모바일 웹앱)
 backend (FastAPI: 회원·계약 건·문서·분석·결과 오케스트레이션 + 저장)
    ↓
 ai 파이프라인
-  문서 입력 → 디지털 PDF 추출(PyMuPDF·PDF.js)·OCR(PaddleOCR-VL, VLM 통합) → 필드 추출 → (사용자 확인·수정)
+  문서 입력 → 디지털 PDF 추출(PyMuPDF·PDF.js)·OCR(Gemini 3.5 Flash VLM 통합) → 필드 추출 → (사용자 확인·수정)
   → 상용 LLM 구조화·불명확성 후보(Gemini 3.5 Flash) → Python 규칙 엔진 판정·교차검증
   → RAG 공식 근거 → 저신뢰 결과 상용 LLM 재검토 → 설명·질문·체크리스트·행동 생성
   → guardrail → 저장
@@ -86,7 +86,7 @@ ai 파이프라인
 **확정 (방향)**
 
 - AI: Python. Backend: Python + FastAPI
-- 문서 처리: 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js) + OCR(PaddleOCR-VL, 스캔·사진, VLM 통합)
+- 문서 처리: 디지털 PDF 텍스트 추출(PyMuPDF·PDF.js) + OCR(상용 LLM Gemini 3.5 Flash VLM 통합, 스캔·사진). PaddleOCR-VL은 (선택) 비교실험
 - 조항 유형·명확성 후보 구조화: 상용 LLM(Gemini 3.5 Flash). 파인튜닝한 로컬 7B(QLoRA)는 상용 대비 선택적 성능비교 실험 — MVP 크리티컬 패스 제외
 - 문서 내부 판정·교차검증: Python 규칙 엔진 (최종 판정)
 - 근거 검색: 공식 자료 기반 RAG (gemini-embedding-001 + BM25, Cohere rerank-v4.0-pro)
