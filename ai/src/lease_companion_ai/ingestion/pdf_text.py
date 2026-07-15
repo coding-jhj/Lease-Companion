@@ -28,7 +28,10 @@ def extract_document_text(content: bytes, filename: str) -> str:
 
         try:
             with fitz.open(stream=content, filetype="pdf") as document:
-                text = "\n".join(page.get_text("text") for page in document)
+                text = "\n".join(
+                    page.get_text("text", sort=True)
+                    for page in document
+                )
         except Exception as exc:  # PyMuPDF가 세부 예외를 여러 형식으로 반환한다.
             raise DocumentReadError("유효한 PDF 파일을 읽지 못했습니다.") from exc
     else:

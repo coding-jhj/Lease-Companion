@@ -37,3 +37,29 @@ def test_digital_pdf_text_layer_is_extracted_end_to_end():
     assert extraction["contract"]["fields"]["landlord_name"] == "이정훈"
     assert extraction["registry"]["fields"]["owner_names"] == ["이정훈"]
     assert extraction["registry"]["fields"]["mortgage_present"] is True
+
+
+def test_table_style_contract_extracts_landlord_and_property_address():
+    contract = _pdf_bytes(
+        "주택임대차계약서\n"
+        "임차주택의 표시\n"
+        "소 재 지\n"
+        "서울특별시 가온구 나래로 12, 305동 1201호\n"
+        "임 대 인\n"
+        "성 명\n"
+        "홍길동\n"
+        "임 차 인\n"
+        "성 명\n"
+        "김임차"
+    )
+    registry = _pdf_bytes(
+        "등기사항전부증명서\n"
+        "소재지: 서울특별시 가온구 나래로 12, 305동 1201호\n"
+        "소유자: 홍길동"
+    )
+
+    extraction = extract_documents(contract, "contract.pdf", registry, "registry.pdf")
+    fields = extraction["contract"]["fields"]
+
+    assert fields["landlord_name"] == "홍길동"
+    assert fields["property_address"] == "서울특별시 가온구 나래로 12, 305동 1201호"
