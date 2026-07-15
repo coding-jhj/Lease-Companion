@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from lease_companion_ai.extraction.gemini_extractor import (
@@ -16,6 +17,19 @@ from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction
 
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
+
+_KIND_LABELS = {"contract": "계약서", "registry": "등기사항증명서"}
+
+
+def _detect_doc_kind(text: str) -> str | None:
+    """문서 종류 추정. 확신 있는 구조 표지가 있을 때만 판정하고, 애매하면 None."""
+    # PDF 텍스트 레이어는 제목이 "등 기 사 항 …"처럼 글자 간 공백으로 나온다 — 공백 제거 후 판정.
+    compact = re.sub(r"\s+", "", text)
+    if "등기사항" in compact and any(marker in compact for marker in ("표제부", "갑구", "을구")):
+        return "registry"
+    if "임대차" in compact and "계약" in compact:
+        return "contract"
+    return None
 
 
 def _structure(text: str, doc_type: str) -> dict[str, Any]:
@@ -39,6 +53,16 @@ def _read_and_structure(content: bytes, filename: str, doc_type: str, force_ocr:
         text, method = extract_document_text(content, filename, force_ocr=force_ocr)
     except DocumentReadError as exc:
         return {"read_ok": False, "read_method": None, "error": str(exc)}
+    expected = "contract" if doc_type == "contract" else "registry"
+    kind = _detect_doc_kind(text)
+    if kind is not None and kind != expected:
+        # 자리가 뒤바뀐 업로드 — 빈 추출값을 내보내는 대신 파일 확인을 안내한다.
+        return {
+            "read_ok": False,
+            "read_method": method,
+            "error": f"{_KIND_LABELS[expected]} 자리에 {_KIND_LABELS[kind]}로 보이는 문서가 올라왔습니다. "
+            "계약서와 등기사항증명서를 맞게 선택했는지 확인해주세요.",
+        }
     doc = _structure(text, doc_type)
     doc["read_method"] = method  # 디지털 추출 vs OCR — UI 배지·투명성
     doc["read_ok"] = True
