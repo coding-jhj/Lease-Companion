@@ -77,7 +77,7 @@ ai 파이프라인
 |------|------|
 | [`ai/`](ai/README.md) | 문서 인식·추출·정규화·상용 LLM 구조화·규칙 엔진·RAG·생성·guardrail·routing·평가·로컬 7B 파인튜닝(선택 실험) |
 | [`backend/`](backend/README.md) | FastAPI. 회원·계약 건·문서·분석·결과 API, 오케스트레이션·저장 |
-| [`frontend/`](frontend/README.md) | 회원·계약 관리 포함 모바일 웹앱 (프레임워크 미정) |
+| [`frontend/`](frontend/README.md) | 회원·계약 관리 포함 모바일 웹앱 (React + Vite + TypeScript — 2026-07-16 확정) |
 | [`data/`](data/README.md) | 비식별·합성 샘플, 스키마, 규칙, 라벨, 데이터셋, RAG 자료, 평가, 모델 메타데이터 |
 | [`docs/`](docs/README.md) | 기획·아키텍처·API·데이터·AI·백엔드 설계, 결정 기록, 회의록 |
 
@@ -93,10 +93,19 @@ ai 파이프라인
 - 설명·질문·행동 생성 및 저신뢰 재검토: 상용 LLM(GPT-5.6 Sol)
 - 회원 기반 서비스 + 계약 건 단위 영속 저장
 
+**확정 (2026-07-16 플랫폼 스택 — [docs/decisions/2026-07-16-mvp-platform-stack.md](docs/decisions/2026-07-16-mvp-platform-stack.md))**
+
+- 데이터베이스: PostgreSQL
+- 인증: JWT Bearer + bcrypt 계열 비밀번호 해시 (구체 라이브러리·토큰 정책 TODO)
+- 프론트엔드: React + Vite + TypeScript
+- 벡터 데이터베이스: Chroma 로컬 모드
+- 통합 스키마: `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본 ([docs/decisions/2026-07-16-shared-pydantic-schema.md](docs/decisions/2026-07-16-shared-pydantic-schema.md))
+- 현재 MVP는 로컬 실행
+
 **미정 (TODO — 임의 확정·설치 금지)**
 
-- 프론트엔드 프레임워크 / 데이터베이스 제품 / 벡터 데이터베이스 / 배포 플랫폼
-- 인증 세부 기술(회원 기능은 확정, 구현 기술 미정)
+- 운영 배포 플랫폼 (로컬 실행은 운영 배포 확정이 아님)
+- JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리, bcrypt 구체 라이브러리
 - 로컬 7B 베이스 모델 (상용 대비 선택적 성능비교 실험 — 베이스 미정)
 
 ## 최소 MVP 실행
@@ -132,7 +141,7 @@ http://127.0.0.1:8000
 
 텍스트 레이어가 있는 PDF·UTF-8 TXT와 스캔·사진 PDF(OCR — Gemini VLM, `GEMINI_API_KEY` 필요)를 지원한다. 구조화는 상용 LLM(Gemini 3.5 Flash)이 기본이며 키가 없거나 호출 실패 시 정규식 파서로 폴백한다. 회원·DB 저장은 아직 포함하지 않는다. 상세한 실행 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
 
-전체 MVP의 프론트엔드 스택·DB·인증 방식은 여전히 미정(TODO)이다. 환경변수가 필요한 후속 기능은 `.env.example`을 복사해 `.env`로 사용한다.
+전체 MVP의 프론트엔드(React + Vite + TypeScript)·DB(PostgreSQL)·인증(JWT Bearer + bcrypt 계열)은 2026-07-16 확정되었으나 아직 구현 전이다 — 위 데모에는 포함되지 않는다. 환경변수가 필요한 후속 기능은 `.env.example`을 복사해 `.env`로 사용한다.
 
 ## 데이터 / 개인정보 보호 원칙
 

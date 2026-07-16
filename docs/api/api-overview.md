@@ -9,10 +9,10 @@
 
 | 영역 | 책임 | 관련 도메인 | 상태 |
 |------|------|-------------|------|
-| `auth` | 회원가입·로그인·세션/토큰 발급 | User | TODO: 경로·인증 방식 미정 |
+| `auth` | 회원가입·로그인·JWT Bearer 토큰 발급 (2026-07-16 인증 방식 확정) | User | TODO: 경로·라이브러리·토큰 정책 미정 |
 | `users` | 사용자 프로필·계정 조회·관리 | User | TODO: 경로 미정 |
-| `contracts` | 계약 건 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | TODO: 경로 미정 |
-| `documents` | 계약서·등기 등 문서 업로드, 형식·크기·개수 검증 | Document | TODO: 경로 미정 |
+| `contracts` | 계약 건(`contract_id`) 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | TODO: 경로 미정 |
+| `documents` | 계약서·등기 등 문서 업로드, 형식·크기·개수 검증. 모의 등기 데이터 연결은 `POST …/registry-link`(2026-07-16 팀 합의 — `case_id` 기준 합성 fixture 연결, 정확한 전체 경로 TODO) | Document | TODO: 경로 미정 |
 | `extractions` | AI 추출값 반환, 사용자 확인·수정 반영 | ExtractedField | TODO: 경로 미정 |
 | `analyses` | 분석 실행(상용 LLM 구조화(Gemini 3.5 Flash)·규칙 엔진·RAG·상용 LLM 생성(GPT-5.6 Sol); 선택 로컬 7B 실험), 상태 조회 | AnalysisRun | TODO: 경로·상태 전달 방식 미정 |
 | `results` | 판정·원문 증거·공식 근거·질문 리포트 조회 | JudgmentResult, EvidenceSource, QuestionCard | TODO: 경로 미정 |
@@ -34,8 +34,10 @@
 - 공통 오류 형식 사용 ([`error-format.md`](error-format.md)).
 - 스키마 변경 시 본 문서와 프론트엔드 타입 동기화.
 
-## 미정 (TODO)
+## 확정 / 미정 (TODO)
 
-- 구체 경로·메서드·요청/응답 스키마
-- 인증 방식·라이브러리
-- 비동기 분석의 상태 전달 방식(폴링 vs 콜백)
+- 확정(2026-07-16): 인증 방식 **JWT Bearer + bcrypt 계열**(→ [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). 요청·응답의 도메인 타입은 `ai/src/lease_companion_ai/schemas/` Pydantic 공통 타입을 재사용(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
+- TODO: 구체 경로·메서드·요청/응답 스키마 (확인되지 않은 경로를 임의로 만들지 않는다)
+- TODO: JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리
+- TODO: 비동기 분석의 상태 전달 방식(폴링 vs 콜백)
+- TODO: `registry-link`의 정확한 전체 경로

@@ -16,7 +16,9 @@
 - 환경변수·비밀정보를 코드에 작성하지 않는다. `.env`에서 읽는다.
 - API 스키마 변경 시 `docs/api/`와 프론트엔드 타입을 동기화한다.
 - 외부 AI 호출 실패·시간 초과·잘못된 출력을 처리한다.
-- 데이터베이스·인증이 미확정이므로 임의로 선택하지 않는다. (저장소·의존성 계층은 인터페이스 경계만 유지)
+- **DB는 PostgreSQL, 인증은 JWT Bearer + bcrypt 계열 비밀번호 해시**(2026-07-16 확정 → [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)). JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리와 bcrypt 구체 라이브러리는 TODO — 임의 확정하지 않는다.
+- **AI 공통 타입 재사용**: 도메인 데이터 타입은 `ai/src/lease_companion_ai/schemas/`의 Pydantic 모델(단일 원본)을 import해 사용한다. Backend에서 같은 도메인 타입을 **중복 정의하지 않는다.** (→ [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
+- **식별자**: 실제 사용자 계약 건의 영속 저장은 `contract_id` 기준이다. `case_id`는 CASE-001 같은 합성·평가 fixture 연결에만 사용하며 `contract_id`와 혼용하지 않는다.
 
 ## 도메인 엔터티
 
@@ -35,14 +37,18 @@
 | API 라우트 | `app/api/routes/` | 요청·응답, 입력·업로드 검증, 오류 형식 |
 | 의존성 | `app/api/dependencies/` | 요청 의존성 주입(인증 주체·DB 세션·공통 검증) |
 | 서비스 | `app/services/` | 계약 건·분석 실행 흐름 오케스트레이션, `ai/` 호출 |
-| 저장소 | `app/repositories/` | 도메인 엔터티 영속화 (DB 확정 전 경계만) |
-| 스키마 | `app/schemas/` | 요청·응답 Pydantic 모델 |
-| 모델 | `app/models/` | 도메인/영속 모델 (DB 확정 후) |
+| 저장소 | `app/repositories/` | 도메인 엔터티 영속화 (PostgreSQL — 구현은 후속 작업) |
+| 스키마 | `app/schemas/` | 요청·응답 wrapper (도메인 타입은 AI Pydantic 공통 타입 재사용, 중복 정의 금지) |
+| 모델 | `app/models/` | 도메인/영속 모델 (PostgreSQL — 구현은 후속 작업) |
 | 워커 | `app/workers/` | 분석 실행 등 비동기·백그라운드 작업 |
 | 코어 | `app/core/` | 설정·공통 오류·보안 유틸 |
 
-## 미정 (TODO)
+## 확정 / 미정
 
-- DB 제품 미확정 → `models/`·`repositories/` 구현 보류, 경계만 유지.
-- 인증 방식·라이브러리 미확정 → 임의 도입 금지. 회원 **기능**은 MVP 확정.
-- 비동기 분석 상태 전달 방식(폴링 vs 콜백) 미확정.
+확정(2026-07-16): PostgreSQL / JWT Bearer + bcrypt 계열. `models/`·`repositories/`는 이제 구현 가능하다(문서 정비 작업에서는 구현하지 않음).
+
+미정 (TODO — 임의 확정·설치 금지):
+
+- JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리, bcrypt 구체 라이브러리.
+- 비동기 분석 상태 전달 방식(폴링 vs 콜백).
+- 운영 배포 플랫폼 (현재 MVP는 로컬 실행).

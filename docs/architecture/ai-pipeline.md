@@ -1,6 +1,6 @@
 # AI 파이프라인
 
-계약 문서 입력부터 저장까지의 단계별 흐름과 컴포넌트 책임을 정의한다. 각 단계 출력은 구조화 스키마(`ai/src/lease_companion_ai/schemas/`)를 따르고, `pipelines`가 PoC·MVP 흐름을 각각 연결한다.
+계약 문서 입력부터 저장까지의 단계별 흐름과 컴포넌트 책임을 정의한다. 각 단계 출력은 구조화 스키마(`ai/src/lease_companion_ai/schemas/` — **Pydantic 모델 단일 원본**, → [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md))를 따르고, `pipelines`가 PoC·MVP 흐름을 각각 연결한다. 규칙 엔진은 R01~R10을 먼저 완성하고 J01~J12로 후속 확장한다(R과 J는 별도 축).
 
 ## 단계 흐름
 
@@ -52,6 +52,6 @@
 
 ## 미정 (TODO)
 
-- 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. 임베딩·검색 확정: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 저장소 제품 미정.
+- 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. 임베딩·검색 확정: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 저장소는 Chroma 로컬 모드로 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)).
 - (선택)로컬 7B 성능비교 실험용 베이스 모델은 실험 진행 시 확정.
 - 저신뢰 판단 기준(재검토로 넘길 임계값)·routing fallback 정책 확정 필요.

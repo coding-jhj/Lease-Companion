@@ -81,6 +81,7 @@ logs/
 tmp/
 work/
 .cache/
+docs_dev/
 
 # === 에이전트·에디터 툴링 (로컬 전용) ===
 .claude/
