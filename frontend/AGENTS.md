@@ -14,15 +14,17 @@
 - 로딩 / 오류 / 빈 데이터 / 분석 중 / 분석 완료 상태를 구분해 표시한다.
 - API 호출 로직과 UI 컴포넌트를 분리한다. (`src/services` vs `src/components`)
 - 기본 접근성을 지킨다. (색상만으로 상태를 표현하지 않는 등)
-- 백엔드 API 스키마와 프론트엔드 타입(`src/types`)을 동기화한다.
+- 백엔드 API 스키마와 프론트엔드 타입(`src/types`)을 동기화한다. Backend/OpenAPI 스키마가 타입의 원천이며, **mock 데이터와 실제 API 응답은 같은 타입을 사용한다** — mock으로 먼저 개발해도 연결 시 타입이 달라지지 않게 한다.
+- 추출값 확인·수정 화면의 데이터 형태는 canonical Pydantic 스키마 계약을 따른다. (`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text` → [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
+- **화면 확인 우선순위 3단계 매핑**(사용자 화면 전용 — 내부 상태 9개·시급도 5개를 대체하지 않음): `즉시 확인`·`분석 불가` → **반드시 확인** / `계약 전 확인`·`계약 직후 조치` → **확인 권장** / `참고` → **일반 확인**. 색상만이 아니라 문구·아이콘을 함께 제공한다.
 
-## 미정 — 코드 생성 금지 (TODO)
+## 기술 스택 (2026-07-16 확정)
 
-- 프론트엔드 기술 스택 **미확정.** React·Next.js·Vue 등 프레임워크 코드, `package.json`, 프레임워크 설정을 임의로 생성하지 않는다.
-- 인증 방식 구현 기술·라이브러리 **미확정.** (회원 기능은 MVP 확정, 구현 기술 미정)
-- 스택 확정 전에는 폴더 구조와 이 지시서만 유지한다. 각 디렉터리의 `.gitkeep`을 삭제하지 않는다.
+- **React + Vite + TypeScript.** (→ [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)) 프로젝트 초기화·의존성 설치는 구현 작업에서 진행한다(문서 정비 작업에서는 하지 않음).
+- 인증 방식은 JWT Bearer로 확정. 프론트는 토큰 보관·첨부 방식만 다루고 구체 정책(만료·refresh)은 Backend TODO를 따른다.
+- 각 디렉터리의 `.gitkeep`은 실제 코드가 채워지기 전까지 삭제하지 않는다.
 
-## 페이지 책임 (`src/pages/*`, 스택 확정 후 채움)
+## 페이지 책임 (`src/pages/*`)
 
 | 페이지 | 흐름 단계 | 책임 |
 |--------|-----------|------|
@@ -37,7 +39,7 @@
 
 세부 목록은 [`src/pages/README.md`](src/pages/README.md).
 
-## Feature 책임 (`src/features/*`, 스택 확정 후 채움)
+## Feature 책임 (`src/features/*`)
 
 `auth`, `contracts`, `contract-stage`, `document-upload`, `extraction-review`, `judgment-results`, `evidence-sources`, `question-cards`, `signing-checklist`, `post-contract-actions`, `result-feedback`.
 

@@ -44,7 +44,9 @@
 
 - **추출값**(문서에서 읽은 값)과 **생성값**(모델이 만든 설명·질문·행동)을 항상 구분한다.
 - 로컬 모델·규칙·RAG·상용 LLM의 산출을 섞지 않고 각 컴포넌트 책임대로 분리해 반환한다.
-- 모든 AI 결과는 구조화된 스키마(`src/lease_companion_ai/schemas/`)로 반환한다.
+- 모든 AI 결과는 구조화된 스키마(`src/lease_companion_ai/schemas/`)로 반환한다. 이 경로의 **Pydantic 모델이 런타임 통합 스키마의 단일 원본(canonical runtime schema)**이며, Backend가 공통 타입을 import해 재사용한다. JSON Schema는 Pydantic에서 생성한다. → [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md)
+- 통합 스키마 필드 규약: 사용자 수정값 `user_corrected_value`, 확인 상태 `verification_status`, 추출 신뢰도는 3등급(`추출됨`/`불확실`/`실패`), 원문 증거는 `page`/`text`(둘 다 null 허용).
+- 구현 순서: **R01~R10 기반 실전 계약 점검 MVP를 먼저 완성하고, J01~J12 전체 판정으로 후속 확장한다.** J 확장 시 기존 R01~R10 필드의 이름·의미를 바꾸지 않는다(하위 호환).
 - 근거가 부족하면 추측하지 않고 `확인 필요` / `확인 불가` 상태로 반환한다.
 - 프롬프트를 코드에 길게 하드코딩하지 않는다. 원본은 `prompts/`에 두고 버전을 관리한다. (`../docs/ai/prompt-management.md`)
 - 로컬 7B 가중치·체크포인트는 Git에 커밋하지 않는다. `training/`에는 설정·전처리·평가·메타데이터만 둔다. (`../docs/ai/fine-tuning-plan.md`)
@@ -94,8 +96,11 @@
 - OCR: 상용 LLM(Gemini 3.5 Flash) VLM 통합 (2026-07-14 변경, → ../docs/decisions/2026-07-14-ocr-gemini-integration.md). 디지털 PDF는 PyMuPDF·PDF.js. PaddleOCR-VL은 (선택) 비교실험
 - 임베딩·검색: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro
 
+확정(2026-07-16 팀 합의, → ../docs/decisions/2026-07-16-mvp-platform-stack.md):
+- 벡터 DB: **Chroma 로컬 모드**
+- 통합 스키마: `src/lease_companion_ai/schemas/` Pydantic 단일 원본 (→ ../docs/decisions/2026-07-16-shared-pydantic-schema.md)
+
 미정 (TODO — 임의 확정·설치 금지):
-- 벡터 DB 제품
 - 로컬 7B 베이스 모델 (선택 성능비교 실험용 — MVP 크리티컬 패스 아님)
 
 특정 SDK·라이브러리를 임의로 추가하지 않고 TODO로 둔다.
