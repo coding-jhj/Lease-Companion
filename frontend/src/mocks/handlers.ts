@@ -35,7 +35,7 @@ const report: ReportItem[] = [
     title: "임대인과 등기 소유자 확인",
     status: "확인 필요",
     urgency: "계약 전 확인",
-    priority: "반드시 확인",
+    priority: "확인 권장",
     explanation: "계약 상대방과 등기사항증명서의 소유자 이름을 함께 확인하세요.",
   },
   {
