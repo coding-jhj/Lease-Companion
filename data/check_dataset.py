@@ -4,7 +4,7 @@
 검증 항목:
   1) rule_spec R01–R10 × 14열, 결과상태 어휘
   2) 스키마 파싱
-  3) source_inventory / rule_evidence_map 유효성
+  3) source_inventory / RAG manifest / rule_evidence_map 유효성
   4) dev goldset 3종 case_id 집합 일치·상태 어휘·문서 존재·근거 유효
   5) 커버리지: 규칙별 해당≥10·비해당≥10 (R07은 항상 발동 → 보고만)
   6) 누수: dev∩test 문서 본문(case_id 제외) 중복 0
@@ -47,6 +47,14 @@ def body_hash(path):
     return hashlib.sha1(norm.encode("utf-8")).hexdigest()
 
 
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def main():
     # 1) rule_spec
     with open(os.path.join(BASE, "rules/rule_spec.csv"), encoding="utf-8") as f:
@@ -74,10 +82,37 @@ def main():
             assert row["institution"].strip(), f"공식자료 기관 누락 {row['source_id']}"
             assert row["source_url"].startswith("https://"), f"공식자료 URL 누락 {row['source_id']}"
     sources = {row["source_id"] for row in source_rows}
+    official_sources = {
+        row["source_id"] for row in source_rows
+        if row["source_status"] == "official_verified"
+    }
+    manifest_path = os.path.join(BASE, "rag", "metadata", "official_sources.jsonl")
+    manifest = read_jsonl(manifest_path)
+    assert {row["source_id"] for row in manifest} == official_sources, "RAG manifest 공식 출처 불일치"
+    for row in manifest:
+        assert row["source_status"] == "official_verified"
+        assert row["source_url"].startswith("https://")
+        assert row["distribution_mode"] in {"metadata_only", "local_source"}
+        expected_metadata_hash = row["metadata_sha256"]
+        hash_payload = {key: value for key, value in row.items() if key != "metadata_sha256"}
+        encoded = json.dumps(
+            hash_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        assert hashlib.sha256(encoded).hexdigest() == expected_metadata_hash
+        if row["distribution_mode"] == "local_source":
+            local_path = os.path.join(os.path.dirname(BASE), row["local_path"])
+            assert os.path.isfile(local_path), f"RAG 로컬 원문 없음 {row['source_id']}"
+            assert file_sha256(local_path) == row["content_sha256"]
+        else:
+            assert row["local_path"] is None and row["content_sha256"] is None
     with open(os.path.join(BASE, "rules/rule_evidence_map.csv"), encoding="utf-8") as f:
         for row in csv.DictReader(f):
             assert row["rule_id"] in RULE_IDS, f"evidence_map 미확인 규칙 {row['rule_id']}"
             assert row["source_id"] in sources, f"evidence_map 미확인 근거 {row['source_id']}"
+            assert row["source_id"] in official_sources, f"evidence_map 비공식 근거 {row['source_id']}"
 
     # 4) dev goldset 3종
     er = os.path.join(SAMPLE, "expected-results")
@@ -105,6 +140,7 @@ def main():
             for ev in c["expected_evidence"]:
                 for sid in ev["expected_source_ids"]:
                     assert sid in sources, f"{label} {c['case_id']} rag 근거 미확인 {sid}"
+                    assert sid in official_sources, f"{label} {c['case_id']} rag 비공식 근거 {sid}"
 
     validate(rule_g, extr_g, rag_g, "dev")
 
@@ -144,10 +180,10 @@ def main():
     assert len(tids) >= 10, f"test 케이스 {len(tids)} < 10"
     validate(trule, textr, trag, "test")
 
-    # 8) 개인정보 스캔 (dev + test 문서)
+    # 8) 개인정보 스캔 (dev + test 문서 + RAG 로컬 원문)
     real_rrn = re.compile(r"\d{6}-[1-4]\d{6}")
     phone = re.compile(r"01[016789]-\d{3,4}-\d{4}")
-    for root in (SAMPLE, E2E):
+    for root in (SAMPLE, E2E, os.path.join(BASE, "rag", "sources")):
         for dirpath, _, files in os.walk(root):
             for fn in files:
                 if not fn.endswith(".txt"):

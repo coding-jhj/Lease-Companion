@@ -155,4 +155,4 @@ http://127.0.0.1:8000
 
 구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
 
-회원·계약 건 영속 저장·전체 12개 판정·RAG·생성(GPT-5.6 Sol)·정식 프론트엔드는 아직 구현되지 않았다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
+RAG 배치 1의 내부 계약·결정적 청킹·로컬 BM25·provider protocol은 구현됐다. 공식 코퍼스·Chroma·Gemini embedding·Cohere rerank·규칙 근거 enrichment와 생성(GPT-5.6 Sol)은 아직 구현되지 않았다. 회원·계약 건 영속 저장·전체 12개 판정·정식 프론트엔드도 후속 대상이다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.

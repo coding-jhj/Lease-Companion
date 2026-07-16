@@ -79,7 +79,8 @@ tests/            컴포넌트별·전체 흐름 테스트
 ## 현재 상태 / TODO
 
 - 구현됨(최소 MVP 범위): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 1회 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `rules`(R01~R10), `pipelines`, canonical `schemas` v1.1.0 + 관련 테스트.
-- 미구현: `classification`·`providers`(어댑터 계층)·`generation`·`guardrails`·`routing`·`rag`(실제 검색)·`local_model`·`evaluation`(전체).
+- 부분 구현: `rag` 내부 계약·결정적 청킹·로컬 BM25, `providers` embedding·rerank protocol과 응답 검증. Chroma·Gemini embedding·Cohere rerank 실제 연결은 후속 배치.
+- 미구현: `classification`·`generation`·`guardrails`·`routing`·`local_model`·`evaluation`(전체), `providers` 실제 RAG/생성 어댑터, `rag` hybrid·rerank·규칙 enrichment.
 - 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토) → `providers`/`generation` 후속 구현
 - 확정(2026-07-14 변경): 스캔 PDF·이미지는 Gemini 3.5 Flash가 원본에서 고정 Pydantic 필드를 1회 호출로 직접 추출한다. 디지털 PDF는 PyMuPDF 텍스트 경로다. PaddleOCR-VL은 선택 비교실험이다 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`).
 - 확정(2026-07-14): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro → `rag` 후속 구현. 벡터 DB는 **Chroma 로컬 모드 확정**(2026-07-16, `../docs/decisions/2026-07-16-mvp-platform-stack.md`)

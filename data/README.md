@@ -53,6 +53,7 @@ model-metadata/          모델 메타데이터 (가중치 제외)
 - 비식별·합성 계약서·등기 샘플, 규칙 CSV, 평가 goldset, canonical JSON Schema 5개와 CASE-001 fixture 6개가 존재한다.
 - `schemas/generated/`만 canonical Pydantic v1.1.0 생성본이며 `schemas/legacy/`는 과거 설계 참고자료다.
 - `rules/source_inventory.csv`의 공식자료 후보 15개는 공식 검증·합성 참고·미검증·제외로 분류했다.
+- `rules/rule_evidence_map.csv`와 dev/test RAG goldset은 `official_verified` source ID만 허용하도록 계약 검사를 적용했다.
 - TODO: 라벨 정의·경계 사례 문서화 → `labels/`.
 - TODO: 파인튜닝 데이터셋 수집·라벨링·분할 (`docs/data/training-dataset.md` 기준) → `datasets/`.
 - TODO: `official_verified` 자료의 이용조건에 맞는 원문 수집·청킹·Chroma 인덱싱 (`docs/data/rag-sources.md` 기준) → `rag/`.

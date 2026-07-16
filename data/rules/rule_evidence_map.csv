@@ -1,21 +1,13 @@
 rule_id,source_id,relevance_note
 R01,SRC-STD-LEASE,표준계약서 당사자 기재 기준
-R01,SRC-REGISTRY-SAMPLE,등기 소유자 항목 확인 근거
 R01,SRC-MOLIT-CHECKLIST,계약 상대=소유자 확인 안내
 R02,SRC-STD-LEASE,목적물 표시 기재 기준
-R02,SRC-REGISTRY-SAMPLE,등기 소재지 표시 확인 근거
 R02,SRC-CONFIRM-FORM,중개대상물 소재지 교차 참고
-R03,SRC-REGISTRY-SAMPLE,을구 근저당권 기재 위치
-R03,SRC-MORTGAGE-GUIDE,근저당권 설정 개념 안내
 R03,SRC-MOLIT-CHECKLIST,선순위 권리 확인 안내
-R04,SRC-REGISTRY-SAMPLE,갑구 압류·가압류 기재 위치
 R04,SRC-MOLIT-CHECKLIST,권리관계 확인 안내
-R05,SRC-REGISTRY-SAMPLE,갑구 신탁 기재 위치
 R05,SRC-MOLIT-CHECKLIST,신탁 부동산 계약 권한 확인 안내
 R06,SRC-STD-LEASE,계약 상대·계좌 기재 기준
 R06,SRC-MOLIT-CHECKLIST,입금 계좌 명의 확인 안내
-R06,SRC-LEAFLET,계좌 명의 확인 유의사항
-R07,SRC-REGISTRY-APPLY,최신 등기 발급 절차
 R07,SRC-MOLIT-CHECKLIST,계약 직전 최신 등기 확인 안내
 R08,SRC-HTA-LAW,보증금 반환 관련 법령 근거
 R08,SRC-STD-LEASE,반환 관련 표준 특약 문구

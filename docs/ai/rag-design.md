@@ -8,7 +8,7 @@
 
 - RAG(`rag`)는 **근거 검색**만 담당한다. 계약 가능·안전·전세사기·합법 여부를 **판정하지 않는다.** 최종 판정은 규칙 엔진이 한다.
 - 검색된 근거는 사용자가 확인할 수 있도록 출처와 함께 제시한다.
-- 근거가 없으면 지어내지 않고 `확인 불가` 또는 `확인 필요`로 반환한다.
+- 근거가 없으면 지어내지 않고 `evidence_sources=[]`를 반환한다. RAG 근거 부족을 이유로 규칙 엔진의 `RuleStatus`·`urgency`·`reason`을 변경하지 않는다.
 
 ## 파이프라인 내 위치
 
@@ -24,7 +24,29 @@
 
 - 임베딩: gemini-embedding-001 + BM25 하이브리드(Top-20)
 - 재랭킹: Cohere rerank-v4.0-pro(Top-5)
+- 벡터 저장소: Chroma 로컬 모드
+- 로컬 lexical 검색: 결정적 Okapi BM25
+- 검색 provider 경계: embedding·rerank protocol로 SDK 호출부를 격리
 
-## 미정 (TODO)
+## 배치 1 구현 상태 (2026-07-16)
 
-- 벡터 저장소, 청킹 전략
+- `rag/models.py`: 공식자료 메타데이터·청크·비식별 검색 질의·검색 hit 내부 계약
+- `rag/indexing/chunker.py`: source hash·section·ordinal·text 기반 결정적 `chunk_id`
+- `rag/retrieval/bm25.py`: 추가 패키지 없는 결정적 BM25와 `chunk_id` 동점 정렬
+- `providers/embeddings.py`·`providers/rerank.py`: 외부 SDK와 분리된 protocol·응답 검증
+- dev/test retrieval 정답과 `rule_evidence_map.csv`는 `official_verified` source ID만 허용
+
+## 배치 2 구현 상태 (2026-07-16)
+
+- 공식 검증 출처 9개는 `data/rag/metadata/official_sources.jsonl` manifest로 고정했다. 자유이용이 확인된 법령 2개는 정규화 원문과 SHA-256을 보존하고, 나머지 7개는 `metadata_only`로 둔다.
+- `chromadb>=1.5,<2` 로컬 인덱스에 source hash·청킹 버전·embedding model fingerprint를 기록한다. fingerprint 변경은 stale 인덱스로 탐지하고, 호출자가 `rebuild=True`를 명시한 경우에만 기존 컬렉션을 교체한다.
+- `GeminiEmbeddingProvider`는 `gemini-embedding-001`, 문서 `RETRIEVAL_DOCUMENT`, 질의 `RETRIEVAL_QUERY`, 768차원을 사용한다.
+- BM25와 vector 순위는 RRF(`rrf_k=60`)로 결정적으로 결합한다. 원점수가 서로 다른 척도이므로 점수 정규화보다 순위 결합을 사용한다. 동점은 `chunk_id` 오름차순이다.
+- hybrid Top-20을 `rerank-v4.0-pro` Top-5로 재정렬한다. vector 실패 시 BM25, rerank 실패·빈 응답 시 hybrid 순위를 유지한다.
+- 실제 Gemini·Cohere 유료 호출은 하지 않았다. SDK 어댑터는 fake client로 검증했다.
+
+## 후속 TODO
+
+- 재배포 조건이 명시적으로 허용된 공식 원문의 실제 문서 구조를 확인한 뒤 기본 청킹 크기(`1200`)·중첩(`120`)을 평가
+- R01~R10 결과 뒤의 근거 enrichment와 retrieval 평가 하네스 구현
+- 별도 키·비용 승인 후 Gemini·Cohere smoke test

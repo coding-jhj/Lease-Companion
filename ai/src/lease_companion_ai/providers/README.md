@@ -23,3 +23,7 @@
 
 - 확정(2026-07-14 선정표): 구조화 Gemini 3.5 Flash · 생성 GPT-5.6 Sol · 임베딩 gemini-embedding-001 · 리랭커 Cohere rerank-v4.0-pro. 어댑터로 감싸 호출부는 제공자 무관 유지.
 - API 키·비밀정보는 `.env`, Git 커밋 금지
+- 구현 완료(배치 1): embedding·rerank `Protocol`, 민감 입력 없는 `ProviderError`, 응답 개수·차원·유한 점수·문서 인덱스 검증, 네트워크 없는 fake provider 테스트.
+- 구현 완료(배치 2): `GeminiEmbeddingProvider`와 `CohereRerankProvider`. SDK 예외·응답·입력 원문을 외부 예외 메시지에 노출하지 않는다.
+- Gemini·Cohere 유료 실호출은 미수행. 키·비용 승인 후 별도 smoke test가 필요하다.
+- TODO: GPT 생성 실제 어댑터.

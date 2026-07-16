@@ -26,6 +26,8 @@
 | `source_url` | 원문 URL |
 | `collected_date` | 수집일 |
 | `document_type` | 문서 유형 (법령 / 표준계약서 / 공공기관 가이드 등) |
+| `source_sha256` | 수집 원문 또는 정규화 원문의 SHA-256 |
+| `usage_terms` | 저장·재배포·인용 가능 범위 |
 
 ## 원칙
 
@@ -39,5 +41,8 @@
 
 ## 현재 상태 / TODO
 
-- 원문·청크·Chroma 인덱스는 아직 없다. 공식자료 후보 15개의 검증 상태와 메타데이터는 `../rules/source_inventory.csv`에 기록했다.
-- TODO: 검증된 자료의 이용조건 확인 후 원문 수집·결정적 청킹·Chroma 적재·BM25 결합·Cohere rerank 구현.
+- 공식자료 후보 15개의 검증 상태는 `../rules/source_inventory.csv`, 공식 검증 9개의 결정적 manifest는 `metadata/official_sources.jsonl`에 기록했다.
+- 2개 법령은 자유이용 근거를 확인해 정규화 원문과 SHA-256을 보존한다. 나머지 7개는 `metadata_only`로 원문을 커밋하지 않는다.
+- 배치 1 완료: 공식 source ID 전용 map·dev/test goldset 계약, RAG 내부 모델, 결정적 청킹, 로컬 BM25, provider protocol과 fake provider 검증.
+- 배치 2 완료: Chroma 로컬 인덱스·stale 탐지, Gemini embedding, RRF hybrid, Cohere rerank 어댑터와 offline 검증. 생성 인덱스는 Git에서 제외한다.
+- TODO: 재배포가 명시적으로 허용된 공식 원문 수집, R01~R10 검색 연결·평가. Gemini·Cohere 실호출은 별도 키·비용 승인이 필요하다.

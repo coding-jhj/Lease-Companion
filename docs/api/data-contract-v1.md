@@ -31,7 +31,7 @@ conda run -n lease-py310 python scripts/generate_case001_fixture.py    # fixture
 conda run -n lease-py310 python -m pytest ai/tests backend/tests -q    # 전체 테스트
 ```
 
-실측 결과(2026-07-16, API 키 차단 로컬 실행): **133 passed, 3 warnings**. Schema·fixture 재생성 후 모델과 일치하며 CASE-001 rule goldset 자체검증 통과. 경고 3건은 Starlette/FastAPI 의존성 deprecation이다.
+실측 결과(2026-07-16, API 키 차단 로컬 실행): **169 passed, 3 warnings**. Schema·fixture 재생성 후 모델과 일치하며 CASE-001 rule goldset 자체검증 통과. 경고 3건은 Starlette/FastAPI 의존성 deprecation이다.
 
 ## 3. 핵심 모델 요약
 
@@ -121,7 +121,7 @@ CorrectionRequest.corrected_value
 
 | 단계 | 상태 |
 |---|---|
-| 1. A 패키지 준비 | **완료** (모델·실제 AI 경로 어댑터·Schema·fixture·테스트 133 passed) |
+| 1. A 패키지 준비 | **완료** (모델·실제 AI 경로 어댑터·Schema·fixture·테스트 169 passed) |
 | 2. B 소비 확인 | **대기** — 5절 체크리스트 통과 시 완료 |
 | 3. C 소비 확인 | **대기** — 6절 체크리스트 통과 시 완료 |
 
