@@ -1,27 +1,41 @@
 // @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PriorityGroups, displayPriorityForUrgency } from "../../src/features/judgment-results/PriorityGroups";
-import type { ReportItem } from "../../src/types/api";
+import type { RuleResultDto, Urgency } from "../../src/types/api";
 
-const item = (judgmentId: string, urgency: string): ReportItem => ({
-  judgmentId,
-  title: `${judgmentId} 확인 항목`,
+const item = (ruleId: string, urgency: Urgency, judgmentId: string | null = "J01"): RuleResultDto => ({
+  rule_id: ruleId,
+  rule_name: ruleId + " 확인 항목",
+  judgment_id: judgmentId,
   status: "확인 필요",
   urgency,
-  priority: "일반 확인",
-  explanation: "확인 설명",
+  reason: "확인 설명",
+  question: "확인 질문",
+  recommended_actions: ["확인 행동"],
+  limitations: "판정 한계",
+  evidence_sources: [{
+    source_id: "SRC-1",
+    title: "공식 근거",
+    institution: "공공기관",
+    summary: null,
+    source_url: null,
+  }],
+  completed: false,
 });
 
 describe("PriorityGroups", () => {
   it("maps urgency to the three accessible display groups", () => {
-    render(<PriorityGroups items={[item("J01", "즉시 확인"), item("J02", "계약 전 확인"), item("J03", "참고")]} />);
+    render(<PriorityGroups items={[item("R01", "즉시 확인"), item("R02", "계약 전 확인"), item("R03", "참고", null)]} />);
 
     for (const label of ["반드시 확인", "확인 권장", "일반 확인"]) {
       const heading = screen.getByRole("heading", { name: label });
       expect(within(heading.closest("section")!).getAllByRole("article")).toHaveLength(1);
     }
+    expect(screen.getByText("R03").closest("article")).toHaveTextContent("사실 플래그");
+    expect(document.querySelectorAll(".evidence-list p")).toHaveLength(3);
   });
 
   it("uses the agreed urgency mapping", () => {

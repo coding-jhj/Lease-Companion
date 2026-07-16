@@ -4,9 +4,11 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/
 import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
 import type { ChecklistItem } from "../../types/api";
+import { contractIdFromRoute } from "../../utils/contractId";
 
 export function ContractDetailPage() {
-  const { contractId = "contract-demo-001" } = useParams();
+  const { contractId: routeContractId } = useParams();
+  const contractId = contractIdFromRoute(routeContractId);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");

@@ -1,4 +1,4 @@
-import type { ReportItem } from "../../types/api";
+import type { RuleResultDto, Urgency } from "../../types/api";
 
 export type DisplayPriority = "반드시 확인" | "확인 권장" | "일반 확인";
 
@@ -10,13 +10,13 @@ const priorityMeta: Record<DisplayPriority, { icon: string; description: string 
 
 const priorityOrder: DisplayPriority[] = ["반드시 확인", "확인 권장", "일반 확인"];
 
-export function displayPriorityForUrgency(urgency: string): DisplayPriority {
+export function displayPriorityForUrgency(urgency: Urgency): DisplayPriority {
   if (urgency === "즉시 확인" || urgency === "분석 불가") return "반드시 확인";
   if (urgency === "계약 전 확인" || urgency === "계약 직후 조치") return "확인 권장";
   return "일반 확인";
 }
 
-export function PriorityGroups({ items }: { items: ReportItem[] }) {
+export function PriorityGroups({ items }: { items: RuleResultDto[] }) {
   return (
     <div className="priority-groups">
       {priorityOrder.map((priority) => {
@@ -38,10 +38,39 @@ export function PriorityGroups({ items }: { items: ReportItem[] }) {
               {groupItems.length === 0 ? (
                 <p className="group-empty">해당하는 확인 항목이 없습니다.</p>
               ) : groupItems.map((item) => (
-                <article className="result-card" key={item.judgmentId}>
-                  <p className="result-meta">{item.judgmentId} · {item.status} · {item.urgency}</p>
-                  <h3>{item.title}</h3>
-                  <p>{item.explanation}</p>
+                <article className="result-card" key={item.rule_id}>
+                  <p className="result-meta">
+                    <strong>{item.rule_id}</strong>
+                    {" · "}
+                    {item.judgment_id ?? "사실 플래그"}
+                    {" · 상태: "}{item.status}
+                    {" · 시급도: "}{item.urgency}
+                  </p>
+                  <h3>{item.rule_name}</h3>
+                  <p>{item.reason}</p>
+                  <dl className="result-details">
+                    <div>
+                      <dt>확인 질문</dt>
+                      <dd>{item.question ?? "추가 질문 없음"}</dd>
+                    </div>
+                    <div>
+                      <dt>권장 행동</dt>
+                      <dd>{item.recommended_actions.length > 0 ? item.recommended_actions.join(" · ") : "추가 행동 없음"}</dd>
+                    </div>
+                    <div>
+                      <dt>한계</dt>
+                      <dd>{item.limitations}</dd>
+                    </div>
+                  </dl>
+                  <div className="evidence-list">
+                    <strong>근거 자료</strong>
+                    {item.evidence_sources.map((source) => (
+                      <p key={source.source_id}>
+                        {source.source_url ? <a href={source.source_url}>{source.title}</a> : source.title}
+                        {" · "}{source.institution}{source.summary ? " · " + source.summary : ""}
+                      </p>
+                    ))}
+                  </div>
                 </article>
               ))}
             </div>

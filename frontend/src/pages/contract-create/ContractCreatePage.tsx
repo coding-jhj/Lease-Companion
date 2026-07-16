@@ -10,7 +10,7 @@ export function ContractCreatePage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     const contract = await mvpService.createContract(title);
-    navigate(`/contracts/${contract.contractId}/situation`);
+    navigate("/contracts/" + contract.contract_id + "/situation");
   }
 
   return (

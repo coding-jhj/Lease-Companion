@@ -2,9 +2,11 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
+import { contractIdFromRoute } from "../../utils/contractId";
 
 export function DocumentUploadPage() {
-  const { contractId = "contract-demo-001" } = useParams();
+  const { contractId: routeContractId } = useParams();
+  const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
 

@@ -4,19 +4,21 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/
 import { PageShell } from "../../components/layout/PageShell";
 import { PriorityGroups } from "../../features/judgment-results/PriorityGroups";
 import { mvpService } from "../../services/mvpService";
-import type { ReportItem } from "../../types/api";
+import type { RuleResultDto } from "../../types/api";
+import { contractIdFromRoute } from "../../utils/contractId";
 
 export function ResultReportPage() {
-  const { contractId = "contract-demo-001" } = useParams();
+  const { contractId: routeContractId } = useParams();
+  const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
-  const [items, setItems] = useState<ReportItem[]>([]);
+  const [items, setItems] = useState<RuleResultDto[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadReport() {
     setStatus("loading");
     try {
-      setItems(await mvpService.getReport(contractId));
+      setItems((await mvpService.getAnalysisResult(contractId)).results);
       setStatus("success");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "리포트를 불러오지 못했습니다.");

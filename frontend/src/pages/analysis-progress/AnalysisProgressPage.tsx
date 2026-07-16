@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
+import { contractIdFromRoute } from "../../utils/contractId";
 
 export function AnalysisProgressPage() {
-  const { contractId = "contract-demo-001" } = useParams();
+  const { contractId: routeContractId } = useParams();
+  const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
   const [complete, setComplete] = useState(false);
   useEffect(() => { void mvpService.startAnalysis(contractId).then(() => setComplete(true)); }, [contractId]);

@@ -1,11 +1,14 @@
 import { apiClient } from "./apiClient";
 import type {
+  AnalysisRunResultDto,
   AuthResponse,
   ChecklistItem,
-  ContractSummary,
-  ExtractedField,
-  ReportItem,
+  ContractSummaryDto,
+  CorrectionRequestDto,
+  DocumentExtractionDto,
+  InputSnapshotDto,
 } from "../types/api";
+import { mockOnlyMvpRoutes } from "../mocks/mockRoutes";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -16,41 +19,46 @@ export const mvpService = {
       headers: jsonHeaders,
       body: JSON.stringify({ email }),
     }),
-  getContracts: () => apiClient<ContractSummary[]>("/api/contracts"),
+  getContracts: () => apiClient<ContractSummaryDto[]>("/api/contracts"),
   createContract: (title: string) =>
-    apiClient<ContractSummary>("/api/contracts", {
+    apiClient<ContractSummaryDto>("/api/contracts", {
       method: "POST",
       headers: jsonHeaders,
       body: JSON.stringify({ title }),
     }),
-  saveSituation: (contractId: string, contractType: string) =>
-    apiClient<{ contractId: string }>(`/api/contracts/${contractId}/situation`, {
+  saveSituation: (contractId: number, contractType: string) =>
+    apiClient<{ contract_id: number }>(`/api/contracts/${contractId}/situation`, {
       method: "PUT",
       headers: jsonHeaders,
-      body: JSON.stringify({ contractType }),
+      body: JSON.stringify({ contract_type: contractType }),
     }),
-  uploadDocument: (contractId: string, file: File) => {
+  uploadDocument: (contractId: number, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiClient<{ documentId: string }>(`/api/contracts/${contractId}/documents`, {
+    return apiClient<{ document_id: string }>(`/api/contracts/${contractId}/documents`, {
       method: "POST",
       body: formData,
     });
   },
-  getExtraction: (contractId: string) =>
-    apiClient<ExtractedField[]>(`/api/contracts/${contractId}/extraction`),
-  confirmExtraction: (contractId: string, fields: ExtractedField[]) =>
-    apiClient<{ inputSnapshotId: string }>(`/api/contracts/${contractId}/extraction`, {
-      method: "PUT",
+  // 아래 다섯 함수는 OpenAPI 추가 전까지 MSW 전용 경로만 사용한다.
+  getExtraction: (contractId: number) =>
+    apiClient<DocumentExtractionDto[]>(mockOnlyMvpRoutes.extraction(contractId)),
+  submitCorrections: (request: CorrectionRequestDto) =>
+    apiClient<CorrectionRequestDto>(mockOnlyMvpRoutes.corrections(request.contract_id), {
+      method: "POST",
       headers: jsonHeaders,
-      body: JSON.stringify({ fields }),
+      body: JSON.stringify(request),
     }),
-  startAnalysis: (contractId: string) =>
-    apiClient<{ analysisRunId: string }>(`/api/contracts/${contractId}/analyses`, {
+  confirmExtraction: (contractId: number) =>
+    apiClient<InputSnapshotDto>(mockOnlyMvpRoutes.confirmation(contractId), {
       method: "POST",
     }),
-  getReport: (contractId: string) =>
-    apiClient<ReportItem[]>(`/api/contracts/${contractId}/report`),
-  getChecklist: (contractId: string) =>
+  startAnalysis: (contractId: number) =>
+    apiClient<{ analysis_run_id: string }>(mockOnlyMvpRoutes.analyses(contractId), {
+      method: "POST",
+    }),
+  getAnalysisResult: (contractId: number) =>
+    apiClient<AnalysisRunResultDto>(mockOnlyMvpRoutes.analysisResult(contractId)),
+  getChecklist: (contractId: number) =>
     apiClient<ChecklistItem[]>(`/api/contracts/${contractId}/checklist`),
 };
