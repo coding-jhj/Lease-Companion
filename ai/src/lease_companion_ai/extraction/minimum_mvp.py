@@ -39,6 +39,8 @@ _REGISTRY_TRAILING_EFFECT = re.compile(
 
 
 def _unreadable(value: str | None) -> bool:
+    if value is None:
+        return False
     return bool(value) and any(mark in value for mark in _UNREADABLE)
 
 
@@ -308,7 +310,8 @@ def _apply_partial_transfer(
     if not transferor_match:
         return False
     transferor = transferor_match.group(1)
-    if transferor not in state or state[transferor] is None:
+    transferor_share = state.get(transferor)
+    if transferor_share is None:
         return False
 
     recipients = [(name, share) for name, share in _holders(body) if name != transferor]
@@ -322,13 +325,13 @@ def _apply_partial_transfer(
     )
     amount = _parse_share(amount_match.group(1)) if amount_match else None
     if amount is None and "전부이전" in body:
-        amount = state[transferor]
-    if amount is None or amount <= 0 or amount > state[transferor]:
+        amount = transferor_share
+    if amount is None or amount <= 0 or amount > transferor_share:
         return False
     if recipient_share is not None and recipient_share != amount:
         return False
 
-    remaining = state[transferor] - amount
+    remaining = transferor_share - amount
     if remaining:
         state[transferor] = remaining
     else:
@@ -350,8 +353,9 @@ def _apply_owner_change(state: dict[str, Fraction | None], body: str) -> bool:
         if old_name not in state:
             return False
         share = state.pop(old_name)
-        if new_name in state and share is not None and state[new_name] is not None:
-            state[new_name] += share
+        existing_share = state.get(new_name)
+        if existing_share is not None and share is not None:
+            state[new_name] = existing_share + share
         else:
             state[new_name] = share
         return True

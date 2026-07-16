@@ -42,7 +42,7 @@ def doc_dir(case_id, kind):
 
 def body_hash(path):
     """case_id 헤더 줄을 제외한 본문 정규화 해시 (표면형 비교용)."""
-    lines = [l for l in open(path, encoding="utf-8").read().splitlines() if "case_id" not in l]
+    lines = [line for line in open(path, encoding="utf-8").read().splitlines() if "case_id" not in line]
     norm = re.sub(r"\s+", " ", " ".join(lines)).strip()
     return hashlib.sha1(norm.encode("utf-8")).hexdigest()
 
@@ -59,13 +59,21 @@ def main():
             assert status in COMMON_STATUS, f"{r['rule_id']} 미허용 상태 {status}"
 
     # 2) 스키마
-    for name in ("contract_schema.json", "registry_schema.json"):
+    for name in ("legacy/contract_schema.json", "legacy/registry_schema.json"):
         with open(os.path.join(BASE, "schemas", name), encoding="utf-8") as f:
             json.load(f)
 
     # 3) source_inventory / evidence_map
     with open(os.path.join(BASE, "rules/source_inventory.csv"), encoding="utf-8") as f:
-        sources = {row["source_id"] for row in csv.DictReader(f)}
+        source_rows = list(csv.DictReader(f))
+    assert len(source_rows) == 15, f"source_inventory 행 {len(source_rows)} != 15"
+    allowed_source_statuses = {"official_verified", "synthetic_reference", "unverified", "excluded"}
+    for row in source_rows:
+        assert row["source_status"] in allowed_source_statuses, f"미허용 source_status {row['source_status']}"
+        if row["source_status"] == "official_verified":
+            assert row["institution"].strip(), f"공식자료 기관 누락 {row['source_id']}"
+            assert row["source_url"].startswith("https://"), f"공식자료 URL 누락 {row['source_id']}"
+    sources = {row["source_id"] for row in source_rows}
     with open(os.path.join(BASE, "rules/rule_evidence_map.csv"), encoding="utf-8") as f:
         for row in csv.DictReader(f):
             assert row["rule_id"] in RULE_IDS, f"evidence_map 미확인 규칙 {row['rule_id']}"

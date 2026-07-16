@@ -172,7 +172,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/document-extraction-v1.0.0.schema.json",
+  "$id": "lease-companion/document-extraction-v1.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "문서 1건의 추출 결과. R01~R10 필수 키는 값이 null이어도 항상 존재한다.",
@@ -193,8 +193,8 @@
       "type": "object"
     },
     "schema_version": {
-      "const": "1.0.0",
-      "default": "1.0.0",
+      "const": "1.1.0",
+      "default": "1.1.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -213,5 +213,5 @@
   ],
   "title": "DocumentExtraction",
   "type": "object",
-  "x-schema-version": "1.0.0"
+  "x-schema-version": "1.1.0"
 }

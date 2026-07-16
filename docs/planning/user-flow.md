@@ -7,7 +7,7 @@
 ## 1. 회원가입·로그인
 
 - 회원가입 / 로그인 / 로그아웃 / 회원 탈퇴
-- 인증은 JWT Bearer + bcrypt 계열로 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). 구체 라이브러리·토큰 정책은 TODO.
+- 인증은 JWT Bearer(Python: PyJWT + Passlib-bcrypt)로 구현 완료(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). refresh token·운영 키 정책은 TODO.
 
 ## 2. 계약 대시보드·계약 건 생성
 

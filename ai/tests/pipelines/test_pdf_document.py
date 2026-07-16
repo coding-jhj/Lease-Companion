@@ -2,7 +2,7 @@ import fitz
 import pytest
 
 from lease_companion_ai.extraction.gemini_extractor import GeminiExtractError
-from lease_companion_ai.ingestion import pdf_text
+from lease_companion_ai.ingestion import limits, pdf_text
 from lease_companion_ai.ingestion.pdf_text import extract_document_text
 from lease_companion_ai.pipelines import minimum_mvp as pipe
 from lease_companion_ai.pipelines.minimum_mvp import extract_documents
@@ -74,18 +74,48 @@ def test_one_document_read_failure_does_not_block_the_other():
     assert extraction["registry"]["error"]  # 사용자에게 전달할 사유 존재
 
 
-def test_scanned_pdf_with_only_stray_text_falls_back_to_ocr(monkeypatch):
+def test_scanned_pdf_uses_one_step_vlm_structure(monkeypatch):
     """스캔본은 워터마크·페이지번호 한 줄만 텍스트 레이어에 갖는 경우가 흔하다.
 
     글자 유무만 보면 이 껍데기를 디지털로 오판해 OCR을 건너뛰고 빈 추출을 반환한다.
     """
-    monkeypatch.setattr(pdf_text, "_ocr_text", lambda content, filename: "OCR이 읽은 본문")
+    calls = []
+
+    def fake_extract(content, mime, doc_type, *, budget):
+        calls.append((content, mime, doc_type))
+        return {
+            "contract_type": None, "landlord_name": "임대인", "tenant_name": None,
+            "agent_name": None, "property_address": None, "deposit": None,
+            "monthly_rent": None, "contract_payment": None, "balance_payment": None,
+            "account_holder": None, "start_date": None, "end_date": None,
+            "move_in_date": None, "deposit_return_condition": "확인 필요",
+            "repair_responsibility": "확인 필요", "rights_change_clause_present": False,
+        }
+
+    monkeypatch.setattr(pipe, "extract_scanned_fields", fake_extract)
     stray = _pdf_bytes("열람용 워터마크 · 1 / 3")  # 부스러기 수십 자
 
     text, method = extract_document_text(stray, "scan.pdf")
 
-    assert method == "ocr"
-    assert text == "OCR이 읽은 본문"
+    assert method == "vlm"
+    assert text == ""
+    result = pipe._read_and_structure(stray, "scan.pdf", "contract")
+    assert result["read_ok"] is True
+    assert result["read_method"] == "vlm"
+    assert result["fields"]["landlord_name"] == "임대인"
+    assert len(calls) == 1
+
+
+def test_scanned_pdf_without_api_key_fails_safely(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setenv("GOOGLE_API_KEY", "")
+    scanned = _pdf_bytes("페이지 번호 1")
+
+    result = pipe._read_and_structure(scanned, "scan.pdf", "contract")
+
+    assert result["read_ok"] is False
+    assert result["read_method"] == "vlm"
+    assert "수동 입력" in result["error"]
 
 
 def test_digital_pdf_above_threshold_never_calls_ocr(monkeypatch):
@@ -93,7 +123,7 @@ def test_digital_pdf_above_threshold_never_calls_ocr(monkeypatch):
     def _fail(content, filename):
         raise AssertionError("디지털 PDF에 OCR이 호출되면 안 된다")
 
-    monkeypatch.setattr(pdf_text, "_ocr_text", _fail)
+    monkeypatch.setattr(pipe, "extract_scanned_fields", _fail)
     digital = _pdf_bytes("주택임대차계약서\n" + "보증금 반환 조건 조항 본문. " * 20)
 
     text, method = extract_document_text(digital, "contract.pdf")
@@ -104,19 +134,16 @@ def test_digital_pdf_above_threshold_never_calls_ocr(monkeypatch):
 
 def test_force_ocr_overrides_digital_pdf(monkeypatch):
     """데모·충실도 비교용 강제 OCR: 텍스트 레이어가 멀쩡해도 OCR로 읽는다."""
-    monkeypatch.setattr(pdf_text, "_ocr_text", lambda content, filename: "강제 OCR 결과")
     digital = _pdf_bytes("주택임대차계약서\n" + "보증금 반환 조건 조항 본문. " * 20)
 
     text, method = extract_document_text(digital, "contract.pdf", force_ocr=True)
 
-    assert method == "ocr"
-    assert text == "강제 OCR 결과"
+    assert method == "vlm"
+    assert text == ""
 
 
 def test_force_ocr_on_broken_pdf_still_reports_read_error(monkeypatch):
     """강제 OCR이 깨진 PDF를 ocr.py로 넘기면 fitz.open이 raw 예외로 터져 500이 된다."""
-    monkeypatch.setattr(pdf_text, "_ocr_text", lambda content, filename: "여기 오면 안 된다")
-
     extraction = extract_documents(
         _pdf_bytes("주택임대차계약서\n임대인: 이정훈 (서명)"), "contract.pdf",
         b"%not a valid pdf%", "registry.pdf", force_ocr=True,
@@ -124,6 +151,60 @@ def test_force_ocr_on_broken_pdf_still_reports_read_error(monkeypatch):
 
     assert extraction["registry"]["read_ok"] is False
     assert extraction["registry"]["error"]
+
+
+def test_pdf_page_limit_is_enforced(monkeypatch):
+    monkeypatch.setattr(limits, "MAX_PDF_PAGES", 1)
+    document = fitz.open()
+    document.new_page()
+    document.new_page()
+    payload = document.tobytes()
+    document.close()
+
+    with pytest.raises(pdf_text.DocumentReadError, match="최대 1쪽"):
+        extract_document_text(payload, "two-pages.pdf")
+
+
+def test_encrypted_pdf_is_rejected():
+    document = fitz.open()
+    document.new_page()
+    payload = document.tobytes(
+        encryption=fitz.PDF_ENCRYPT_AES_256,
+        owner_pw="owner-password",
+        user_pw="user-password",
+    )
+    document.close()
+
+    with pytest.raises(pdf_text.DocumentReadError, match="암호화"):
+        extract_document_text(payload, "encrypted.pdf")
+
+
+def test_extension_and_content_mismatch_is_rejected():
+    with pytest.raises(pdf_text.DocumentReadError, match="일치하지"):
+        extract_document_text(b"%PDF-1.7", "document.txt")
+
+
+def test_image_dimension_and_pixel_limits(monkeypatch):
+    oversized_header = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + (7000).to_bytes(4, "big") + (100).to_bytes(4, "big")
+    with pytest.raises(pdf_text.DocumentReadError, match="가로·세로"):
+        extract_document_text(oversized_header, "large.png")
+
+    monkeypatch.setattr(limits, "MAX_IMAGE_DIMENSION", 10_000)
+    monkeypatch.setattr(limits, "MAX_IMAGE_PIXELS", 100)
+    pixel_header = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + (20).to_bytes(4, "big") + (20).to_bytes(4, "big")
+    with pytest.raises(pdf_text.DocumentReadError, match="총 픽셀"):
+        extract_document_text(pixel_header, "pixels.png")
+
+
+def test_empty_corrupt_and_unsupported_documents_are_rejected():
+    cases = [
+        (b"", "empty.pdf"),
+        (b"%PDF-not-valid", "broken.pdf"),
+        (b"contents", "document.exe"),
+    ]
+    for content, filename in cases:
+        with pytest.raises(pdf_text.DocumentReadError):
+            extract_document_text(content, filename)
 
 
 def test_table_style_contract_extracts_landlord_and_property_address():

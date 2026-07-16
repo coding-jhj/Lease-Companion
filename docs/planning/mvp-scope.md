@@ -61,7 +61,7 @@ J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../dat
 
 ## 비고
 
-- 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): DB **PostgreSQL**, 인증 **JWT Bearer + bcrypt 계열**(구체 라이브러리·토큰 정책 TODO), 프론트엔드 **React + Vite + TypeScript**, Vector DB **Chroma 로컬 모드**. 현재 MVP는 로컬 실행이며 **운영 배포 플랫폼은 미정(TODO)**.
+- 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): DB **PostgreSQL**, 인증 **JWT Bearer(Python: PyJWT + Passlib-bcrypt)**, 프론트엔드 **React + Vite + TypeScript**, Vector DB **Chroma 로컬 모드**. refresh token·운영 키 정책과 운영 배포 플랫폼은 TODO다.
 - 통합 스키마는 `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
 - OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB는 Chroma 로컬 모드로 확정(2026-07-16).
 - 파인튜닝 로컬 7B 베이스 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.

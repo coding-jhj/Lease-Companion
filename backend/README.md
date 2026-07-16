@@ -12,7 +12,7 @@
 
 ## 담당 기능
 
-- 회원가입·로그인 (JWT Bearer + bcrypt 계열 — 구체 라이브러리·토큰 정책 TODO)
+- 회원가입·로그인 (JWT Bearer, PyJWT + Passlib-bcrypt 구현. refresh token·운영 키 정책 TODO)
 - 계약 대시보드·계약 건 생성·조회
 - 계약 상황 입력
 - 계약서·등기 등 문서 업로드, 형식·크기·개수 검증
@@ -28,20 +28,20 @@
 
 루트 [`../AGENTS.md`](../AGENTS.md)와 [`docs/backend/auth-and-persistence.md`](../docs/backend/auth-and-persistence.md) 기준.
 
-`User` · `ContractProject` · `Document` · `ExtractedField` · `AnalysisRun` · `JudgmentResult` · `EvidenceSource` · `QuestionCard` · `ChecklistItem` · `PostContractAction` · `UserFeedback`
+구현 완료: `User` · `ContractProject`. 미구현: `Document` · `ExtractedField` · `AnalysisRun` · `JudgmentResult` · `EvidenceSource` · `QuestionCard` · `ChecklistItem` · `PostContractAction` · `UserFeedback` 및 해당 repository.
 
 > `AnalysisRun`을 표준 명칭으로 사용한다. (루트 AGENTS.md의 `AnalysisJob`은 동의 표기)
 
 ## API 책임 영역
 
-경로·메서드·스키마는 미확정(`TODO`). 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
+구현된 auth·contracts·minimum MVP 경로는 확정되어 있다. 나머지 문서·분석·결과 API는 TODO다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
 
 `auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
 
 ## 컴포넌트 경계 (오케스트레이션 시 준수)
 
 - **규칙 엔진 판정을 LLM·로컬 모델이 임의로 변경하지 못한다.** 규칙 결과가 최종 판정이다.
-- **RAG 근거가 없으면** `확인 불가` 또는 `확인 필요`로 반환한다. RAG는 판정하지 않는다.
+- **RAG 근거가 없어도** 규칙 엔진의 `RuleStatus`·`urgency`를 유지하고 `evidence_sources=[]`로 반환한다.
 - 추출값과 생성값을 구분해 저장한다.
 - 결과 상태 9개·시급도 5개는 루트 AGENTS.md를 단일 기준으로 참조한다. `안전`/`위험`/`점수` 같은 종합 판정은 사용하지 않는다.
 
@@ -69,24 +69,17 @@ tests/               api/services/repositories 테스트
 
 사전 준비: Docker Desktop 설치·실행.
 
-### 최초 1회 셋업 (이걸 해야 admin 계정이 생성된다)
+### 최초 1회 셋업과 선택적 개발 시드
 
 ```bash
 docker compose up -d db           # 저장소 루트에서 — DB 컨테이너 시작
 cd backend
 copy .env.example .env            # Windows (macOS는 cp .env.example .env)
 pip install -e .                  # 본인 파이썬 환경 활성화 후
-python scripts/seed_dev.py        # → admin / 1234 계정 생성
+python scripts/seed_dev.py        # DEV_SEED_* 3개가 있을 때만 계정 생성
 ```
 
-### 개발용 테스트 계정 (로그인 시 사용)
-
-| 항목 | 값 |
-|---|---|
-| ID | `admin` |
-| PW | `1234` |
-
-가입 API의 비밀번호 규칙을 우회해 DB에 직접 생성한 계정이다 — **로컬 개발 DB 전용**, 메인 서버 전환 후에는 `seed_dev.py`를 실행하지 않는다.
+`DEV_SEED_USERNAME`, `DEV_SEED_EMAIL`, `DEV_SEED_PASSWORD`를 모두 명시해야 시드가 생성된다. 비밀번호는 가입 API와 같은 규칙을 적용하며 로그에 출력하지 않는다. 값이 없으면 스크립트는 사용법만 안내하고 종료한다.
 
 ### 이후 매일 개발 시작할 때
 
@@ -123,14 +116,12 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 **미정 (TODO)**
 
 - refresh token·토큰 폐기·서명 키 관리 (토큰 만료는 **24h 확정** — 2026-07-16)
-- 회원 외 영역(`contracts` 이후)의 구체 API 경로·메서드·요청/응답 스키마 (`registry-link` 전체 경로 포함)
+- 문서·분석·결과 영역의 구체 API 경로·메서드·요청/응답 스키마 (`registry-link` 전체 경로 포함)
 - 비동기 분석 상태 전달 방식(폴링 vs 콜백)
-- FastAPI 의존성 확정 후 `pyproject.toml` 갱신
-- 실행 명령(예: uvicorn) 확정 후 이 README에 기록
 
 ## 현재 상태
 
 - `main.py`(실서비스 진입점)와 `mvp_app.py`(최소 MVP 데모 앱 — 정적 UI + `/api/minimum-mvp/extract`·`/analyze` 라우트, `services/minimum_mvp.py` 경유 `ai/` 호출) 병존.
 - **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + Passlib-bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests`.
 - **계약 건 API 구현 완료**: 생성·목록·상세·삭제 + 계약 상황 입력(`PUT /api/contracts/{id}/situation`). 본인 소유만 접근 가능(그 외 404). 경로 상세: [`../docs/api/api-overview.md`](../docs/api/api-overview.md).
-- 문서 업로드·분석 결과 저장·워커는 미구현 (2주차).
+- 문서 업로드·분석 결과 저장·워커는 미구현.

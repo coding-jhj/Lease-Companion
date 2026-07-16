@@ -2,12 +2,12 @@
 
 ## 역할
 
-계약 문서에서 핵심 필드를 추출한다. 추출 전 문서 인식(`ingestion`)이 디지털 PDF 직접 추출(PyMuPDF·PDF.js)·스캔/사진 OCR(상용 LLM Gemini 3.5 Flash VLM 통합)로 문서 내용을 확보한다.
+계약 문서에서 핵심 필드를 추출한다. 디지털 PDF는 PyMuPDF 텍스트를 구조화하고, 스캔 PDF·이미지는 원본에서 고정 Pydantic 필드를 Gemini VLM 1회 호출로 직접 추출한다.
 
 ## 인식·추출 흐름
 
-1. **인식 (`ingestion`)**: 디지털 PDF는 직접 텍스트 추출(PyMuPDF·PDF.js), 스캔·사진 문서는 OCR(상용 LLM Gemini 3.5 Flash VLM). VLM은 Gemini에 통합되어 별도 단계가 없다.
-2. **필드 추출 (`extraction`)**: 인식 결과에서 핵심 필드 추출.
+1. **검증·분류 (`ingestion`)**: 실제 형식·크기·페이지·픽셀을 검사한다. 디지털 PDF는 텍스트를 추출하고 스캔·사진은 VLM 경로로 분류한다.
+2. **필드 추출 (`extraction`)**: 디지털 텍스트를 구조화하거나 스캔 원본에서 `ContractFields`·`RegistryFields`를 직접 생성한다. 스캔 입력은 외부 호출 1회다.
 3. **정규화 (`normalization`)**: 주소·금액·날짜·이름을 비교 가능한 형태로 정규화. (`rule-engine-design.md` 입력)
 
 MVP 문서: 계약서·특약(필수), 등기사항증명서·중개대상물 확인설명서(선택). 필드 상세: [`../data/document-fields.md`](../data/document-fields.md).

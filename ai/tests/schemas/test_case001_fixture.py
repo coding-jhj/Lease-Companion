@@ -18,6 +18,7 @@ from lease_companion_ai.schemas.unified import (
     CorrectionRequest,
     DocumentExtraction,
     InputSnapshot,
+    ResultType,
     VerificationStatus,
 )
 
@@ -133,3 +134,17 @@ def test_fixture_analysis_matches_rule_goldset():
             gold = {item["rule_id"]: item["status"] for item in record["gold_rules"]}
     assert gold is not None
     assert {r.rule_id: r.status.value for r in analysis.results} == gold
+    assert all(
+        result.result_type
+        is (
+            ResultType.FACT_FLAG
+            if result.rule_id in {"R03", "R04", "R05", "R07", "R10"}
+            else ResultType.JUDGMENT
+        )
+        for result in analysis.results
+    )
+    assert all(
+        result.triggers_actions
+        is (result.status.value not in {"일치", "명확", "적용 제외"})
+        for result in analysis.results
+    )

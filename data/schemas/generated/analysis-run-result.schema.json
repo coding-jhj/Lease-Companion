@@ -50,9 +50,18 @@
       "title": "OfficialSource",
       "type": "object"
     },
+    "ResultType": {
+      "description": "규칙 결과의 역할. 행동 활성화 여부와는 별도 축이다.",
+      "enum": [
+        "judgment",
+        "fact_flag"
+      ],
+      "title": "ResultType",
+      "type": "string"
+    },
     "RuleResult": {
       "additionalProperties": false,
-      "description": "규칙 1개의 최종 판정. status·urgency는 확정 어휘만 사용(새 상태 금지).",
+      "description": "규칙 결과 1개. 결과 역할·행동 활성화·상태·시급도를 분리한다.",
       "properties": {
         "completed": {
           "default": false,
@@ -105,6 +114,9 @@
           "title": "Recommended Actions",
           "type": "array"
         },
+        "result_type": {
+          "$ref": "#/$defs/ResultType"
+        },
         "rule_id": {
           "pattern": "^R\\d{2}$",
           "title": "Rule Id",
@@ -117,6 +129,10 @@
         "status": {
           "$ref": "#/$defs/RuleStatus"
         },
+        "triggers_actions": {
+          "title": "Triggers Actions",
+          "type": "boolean"
+        },
         "urgency": {
           "$ref": "#/$defs/Urgency"
         }
@@ -124,6 +140,8 @@
       "required": [
         "rule_id",
         "rule_name",
+        "result_type",
+        "triggers_actions",
         "status",
         "urgency",
         "reason",
@@ -161,7 +179,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/analysis-run-result-v1.0.0.schema.json",
+  "$id": "lease-companion/analysis-run-result-v1.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "분석 실행 1회의 R01~R10 결과 묶음.",
@@ -203,8 +221,8 @@
       "type": "array"
     },
     "schema_version": {
-      "const": "1.0.0",
-      "default": "1.0.0",
+      "const": "1.1.0",
+      "default": "1.1.0",
       "title": "Schema Version",
       "type": "string"
     }
@@ -217,5 +235,5 @@
   ],
   "title": "AnalysisRunResult",
   "type": "object",
-  "x-schema-version": "1.0.0"
+  "x-schema-version": "1.1.0"
 }

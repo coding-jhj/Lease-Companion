@@ -27,6 +27,7 @@ from lease_companion_ai.schemas.unified import (
     FieldCorrection,
     REQUIRED_CONTRACT_FIELDS,
     REQUIRED_REGISTRY_FIELDS,
+    ResultType,
     VerificationStatus,
 )
 
@@ -140,6 +141,15 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
         assert [s.source_id for s in result.evidence_sources] == [
             s.source_id for s in legacy.evidence_sources
         ]
+        expected_type = (
+            ResultType.FACT_FLAG
+            if result.rule_id in {"R03", "R04", "R05", "R07", "R10"}
+            else ResultType.JUDGMENT
+        )
+        assert result.result_type is expected_type
+        assert result.triggers_actions is (
+            result.status.value not in {"일치", "명확", "적용 제외"}
+        )
     # CASE-001 rule goldset 유지
     assert {r.rule_id: r.status.value for r in analysis.results} == gold_statuses
 

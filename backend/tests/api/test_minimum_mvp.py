@@ -69,4 +69,16 @@ def test_analyze_rejects_wrong_canonical_field_type_as_422():
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"]["code"] == "EXTRACTION_NOT_CONFIRMED"
+    assert response.json()["error"]["code"] == "extraction_not_confirmed"
+
+
+def test_validation_error_does_not_echo_uploaded_content():
+    secret = "SECRET_BASE64_DOCUMENT_BODY"
+    response = client.post(
+        "/api/minimum-mvp/extract",
+        json={"contract": {"filename": "x.txt", "content_base64": secret}},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+    assert secret not in response.text

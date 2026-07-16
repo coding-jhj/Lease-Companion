@@ -18,6 +18,5 @@
 - **`generated/` — 현재 canonical JSON Schema 생성본(2026-07-16).** `ai/src/lease_companion_ai/schemas/unified.py`의 Pydantic 모델에서 자동 생성한 5개(contract-context·document-extraction·input-snapshot·correction-request·analysis-run-result). **손으로 수정하지 않는다.** 재생성 명령:
   `conda run -n lease-py310 python scripts/generate_unified_schemas.py`
   사용법·필드 규약: [`../../docs/api/data-contract-v1.md`](../../docs/api/data-contract-v1.md)
-- **`contract_schema.json` / `registry_schema.json` — legacy/reference (설계 템플릿).** 내부의 numeric confidence·`user_verified`는 과거 설계 표기로, 현행 통합 스키마 결정(3등급 confidence·`user_corrected_value`·`verification_status`, → [`../../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../../docs/decisions/2026-07-16-shared-pydantic-schema.md))과 충돌한다. 새 작업의 기준으로 사용하지 않는다. 손으로 재작성·삭제·이동하지 않는다.
-- `minimum-mvp-extraction-v1.schema.json` — 최소 MVP 추출값 확인·수정 스키마(field_name enum 12개, verification_status: unverified·confirmed·corrected). 기존 데모 경로용.
+- **`legacy/` — 과거 수동 설계 보존.** `contract_schema.json`·`registry_schema.json`의 numeric confidence·`user_verified`, `minimum-mvp-extraction-v1.schema.json`은 현행 계약과 혼동하지 않는다. 소비 경계는 [`legacy/README.md`](legacy/README.md)를 따른다.
 - TODO: 확인설명서·건축물대장 필드, 판정 리포트 스키마 — J01~J12 후속 확장에서 Pydantic 모델에 필드를 "추가"하고 재생성하는 방식으로 작성(기존 필드 이름·의미 불변).

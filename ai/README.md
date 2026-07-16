@@ -9,7 +9,7 @@
 ## 파이프라인
 
 ```
-문서 입력 → 인식(PDF 직접 추출·OCR Gemini 3.5 Flash VLM 통합) → 필드 추출 → 정규화
+문서 입력 → 디지털 PDF 텍스트 추출 또는 스캔 원본 Gemini 1회 구조화 → 정규화
   → 사용자 확인·수정
   → 상용 LLM 조항 구조화·불명확성 후보 (Gemini 3.5 Flash)
      ※ (선택) 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외
@@ -35,7 +35,7 @@
 
 ```
 src/lease_companion_ai/
-  ingestion/      문서 인식: PDF 직접 추출(PyMuPDF·PDF.js)·OCR(Gemini 3.5 Flash VLM 통합)
+  ingestion/      파일 형식·자원 검증, 디지털 PDF 직접 추출(PyMuPDF), 스캔 VLM 경로 분류
   extraction/     인식 결과에서 핵심 필드 추출 (Gemini 3.5 Flash)
   normalization/  추출값 정규화(주소·금액·날짜·이름)
   local_model/    로컬 7B 조항 분류 — (선택) 성능비교 실험, MVP 크리티컬 패스 아님
@@ -78,12 +78,11 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 ## 현재 상태 / TODO
 
-- 구현됨(최소 MVP 범위): `ingestion`(PyMuPDF·Gemini OCR), `extraction`(Gemini 구조화 + 정규식 폴백), `normalization`(이름·주소 최소 정규화), `rules`(R01~R10), `pipelines`(minimum_mvp), `schemas`(minimum_mvp) + 관련 테스트.
+- 구현됨(최소 MVP 범위): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 1회 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `rules`(R01~R10), `pipelines`, canonical `schemas` v1.1.0 + 관련 테스트.
 - 미구현: `classification`·`providers`(어댑터 계층)·`generation`·`guardrails`·`routing`·`rag`(실제 검색)·`local_model`·`evaluation`(전체).
 - 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토) → `providers`/`generation` 후속 구현
-- 확정(2026-07-14 변경): OCR 상용 LLM Gemini 3.5 Flash VLM 통합·디지털 PDF PyMuPDF → `ingestion` 구현 완료(`ingestion/ocr.py`·`pdf_text.py`). PaddleOCR-VL은 (선택) 비교실험 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`)
+- 확정(2026-07-14 변경): 스캔 PDF·이미지는 Gemini 3.5 Flash가 원본에서 고정 Pydantic 필드를 1회 호출로 직접 추출한다. 디지털 PDF는 PyMuPDF 텍스트 경로다. PaddleOCR-VL은 선택 비교실험이다 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`).
 - 확정(2026-07-14): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro → `rag` 후속 구현. 벡터 DB는 **Chroma 로컬 모드 확정**(2026-07-16, `../docs/decisions/2026-07-16-mvp-platform-stack.md`)
-- 확정(2026-07-16): `schemas/`의 Pydantic 모델이 런타임 통합 스키마 단일 원본 (`../docs/decisions/2026-07-16-shared-pydantic-schema.md`). 통합 모델 코드화는 후속 A 작업.
+- 구현 완료(2026-07-16): `schemas/`의 Pydantic 모델 v1.1.0이 런타임 통합 스키마 단일 원본이며 `RuleResult` 13필드에 `result_type`·`triggers_actions`를 포함한다 (`../docs/decisions/2026-07-16-shared-pydantic-schema.md`).
 - 구현 순서: R01~R10 기반 실전 계약 점검 MVP 우선 → J01~J12 후속 확장.
 - TODO: 로컬 7B 베이스 모델(선택 성능비교 실험 — MVP 크리티컬 패스 아님) → `local_model`/`training` 구현 (`../docs/ai/fine-tuning-plan.md`)
-- TODO: 의존성·실행 방식 확정 후 `pyproject.toml` 갱신

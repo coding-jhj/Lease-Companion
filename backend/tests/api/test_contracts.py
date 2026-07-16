@@ -10,6 +10,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.schemas.contract import ContractStage as BackendContractStage
+from app.schemas.contract import ContractType as BackendContractType
+from lease_companion_ai.schemas.unified import ContractStage, ContractType
 
 
 def _token(client, username):
@@ -65,6 +68,11 @@ def test_situation_input(client, alice):
     assert res.status_code == 200
     assert res.json()["contract_type"] == "보증부 월세"
     assert res.json()["contract_stage"] == "계약금 입금 전"
+
+
+def test_backend_reuses_canonical_contract_enums():
+    assert BackendContractType is ContractType
+    assert BackendContractStage is ContractStage
 
 
 def test_situation_invalid_stage(client, alice):

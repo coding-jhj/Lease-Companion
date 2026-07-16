@@ -37,7 +37,7 @@
 | 추출 | 핵심 필드 구조화 추출 | 최종 판정 |
 | 로컬 7B 모델 (선택적 실험, MVP 크리티컬 패스 제외) | 상용 vs 로컬 성능비교 실험용 조항 분류(파인튜닝 B/C안). MVP 조항 구조화는 상용 LLM(Gemini 3.5 Flash)이 담당 | **최종 판정**, 규칙 결과 변경 |
 | Python 규칙 엔진 | 문서 내부 판정 + 문서 교차검증의 **명시적 최종 판정** | 근거 생성, 설명 |
-| RAG | 공식 자료 기반 **근거 검색** | **판정** (근거 없으면 `확인 불가`/`확인 필요` 반환) |
+| RAG | 검증된 공식 자료 기반 **근거 검색** | 판정하지 않음. 근거가 없으면 `evidence_sources=[]`; 규칙의 `RuleStatus`·`urgency` 유지 |
 | 상용 LLM | 저신뢰 결과 재검토, 근거 기반 쉬운 설명·질문·행동 생성 | 규칙 판정 변경 |
 | guardrails | 단정 표현·근거 없는 출력 차단 | — |
 | routing | 단계별 처리 모델·fallback 선택 | 판정 |
@@ -58,7 +58,7 @@
 
 ## 확정 / 미정 (TODO)
 
-- 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): 프론트엔드 **React + Vite + TypeScript**, DB **PostgreSQL**, 벡터 저장소 **Chroma 로컬 모드**, 인증 **JWT Bearer + bcrypt 계열**(구체 라이브러리·토큰 정책 TODO). 현재 MVP는 로컬 실행이며 **운영 배포 플랫폼은 미정(TODO)**.
+- 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): 프론트엔드 **React + Vite + TypeScript**, DB **PostgreSQL**, 벡터 저장소 **Chroma 로컬 모드**, 인증 **JWT Bearer(Python: PyJWT + Passlib-bcrypt)**. refresh token·운영 키 정책은 TODO이며 현재 MVP는 로컬 실행이다.
 - 통합 스키마 확정(2026-07-16): `ai/src/lease_companion_ai/schemas/` Pydantic 모델 단일 원본, Backend가 공통 타입 재사용(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)). 실제 사용자 계약 건은 `contract_id`, 합성·평가 사례는 `case_id`로 구분한다.
 - 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js). VLM은 Gemini에 통합(별도 OCR·VLM 단계 없음, 2026-07-14 변경 → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험.
 - (선택)로컬 7B 성능비교 실험용 베이스 모델은 실험 진행 시 확정.

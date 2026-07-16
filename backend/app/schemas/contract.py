@@ -1,14 +1,7 @@
 from datetime import datetime
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
-# 대상 계약 3종 (루트 AGENTS.md 확정)
-ContractType = Literal["전세", "보증부 월세", "일반 월세"]
-
-# 계약 단계 3개 (2026-07-16 팀 확정). '계약 직후' 단계는 전입신고 근거·미신고 리스크
-# 사례를 함께 제공하기로 함 — 해당 콘텐츠 생성은 담당 A(RAG·생성) 영역
-ContractStage = Literal["계약금 입금 전", "서명 전", "계약 직후"]
+from lease_companion_ai.schemas.unified import ContractStage, ContractType
 
 
 class ContractCreateRequest(BaseModel):
@@ -25,8 +18,8 @@ class SituationRequest(BaseModel):
 class ContractResponse(BaseModel):
     id: int
     title: str
-    contract_type: str | None
-    contract_stage: str | None
+    contract_type: ContractType | None
+    contract_stage: ContractStage | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

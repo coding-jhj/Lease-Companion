@@ -34,7 +34,7 @@
 - 각 필드는 값뿐 아니라 원문 위치, 확인 상태, 추출 실패 사유를 구분할 수 있어야 한다.
 - 추출기는 판정하지 않는다. 규칙 결과·설명·질문·행동을 추출 JSON에 섞지 않는다.
 - 값이 없거나 읽히지 않으면 지어내지 않고 `null`과 사유를 반환한다.
-- 스키마 초안: [`../../data/schemas/minimum-mvp-extraction-v1.schema.json`](../../data/schemas/minimum-mvp-extraction-v1.schema.json)
+- 역사적 스키마 초안: [`../../data/schemas/legacy/minimum-mvp-extraction-v1.schema.json`](../../data/schemas/legacy/minimum-mvp-extraction-v1.schema.json). 현재 canonical 계약은 `data/schemas/generated/`이다.
 
 ### 3. 사용자 검증
 

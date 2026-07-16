@@ -16,8 +16,10 @@ from typing import Any
 from lease_companion_ai.rules.minimum_mvp import run_rules
 from lease_companion_ai.schemas import minimum_mvp as legacy
 from lease_companion_ai.schemas.unified import (
+    ACTION_TRIGGER_STATUSES,
     REQUIRED_FIELDS_BY_TYPE,
     ALLOWED_RULE_STATUSES,
+    RESULT_TYPE_BY_RULE_ID,
     AnalysisRunResult,
     Confidence,
     CorrectionRequest,
@@ -30,6 +32,7 @@ from lease_companion_ai.schemas.unified import (
     RuleResult,
     RuleStatus,
     SnapshotFields,
+    Urgency,
     VerificationStatus,
 )
 
@@ -177,12 +180,15 @@ def rule_inputs(fields: dict[str, ExtractedField]) -> dict[str, Any]:
 
 def rule_result_from_legacy(result: legacy.RuleResult) -> RuleResult:
     """기존 dataclass RuleResult → 통합 RuleResult. 상태·시급도는 확정 어휘로 검증된다."""
+    status = RuleStatus(result.status)
     return RuleResult(
         rule_id=result.rule_id,
         rule_name=result.rule_name,
         judgment_id=result.judgment_id,
-        status=RuleStatus(result.status),
-        urgency=result.urgency,
+        result_type=RESULT_TYPE_BY_RULE_ID[result.rule_id],
+        triggers_actions=status in ACTION_TRIGGER_STATUSES,
+        status=status,
+        urgency=Urgency(result.urgency),
         reason=result.reason,
         question=result.question,
         recommended_actions=list(result.recommended_actions),

@@ -47,6 +47,7 @@ ai/src/lease_companion_ai/schemas/
 
 - 스키마에 버전 필드를 두고, 필드 추가·의미 변경 시 버전을 올린다.
 - 분석 결과에는 사용된 스키마 버전을 기록해 재분석·이력 조회 시 대조할 수 있게 한다.
+- 현재 버전은 **1.1.0**이다. R01~R10 결과 역할을 구분하는 `result_type`과 현재 결과의 행동 활성화 여부인 `triggers_actions`를 additive 필드로 추가했다.
 
 ## JSON Schema 생성 원칙
 
@@ -55,7 +56,7 @@ ai/src/lease_companion_ai/schemas/
 
 ## 기존 data/schemas JSON 처리
 
-- `data/schemas/contract_schema.json` · `registry_schema.json`은 numeric confidence·`user_verified` 등 이 결정과 충돌하는 **legacy/reference 설계 템플릿**이다.
+- `data/schemas/legacy/contract_schema.json` · `registry_schema.json`은 numeric confidence·`user_verified` 등 이 결정과 충돌하는 **legacy/reference 설계 템플릿**이다.
 - 삭제·이동·손 재작성하지 않는다. 현행 생성 JSON Schema는 `data/schemas/generated/`에서 관리한다. (`data/schemas/README.md`에 상태 명시)
 
 ## R01~R10 우선, J01~J12 후속 확장 시 호환 원칙

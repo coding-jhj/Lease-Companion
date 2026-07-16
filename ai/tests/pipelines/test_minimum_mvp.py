@@ -95,6 +95,42 @@ def test_rules_return_all_ten_results_without_safety_score():
     assert not any("사기 가능성 점수" in result.reason for result in results)
 
 
+def test_only_official_verified_sources_are_exposed(monkeypatch):
+    from lease_companion_ai.rules import minimum_mvp as rules
+
+    real_read = rules._read_csv
+
+    def fake_read(name):
+        if name != "source_inventory.csv":
+            return real_read(name)
+        common = {"title": "자료", "institution": "공식기관", "summary": "요약"}
+        return [
+            {**common, "source_id": "SRC-STD-LEASE", "source_status": "official_verified", "source_url": "https://official.example/source"},
+            {**common, "source_id": "SRC-REGISTRY-SAMPLE", "source_status": "synthetic_reference", "source_url": "https://example.invalid/sample"},
+            {**common, "source_id": "SRC-MOLIT-CHECKLIST", "source_status": "unverified", "source_url": "https://official.example/unverified"},
+            {**common, "source_id": "SRC-CONFIRM-FORM", "source_status": "excluded", "source_url": "https://official.example/excluded"},
+        ]
+
+    monkeypatch.setattr(rules, "_read_csv", fake_read)
+    results = rules.run_rules({}, {})
+    sources = {source.source_id for result in results for source in result.evidence_sources}
+
+    assert sources == {"SRC-STD-LEASE"}
+
+
+def test_missing_official_evidence_does_not_change_rule_status_or_urgency(monkeypatch):
+    from lease_companion_ai.rules import minimum_mvp as rules
+
+    contract = {"landlord_name": "임대인", "account_holder": "다른이", "deposit_return_condition": "명확", "repair_responsibility": "명확", "rights_change_clause_present": True}
+    registry = {"owner_names": ["소유자"], "mortgage_present": True, "seizure_present": False, "provisional_seizure_present": False, "trust_present": False, "issue_date": "2026-07-01"}
+    baseline = [(item.rule_id, item.status, item.urgency) for item in rules.run_rules(contract, registry)]
+    monkeypatch.setattr(rules, "_evidence_catalog", lambda: {})
+    without_evidence = rules.run_rules(contract, registry)
+
+    assert [(item.rule_id, item.status, item.urgency) for item in without_evidence] == baseline
+    assert all(item.evidence_sources == [] for item in without_evidence)
+
+
 def test_registry_parser_handles_colon_format():
     # 생성 데이터(CASE-006~)는 "소유자: 이름" 콜론 표기 — 통합 파서가 처리해야 한다.
     registry = (ROOT / "data/sample/registry-records/registry_CASE-006.txt").read_text(encoding="utf-8")
@@ -220,9 +256,16 @@ def test_verified_legacy_analysis_uses_canonical_result_contract():
     assert [result["rule_id"] for result in results] == [f"R{i:02d}" for i in range(1, 11)]
     assert all(set(result) == {
         "rule_id", "rule_name", "judgment_id", "status", "urgency", "reason",
-        "question", "recommended_actions", "evidence_sources", "limitations", "completed",
+        "result_type", "triggers_actions", "question", "recommended_actions",
+        "evidence_sources", "limitations", "completed",
     } for result in results)
-    assert results == [result.to_dict() for result in run_rules(contract, registry)]
+    legacy_results = [result.to_dict() for result in run_rules(contract, registry)]
+    for result, legacy in zip(results, legacy_results, strict=True):
+        assert {
+            key: value
+            for key, value in result.items()
+            if key not in {"result_type", "triggers_actions"}
+        } == legacy
 
 
 def test_registry_parser_keeps_only_latest_full_transfer_owner():

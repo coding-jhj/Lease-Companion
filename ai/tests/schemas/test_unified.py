@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from lease_companion_ai.schemas.unified import (
+    SCHEMA_VERSION,
     AnalysisRunResult,
     Confidence,
     ContractContext,
@@ -14,6 +15,7 @@ from lease_companion_ai.schemas.unified import (
     ExtractedField,
     FieldCorrection,
     InputSnapshot,
+    ResultType,
     RuleResult,
     SnapshotFields,
     SourceEvidence,
@@ -183,9 +185,10 @@ def test_correction_request_enforces_rule_field_type():
 
 
 def test_models_reject_unknown_schema_version():
+    assert SCHEMA_VERSION == "1.1.0"
     with pytest.raises(ValidationError):
         ContractContext(
-            schema_version="9.9.9",
+            schema_version="1.0.0",
             contract_id=1,
             contract_type="전세",
             contract_stage="계약금 입금 전",
@@ -259,7 +262,95 @@ def _rule_result(**overrides) -> RuleResult:
         "limitations": "사기·위법 판단 아님.",
     }
     payload.update(overrides)
+    payload.setdefault(
+        "result_type",
+        "fact_flag" if payload["rule_id"] in {"R03", "R04", "R05", "R07", "R10"} else "judgment",
+    )
+    payload.setdefault(
+        "triggers_actions",
+        payload["status"] not in {"일치", "명확", "적용 제외"},
+    )
     return RuleResult(**payload)
+
+
+def test_result_type_accepts_exactly_two_values():
+    assert _rule_result(result_type="judgment").result_type is ResultType.JUDGMENT
+    assert _rule_result(rule_id="R03", status="적용 제외").result_type is ResultType.FACT_FLAG
+    with pytest.raises(ValidationError):
+        _rule_result(result_type="action_trigger")
+
+
+@pytest.mark.parametrize(
+    ("rule_id", "expected"),
+    [
+        ("R01", ResultType.JUDGMENT),
+        ("R02", ResultType.JUDGMENT),
+        ("R03", ResultType.FACT_FLAG),
+        ("R04", ResultType.FACT_FLAG),
+        ("R05", ResultType.FACT_FLAG),
+        ("R06", ResultType.JUDGMENT),
+        ("R07", ResultType.FACT_FLAG),
+        ("R08", ResultType.JUDGMENT),
+        ("R09", ResultType.JUDGMENT),
+        ("R10", ResultType.FACT_FLAG),
+    ],
+)
+def test_rule_result_enforces_result_type_mapping(rule_id, expected):
+    statuses = {
+        "R01": "일치",
+        "R02": "일치",
+        "R03": "적용 제외",
+        "R04": "적용 제외",
+        "R05": "적용 제외",
+        "R06": "일치",
+        "R07": "확인 필요",
+        "R08": "명확",
+        "R09": "명확",
+        "R10": "명확",
+    }
+    assert _rule_result(rule_id=rule_id, status=statuses[rule_id]).result_type is expected
+    wrong = ResultType.FACT_FLAG if expected is ResultType.JUDGMENT else ResultType.JUDGMENT
+    with pytest.raises(ValidationError, match="result_type"):
+        _rule_result(rule_id=rule_id, status=statuses[rule_id], result_type=wrong)
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        ("일치", False),
+        ("명확", False),
+        ("적용 제외", False),
+        ("불일치", True),
+        ("불명확", True),
+        ("미기재", True),
+        ("상충 가능", True),
+        ("확인 필요", True),
+        ("확인 불가", True),
+    ],
+)
+def test_rule_result_enforces_action_trigger_by_status(status, expected):
+    result = _rule_result(
+        rule_id="R99",
+        status=status,
+        result_type="judgment",
+        triggers_actions=expected,
+    )
+    assert result.triggers_actions is expected
+    with pytest.raises(ValidationError, match="triggers_actions"):
+        _rule_result(
+            rule_id="R99",
+            status=status,
+            result_type="judgment",
+            triggers_actions=not expected,
+        )
+
+
+def test_rule_result_serialization_round_trip_includes_classification():
+    result = _rule_result()
+    restored = RuleResult.model_validate_json(result.model_dump_json())
+    assert restored == result
+    assert restored.model_dump()["result_type"] is ResultType.JUDGMENT
+    assert restored.model_dump()["triggers_actions"] is True
 
 
 def test_rule_result_rejects_unknown_status():

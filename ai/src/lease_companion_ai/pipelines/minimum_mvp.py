@@ -7,12 +7,15 @@ from datetime import datetime, timezone
 from typing import Any
 
 from lease_companion_ai.extraction.gemini_extractor import (
+    ExternalCallBudget,
     GeminiExtractError,
     extract_contract_fields,
     extract_registry_fields,
+    extract_scanned_fields,
 )
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
 from lease_companion_ai.ingestion.pdf_text import DocumentReadError, extract_document_text
+from lease_companion_ai.ingestion.limits import MAX_FILE_SIZE
 from lease_companion_ai.schemas.adapters import (
     analyze_snapshot,
     build_snapshot,
@@ -23,8 +26,6 @@ from lease_companion_ai.schemas.adapters import (
 from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction as LegacyDocumentExtraction
 from lease_companion_ai.schemas.unified import DocumentExtraction as UnifiedDocumentExtraction
 
-
-MAX_FILE_SIZE = 10 * 1024 * 1024
 
 _KIND_LABELS = {"contract": "계약서", "registry": "등기사항증명서"}
 
@@ -68,12 +69,47 @@ def _structure(text: str, doc_type: str) -> dict[str, Any]:
     return document_to_legacy(unified)
 
 
-def _read_and_structure(content: bytes, filename: str, doc_type: str, force_ocr: bool = False) -> dict[str, Any]:
-    """문서 1건 읽기·구조화. 읽기/OCR 실패를 개별 격리 — 한 문서 실패가 다른 문서를 막지 않는다."""
+def _read_and_structure(
+    content: bytes,
+    filename: str,
+    doc_type: str,
+    force_ocr: bool = False,
+    budget: ExternalCallBudget | None = None,
+) -> dict[str, Any]:
+    """문서 1건 읽기·구조화. 한 문서 실패가 다른 문서를 막지 않는다."""
     try:
         text, method = extract_document_text(content, filename, force_ocr=force_ocr)
     except DocumentReadError as exc:
         return {"read_ok": False, "read_method": None, "error": str(exc)}
+    if method == "vlm":
+        mime = "application/pdf" if filename.lower().endswith(".pdf") else (
+            "image/png" if filename.lower().endswith(".png") else "image/jpeg"
+        )
+        try:
+            fields = extract_scanned_fields(
+                content,
+                mime,
+                "contract" if doc_type == "contract" else "registry",
+                budget=budget or ExternalCallBudget(),
+            )
+        except GeminiExtractError as exc:
+            return {
+                "read_ok": False,
+                "read_method": "vlm",
+                "error": f"스캔 문서 구조화에 실패했습니다: {exc} 수동 입력 또는 디지털 문서를 사용하세요.",
+            }
+        label = "contract" if doc_type == "contract" else "registry_record"
+        legacy = LegacyDocumentExtraction(
+            label,
+            fields,
+            [key for key, value in fields.items() if value is None],
+        ).to_dict()
+        doc = document_to_legacy(
+            document_from_legacy(legacy, document_id=f"minimum-mvp-{doc_type}")
+        )
+        doc["read_method"] = "vlm"
+        doc["read_ok"] = True
+        return doc
     expected = "contract" if doc_type == "contract" else "registry"
     kind = _detect_doc_kind(text)
     if kind is not None and kind != expected:
@@ -94,13 +130,17 @@ def extract_documents(contract_content: bytes, contract_filename: str, registry_
     for content in (contract_content, registry_content):
         if len(content) > MAX_FILE_SIZE:
             raise ValueError("파일당 최대 크기는 최소 MVP에서 10MB입니다.")
-    # 두 문서는 독립 → 동시 처리. OCR·구조화가 각각 수십 초짜리 API 호출이라
-    # 순차 실행은 스캔 입력에서 체감 2배 느리다. 실패 격리는 _read_and_structure 내부 그대로.
+    # 두 문서는 독립이지만 공유 호출 예산과 전역 동시성 제한을 지킨다.
     from concurrent.futures import ThreadPoolExecutor
 
+    budget = ExternalCallBudget()
     with ThreadPoolExecutor(max_workers=2) as pool:
-        contract_job = pool.submit(_read_and_structure, contract_content, contract_filename, "contract", force_ocr)
-        registry_job = pool.submit(_read_and_structure, registry_content, registry_filename, "registry", force_ocr)
+        contract_job = pool.submit(
+            _read_and_structure, contract_content, contract_filename, "contract", force_ocr, budget
+        )
+        registry_job = pool.submit(
+            _read_and_structure, registry_content, registry_filename, "registry", force_ocr, budget
+        )
         return {"contract": contract_job.result(), "registry": registry_job.result()}
 
 

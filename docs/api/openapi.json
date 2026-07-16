@@ -385,24 +385,22 @@
           "contract_type": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/ContractType"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Contract Type"
+            ]
           },
           "contract_stage": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/ContractStage"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Contract Stage"
+            ]
           },
           "created_at": {
             "type": "string",
@@ -419,6 +417,24 @@
           "created_at"
         ],
         "title": "ContractResponse"
+      },
+      "ContractStage": {
+        "type": "string",
+        "enum": [
+          "계약금 입금 전",
+          "서명 전",
+          "계약 직후"
+        ],
+        "title": "ContractStage"
+      },
+      "ContractType": {
+        "type": "string",
+        "enum": [
+          "전세",
+          "보증부 월세",
+          "일반 월세"
+        ],
+        "title": "ContractType"
       },
       "HTTPValidationError": {
         "properties": {
@@ -483,22 +499,10 @@
       "SituationRequest": {
         "properties": {
           "contract_type": {
-            "type": "string",
-            "enum": [
-              "전세",
-              "보증부 월세",
-              "일반 월세"
-            ],
-            "title": "Contract Type"
+            "$ref": "#/components/schemas/ContractType"
           },
           "contract_stage": {
-            "type": "string",
-            "enum": [
-              "계약금 입금 전",
-              "서명 전",
-              "계약 직후"
-            ],
-            "title": "Contract Stage"
+            "$ref": "#/components/schemas/ContractStage"
           }
         },
         "type": "object",

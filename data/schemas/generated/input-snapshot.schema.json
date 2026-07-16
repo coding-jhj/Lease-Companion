@@ -189,7 +189,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/input-snapshot-v1.0.0.schema.json",
+  "$id": "lease-companion/input-snapshot-v1.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "사용자가 확인을 완료한 시점 입력의 불변 사본. 분석 실행의 입력 단위.",
@@ -225,8 +225,8 @@
       "type": "string"
     },
     "schema_version": {
-      "const": "1.0.0",
-      "default": "1.0.0",
+      "const": "1.1.0",
+      "default": "1.1.0",
       "title": "Schema Version",
       "type": "string"
     }
@@ -239,5 +239,5 @@
   ],
   "title": "InputSnapshot",
   "type": "object",
-  "x-schema-version": "1.0.0"
+  "x-schema-version": "1.1.0"
 }

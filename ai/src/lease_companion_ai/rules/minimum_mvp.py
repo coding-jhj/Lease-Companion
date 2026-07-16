@@ -26,14 +26,19 @@ def _read_csv(name: str) -> list[dict[str, str]]:
 def _evidence_catalog() -> dict[str, EvidenceSource]:
     catalog: dict[str, EvidenceSource] = {}
     for row in _read_csv("source_inventory.csv"):
+        # OfficialSource는 담당자가 1차 공식 원문·기관·이용조건을 확인한 자료만 허용한다.
+        if row.get("source_status") != "official_verified":
+            continue
         raw_url = row["source_url"].strip()
-        url = raw_url if raw_url.startswith(("http://", "https://")) else None
+        institution = row["institution"].strip()
+        if not institution or not raw_url.startswith(("http://", "https://")):
+            continue
         catalog[row["source_id"]] = EvidenceSource(
             source_id=row["source_id"],
             title=row["title"],
-            institution=row["institution"],
+            institution=institution,
             summary=row["summary"],
-            source_url=url,
+            source_url=raw_url,
         )
     return catalog
 

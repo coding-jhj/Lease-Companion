@@ -1,23 +1,26 @@
-"""상용 LLM(Gemini) 구조화 추출 — 문서 텍스트 → 고정 스키마 필드 JSON.
+"""상용 LLM(Gemini) 구조화 추출 — 텍스트 또는 스캔 원본 → 고정 스키마 JSON.
 
-OCR/PyMuPDF가 낸 **텍스트**를 입력받아 계약·등기 필드를 구조화한다(결정: OCR·구조화 = Gemini).
+디지털 텍스트는 텍스트 구조화로, 스캔 PDF·이미지는 원본을 직접 구조화하는 1회 VLM 호출로 처리한다.
 정규식 파서(minimum_mvp.py)는 실제 서식(폼 레이아웃)에서 필드를 못 뽑아 이걸로 대체하며,
 키 없음·API 실패 시 그 정규식 파서로 폴백한다(pipelines/minimum_mvp.py).
 
 response_schema(pydantic)로 필드명·타입·enum·tri-state(null)를 강제해 run_rules 계약을 지킨다.
 프롬프트는 ai/prompts/extraction/ 에서 로드(AGENTS.md: 프롬프트 버전관리).
 
-ponytail: 스캔 문서는 (OCR→텍스트)+(구조화) 2콜이 된다. VLM 이미지 단일콜 통합은 처리량이
-필요해지면 도입. 지금은 텍스트 단일경로로 표면을 최소화한다.
 """
 from __future__ import annotations
 
 import os
-import time
 from pathlib import Path
+from threading import BoundedSemaphore, Lock
 from typing import Literal, Optional
 
 from pydantic import BaseModel
+
+from lease_companion_ai.ingestion.limits import (
+    MAX_CONCURRENT_VLM_CALLS,
+    MAX_EXTERNAL_CALLS_PER_REQUEST,
+)
 
 _MODEL = "gemini-3.5-flash"
 _PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "extraction"
@@ -59,8 +62,25 @@ class GeminiExtractError(RuntimeError):
     """구조화 추출 불가(키 미설정·SDK 미설치·API 실패)."""
 
 
+class ExternalCallBudget:
+    """한 사용자 요청에서 실행할 수 있는 외부 호출 수를 제한한다."""
+
+    def __init__(self, maximum: int = MAX_EXTERNAL_CALLS_PER_REQUEST) -> None:
+        self._remaining = maximum
+        self._lock = Lock()
+
+    def consume(self) -> None:
+        with self._lock:
+            if self._remaining <= 0:
+                raise GeminiExtractError("요청당 외부 호출 한도를 초과했습니다.")
+            self._remaining -= 1
+
+
+_VLM_SEMAPHORE = BoundedSemaphore(MAX_CONCURRENT_VLM_CALLS)
+
+
 def _client():
-    # ponytail: ingestion/ocr.py와 동일 패턴(작은 중복). 공용화하려면 providers/gemini.py로.
+    # 구조화 호출 전용 클라이언트. 제공자 계층 구현 전까지 이 모듈 안에서 관리한다.
     envf = Path(__file__).resolve().parents[4] / ".env"  # …/extraction/gemini_extractor.py → repo root
     if envf.exists():
         for line in envf.read_text(encoding="utf-8").splitlines():
@@ -78,30 +98,33 @@ def _client():
     return genai.Client(api_key=key)
 
 
-def _extract(text: str, prompt_file: str, schema: type[BaseModel]) -> dict:
-    client = _client()
-    from google.genai import errors, types
+def _generation_config(schema: type[BaseModel]):
+    from google.genai import types
 
-    prompt = (_PROMPTS / prompt_file).read_text(encoding="utf-8").replace("{text}", text)
-    config = types.GenerateContentConfig(
+    return types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=schema,
-        # 고정 스키마 필드 추출에 thinking 불필요 — 끄면 지연 대폭 감소(OCR 실측 5.8배).
-        # 품질은 E2E 필드 비교로 확인. 복잡 문서에서 필드 오추출이 늘면 이 줄만 제거.
-        thinking_config=types.ThinkingConfig(thinking_budget=0),
+        # 필드 옮기기는 복잡한 추론이 아니므로 Gemini 3.x 권장 수준 중 최소값을 쓴다.
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
     )
-    # 503 등 일시 장애는 재시도(ocr.py와 동일 패턴). 재시도 없이 바로 정규식 폴백으로
-    # 떨어지면 스캔 문서에서 쓰레기 필드가 나온다 — 폴백은 최후, 재시도가 먼저다.
-    for attempt in range(4):
-        try:
-            resp = client.models.generate_content(model=_MODEL, contents=[prompt], config=config)
-            break
-        except errors.ServerError as exc:
-            if attempt == 3:
-                raise GeminiExtractError(f"구조화 추출 API 호출 실패: {exc}") from exc
-            time.sleep(5 * (attempt + 1))
-        except errors.APIError as exc:  # 4xx·쿼터 등 비재시도
-            raise GeminiExtractError(f"구조화 추출 API 오류: {exc}") from exc
+
+
+def _generate(contents: list, schema: type[BaseModel], budget: ExternalCallBudget | None = None) -> dict:
+    client = _client()
+    from google.genai import errors
+    if budget is not None:
+        budget.consume()
+    try:
+        with _VLM_SEMAPHORE:
+            resp = client.models.generate_content(
+                model=_MODEL,
+                contents=contents,
+                config=_generation_config(schema),
+            )
+    except (errors.ServerError, errors.APIError) as exc:
+        raise GeminiExtractError(f"구조화 추출 API 오류: {exc}") from exc
+    except Exception as exc:
+        raise GeminiExtractError(f"구조화 추출 호출에 실패했습니다: {exc}") from exc
 
     parsed = resp.parsed
     if isinstance(parsed, schema):
@@ -111,9 +134,38 @@ def _extract(text: str, prompt_file: str, schema: type[BaseModel]) -> dict:
     raise GeminiExtractError("구조화 추출 결과가 비어 있습니다.")
 
 
+def _extract(text: str, prompt_file: str, schema: type[BaseModel]) -> dict:
+    prompt = (_PROMPTS / prompt_file).read_text(encoding="utf-8").replace("{text}", text)
+    return _generate([prompt], schema)
+
+
 def extract_contract_fields(text: str) -> dict:
     return _extract(text, "contract_fields.txt", ContractFields)
 
 
 def extract_registry_fields(text: str) -> dict:
     return _extract(text, "registry_fields.txt", RegistryFields)
+
+
+def extract_scanned_fields(
+    content: bytes,
+    mime_type: str,
+    doc_type: Literal["contract", "registry"],
+    *,
+    budget: ExternalCallBudget,
+) -> dict:
+    """스캔 PDF·이미지 원본을 평문 OCR 단계 없이 한 번에 구조화한다."""
+    try:
+        from google.genai import types
+    except ImportError as exc:
+        raise GeminiExtractError("구조화 추출에 google-genai가 필요합니다.") from exc
+
+    prompt_file = "contract_fields.txt" if doc_type == "contract" else "registry_fields.txt"
+    schema: type[BaseModel] = ContractFields if doc_type == "contract" else RegistryFields
+    prompt = (_PROMPTS / prompt_file).read_text(encoding="utf-8")
+    prompt = prompt.split("문서 텍스트:", 1)[0] + "첨부 문서에서 위 필드를 직접 추출하라."
+    return _generate(
+        [prompt, types.Part.from_bytes(data=content, mime_type=mime_type)],
+        schema,
+        budget,
+    )

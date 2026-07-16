@@ -8,7 +8,7 @@
 |------|------|
 | `rule_id` | 규칙 식별자 |
 | `judgment_id` | 연결 판정 (J01–J12) |
-| `stage` | 적용 계약 단계 (user-flow 3단계 "계약 단계 선택" 입력값. **값 목록 미확정 — TODO**) |
+| `stage` | 적용 계약 단계: `계약금 입금 전` / `서명 전` / `계약 직후` |
 | `input_fields` | 규칙이 사용하는 입력 필드 (`document-fields.md` 기준) |
 | `condition` | 판정 조건 |
 | `result` | 결과 상태 (공통 9개 중, 판정별 허용 집합) |

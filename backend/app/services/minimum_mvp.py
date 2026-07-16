@@ -6,7 +6,8 @@ import base64
 import binascii
 from typing import Any
 
-from lease_companion_ai.pipelines.minimum_mvp import MAX_FILE_SIZE, analyze_verified_fields, extract_documents
+from lease_companion_ai.ingestion.limits import MAX_FILE_SIZE
+from lease_companion_ai.pipelines.minimum_mvp import analyze_verified_fields, extract_documents
 
 
 class MinimumMvpInputError(ValueError):
@@ -15,7 +16,7 @@ class MinimumMvpInputError(ValueError):
 
 def _decode(content: str) -> bytes:
     if len(content) > (MAX_FILE_SIZE * 4 // 3) + 16:
-        raise MinimumMvpInputError("파일당 최대 크기는 10MB입니다.")
+        raise MinimumMvpInputError(f"파일당 최대 크기는 {MAX_FILE_SIZE}바이트입니다.")
     try:
         return base64.b64decode(content, validate=True)
     except (binascii.Error, ValueError) as exc:

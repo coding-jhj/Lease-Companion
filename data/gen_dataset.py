@@ -16,7 +16,6 @@ ponytail: 생성 계약서는 ₩숫자 금액만 사용(한글 금액 없음). 
 R01–R10 범위 밖이라 한글 금액 변환기 불필요. 파일럿은 한글 금액 realism 유지.
 """
 import csv
-import hashlib
 import json
 import os
 
@@ -337,7 +336,7 @@ def render_contract(s):
                 f"잔금 {won(s['balance_payment'])}{'' if s['monthly_rent'] is None else ' / 월차임 ' + won(s['monthly_rent'])}\n"
                 f"[{lbl}] 기간 ─ {s['start']}∼{s['end']}, 입주 {s['move_in']}\n\n")
 
-    parties = (f"3. 특약사항\n" + "".join(f"   - {x}\n" for x in specials) +
+    parties = ("3. 특약사항\n" + "".join(f"   - {x}\n" for x in specials) +
                (f"\n4. 대금 지급 계좌\n   예금주: {s['account_holder']} / ○○은행 000-00-000000\n\n" ) +
                f"   임대인: {s['landlord']} (서명 또는 날인)\n{agent_line}"
                f"   임차인: {s['tenant']} (서명 또는 날인)\n   계약일: {s['start']}\n")
@@ -402,7 +401,7 @@ def write_jsonl(path, rows):
 
 def read_jsonl(path):
     with open(path, encoding="utf-8") as f:
-        return [json.loads(l) for l in f if l.strip()]
+        return [json.loads(line) for line in f if line.strip()]
 
 
 def write_docs(specs, cdir, rdir, bdir):

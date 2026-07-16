@@ -1,5 +1,7 @@
 # 슬기로운 계약생활 — 프로젝트 검토 회의록 (2026-07-13)
 
+> **역사 기록:** 당시 OCR·모델 선택은 이후 ADR로 대체되었습니다. 현재 기준은 [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)와 [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)입니다.
+
 ## 1. 회의 개요
 
 | 구분 | 내용 |

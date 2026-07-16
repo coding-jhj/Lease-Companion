@@ -21,8 +21,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-SCHEMA_VERSION = "1.0.0"
-SchemaVersion = Literal["1.0.0"]
+SchemaVersion = Literal["1.1.0"]
+SCHEMA_VERSION: SchemaVersion = "1.1.0"
 
 # 필드 값 타입 — R01~R10 입력이 쓰는 형태만 허용(str·int·bool·list[str]·null).
 # dict 등 구조체 값은 거부한다. 새 값 형태가 필요하면 J 확장에서 타입을 "추가"한다.
@@ -84,6 +84,13 @@ class RuleStatus(str, Enum):
     CHECK_NEEDED = "확인 필요"
     CANNOT_CHECK = "확인 불가"
     NOT_APPLICABLE = "적용 제외"
+
+
+class ResultType(str, Enum):
+    """규칙 결과의 역할. 행동 활성화 여부와는 별도 축이다."""
+
+    JUDGMENT = "judgment"
+    FACT_FLAG = "fact_flag"
 
 
 class Urgency(str, Enum):
@@ -169,6 +176,30 @@ ALLOWED_RULE_STATUSES: dict[str, frozenset[RuleStatus]] = {
     "R09": frozenset({RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}),
     "R10": frozenset({RuleStatus.CLEAR, RuleStatus.NOT_STATED, RuleStatus.CANNOT_CHECK}),
 }
+
+RESULT_TYPE_BY_RULE_ID: dict[str, ResultType] = {
+    "R01": ResultType.JUDGMENT,
+    "R02": ResultType.JUDGMENT,
+    "R03": ResultType.FACT_FLAG,
+    "R04": ResultType.FACT_FLAG,
+    "R05": ResultType.FACT_FLAG,
+    "R06": ResultType.JUDGMENT,
+    "R07": ResultType.FACT_FLAG,
+    "R08": ResultType.JUDGMENT,
+    "R09": ResultType.JUDGMENT,
+    "R10": ResultType.FACT_FLAG,
+}
+
+ACTION_TRIGGER_STATUSES: frozenset[RuleStatus] = frozenset(
+    {
+        RuleStatus.MISMATCH,
+        RuleStatus.UNCLEAR,
+        RuleStatus.NOT_STATED,
+        RuleStatus.POSSIBLE_CONFLICT,
+        RuleStatus.CHECK_NEEDED,
+        RuleStatus.CANNOT_CHECK,
+    }
+)
 
 
 class SourceEvidence(BaseModel):
@@ -331,13 +362,15 @@ class OfficialSource(BaseModel):
 
 
 class RuleResult(BaseModel):
-    """규칙 1개의 최종 판정. status·urgency는 확정 어휘만 사용(새 상태 금지)."""
+    """규칙 결과 1개. 결과 역할·행동 활성화·상태·시급도를 분리한다."""
 
     model_config = ConfigDict(extra="forbid")
 
     rule_id: str = Field(pattern=r"^R\d{2}$")
     rule_name: str
     judgment_id: str | None = None
+    result_type: ResultType
+    triggers_actions: bool
     status: RuleStatus
     urgency: Urgency
     reason: str
@@ -353,6 +386,18 @@ class RuleResult(BaseModel):
         if allowed is not None and self.status not in allowed:
             values = ", ".join(sorted(status.value for status in allowed))
             raise ValueError(f"{self.rule_id}에서 허용되지 않는 status입니다: {self.status.value} (허용: {values})")
+        expected_type = RESULT_TYPE_BY_RULE_ID.get(self.rule_id)
+        if expected_type is not None and self.result_type is not expected_type:
+            raise ValueError(
+                f"{self.rule_id}의 result_type은 {expected_type.value}이어야 합니다: "
+                f"{self.result_type.value}"
+            )
+        expected_trigger = self.status in ACTION_TRIGGER_STATUSES
+        if self.triggers_actions is not expected_trigger:
+            raise ValueError(
+                f"status={self.status.value}의 triggers_actions는 "
+                f"{str(expected_trigger).lower()}이어야 합니다."
+            )
         return self
 
 

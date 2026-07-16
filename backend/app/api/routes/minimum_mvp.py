@@ -16,7 +16,7 @@ def extract_documents(request: ExtractionRequest) -> ExtractionResponse:
     except service.MinimumMvpInputError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"code": "DOCUMENT_PROCESSING_FAILED", "message": str(exc)},
+            detail={"code": "document_processing_failed", "message": str(exc)},
         ) from exc
 
 
@@ -27,7 +27,7 @@ def analyze_documents(request: AnalysisRequest) -> AnalysisResponse:
     except service.MinimumMvpInputError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"code": "EXTRACTION_NOT_CONFIRMED", "message": str(exc)},
+            detail={"code": "extraction_not_confirmed", "message": str(exc)},
         ) from exc
     return AnalysisResponse(
         results=results,
