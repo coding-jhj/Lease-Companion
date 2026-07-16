@@ -4,11 +4,12 @@ import os
 import tempfile
 
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test_auth.db"
-os.environ["JWT_SECRET"] = "test-secret"
+os.environ["JWT_SECRET"] = "test-secret-at-least-32-bytes-long"
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core import security
 from app.main import app
 
 SIGNUP = {"username": "user_a", "email": "a@test.com", "password": "password1!"}
@@ -47,6 +48,17 @@ def test_signup_short_password(client):
     assert error["code"] == "validation_error"
     # 입력한 비밀번호가 응답에 되돌아오지 않아야 한다
     assert "xk29!q" not in res.text
+
+
+def test_signup_rejects_password_over_72_bytes(client):
+    password = "가" * 23 + "a1!abc"
+    assert len(password) <= 72 and len(password.encode("utf-8")) > 72
+    res = client.post(
+        "/api/auth/signup",
+        json={**SIGNUP, "username": "user_bytes", "email": "bytes@test.com", "password": password},
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "validation_error"
 
 
 @pytest.mark.parametrize(
@@ -99,3 +111,9 @@ def test_me_without_token(client):
 def test_me_with_bad_token(client):
     res = client.get("/api/auth/me", headers={"Authorization": "Bearer not-a-jwt"})
     assert res.status_code == 401
+
+
+def test_jwt_secret_requires_at_least_32_bytes(monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "too-short")
+    with pytest.raises(RuntimeError, match="32바이트"):
+        security.create_access_token(1)

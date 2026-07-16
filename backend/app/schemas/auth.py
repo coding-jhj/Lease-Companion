@@ -14,6 +14,8 @@ class SignupRequest(BaseModel):
     @classmethod
     def password_composition(cls, v: str) -> str:
         """영문·숫자·특수문자를 각각 1자 이상 포함 (팀 확정 규칙)."""
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.")
         if not (
             re.search(r"[A-Za-z]", v)
             and re.search(r"\d", v)
