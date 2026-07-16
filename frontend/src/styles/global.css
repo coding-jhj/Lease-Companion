@@ -1,0 +1,40 @@
+:root {
+  font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  color: #172019;
+  background: #f4f7f4;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+a { color: inherit; }
+button, input, select { font: inherit; }
+
+.app-shell { width: min(100%, 520px); min-height: 100vh; margin: 0 auto; padding: 20px 16px 48px; }
+.app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.brand { font-weight: 800; text-decoration: none; }
+.step-badge, .confidence, .priority { display: inline-flex; width: fit-content; border-radius: 999px; padding: 6px 10px; background: #e5eee7; color: #245236; font-size: 13px; font-weight: 700; }
+.page-card { padding: 24px; border: 1px solid #dce5dd; border-radius: 24px; background: #fff; box-shadow: 0 16px 50px rgba(35, 63, 43, 0.08); }
+.eyebrow { margin: 0 0 6px; color: #42704f; font-size: 13px; font-weight: 800; }
+h1 { margin: 0; font-size: 28px; line-height: 1.25; }
+h2 { margin: 8px 0; font-size: 18px; }
+.description { margin: 10px 0 24px; color: #58645b; line-height: 1.6; }
+.stack { display: grid; gap: 14px; }
+label { display: grid; gap: 8px; font-weight: 700; }
+input, select { width: 100%; padding: 13px 14px; border: 1px solid #bdc9bf; border-radius: 12px; background: #fff; }
+button, .button-link { display: block; width: 100%; padding: 14px 16px; border: 0; border-radius: 12px; background: #245c38; color: #fff; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
+button:disabled { background: #9eaaa1; cursor: not-allowed; }
+.secondary { background: #e5eee7; color: #245236; }
+.switch-link { margin: 20px 0 0; text-align: center; }
+.error { margin: 0; color: #a02222; }
+.contract-card, .field-card, .result-card, .check-item { display: grid; gap: 6px; padding: 16px; border: 1px solid #dce5dd; border-radius: 14px; text-decoration: none; }
+.contract-card span, small { color: #667269; font-weight: 400; }
+.field-card input { margin-top: 4px; }
+.result-card p { margin: 0; line-height: 1.5; }
+.check-item { grid-template-columns: auto 1fr; align-items: center; }
+.check-item input { width: 20px; height: 20px; }
+
+@media (max-width: 420px) {
+  .app-shell { padding: 12px 10px 32px; }
+  .page-card { padding: 20px 16px; border-radius: 18px; }
+}
