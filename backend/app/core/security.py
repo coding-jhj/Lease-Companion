@@ -7,7 +7,7 @@ import jwt
 from passlib.context import CryptContext
 
 ALGORITHM = "HS256"
-# 로컬 MVP 만료 24h 임시값 — 운영 전 토큰 정책(만료·refresh·폐기) 재검토
+# 토큰 만료 24h — 팀 확정 (2026-07-16). refresh 없음, 만료 시 재로그인. 운영 전환 시 폐기 정책 재검토
 ACCESS_TOKEN_TTL = timedelta(hours=24)
 
 # 팀 확정(2026-07-16): Passlib-bcrypt

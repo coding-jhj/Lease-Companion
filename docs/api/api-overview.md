@@ -1,6 +1,8 @@
 # API 개요
 
 > API **책임 영역**만 기록한다. 확정되지 않은 경로·메서드·스키마는 `TODO`로 표시한다.
+> **구현된 API의 정확한 요청·응답 스키마**: [`openapi.json`](openapi.json) (서버 코드에서 자동 생성 — 갱신: `backend/`에서 `python -c "from app.main import app; import json, pathlib; pathlib.Path('../docs/api/openapi.json').write_text(json.dumps(app.openapi(), ensure_ascii=False, indent=2), encoding='utf-8')"`).
+> 서버를 켜면 같은 내용을 http://localhost:8000/docs (Swagger UI)에서 화면으로 보고 직접 호출 테스트도 가능.
 > 도메인·계층 상세는 [`docs/backend/auth-and-persistence.md`](../backend/auth-and-persistence.md) 참조.
 
 분석은 단일 세션이 아니라 로그인한 사용자의 **계약 건(ContractProject) 단위**로 저장·재조회한다.
@@ -9,9 +11,9 @@
 
 | 영역 | 책임 | 관련 도메인 | 상태 |
 |------|------|-------------|------|
-| `auth` | 회원가입·로그인·JWT Bearer 토큰 발급 (2026-07-16 인증 방식 확정) | User | **구현됨**: `POST /api/auth/signup`(username·email·password, 201, 중복 시 409 `username_taken`/`email_taken`) · `POST /api/auth/login`(username·password → TokenResponse) · `GET /api/auth/me`. 라이브러리 PyJWT + Passlib-bcrypt. TODO: 토큰 만료 정책(현재 24h 임시)·refresh |
+| `auth` | 회원가입·로그인·JWT Bearer 토큰 발급 (2026-07-16 인증 방식 확정) | User | **구현됨**: `POST /api/auth/signup`(username·email·password, 201, 중복 시 409 `username_taken`/`email_taken`) · `POST /api/auth/login`(username·password → TokenResponse) · `GET /api/auth/me`. 라이브러리 PyJWT + Passlib-bcrypt. 토큰 만료 24h 확정(2026-07-16). TODO: refresh token |
 | `users` | 사용자 프로필·계정 조회·관리 | User | TODO: 경로 미정 |
-| `contracts` | 계약 건(`contract_id`) 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | TODO: 경로 미정 |
+| `contracts` | 계약 건(`contract_id`) 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | **구현됨**: `POST /api/contracts`(title, 201) · `GET /api/contracts`(본인 것만, 최신순) · `GET /api/contracts/{id}` · `PUT /api/contracts/{id}/situation`(contract_type: 전세/보증부 월세/일반 월세 + contract_stage: 계약금 입금 전/서명 전/계약 직후 — 2026-07-16 팀 확정) · `DELETE /api/contracts/{id}`(204). 남의 계약 건·없는 건 → 404 `not_found` |
 | `documents` | 계약서·등기 등 문서 업로드, 형식·크기·개수 검증. 모의 등기 데이터 연결은 `POST …/registry-link`(2026-07-16 팀 합의 — `case_id` 기준 합성 fixture 연결, 정확한 전체 경로 TODO) | Document | TODO: 경로 미정 |
 | `extractions` | AI 추출값 반환, 사용자 확인·수정 반영 | ExtractedField | TODO: 경로 미정 |
 | `analyses` | 분석 실행(상용 LLM 구조화(Gemini 3.5 Flash)·규칙 엔진·RAG·상용 LLM 생성(GPT-5.6 Sol); 선택 로컬 7B 실험), 상태 조회 | AnalysisRun | TODO: 경로·상태 전달 방식 미정 |
@@ -40,6 +42,7 @@
 - TODO: 구체 경로·메서드·요청/응답 스키마 (확인되지 않은 경로를 임의로 만들지 않는다)
 - 확정(구현): JWT 라이브러리 PyJWT, 해시 Passlib-bcrypt. 오류 응답은 422 포함 전부 `{"error": {"code", "message", "details?"}}` ([`error-format.md`](error-format.md) 초안 채택)
 - 확정(구현): 비밀번호 규칙 — 8자 이상(최대 72), 영문·숫자·특수문자 각 1자 이상 포함. 프론트엔드는 같은 규칙으로 제출 전 안내
-- TODO: 토큰 만료(현재 24h 임시)·refresh token·토큰 폐기·서명 키 관리
+- 확정(2026-07-16): 토큰 만료 **24h** (refresh 없음, 만료 시 재로그인)
+- TODO: refresh token·토큰 폐기·서명 키 관리
 - TODO: 비동기 분석의 상태 전달 방식(폴링 vs 콜백)
 - TODO: `registry-link`의 정확한 전체 경로
