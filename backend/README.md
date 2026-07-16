@@ -63,6 +63,27 @@ app/
 tests/               api/services/repositories 테스트
 ```
 
+## 로컬 개발 DB (Docker PostgreSQL)
+
+발표 전까지는 **각자 자기 컴퓨터에서 Docker DB를 켜고** 개발·확인한다. (MVP 완성 후 담당 B의 로컬 DB를 메인으로 전환하고 접속 주소를 공유할 예정 — 전환 방법은 그때 이 섹션에 추가)
+
+사전 준비: Docker Desktop 설치·실행.
+
+```bash
+# 1. DB 컨테이너 시작 (저장소 루트에서)
+docker compose up -d db
+
+# 2. 접속 정보 설정 (backend/에서, 최초 1회)
+cp .env.example .env
+
+# 3. 의존성 설치 후 연결 확인 (backend/에서)
+pip install -e .
+python -m app.core.db     # "DB 연결 OK: ..." 가 나오면 성공
+```
+
+- 호스트 포트는 **5433**이다(로컬 설치 PostgreSQL의 5432와 충돌 방지). 접속 문자열은 `.env`의 `DATABASE_URL` 참조.
+- 데이터는 Docker 볼륨(`pgdata`)에 남는다. `docker compose down`으로 꺼도 유지되고, 완전 초기화는 `docker compose down -v`.
+
 ## 저장하면 안 되는 파일
 
 - AI 추출·규칙·RAG 로직 (→ `ai/`, 중복 구현 금지)
@@ -79,14 +100,15 @@ tests/               api/services/repositories 테스트
 **확정**
 
 - FastAPI 사용, 계층 분리(API·의존성·서비스·저장소)
+- **DB: PostgreSQL + SQLAlchemy** (2026-07-16 팀 합의) — 로컬 개발은 위 Docker 섹션 참조
 - 계약 건 단위 영속 저장 **필요**
 - 회원 인증 **기능**(MVP)
 - backend가 AI 파이프라인 오케스트레이션·저장 담당
 
 **미정 (TODO)**
 
-- 데이터베이스 제품 → 확정 후 `models/`·`repositories/` 구현
-- 인증 방식·라이브러리 → 확정 후 `api/dependencies`·`core` 도입
+- `models/`·`repositories/` 구현 (DB 확정됨, 1주차부터 진행)
+- 인증 구현 라이브러리(JWT·bcrypt 구현체) → 확정 후 `api/dependencies`·`core` 도입
 - 구체 API 경로·메서드·요청/응답 스키마
 - 비동기 분석 상태 전달 방식(폴링 vs 콜백)
 - FastAPI 의존성 확정 후 `pyproject.toml` 갱신
