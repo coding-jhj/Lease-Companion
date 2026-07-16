@@ -1,0 +1,11 @@
+{
+  "contract_id": 1001,
+  "corrections": [
+    {
+      "corrected_value": "이정훈",
+      "document_type": "contract",
+      "field_name": "account_holder"
+    }
+  ],
+  "schema_version": "1.0.0"
+}

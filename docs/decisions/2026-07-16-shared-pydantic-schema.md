@@ -1,7 +1,7 @@
 # 2026-07-16 — 공통 Pydantic 통합 스키마 (canonical runtime schema)
 
 - **상태**: 확정 (2026-07-16 팀 합의)
-- **범위**: AI·Backend·Frontend가 공유하는 런타임 데이터 계약의 단일 원본과 필드 규약. 이 문서는 원칙 기록이며, 실제 Pydantic 모델·생성 JSON Schema 구현은 후속 A(AI·데이터) 작업이다.
+- **범위**: AI·Backend·Frontend가 공유하는 런타임 데이터 계약의 단일 원본과 필드 규약. 실제 Pydantic 모델·생성 JSON Schema는 2026-07-16 A 작업에서 구현됐다.
 
 ## Canonical runtime schema 위치
 
@@ -56,7 +56,7 @@ ai/src/lease_companion_ai/schemas/
 ## 기존 data/schemas JSON 처리
 
 - `data/schemas/contract_schema.json` · `registry_schema.json`은 numeric confidence·`user_verified` 등 이 결정과 충돌하는 **legacy/reference 설계 템플릿**이다.
-- 삭제·이동·손 재작성하지 않는다. 후속 A 작업에서 Pydantic 모델 생성 JSON Schema로 **교체**한다. (`data/schemas/README.md`에 상태 명시)
+- 삭제·이동·손 재작성하지 않는다. 현행 생성 JSON Schema는 `data/schemas/generated/`에서 관리한다. (`data/schemas/README.md`에 상태 명시)
 
 ## R01~R10 우선, J01~J12 후속 확장 시 호환 원칙
 

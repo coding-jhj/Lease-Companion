@@ -1,0 +1,112 @@
+{
+  "document_id": "DOC-1001-CONTRACT",
+  "document_type": "contract",
+  "fields": {
+    "account_holder": {
+      "confidence": "실패",
+      "extracted_value": null,
+      "failure_reason": "입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.",
+      "field_name": "account_holder",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": null,
+        "text": null
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "deposit": {
+      "confidence": "추출됨",
+      "extracted_value": 300000000,
+      "failure_reason": null,
+      "field_name": "deposit",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 1,
+        "text": "보증금 금 삼억원정 (₩300,000,000)"
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "deposit_return_condition": {
+      "confidence": "추출됨",
+      "extracted_value": "명확",
+      "failure_reason": null,
+      "field_name": "deposit_return_condition",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 2,
+        "text": "임대인은 계약 종료일에 보증금 전액을 반환한다."
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "landlord_name": {
+      "confidence": "추출됨",
+      "extracted_value": "이정훈",
+      "failure_reason": null,
+      "field_name": "landlord_name",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 1,
+        "text": "임대인 성명: 이정훈"
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "property_address": {
+      "confidence": "추출됨",
+      "extracted_value": "서울특별시 가온구 나래로 12, 305동 1201호",
+      "failure_reason": null,
+      "field_name": "property_address",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 1,
+        "text": "소재지: 서울특별시 가온구 나래로 12, 305동 1201호"
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "repair_responsibility": {
+      "confidence": "추출됨",
+      "extracted_value": "명확",
+      "failure_reason": null,
+      "field_name": "repair_responsibility",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 2,
+        "text": "주요 설비 하자 수선은 임대인이 부담한다."
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "rights_change_clause_present": {
+      "confidence": "추출됨",
+      "extracted_value": true,
+      "failure_reason": null,
+      "field_name": "rights_change_clause_present",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 2,
+        "text": "특약 제3항"
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "tenant_name": {
+      "confidence": "추출됨",
+      "extracted_value": "강해린",
+      "failure_reason": null,
+      "field_name": "tenant_name",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": 1,
+        "text": "임차인 성명: 강해린"
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    }
+  },
+  "schema_version": "1.0.0",
+  "warnings": []
+}

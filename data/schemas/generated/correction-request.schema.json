@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "DocumentType": {
+      "enum": [
+        "contract",
+        "registry"
+      ],
+      "title": "DocumentType",
+      "type": "string"
+    },
+    "FieldCorrection": {
+      "additionalProperties": false,
+      "description": "사용자 수정 요청 1건 — corrected_value는 null 불가(수정 취소는 별도 흐름).",
+      "properties": {
+        "corrected_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Corrected Value"
+        },
+        "document_type": {
+          "$ref": "#/$defs/DocumentType"
+        },
+        "field_name": {
+          "minLength": 1,
+          "title": "Field Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_type",
+        "field_name",
+        "corrected_value"
+      ],
+      "title": "FieldCorrection",
+      "type": "object"
+    }
+  },
+  "$id": "lease-companion/correction-request-v1.0.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "추출값 확인·수정 화면 → Backend 수정 요청.",
+  "properties": {
+    "contract_id": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Id",
+      "type": "integer"
+    },
+    "corrections": {
+      "items": {
+        "$ref": "#/$defs/FieldCorrection"
+      },
+      "minItems": 1,
+      "title": "Corrections",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_id",
+    "corrections"
+  ],
+  "title": "CorrectionRequest",
+  "type": "object",
+  "x-schema-version": "1.0.0"
+}

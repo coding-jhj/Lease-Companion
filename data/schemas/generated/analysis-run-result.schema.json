@@ -1,0 +1,221 @@
+{
+  "$defs": {
+    "OfficialSource": {
+      "additionalProperties": false,
+      "description": "공식 근거 참조(정적 카탈로그 항목). 원문 증거(SourceEvidence)와 구분.",
+      "properties": {
+        "institution": {
+          "title": "Institution",
+          "type": "string"
+        },
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Summary"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "title",
+        "institution"
+      ],
+      "title": "OfficialSource",
+      "type": "object"
+    },
+    "RuleResult": {
+      "additionalProperties": false,
+      "description": "규칙 1개의 최종 판정. status·urgency는 확정 어휘만 사용(새 상태 금지).",
+      "properties": {
+        "completed": {
+          "default": false,
+          "title": "Completed",
+          "type": "boolean"
+        },
+        "evidence_sources": {
+          "items": {
+            "$ref": "#/$defs/OfficialSource"
+          },
+          "title": "Evidence Sources",
+          "type": "array"
+        },
+        "judgment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Judgment Id"
+        },
+        "limitations": {
+          "title": "Limitations",
+          "type": "string"
+        },
+        "question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "recommended_actions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recommended Actions",
+          "type": "array"
+        },
+        "rule_id": {
+          "pattern": "^R\\d{2}$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "rule_name": {
+          "title": "Rule Name",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/RuleStatus"
+        },
+        "urgency": {
+          "$ref": "#/$defs/Urgency"
+        }
+      },
+      "required": [
+        "rule_id",
+        "rule_name",
+        "status",
+        "urgency",
+        "reason",
+        "limitations"
+      ],
+      "title": "RuleResult",
+      "type": "object"
+    },
+    "RuleStatus": {
+      "description": "공통 결과 상태 9개 — 루트 AGENTS.md 확정 어휘. 새 상태를 만들지 않는다.",
+      "enum": [
+        "일치",
+        "불일치",
+        "명확",
+        "불명확",
+        "미기재",
+        "상충 가능",
+        "확인 필요",
+        "확인 불가",
+        "적용 제외"
+      ],
+      "title": "RuleStatus",
+      "type": "string"
+    },
+    "Urgency": {
+      "description": "시급도 5개 — 루트 AGENTS.md 확정 어휘. 판정 상태와 별도 축.",
+      "enum": [
+        "즉시 확인",
+        "계약 전 확인",
+        "계약 직후 조치",
+        "참고",
+        "분석 불가"
+      ],
+      "title": "Urgency",
+      "type": "string"
+    }
+  },
+  "$id": "lease-companion/analysis-run-result-v1.0.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "분석 실행 1회의 R01~R10 결과 묶음.",
+  "properties": {
+    "analysis_run_id": {
+      "minLength": 1,
+      "title": "Analysis Run Id",
+      "type": "string"
+    },
+    "case_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Case Id"
+    },
+    "contract_id": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Id",
+      "type": "integer"
+    },
+    "input_snapshot_id": {
+      "minLength": 1,
+      "title": "Input Snapshot Id",
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/RuleResult"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "title": "Results",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "analysis_run_id",
+    "input_snapshot_id",
+    "contract_id",
+    "results"
+  ],
+  "title": "AnalysisRunResult",
+  "type": "object",
+  "x-schema-version": "1.0.0"
+}

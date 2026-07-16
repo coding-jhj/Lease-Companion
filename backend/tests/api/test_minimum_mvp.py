@@ -56,3 +56,17 @@ def test_home_serves_demo():
     response = client.get("/")
     assert response.status_code == 200
     assert "추출값 확인·수정" in response.text
+
+
+def test_analyze_rejects_wrong_canonical_field_type_as_422():
+    response = client.post(
+        "/api/minimum-mvp/analyze",
+        json={
+            "contract_fields": {"landlord_name": 123},
+            "registry_fields": {"owner_names": ["박성우"]},
+            "user_confirmed": True,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "EXTRACTION_NOT_CONFIRMED"

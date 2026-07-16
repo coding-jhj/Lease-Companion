@@ -1,0 +1,11 @@
+{
+  "balance_payment_date": null,
+  "contract_id": 1001,
+  "contract_stage": "계약금 입금 전",
+  "contract_type": "전세",
+  "deposit_paid": false,
+  "is_proxy_contract": false,
+  "move_in_date": null,
+  "schema_version": "1.0.0",
+  "signed": false
+}
