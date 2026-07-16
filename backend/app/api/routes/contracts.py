@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,8 +10,23 @@ from app.core.db import get_db
 from app.models.contract import ContractProject
 from app.models.user import User
 from app.schemas.contract import ContractCreateRequest, ContractResponse, SituationRequest
+from app.schemas.document import RegistryLinkRequest
 
 router = APIRouter(prefix="/api/contracts", tags=["contracts"])
+
+# 모의 등기 fixture 위치 (기본: 저장소 data/sample/registry-records)
+_DEFAULT_REGISTRY_DIR = Path(__file__).resolve().parents[4] / "data" / "sample" / "registry-records"
+
+
+def _registry_file(case_id: str) -> Path | None:
+    """case_id에 해당하는 모의 등기 파일. 두 가지 파일명 관례를 모두 허용
+    (CASE-001 → registry_CASE-001.txt 또는 registry_001.txt)."""
+    registry_dir = Path(os.environ.get("REGISTRY_DIR", _DEFAULT_REGISTRY_DIR))
+    candidates = [f"registry_{case_id}.txt", f"registry_{case_id.replace('CASE-', '')}.txt"]
+    for name in candidates:
+        if (registry_dir / name).is_file():
+            return registry_dir / name
+    return None
 
 
 def _get_owned_contract(contract_id: int, user: User, db: Session) -> ContractProject:
@@ -74,6 +92,26 @@ def put_situation(
     contract = _get_owned_contract(contract_id, user, db)
     contract.contract_type = body.contract_type
     contract.contract_stage = body.contract_stage
+    db.commit()
+    db.refresh(contract)
+    return contract
+
+
+@router.post("/{contract_id}/registry-link", response_model=ContractResponse)
+def link_registry(
+    contract_id: int,
+    body: RegistryLinkRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ContractProject:
+    """모의 등기 데이터 연결 (2026-07-16 팀 합의 API). 규칙 엔진 교차검증에 사용."""
+    contract = _get_owned_contract(contract_id, user, db)
+    if _registry_file(body.case_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "not_found", "message": "해당 case_id의 모의 등기 데이터가 없습니다."},
+        )
+    contract.registry_case_id = body.case_id
     db.commit()
     db.refresh(contract)
     return contract

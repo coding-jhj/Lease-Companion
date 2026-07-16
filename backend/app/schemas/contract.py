@@ -27,6 +27,7 @@ class ContractResponse(BaseModel):
     title: str
     contract_type: str | None
     contract_stage: str | None
+    registry_case_id: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

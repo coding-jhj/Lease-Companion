@@ -94,6 +94,19 @@ python scripts/seed_dev.py        # → admin / 1234 계정 생성
 docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 ```
 
+### "DB 구조가 바뀌었어요" 공지가 왔을 때 (그때만)
+
+테이블·컬럼이 추가되면 기존 로컬 DB와 구조가 안 맞아 서버가 오류를 낸다. 아래로 초기화한다 (로컬 DB는 테스트 데이터뿐이라 날려도 됨):
+
+```bash
+docker compose down -v            # DB 완전 초기화 (저장소 루트에서)
+docker compose up -d db           # 새로 시작
+cd backend
+python scripts/seed_dev.py        # admin / 1234 다시 생성
+```
+
+> TODO: Alembic(마이그레이션 도구) 도입 후에는 초기화 없이 명령 한 줄로 구조만 반영되게 바꿀 예정.
+
 - 호스트 포트는 **5433**이다(로컬 설치 PostgreSQL의 5432와 충돌 방지). 접속 문자열은 `.env`의 `DATABASE_URL` 참조.
 - 연결 확인이 필요하면 backend/에서 `python -m app.core.db` — "DB 연결 OK: ..."가 나오면 성공.
 - 데이터는 Docker 볼륨(`pgdata`)에 남는다. `docker compose down`으로 꺼도 유지되고, 완전 초기화는 `docker compose down -v` (초기화 후엔 시드 스크립트 재실행).
@@ -133,4 +146,5 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 - `main.py`(실서비스 진입점)와 `mvp_app.py`(최소 MVP 데모 앱 — 정적 UI + `/api/minimum-mvp/extract`·`/analyze` 라우트, `services/minimum_mvp.py` 경유 `ai/` 호출) 병존.
 - **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + Passlib-bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests`.
 - **계약 건 API 구현 완료**: 생성·목록·상세·삭제 + 계약 상황 입력(`PUT /api/contracts/{id}/situation`). 본인 소유만 접근 가능(그 외 404). 경로 상세: [`../docs/api/api-overview.md`](../docs/api/api-overview.md).
-- 문서 업로드·분석 결과 저장·워커는 미구현 (2주차).
+- **문서 업로드 구현 완료**: `POST/GET /api/contracts/{id}/documents` (pdf·jpg·png 20MB 이하, 재업로드 이력 유지, 파일은 `UPLOAD_DIR`(기본 `backend/uploads/`, gitignore됨)에 저장) + 모의 등기 연결 `POST /api/contracts/{id}/registry-link`.
+- 분석 결과 저장·재조회(2주차 잔여)는 **담당 A의 통합 스키마 확정 대기** (규칙: 스키마 확정 전 추출 데이터 저장 모델 금지). 워커 미구현.
