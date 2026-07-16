@@ -7,7 +7,7 @@ import jwt
 from passlib.context import CryptContext
 
 ALGORITHM = "HS256"
-# ponytail: 만료 24h 임시값 — 토큰 정책(만료·refresh·폐기) 팀 확정 시 조정
+# 토큰 만료 24h — 팀 확정 (2026-07-16). refresh token 없음, 만료 시 재로그인
 ACCESS_TOKEN_TTL = timedelta(hours=24)
 
 # 팀 확정(2026-07-16): Passlib-bcrypt

@@ -122,7 +122,7 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 
 **미정 (TODO)**
 
-- JWT 토큰 만료 정책·refresh token·토큰 폐기·서명 키 관리 (현재 만료 24h 임시값)
+- refresh token·토큰 폐기·서명 키 관리 (토큰 만료는 **24h 확정** — 2026-07-16)
 - 회원 외 영역(`contracts` 이후)의 구체 API 경로·메서드·요청/응답 스키마 (`registry-link` 전체 경로 포함)
 - 비동기 분석 상태 전달 방식(폴링 vs 콜백)
 - FastAPI 의존성 확정 후 `pyproject.toml` 갱신
