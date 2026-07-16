@@ -58,7 +58,7 @@
 
 ## 미정 (TODO)
 
-- 프론트엔드 프레임워크, 데이터베이스 제품, 벡터 저장소, 인증 구현 기술, 배포 플랫폼 미확정.
+- 프론트엔드는 React + TypeScript + Vite SPA로 확정됐다([결정 기록](../decisions/2026-07-16-frontend-react-vite.md)). 데이터베이스 제품, 벡터 저장소, 인증 구현 기술, 배포 플랫폼은 미확정이다.
 - 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js). VLM은 Gemini에 통합(별도 OCR·VLM 단계 없음, 2026-07-14 변경 → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험.
 - (선택)로컬 7B 성능비교 실험용 베이스 모델은 실험 진행 시 확정.
 - backend↔ai 연동 방식(동일 프로세스 호출 vs 별도 서비스) 확정 필요.

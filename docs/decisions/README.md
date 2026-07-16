@@ -17,10 +17,10 @@
 - LLM 제공자·모델: 구조화·OCR Gemini 3.5 Flash / 생성 GPT-5.6 Sol (2026-07-14 선정표)
 - 임베딩·검색: gemini-embedding-001 + BM25 → Cohere rerank-v4.0-pro (2026-07-14 선정표)
 - OCR: Gemini VLM 통합 → [`2026-07-14-ocr-gemini-integration.md`](2026-07-14-ocr-gemini-integration.md)
+- 프론트엔드: React + TypeScript + Vite SPA, React Router, MSW, Vitest + Testing Library, npm → [`2026-07-16-frontend-react-vite.md`](2026-07-16-frontend-react-vite.md)
 
 ## 현재 미정 (결정 대기)
 
-- 프론트엔드 프레임워크
 - 데이터베이스
 - 벡터 데이터베이스
 - 배포 플랫폼

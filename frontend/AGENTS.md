@@ -16,13 +16,23 @@
 - 기본 접근성을 지킨다. (색상만으로 상태를 표현하지 않는 등)
 - 백엔드 API 스키마와 프론트엔드 타입(`src/types`)을 동기화한다.
 
-## 미정 — 코드 생성 금지 (TODO)
+## 확정 기술 스택
 
-- 프론트엔드 기술 스택 **미확정.** React·Next.js·Vue 등 프레임워크 코드, `package.json`, 프레임워크 설정을 임의로 생성하지 않는다.
+- React + TypeScript + Vite 기반 SPA를 사용한다.
+- 라우팅은 React Router를 사용한다.
+- API 통신은 `fetch` 기반 서비스 계층으로 캡슐화한다.
+- API mock은 MSW를 사용하며 페이지·feature가 mock 데이터를 직접 가져오지 않게 한다.
+- 단위·컴포넌트 테스트는 Vitest + Testing Library를 사용한다.
+- 패키지 관리자는 npm을 사용한다.
+- 상세 근거는 [`../docs/decisions/2026-07-16-frontend-react-vite.md`](../docs/decisions/2026-07-16-frontend-react-vite.md)를 따른다.
+
+## 미정 기술 (TODO)
+
 - 인증 방식 구현 기술·라이브러리 **미확정.** (회원 기능은 MVP 확정, 구현 기술 미정)
-- 스택 확정 전에는 폴더 구조와 이 지시서만 유지한다. 각 디렉터리의 `.gitkeep`을 삭제하지 않는다.
+- CSS 방식·UI 컴포넌트 라이브러리, 전역 상태 관리 라이브러리, 배포 플랫폼은 미확정이다.
+- 미정 기술은 별도 결정 없이 임의로 추가하지 않는다.
 
-## 페이지 책임 (`src/pages/*`, 스택 확정 후 채움)
+## 페이지 책임 (`src/pages/*`)
 
 | 페이지 | 흐름 단계 | 책임 |
 |--------|-----------|------|
@@ -37,7 +47,7 @@
 
 세부 목록은 [`src/pages/README.md`](src/pages/README.md).
 
-## Feature 책임 (`src/features/*`, 스택 확정 후 채움)
+## Feature 책임 (`src/features/*`)
 
 `auth`, `contracts`, `contract-stage`, `document-upload`, `extraction-review`, `judgment-results`, `evidence-sources`, `question-cards`, `signing-checklist`, `post-contract-actions`, `result-feedback`.
 

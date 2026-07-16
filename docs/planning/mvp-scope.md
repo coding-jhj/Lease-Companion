@@ -52,6 +52,6 @@ J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../dat
 
 ## 비고
 
-- 인증 세부 기술·DB 제품·프론트 프레임워크는 미정(TODO). 회원 기능·영속 저장 필요성 자체는 확정.
+- 프론트엔드는 React + TypeScript + Vite SPA로 확정([결정 기록](../decisions/2026-07-16-frontend-react-vite.md)). 인증 세부 기술과 DB 제품은 미정(TODO). 회원 기능·영속 저장 필요성 자체는 확정.
 - OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB 제품은 미정(TODO).
 - 파인튜닝 로컬 7B 베이스 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.

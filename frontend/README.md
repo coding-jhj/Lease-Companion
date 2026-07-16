@@ -2,7 +2,16 @@
 
 슬기로운 계약생활의 사용자 화면. **회원·계약 관리를 포함한 모바일 최적화 웹앱**이다. PC 중심이 아니라 모바일 웹앱을 기준으로 설계한다.
 
-> **기술 스택 미확정(TODO).** 프레임워크 코드·`package.json`·설정을 임의로 생성하지 않는다. 현재는 폴더 구조와 지시서만 존재한다.
+> **기술 스택 확정.** React + TypeScript + Vite 기반 SPA를 사용한다. 상세 결정은 [`../docs/decisions/2026-07-16-frontend-react-vite.md`](../docs/decisions/2026-07-16-frontend-react-vite.md)를 따른다. 현재는 폴더 구조와 지시서만 존재하며 프로젝트 초기화는 후속 작업이다.
+
+## 기술 스택
+
+- React + TypeScript + Vite
+- React Router
+- `fetch` 기반 API 서비스 계층
+- MSW
+- Vitest + Testing Library
+- npm
 
 ## 목적
 
@@ -35,9 +44,9 @@ src/
 tests/                  components/ features/ pages/
 ```
 
-각 페이지·feature 디렉터리는 이미 존재하며 `.gitkeep`으로 유지한다. **`.gitkeep`을 삭제하지 않는다.**
+각 페이지·feature 디렉터리는 이미 존재하며 현재 `.gitkeep`으로 유지한다. 프로젝트 초기화 시 기존 책임 문서와 사용자 변경사항을 보존한다.
 
-## 향후 구현 위치 (스택 확정 후)
+## 구현 위치
 
 - 화면 컴포넌트 → `src/pages/<page>/`
 - 기능 로직·상태·UI → `src/features/<feature>/`
@@ -57,7 +66,6 @@ tests/                  components/ features/ pages/
 ## 현재 상태 / TODO
 
 - 폴더 구조·지시서만 존재. 화면 미구현.
-- **TODO**: 프론트엔드 프레임워크 확정 (React·Next·Vue 등 미정)
-- **TODO**: 확정 후 프로젝트 초기화·의존성·실행 명령 기록
+- **TODO**: 확정 스택으로 프로젝트 초기화·의존성·실행 명령 기록
 - **TODO**: 인증 구현 기술·라이브러리 확정 (회원 기능은 MVP 확정, 구현 기술 미정)
 - **TODO**: 백엔드 API 확정 후 `src/types` 정의

@@ -2,6 +2,7 @@
 
 > **문서 상태**: 공식 서비스 맥락 기준
 > **작성일**: 2026-07-15
+> **최근 갱신일**: 2026-07-16
 > **적용 범위**: 서비스 목적, 사용자 경험, 시스템 책임, 데이터 흐름, 구현 우선순위
 >
 > 에이전트 작업 규칙과 금지사항은 루트 [`../AGENTS.md`](../AGENTS.md)를 우선 적용한다. 이 문서는 서비스가 무엇을 만들고 왜 만드는지에 대한 공식 기준이다. 기존 확정 문서와 충돌하는 항목은 아래 **결정 대기 충돌 항목**에 기록하며, 결정 전에는 어느 한쪽을 임의로 구현하지 않는다.
@@ -175,7 +176,7 @@ AI 문서 처리·분석 파이프라인
 - 질문·서명 전 체크리스트·계약 직후 행동 관리
 - 임차권 방어 리포트 저장·재조회
 
-프론트엔드 프레임워크는 미정이다. 결정 전에는 프레임워크 초기화나 `package.json` 생성을 하지 않는다.
+프론트엔드는 React + TypeScript + Vite 기반 SPA로 구현한다. 라우팅은 React Router, API mock은 MSW, 단위·컴포넌트 테스트는 Vitest + Testing Library, 패키지 관리는 npm을 사용한다. 상세 결정은 [`decisions/2026-07-16-frontend-react-vite.md`](decisions/2026-07-16-frontend-react-vite.md)를 따른다.
 
 ### 6.2 백엔드 서비스
 
@@ -286,3 +287,4 @@ AI 문서 처리·분석 파이프라인
 - 판정 단일 기준: [`data/judgment-spec.md`](data/judgment-spec.md)
 - 개인정보 처리 원칙: [`data/privacy-policy.md`](data/privacy-policy.md)
 - OCR 결정 기록: [`decisions/2026-07-14-ocr-gemini-integration.md`](decisions/2026-07-14-ocr-gemini-integration.md)
+- 프론트엔드 기술 스택 결정: [`decisions/2026-07-16-frontend-react-vite.md`](decisions/2026-07-16-frontend-react-vite.md)
