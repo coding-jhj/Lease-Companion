@@ -9,7 +9,7 @@
 
 | 영역 | 책임 | 관련 도메인 | 상태 |
 |------|------|-------------|------|
-| `auth` | 회원가입·로그인·JWT Bearer 토큰 발급 (2026-07-16 인증 방식 확정) | User | TODO: 경로·라이브러리·토큰 정책 미정 |
+| `auth` | 회원가입·로그인·JWT Bearer 토큰 발급 (2026-07-16 인증 방식 확정) | User | **구현됨**: `POST /api/auth/signup`(username·email·password, 201, 중복 시 409 `username_taken`/`email_taken`) · `POST /api/auth/login`(username·password → TokenResponse) · `GET /api/auth/me`. 라이브러리 PyJWT + bcrypt. TODO: 토큰 만료 정책(현재 24h 임시)·refresh |
 | `users` | 사용자 프로필·계정 조회·관리 | User | TODO: 경로 미정 |
 | `contracts` | 계약 건(`contract_id`) 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | TODO: 경로 미정 |
 | `documents` | 계약서·등기 등 문서 업로드, 형식·크기·개수 검증. 모의 등기 데이터 연결은 `POST …/registry-link`(2026-07-16 팀 합의 — `case_id` 기준 합성 fixture 연결, 정확한 전체 경로 TODO) | Document | TODO: 경로 미정 |
@@ -38,6 +38,8 @@
 
 - 확정(2026-07-16): 인증 방식 **JWT Bearer + bcrypt 계열**(→ [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). 요청·응답의 도메인 타입은 `ai/src/lease_companion_ai/schemas/` Pydantic 공통 타입을 재사용(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
 - TODO: 구체 경로·메서드·요청/응답 스키마 (확인되지 않은 경로를 임의로 만들지 않는다)
-- TODO: JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리
+- 확정(구현): JWT 라이브러리 PyJWT, 해시 bcrypt. 오류 응답은 422 포함 전부 `{"error": {"code", "message", "details?"}}` ([`error-format.md`](error-format.md) 초안 채택)
+- 확정(구현): 비밀번호 규칙 — 8자 이상(최대 72), 영문·숫자·특수문자 각 1자 이상 포함. 프론트엔드는 같은 규칙으로 제출 전 안내
+- TODO: 토큰 만료(현재 24h 임시)·refresh token·토큰 폐기·서명 키 관리
 - TODO: 비동기 분석의 상태 전달 방식(폴링 vs 콜백)
 - TODO: `registry-link`의 정확한 전체 경로

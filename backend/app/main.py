@@ -1,12 +1,49 @@
 """FastAPI 진입점.
 
-현재는 헬스체크 스텁만 제공한다. 실제 엔드포인트(회원·계약 건·문서·추출·분석·결과)는
-`app/api/routes/` 에서 구현 예정. 실행 명령은 서버 런타임 확정 후 README에 기록한다.
+실행: backend/ 에서 `uvicorn app.main:app --reload`
 """
 
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="슬기로운 계약생활 API", version="0.0.0")
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from app.api.routes import auth
+from app.core.db import Base, engine
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ponytail: Alembic 도입 전 임시 — 테이블이 없으면 만든다 (기존 테이블 변경은 못 함)
+    Base.metadata.create_all(engine)
+    yield
+
+
+app = FastAPI(title="슬기로운 계약생활 API", version="0.0.0", lifespan=lifespan)
+
+app.include_router(auth.router)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """공통 오류 형식(docs/api/error-format.md): {"error": {"code", "message"}}."""
+    detail = exc.detail if isinstance(exc.detail, dict) else {"code": "error", "message": str(exc.detail)}
+    return JSONResponse(status_code=exc.status_code, content={"error": detail}, headers=exc.headers)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """입력 검증 오류(422)도 공통 오류 형식으로 통일한다."""
+    # 입력값(input)은 비밀번호 등이 그대로 되돌아갈 수 있어 제외한다
+    details = [
+        {"loc": e.get("loc"), "msg": e.get("msg"), "type": e.get("type")}
+        for e in exc.errors()
+    ]
+    return JSONResponse(
+        status_code=422,
+        content={"error": {"code": "validation_error", "message": "입력값이 올바르지 않습니다.", "details": details}},
+    )
 
 
 @app.get("/health")
@@ -15,5 +52,4 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# TODO: api/routes 라우터 등록 (auth·users·contracts·documents·extractions·analyses·results·checklists·feedback)
-# TODO: core 설정(.env 로드)·공통 오류 핸들러 연결
+# TODO: 남은 라우터 등록 (contracts·documents·extractions·analyses·results·checklists·feedback)
