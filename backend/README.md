@@ -131,5 +131,6 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 ## 현재 상태
 
 - `main.py`(실서비스 진입점)와 `mvp_app.py`(최소 MVP 데모 앱 — 정적 UI + `/api/minimum-mvp/extract`·`/analyze` 라우트, `services/minimum_mvp.py` 경유 `ai/` 호출) 병존.
-- **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + Passlib-bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests/api/test_auth.py`.
-- 계약 건 영속 저장·저장소·워커는 미구현.
+- **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + Passlib-bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests`.
+- **계약 건 API 구현 완료**: 생성·목록·상세·삭제 + 계약 상황 입력(`PUT /api/contracts/{id}/situation`). 본인 소유만 접근 가능(그 외 404). 경로 상세: [`../docs/api/api-overview.md`](../docs/api/api-overview.md).
+- 문서 업로드·분석 결과 저장·워커는 미구현 (2주차).

@@ -11,7 +11,7 @@
 |------|------|-------------|------|
 | `auth` | 회원가입·로그인·JWT Bearer 토큰 발급 (2026-07-16 인증 방식 확정) | User | **구현됨**: `POST /api/auth/signup`(username·email·password, 201, 중복 시 409 `username_taken`/`email_taken`) · `POST /api/auth/login`(username·password → TokenResponse) · `GET /api/auth/me`. 라이브러리 PyJWT + Passlib-bcrypt. 토큰 만료 24h 확정(2026-07-16). TODO: refresh token |
 | `users` | 사용자 프로필·계정 조회·관리 | User | TODO: 경로 미정 |
-| `contracts` | 계약 건(`contract_id`) 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | TODO: 경로 미정 |
+| `contracts` | 계약 건(`contract_id`) 생성·조회·목록(대시보드), 계약 상황 입력 | ContractProject | **구현됨**: `POST /api/contracts`(title, 201) · `GET /api/contracts`(본인 것만, 최신순) · `GET /api/contracts/{id}` · `PUT /api/contracts/{id}/situation`(contract_type: 전세/보증부 월세/일반 월세 + contract_stage) · `DELETE /api/contracts/{id}`(204). 남의 계약 건·없는 건 → 404 `not_found`. TODO: contract_stage 값 목록 팀 확정 |
 | `documents` | 계약서·등기 등 문서 업로드, 형식·크기·개수 검증. 모의 등기 데이터 연결은 `POST …/registry-link`(2026-07-16 팀 합의 — `case_id` 기준 합성 fixture 연결, 정확한 전체 경로 TODO) | Document | TODO: 경로 미정 |
 | `extractions` | AI 추출값 반환, 사용자 확인·수정 반영 | ExtractedField | TODO: 경로 미정 |
 | `analyses` | 분석 실행(상용 LLM 구조화(Gemini 3.5 Flash)·규칙 엔진·RAG·상용 LLM 생성(GPT-5.6 Sol); 선택 로컬 7B 실험), 상태 조회 | AnalysisRun | TODO: 경로·상태 전달 방식 미정 |
