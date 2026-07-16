@@ -1,0 +1,217 @@
+{
+  "$defs": {
+    "Confidence": {
+      "description": "추출 신뢰도 3등급. 숫자 confidence는 허용하지 않는다(ADR 확정).",
+      "enum": [
+        "추출됨",
+        "불확실",
+        "실패"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "DocumentType": {
+      "enum": [
+        "contract",
+        "registry"
+      ],
+      "title": "DocumentType",
+      "type": "string"
+    },
+    "ExtractedField": {
+      "additionalProperties": false,
+      "description": "추출 필드 1개.\n\n- extracted_value: AI 최초 추출값. 사용자 수정으로 덮어쓰지 않는다(불변 보존).\n- user_corrected_value: 사용자 수정값(user_corrected_value 규약).\n- 규칙 입력(effective_value): user_corrected_value → normalized_value → extracted_value.\n- 판독 실패는 값 null + failure_reason 으로 표현한다.",
+      "properties": {
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "extracted_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extracted Value"
+        },
+        "failure_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Reason"
+        },
+        "field_name": {
+          "minLength": 1,
+          "title": "Field Name",
+          "type": "string"
+        },
+        "normalized_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalized Value"
+        },
+        "source_evidence": {
+          "$ref": "#/$defs/SourceEvidence"
+        },
+        "user_corrected_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Corrected Value"
+        },
+        "verification_status": {
+          "$ref": "#/$defs/VerificationStatus",
+          "default": "unverified"
+        }
+      },
+      "required": [
+        "field_name",
+        "confidence"
+      ],
+      "title": "ExtractedField",
+      "type": "object"
+    },
+    "SourceEvidence": {
+      "additionalProperties": false,
+      "description": "원문 증거. page/text 키는 항상 존재하고 값은 둘 다 null 허용(ADR 확정).",
+      "properties": {
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "title": "SourceEvidence",
+      "type": "object"
+    },
+    "VerificationStatus": {
+      "description": "사용자 확인 상태 — 기존 minimum-mvp-extraction-v1 어휘 재사용.",
+      "enum": [
+        "unverified",
+        "confirmed",
+        "corrected"
+      ],
+      "title": "VerificationStatus",
+      "type": "string"
+    }
+  },
+  "$id": "lease-companion/document-extraction-v1.0.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "문서 1건의 추출 결과. R01~R10 필수 키는 값이 null이어도 항상 존재한다.",
+  "properties": {
+    "document_id": {
+      "minLength": 1,
+      "title": "Document Id",
+      "type": "string"
+    },
+    "document_type": {
+      "$ref": "#/$defs/DocumentType"
+    },
+    "fields": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ExtractedField"
+      },
+      "title": "Fields",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "document_id",
+    "document_type",
+    "fields"
+  ],
+  "title": "DocumentExtraction",
+  "type": "object",
+  "x-schema-version": "1.0.0"
+}

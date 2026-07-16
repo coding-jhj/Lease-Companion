@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import Any
 
 from lease_companion_ai.extraction.gemini_extractor import (
@@ -12,8 +13,15 @@ from lease_companion_ai.extraction.gemini_extractor import (
 )
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
 from lease_companion_ai.ingestion.pdf_text import DocumentReadError, extract_document_text
-from lease_companion_ai.rules.minimum_mvp import run_rules
-from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction
+from lease_companion_ai.schemas.adapters import (
+    analyze_snapshot,
+    build_snapshot,
+    confirm_document,
+    document_from_legacy,
+    document_to_legacy,
+)
+from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction as LegacyDocumentExtraction
+from lease_companion_ai.schemas.unified import DocumentExtraction as UnifiedDocumentExtraction
 
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -32,8 +40,10 @@ def _detect_doc_kind(text: str) -> str | None:
     return None
 
 
-def _structure(text: str, doc_type: str) -> dict[str, Any]:
-    """문서 텍스트 → 구조화 필드. 상용 LLM(Gemini) 우선, 실패 시 정규식 파서 폴백.
+def _structure_unified(
+    text: str, doc_type: str, *, document_id: str
+) -> UnifiedDocumentExtraction:
+    """문서 텍스트 → canonical 통합 추출 결과.
 
     폴백은 shim이 아니라 graceful degradation: 키 없음·API 실패 시에도 합성 .txt 데모가 동작.
     """
@@ -41,10 +51,21 @@ def _structure(text: str, doc_type: str) -> dict[str, Any]:
     try:
         fields = extract_contract_fields(text) if doc_type == "contract" else extract_registry_fields(text)
         unconfirmed = [key for key, value in fields.items() if value is None]
-        return DocumentExtraction(label, fields, unconfirmed).to_dict()
+        legacy = LegacyDocumentExtraction(label, fields, unconfirmed).to_dict()
     except GeminiExtractError:
         parser = parse_contract if doc_type == "contract" else parse_registry
-        return parser(text).to_dict()
+        legacy = parser(text).to_dict()
+    return document_from_legacy(legacy, document_id=document_id)
+
+
+def _structure(text: str, doc_type: str) -> dict[str, Any]:
+    """기존 minimum MVP 응답 호환 wrapper. 내부에서는 canonical 모델을 검증한다."""
+    unified = _structure_unified(
+        text,
+        doc_type,
+        document_id=f"minimum-mvp-{doc_type}",
+    )
+    return document_to_legacy(unified)
 
 
 def _read_and_structure(content: bytes, filename: str, doc_type: str, force_ocr: bool = False) -> dict[str, Any]:
@@ -84,4 +105,30 @@ def extract_documents(contract_content: bytes, contract_filename: str, registry_
 
 
 def analyze_verified_fields(contract_fields: dict[str, Any], registry_fields: dict[str, Any]) -> list[dict[str, Any]]:
-    return [result.to_dict() for result in run_rules(contract_fields, registry_fields)]
+    """legacy 확인 완료 입력을 canonical 스냅샷·분석 경로로 실행한다.
+
+    이 호환 API는 최초값과 수정 이력을 따로 받지 않으므로 전달된 최종 필드를
+    사용자가 확인한 effective value로 해석한다. 새 저장 API는 CorrectionRequest와
+    DocumentExtraction 원본을 별도로 보존해야 한다.
+    """
+    contract_doc = confirm_document(
+        document_from_legacy(
+            {"document_type": "contract", "fields": contract_fields},
+            document_id="minimum-mvp-contract",
+        )
+    )
+    registry_doc = confirm_document(
+        document_from_legacy(
+            {"document_type": "registry_record", "fields": registry_fields},
+            document_id="minimum-mvp-registry",
+        )
+    )
+    snapshot = build_snapshot(
+        input_snapshot_id="minimum-mvp-snapshot",
+        contract_id=1,
+        contract_doc=contract_doc,
+        registry_doc=registry_doc,
+        confirmed_at=datetime.now(timezone.utc),
+    )
+    analysis = analyze_snapshot(snapshot, analysis_run_id="minimum-mvp-analysis")
+    return [result.model_dump(mode="json") for result in analysis.results]
