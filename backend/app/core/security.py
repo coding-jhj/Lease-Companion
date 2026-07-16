@@ -3,20 +3,23 @@
 import os
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
 import jwt
+from passlib.context import CryptContext
 
 ALGORITHM = "HS256"
 # ponytail: 만료 24h 임시값 — 토큰 정책(만료·refresh·폐기) 팀 확정 시 조정
 ACCESS_TOKEN_TTL = timedelta(hours=24)
 
+# 팀 확정(2026-07-16): Passlib-bcrypt
+_pwd_context = CryptContext(schemes=["bcrypt"])
+
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    return _pwd_context.hash(password)
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode(), password_hash.encode())
+    return _pwd_context.verify(password, password_hash)
 
 
 def create_access_token(user_id: int) -> str:

@@ -12,7 +12,9 @@ dependencies = [
     "psycopg[binary]",
     "python-dotenv",
     "pyjwt",
-    "bcrypt",
+    "passlib",
+    # passlib 1.7.4가 bcrypt 4.1+의 제거된 버전 속성을 읽어 경고·오류를 내므로 고정
+    "bcrypt<4.1",
     "email-validator",
 ]
 
@@ -25,4 +27,4 @@ include = ["app*"]
 
 # TODO: 파일 검증, 린터·포매터·테스트 도구 확정 후 추가.
 # DB PostgreSQL·인증 JWT Bearer+bcrypt 계열 확정(2026-07-16 ADR).
-# 인증 구체 라이브러리는 회원 API 구현(2026-07-16)에서 PyJWT + bcrypt로 확정.
+# 인증 구체 라이브러리 확정(2026-07-16 팀): PyJWT + Passlib-bcrypt.

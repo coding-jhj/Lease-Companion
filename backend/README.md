@@ -116,7 +116,7 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 - FastAPI 사용, 계층 분리(API·의존성·서비스·저장소)
 - 계약 건(`contract_id`) 단위 영속 저장 **필요**
 - 데이터베이스: **PostgreSQL + SQLAlchemy** (2026-07-16, [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)) — 로컬 개발은 위 Docker 섹션 참조
-- 인증: **JWT Bearer + bcrypt 계열 해시** (2026-07-16). 구현 라이브러리는 **PyJWT + bcrypt**
+- 인증: **JWT Bearer + bcrypt 계열 해시** (2026-07-16). 구현 라이브러리는 **PyJWT + Passlib-bcrypt** (팀 확정)
 - 도메인 타입은 `ai/src/lease_companion_ai/schemas/` Pydantic 공통 타입 재사용 — 중복 정의 금지 ([`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
 - backend가 AI 파이프라인 오케스트레이션·저장 담당
 
@@ -131,5 +131,5 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 ## 현재 상태
 
 - `main.py`(실서비스 진입점)와 `mvp_app.py`(최소 MVP 데모 앱 — 정적 UI + `/api/minimum-mvp/extract`·`/analyze` 라우트, `services/minimum_mvp.py` 경유 `ai/` 호출) 병존.
-- **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests/api/test_auth.py`.
+- **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + Passlib-bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests/api/test_auth.py`.
 - 계약 건 영속 저장·저장소·워커는 미구현.
