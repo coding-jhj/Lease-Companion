@@ -16,7 +16,7 @@ class ContractProject(Base):
     title: Mapped[str] = mapped_column(String(100))
     # 계약 상황 입력(사용자 흐름 3단계)에서 채워짐 — 생성 시점에는 비어 있음
     contract_type: Mapped[str | None] = mapped_column(String(20))  # 전세/보증부 월세/일반 월세
-    contract_stage: Mapped[str | None] = mapped_column(String(50))  # TODO: 단계 값 목록 팀 확정 전 자유 문자열
+    contract_stage: Mapped[str | None] = mapped_column(String(50))  # 계약금 입금 전/서명 전/계약 직후 (2026-07-16 팀 확정)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

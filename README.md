@@ -96,7 +96,7 @@ ai 파이프라인
 **확정 (2026-07-16 플랫폼 스택 — [docs/decisions/2026-07-16-mvp-platform-stack.md](docs/decisions/2026-07-16-mvp-platform-stack.md))**
 
 - 데이터베이스: PostgreSQL
-- 인증: JWT Bearer + bcrypt 계열 비밀번호 해시 (구체 라이브러리·토큰 정책 TODO)
+- 인증: JWT Bearer, PyJWT + Passlib-bcrypt (Access Token 24시간은 로컬 MVP 임시값)
 - 프론트엔드: React + Vite + TypeScript
 - 벡터 데이터베이스: Chroma 로컬 모드
 - 통합 스키마: `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본 ([docs/decisions/2026-07-16-shared-pydantic-schema.md](docs/decisions/2026-07-16-shared-pydantic-schema.md))
@@ -105,7 +105,7 @@ ai 파이프라인
 **미정 (TODO — 임의 확정·설치 금지)**
 
 - 운영 배포 플랫폼 (로컬 실행은 운영 배포 확정이 아님)
-- JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리, bcrypt 구체 라이브러리
+- refresh token·토큰 폐기·운영 서명 키 관리와 운영용 토큰 만료 정책
 - 로컬 7B 베이스 모델 (상용 대비 선택적 성능비교 실험 — 베이스 미정)
 
 ## 최소 MVP 실행
@@ -141,7 +141,7 @@ http://127.0.0.1:8000
 
 텍스트 레이어가 있는 PDF·UTF-8 TXT와 스캔·사진 PDF(OCR — Gemini VLM, `GEMINI_API_KEY` 필요)를 지원한다. 구조화는 상용 LLM(Gemini 3.5 Flash)이 기본이며 키가 없거나 호출 실패 시 정규식 파서로 폴백한다. 회원·DB 저장은 아직 포함하지 않는다. 상세한 실행 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
 
-전체 MVP의 프론트엔드(React + Vite + TypeScript)·DB(PostgreSQL)·인증(JWT Bearer + bcrypt 계열)은 2026-07-16 확정되었으나 아직 구현 전이다 — 위 데모에는 포함되지 않는다. 환경변수가 필요한 후속 기능은 `.env.example`을 복사해 `.env`로 사용한다.
+전체 MVP의 프론트엔드(React + Vite + TypeScript)·DB(PostgreSQL)·인증(JWT Bearer)은 2026-07-16 확정됐다. 회원 API(signup/login/me)와 로컬 PostgreSQL 구성은 구현됐고, 계약 건 이후 기능은 후속 구현 대상이다. 환경변수는 `backend/.env.example`을 복사해 사용한다.
 
 ## 데이터 / 개인정보 보호 원칙
 

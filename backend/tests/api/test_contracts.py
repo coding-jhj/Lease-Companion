@@ -4,7 +4,7 @@ import os
 import tempfile
 
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test_contracts.db"
-os.environ["JWT_SECRET"] = "test-secret"
+os.environ["JWT_SECRET"] = "test-secret-at-least-32-bytes-long"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -65,6 +65,17 @@ def test_situation_input(client, alice):
     assert res.status_code == 200
     assert res.json()["contract_type"] == "보증부 월세"
     assert res.json()["contract_stage"] == "계약금 입금 전"
+
+
+def test_situation_invalid_stage(client, alice):
+    cid = client.post("/api/contracts", json={"title": "단계검증용"}, headers=alice).json()["id"]
+    res = client.put(
+        f"/api/contracts/{cid}/situation",
+        json={"contract_type": "전세", "contract_stage": "매물 보는 중"},
+        headers=alice,
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "validation_error"
 
 
 def test_situation_invalid_type(client, alice):
