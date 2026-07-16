@@ -16,7 +16,7 @@
 - 환경변수·비밀정보를 코드에 작성하지 않는다. `.env`에서 읽는다.
 - API 스키마 변경 시 `docs/api/`와 프론트엔드 타입을 동기화한다.
 - 외부 AI 호출 실패·시간 초과·잘못된 출력을 처리한다.
-- **DB는 PostgreSQL, 인증은 JWT Bearer + bcrypt 계열 비밀번호 해시**(2026-07-16 확정 → [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)). JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리와 bcrypt 구체 라이브러리는 TODO — 임의 확정하지 않는다.
+- **DB는 PostgreSQL, 인증은 JWT Bearer(PyJWT) + Passlib-bcrypt**(2026-07-16 확정 → [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)). Access Token 만료는 로컬 MVP 24시간 임시값이다. refresh token·토큰 폐기·운영 서명 키 관리는 TODO다.
 - **AI 공통 타입 재사용**: 도메인 데이터 타입은 `ai/src/lease_companion_ai/schemas/`의 Pydantic 모델(단일 원본)을 import해 사용한다. Backend에서 같은 도메인 타입을 **중복 정의하지 않는다.** (→ [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
 - **식별자**: 실제 사용자 계약 건의 영속 저장은 `contract_id` 기준이다. `case_id`는 CASE-001 같은 합성·평가 fixture 연결에만 사용하며 `contract_id`와 혼용하지 않는다.
 
@@ -49,6 +49,6 @@
 
 미정 (TODO — 임의 확정·설치 금지):
 
-- JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리, bcrypt 구체 라이브러리.
+- refresh token·토큰 폐기·운영 서명 키 관리와 운영용 토큰 만료 정책.
 - 비동기 분석 상태 전달 방식(폴링 vs 콜백).
 - 운영 배포 플랫폼 (현재 MVP는 로컬 실행).

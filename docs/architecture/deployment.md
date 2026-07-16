@@ -44,7 +44,7 @@
 ## 결정 대기 항목 (TODO)
 
 - 운영 배포 플랫폼(frontend·backend·DB·벡터 저장소 호스팅)
-- JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리, bcrypt 구체 라이브러리
+- refresh token·토큰 폐기·운영 서명 키 관리와 운영용 토큰 만료 정책 (현재 PyJWT + Passlib-bcrypt, 로컬 MVP 24시간)
 - (선택)로컬 7B 성능비교 실험 진행 시 서빙 방식과 `services/model-api` 분리 여부·시점
 - 상용 LLM 리전
 - 학습 환경·파이프라인, 가중치 배포·버전 관리 방식

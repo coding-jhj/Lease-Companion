@@ -2,7 +2,7 @@
 
 > 회원 인증과 계약 건 단위 영속 저장의 **설계 방향**을 기록한다.
 > 기능 확정 + 방식 확정(2026-07-16): DB **PostgreSQL**, 인증 **JWT Bearer + bcrypt 계열 해시**
-> (→ [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). 구체 라이브러리·토큰 정책은 `TODO`.
+> (→ [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). 구현은 PyJWT + Passlib-bcrypt, Access Token 24시간(로컬 MVP 임시값).
 > 루트 [`AGENTS.md`](../../AGENTS.md) 기준. 코드 구현·경로·스키마는 이 문서 범위 밖.
 
 ## 왜 세션이 아니라 사용자·계약 건인가
@@ -21,12 +21,11 @@
 - 회원가입·로그인 필요. 사용자는 자신의 계약 건·문서·결과만 접근한다.
 - 계약 건 소유권 확인: 요청 사용자 == `ContractProject` 소유자 (계약 건 식별자는 `contract_id`).
 - 개인정보·문서 내용을 로그에 남기지 않는다. 비밀정보는 `.env`에서 읽는다.
-- 인증 방식: **JWT Bearer**, 비밀번호 해시: **bcrypt 계열** (2026-07-16 확정).
+- 인증 방식: **JWT Bearer(PyJWT)**, 비밀번호 해시: **Passlib-bcrypt**, Access Token 만료: **24시간 임시값** (2026-07-16 확정).
 
 **미정 (TODO)**
 
-- JWT 구체 라이브러리, 토큰 만료 시간, refresh token 여부, 토큰 폐기, 서명 키 관리 방식
-- bcrypt 계열 구체 라이브러리
+- refresh token 여부, 토큰 폐기, 운영 서명 키 관리 방식, 운영용 만료 시간
 - 소셜 로그인 여부
 
 구현은 `app/api/dependencies/`(현재 사용자 주입)와 `app/core/`(보안 유틸)에서 담당한다.

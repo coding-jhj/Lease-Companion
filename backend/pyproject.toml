@@ -3,10 +3,19 @@ name = "lease-companion-backend"
 version = "0.0.0"
 description = "슬기로운 계약생활 API 서버 (FastAPI)"
 requires-python = ">=3.10,<3.11"
-# FastAPI 사용 확정. 서버 런타임(uvicorn 등)·검증 라이브러리는 구성 확정 시 고정.
+# FastAPI 사용 확정. DB는 PostgreSQL + SQLAlchemy 확정 (2026-07-16 팀 합의).
 # 그 외 라이브러리는 미확정이므로 임의 추가하지 않는다.
 dependencies = [
     "fastapi",
+    "uvicorn",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]",
+    "python-dotenv",
+    "pyjwt",
+    "passlib",
+    # passlib 1.7.4가 bcrypt 4.1+의 제거된 버전 속성을 읽어 경고·오류를 내므로 고정
+    "bcrypt<4.1",
+    "email-validator",
 ]
 
 [build-system]
@@ -16,6 +25,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["app*"]
 
-# TODO: ASGI 서버(uvicorn), 파일 검증, 린터·포매터·테스트 도구 확정 후 추가.
-# DB PostgreSQL·인증 JWT Bearer+bcrypt 계열 확정(2026-07-16 ADR). 구체 라이브러리는
-# 미확정(TODO)이므로 관련 의존성은 구현 작업에서 확정 후 추가한다. 임의 추가 금지.
+# TODO: 파일 검증, 린터·포매터·테스트 도구 확정 후 추가.
+# DB PostgreSQL·인증 JWT Bearer+bcrypt 계열 확정(2026-07-16 ADR).
+# 인증 구체 라이브러리 확정(2026-07-16 팀): PyJWT + Passlib-bcrypt.

@@ -8,7 +8,7 @@
 | 항목 | 결정 | 비고 |
 |------|------|------|
 | 데이터베이스 | **PostgreSQL** | 회원·계약 건·문서·분석 결과 영속 저장 |
-| 인증 | **JWT Bearer + bcrypt 계열 비밀번호 해시** | 방식 확정. 구체 라이브러리는 TODO |
+| 인증 | **JWT Bearer(PyJWT) + Passlib-bcrypt** | Access Token 24시간은 로컬 MVP 임시값 |
 | 프론트엔드 | **React + Vite + TypeScript** | `frontend/` 초기화 가능 (이 문서 작성 시점 미초기화) |
 | Vector DB | **Chroma (로컬 모드)** | 공식자료 RAG 인덱스 저장소 |
 | 실행 방식 | **현재 MVP는 로컬 실행** | 운영 배포 플랫폼 확정이 아니다 |
@@ -30,8 +30,7 @@
 
 ## 미정으로 남는 항목 (TODO — 임의 확정 금지)
 
-- JWT 구현 라이브러리, 토큰 만료 시간, refresh token 여부, 토큰 폐기 방식, 서명 키 관리 방식
-- bcrypt 계열 구체 라이브러리
+- refresh token 여부, 토큰 폐기 방식, 운영 서명 키 관리 방식과 운영용 토큰 만료 시간
 - 운영 배포 플랫폼 (frontend·backend·DB·Vector DB 호스팅)
 - 상용 LLM 리전, CI/CD, 환경 분리(dev/stage/prod), 시크릿 관리 방식
 

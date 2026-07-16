@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lease-companion-db
+    environment:
+      POSTGRES_USER: lease
+      POSTGRES_PASSWORD: lease_dev_only
+      POSTGRES_DB: lease_companion
+    ports:
+      # 로컬 설치 PostgreSQL(5432)과 충돌 방지를 위해 호스트는 5433 사용
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lease -d lease_companion"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
