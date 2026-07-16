@@ -12,7 +12,7 @@
 
 ## 담당 기능
 
-- 회원가입·로그인 (기능 확정, 구현 기술 TODO)
+- 회원가입·로그인 (JWT Bearer + bcrypt 계열 — 구체 라이브러리·토큰 정책 TODO)
 - 계약 대시보드·계약 건 생성·조회
 - 계약 상황 입력
 - 계약서·등기 등 문서 업로드, 형식·크기·개수 검증
@@ -79,15 +79,16 @@ tests/               api/services/repositories 테스트
 **확정**
 
 - FastAPI 사용, 계층 분리(API·의존성·서비스·저장소)
-- 계약 건 단위 영속 저장 **필요**
-- 회원 인증 **기능**(MVP)
+- 계약 건(`contract_id`) 단위 영속 저장 **필요**
+- 데이터베이스: **PostgreSQL** (2026-07-16, [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)) → `models/`·`repositories/` 구현 가능 (아직 미구현)
+- 인증: **JWT Bearer + bcrypt 계열 해시** (2026-07-16)
+- 도메인 타입은 `ai/src/lease_companion_ai/schemas/` Pydantic 공통 타입 재사용 — 중복 정의 금지 ([`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
 - backend가 AI 파이프라인 오케스트레이션·저장 담당
 
 **미정 (TODO)**
 
-- 데이터베이스 제품 → 확정 후 `models/`·`repositories/` 구현
-- 인증 방식·라이브러리 → 확정 후 `api/dependencies`·`core` 도입
-- 구체 API 경로·메서드·요청/응답 스키마
+- JWT 구체 라이브러리·토큰 만료·refresh token·토큰 폐기·서명 키 관리, bcrypt 구체 라이브러리
+- 구체 API 경로·메서드·요청/응답 스키마 (`registry-link` 전체 경로 포함)
 - 비동기 분석 상태 전달 방식(폴링 vs 콜백)
 - FastAPI 의존성 확정 후 `pyproject.toml` 갱신
 - 실행 명령(예: uvicorn) 확정 후 이 README에 기록

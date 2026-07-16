@@ -42,6 +42,15 @@
 
 J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../data/judgment-spec.md)
 
+## 구현 순서 (2026-07-16 확정)
+
+전체 MVP 목표는 그대로 J01~J12이며, 구현은 두 단계로 진행한다.
+
+1. **1단계**: R01~R10 기반 실전 계약 점검 MVP 완성 (업로드 → 계약 상황 입력 → 추출·확인·수정 → R01~R10 → 근거·질문·행동 → 저장·재조회)
+2. **2단계**: J01~J12 전체 판정 확장 (R↔J 매핑은 [../data/judgment-spec.md](../data/judgment-spec.md) 관리, 기존 필드 하위 호환 유지)
+
+단계별 선행 조건·완료 기준: [mvp-execution-plan.md](mvp-execution-plan.md)
+
 ## 제외 범위
 
 - 부동산 매매, 상가·사무실 임대차, 경매·공매, 소송
@@ -52,6 +61,7 @@ J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../dat
 
 ## 비고
 
-- 프론트엔드는 React + TypeScript + Vite SPA로 확정([결정 기록](../decisions/2026-07-16-frontend-react-vite.md)). 인증 세부 기술과 DB 제품은 미정(TODO). 회원 기능·영속 저장 필요성 자체는 확정.
-- OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB 제품은 미정(TODO).
+- 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): DB **PostgreSQL**, 인증 **JWT Bearer + bcrypt 계열**(구체 라이브러리·토큰 정책 TODO), 프론트엔드 **React + Vite + TypeScript**, Vector DB **Chroma 로컬 모드**. 현재 MVP는 로컬 실행이며 **운영 배포 플랫폼은 미정(TODO)**.
+- 통합 스키마는 `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
+- OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB는 Chroma 로컬 모드로 확정(2026-07-16).
 - 파인튜닝 로컬 7B 베이스 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.

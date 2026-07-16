@@ -17,4 +17,5 @@ build-backend = "setuptools.build_meta"
 include = ["app*"]
 
 # TODO: ASGI 서버(uvicorn), 파일 검증, 린터·포매터·테스트 도구 확정 후 추가.
-# TODO: DB·인증 미확정 — 관련 의존성 추가 금지.
+# DB PostgreSQL·인증 JWT Bearer+bcrypt 계열 확정(2026-07-16 ADR). 구체 라이브러리는
+# 미확정(TODO)이므로 관련 의존성은 구현 작업에서 확정 후 추가한다. 임의 추가 금지.

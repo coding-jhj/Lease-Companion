@@ -20,7 +20,7 @@
 - 항목별 공식 근거 스니펫 + 출처 인용
 - 근거 없음 시 `확인 불가`·`확인 필요` 반환 (임의 생성 금지)
 
-## TODO
+## 확정 / TODO
 
-- 임베딩 모델·벡터 저장소 미정 → `indexing/`·`retrieval/` 구현 보류
-- 공식 자료 수집·메타데이터 확정 필요(`docs/data/rag-sources.md`)
+- 확정: 임베딩 gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro(2026-07-14 선정표). 벡터 저장소 **Chroma 로컬 모드**(2026-07-16, `../../../../docs/decisions/2026-07-16-mvp-platform-stack.md`) → `indexing/`·`retrieval/`·`reranking/` 구현 가능 (아직 미구현)
+- TODO: 공식 자료 수집·메타데이터 확정(`docs/data/rag-sources.md`) 후 실제 인덱스 구축

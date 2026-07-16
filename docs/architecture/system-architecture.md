@@ -56,9 +56,10 @@
 
 로컬 7B는 MVP 크리티컬 패스에서 제외되며, 상용 vs 로컬 성능비교를 위한 **선택적 병렬 실험(파인튜닝 B/C안)**으로만 유지한다. 별도 모델 서버 배포가 확정되지 않았으므로 `model-service`·`inference-server` 같은 최상위 서비스를 임의로 추가하지 않는다. 실험을 진행하는 경우 로컬 7B 기능은 우선 `ai/` 내부 인터페이스로 분리해 결합도를 낮추고, 추후 별도 서빙이 결정되면 `services/model-api`로 분리할 수 있게 한다. 배포 관점은 [`deployment.md`](deployment.md) 참조.
 
-## 미정 (TODO)
+## 확정 / 미정 (TODO)
 
-- 프론트엔드는 React + TypeScript + Vite SPA로 확정됐다([결정 기록](../decisions/2026-07-16-frontend-react-vite.md)). 데이터베이스 제품, 벡터 저장소, 인증 구현 기술, 배포 플랫폼은 미확정이다.
+- 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): 프론트엔드 **React + Vite + TypeScript**, DB **PostgreSQL**, 벡터 저장소 **Chroma 로컬 모드**, 인증 **JWT Bearer + bcrypt 계열**(구체 라이브러리·토큰 정책 TODO). 현재 MVP는 로컬 실행이며 **운영 배포 플랫폼은 미정(TODO)**.
+- 통합 스키마 확정(2026-07-16): `ai/src/lease_companion_ai/schemas/` Pydantic 모델 단일 원본, Backend가 공통 타입 재사용(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)). 실제 사용자 계약 건은 `contract_id`, 합성·평가 사례는 `case_id`로 구분한다.
 - 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js). VLM은 Gemini에 통합(별도 OCR·VLM 단계 없음, 2026-07-14 변경 → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험.
 - (선택)로컬 7B 성능비교 실험용 베이스 모델은 실험 진행 시 확정.
 - backend↔ai 연동 방식(동일 프로세스 호출 vs 별도 서비스) 확정 필요.

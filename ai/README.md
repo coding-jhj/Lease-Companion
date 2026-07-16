@@ -48,7 +48,7 @@ src/lease_companion_ai/
   routing/        단계별 처리 모델·fallback 선택
   evaluation/     서비스 파이프라인 컴포넌트별·end-to-end 평가 실행
   pipelines/      PoC·MVP 흐름 연결
-  schemas/        AI 입출력 구조
+  schemas/        AI 입출력 구조 — 런타임 통합 스키마의 Pydantic 단일 원본 (Backend가 재사용)
 prompts/          extraction/questions/checklists/summaries 프롬프트 원본·버전
 training/         로컬 7B QLoRA 파인튜닝(선택 성능비교 실험) 설정·전처리·평가·메타데이터 (가중치 제외)
 tests/            컴포넌트별·전체 흐름 테스트
@@ -78,10 +78,12 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 ## 현재 상태 / TODO
 
-- 패키지 스캐폴딩 단계. 모듈 구현 없음.
-- 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토) → `providers`/`extraction`/`generation` 구현
+- 구현됨(최소 MVP 범위): `ingestion`(PyMuPDF·Gemini OCR), `extraction`(Gemini 구조화 + 정규식 폴백), `normalization`(이름·주소 최소 정규화), `rules`(R01~R10), `pipelines`(minimum_mvp), `schemas`(minimum_mvp) + 관련 테스트.
+- 미구현: `classification`·`providers`(어댑터 계층)·`generation`·`guardrails`·`routing`·`rag`(실제 검색)·`local_model`·`evaluation`(전체).
+- 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토) → `providers`/`generation` 후속 구현
 - 확정(2026-07-14 변경): OCR 상용 LLM Gemini 3.5 Flash VLM 통합·디지털 PDF PyMuPDF → `ingestion` 구현 완료(`ingestion/ocr.py`·`pdf_text.py`). PaddleOCR-VL은 (선택) 비교실험 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`)
-- 확정(2026-07-14): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro → `rag` 구현. 벡터 DB 제품은 미정(TODO)
+- 확정(2026-07-14): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro → `rag` 후속 구현. 벡터 DB는 **Chroma 로컬 모드 확정**(2026-07-16, `../docs/decisions/2026-07-16-mvp-platform-stack.md`)
+- 확정(2026-07-16): `schemas/`의 Pydantic 모델이 런타임 통합 스키마 단일 원본 (`../docs/decisions/2026-07-16-shared-pydantic-schema.md`). 통합 모델 코드화는 후속 A 작업.
+- 구현 순서: R01~R10 기반 실전 계약 점검 MVP 우선 → J01~J12 후속 확장.
 - TODO: 로컬 7B 베이스 모델(선택 성능비교 실험 — MVP 크리티컬 패스 아님) → `local_model`/`training` 구현 (`../docs/ai/fine-tuning-plan.md`)
-- TODO: 규칙 스키마 확정(`../docs/data/rule-definition.md`) → `rules` 구현
 - TODO: 의존성·실행 방식 확정 후 `pyproject.toml` 갱신

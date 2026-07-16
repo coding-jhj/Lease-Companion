@@ -15,6 +15,6 @@
 
 ## 현재 상태 / TODO
 
-- `contract_schema.json` / `registry_schema.json` — 계약서·등기사항증명서 추출 필드 스키마.
+- **`contract_schema.json` / `registry_schema.json` — legacy/reference (설계 템플릿).** numeric confidence·`user_verified` 등이 2026-07-16 통합 스키마 결정(3등급 confidence·`user_corrected_value`·`verification_status`, → [`../../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../../docs/decisions/2026-07-16-shared-pydantic-schema.md))과 충돌한다. 새 작업의 기준으로 사용하지 않는다. 손으로 재작성하지 않으며, 후속 A 작업에서 `ai/src/lease_companion_ai/schemas/` Pydantic 모델이 생성한 JSON Schema 산출물로 교체한다. 그 전까지 삭제·이동하지 않는다.
 - `minimum-mvp-extraction-v1.schema.json` — 최소 MVP 추출값 확인·수정 스키마(field_name enum 12개, verification_status: unverified·confirmed·corrected).
-- TODO: 확인설명서·건축물대장 스키마, 판정 리포트 스키마 작성.
+- TODO: 확인설명서·건축물대장 스키마, 판정 리포트 스키마 — Pydantic 생성 방식으로 작성.
