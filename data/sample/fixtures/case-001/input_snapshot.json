@@ -1,0 +1,210 @@
+{
+  "case_id": "CASE-001",
+  "confirmed_at": "2026-07-16T12:00:00+09:00",
+  "confirmed_fields": {
+    "contract": {
+      "account_holder": {
+        "confidence": "실패",
+        "extracted_value": null,
+        "failure_reason": "입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.",
+        "field_name": "account_holder",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": null,
+          "text": null
+        },
+        "user_corrected_value": "이정훈",
+        "verification_status": "corrected"
+      },
+      "deposit": {
+        "confidence": "추출됨",
+        "extracted_value": 300000000,
+        "failure_reason": null,
+        "field_name": "deposit",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 1,
+          "text": "보증금 금 삼억원정 (₩300,000,000)"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "deposit_return_condition": {
+        "confidence": "추출됨",
+        "extracted_value": "명확",
+        "failure_reason": null,
+        "field_name": "deposit_return_condition",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 2,
+          "text": "임대인은 계약 종료일에 보증금 전액을 반환한다."
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "landlord_name": {
+        "confidence": "추출됨",
+        "extracted_value": "이정훈",
+        "failure_reason": null,
+        "field_name": "landlord_name",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 1,
+          "text": "임대인 성명: 이정훈"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "property_address": {
+        "confidence": "추출됨",
+        "extracted_value": "서울특별시 가온구 나래로 12, 305동 1201호",
+        "failure_reason": null,
+        "field_name": "property_address",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 1,
+          "text": "소재지: 서울특별시 가온구 나래로 12, 305동 1201호"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "repair_responsibility": {
+        "confidence": "추출됨",
+        "extracted_value": "명확",
+        "failure_reason": null,
+        "field_name": "repair_responsibility",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 2,
+          "text": "주요 설비 하자 수선은 임대인이 부담한다."
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "rights_change_clause_present": {
+        "confidence": "추출됨",
+        "extracted_value": true,
+        "failure_reason": null,
+        "field_name": "rights_change_clause_present",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 2,
+          "text": "특약 제3항"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "tenant_name": {
+        "confidence": "추출됨",
+        "extracted_value": "강해린",
+        "failure_reason": null,
+        "field_name": "tenant_name",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 1,
+          "text": "임차인 성명: 강해린"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      }
+    },
+    "registry": {
+      "issue_date": {
+        "confidence": "불확실",
+        "extracted_value": "2026-07-28",
+        "failure_reason": null,
+        "field_name": "issue_date",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 3,
+          "text": "열람일시: 2026년 07월 28일"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "mortgage_present": {
+        "confidence": "추출됨",
+        "extracted_value": true,
+        "failure_reason": null,
+        "field_name": "mortgage_present",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 2,
+          "text": "을구 근저당권설정 채권최고액 금240,000,000원"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "owner_names": {
+        "confidence": "추출됨",
+        "extracted_value": [
+          "박성우"
+        ],
+        "failure_reason": null,
+        "field_name": "owner_names",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 1,
+          "text": "소유자 박성우"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "property_address": {
+        "confidence": "추출됨",
+        "extracted_value": "서울특별시 가온구 나래로 12, 305동 1201호",
+        "failure_reason": null,
+        "field_name": "property_address",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": 1,
+          "text": "(도로명주소) 서울특별시 가온구 나래로 12, 305동 1201호"
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "provisional_seizure_present": {
+        "confidence": "추출됨",
+        "extracted_value": false,
+        "failure_reason": null,
+        "field_name": "provisional_seizure_present",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": null,
+          "text": null
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "seizure_present": {
+        "confidence": "추출됨",
+        "extracted_value": false,
+        "failure_reason": null,
+        "field_name": "seizure_present",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": null,
+          "text": null
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      },
+      "trust_present": {
+        "confidence": "추출됨",
+        "extracted_value": false,
+        "failure_reason": null,
+        "field_name": "trust_present",
+        "normalized_value": null,
+        "source_evidence": {
+          "page": null,
+          "text": null
+        },
+        "user_corrected_value": null,
+        "verification_status": "confirmed"
+      }
+    }
+  },
+  "contract_id": 1001,
+  "input_snapshot_id": "SNAP-1001-001",
+  "schema_version": "1.0.0"
+}

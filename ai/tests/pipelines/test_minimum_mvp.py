@@ -1,8 +1,13 @@
 from pathlib import Path
 
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
-from lease_companion_ai.pipelines.minimum_mvp import extract_documents
+from lease_companion_ai.pipelines.minimum_mvp import (
+    _structure_unified,
+    analyze_verified_fields,
+    extract_documents,
+)
 from lease_companion_ai.rules.minimum_mvp import run_rules
+from lease_companion_ai.schemas.unified import DocumentExtraction, VerificationStatus
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -170,6 +175,54 @@ def test_structure_falls_back_to_regex(monkeypatch):
     result = pipe._structure(text, "contract")
     assert result["document_type"] == "contract"
     assert result["fields"]["landlord_name"] == "이정훈"  # 정규식 파서 폴백 동작
+
+
+def test_actual_structure_path_builds_canonical_document(monkeypatch):
+    from lease_companion_ai.pipelines import minimum_mvp as pipe
+
+    def _raise(_text):
+        raise pipe.GeminiExtractError("no key")
+
+    monkeypatch.setattr(pipe, "extract_contract_fields", _raise)
+    text = (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
+    result = _structure_unified(text, "contract", document_id="DOC-1")
+
+    assert isinstance(result, DocumentExtraction)
+    assert result.document_id == "DOC-1"
+    assert result.fields["landlord_name"].verification_status is VerificationStatus.UNVERIFIED
+
+
+def test_gemini_success_shape_also_builds_canonical_document(monkeypatch):
+    from lease_companion_ai.pipelines import minimum_mvp as pipe
+
+    expected = parse_contract(
+        (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
+    ).fields
+    monkeypatch.setattr(pipe, "extract_contract_fields", lambda _text: expected)
+
+    result = _structure_unified("주택임대차계약서", "contract", document_id="DOC-GEMINI")
+
+    assert isinstance(result, DocumentExtraction)
+    assert result.document_id == "DOC-GEMINI"
+    assert result.fields["landlord_name"].extracted_value == "이정훈"
+
+
+def test_verified_legacy_analysis_uses_canonical_result_contract():
+    contract = parse_contract(
+        (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
+    ).fields
+    registry = parse_registry(
+        (ROOT / "data/sample/registry-records/registry_001.txt").read_text(encoding="utf-8")
+    ).fields
+
+    results = analyze_verified_fields(contract, registry)
+
+    assert [result["rule_id"] for result in results] == [f"R{i:02d}" for i in range(1, 11)]
+    assert all(set(result) == {
+        "rule_id", "rule_name", "judgment_id", "status", "urgency", "reason",
+        "question", "recommended_actions", "evidence_sources", "limitations", "completed",
+    } for result in results)
+    assert results == [result.to_dict() for result in run_rules(contract, registry)]
 
 
 def test_registry_parser_keeps_only_latest_full_transfer_owner():
