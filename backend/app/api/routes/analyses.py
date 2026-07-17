@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_current_user
-from app.api.routes.contracts import _get_owned_contract
+from app.api.routes.contracts import _contract_context, _get_owned_contract
 from app.core.db import get_db
 from app.models.analysis import AnalysisRun, InputSnapshotRecord
 from app.models.user import User
@@ -42,6 +42,17 @@ def start_analysis(
             detail={
                 "code": "no_confirmed_snapshot",
                 "message": "확인 완료된 추출값이 없습니다. 추출값 확인(…/extractions/confirm)을 먼저 완료하세요.",
+            },
+        )
+    # 스냅샷 생성 후 계약 상황이 바뀌면 기존 스냅샷으로 분석하지 않는다 (2026-07-17 A 확정).
+    # 기존 스냅샷은 수정·삭제하지 않으며, 사용자가 다시 confirm하면 새 스냅샷이 생긴다.
+    current_context = _contract_context(contract).model_dump(mode="json")
+    if snapshot.payload.get("contract_context") != current_context:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "contract_context_changed",
+                "message": "계약 상황이 변경되었습니다. 추출값 확인(…/extractions/confirm)을 다시 완료하세요.",
             },
         )
     run = AnalysisRun(

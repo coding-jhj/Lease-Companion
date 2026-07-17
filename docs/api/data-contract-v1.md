@@ -99,14 +99,16 @@ CorrectionRequest.corrected_value
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - `AnalysisRunResult`를 먼저 저장하고, `GenerationResult`는 `validate_generation_result_for_analysis()` 통과 후 별도 `generation_result`에 저장한다. 생성 실패는 규칙 `result`를 실패로 바꾸지 않는다.
 
-**B 인계 확인 체크리스트** (canonical v1.2.0 기준 B 재확인 필요):
+**B 인계 확인 체크리스트** (canonical v1.2.0 기준 — 2026-07-17 B 재확인 완료):
 
-- [ ] `lease_companion_ai.schemas.unified` import 성공
-- [ ] fixture 7개 `model_validate_json` 검증 성공
-- [ ] 저장 → 조회 → 재검증 왕복 성공 (sqlite + `AnalysisRun`·`InputSnapshotRecord` 실모델, `model_validate` 재검증 통과)
-- [ ] 최초 추출값(`extracted_value`)과 수정값(`user_corrected_value`) 분리 저장 확인 (`account_holder`: extracted=null 보존, corrected 별도)
-- [ ] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 7개 모두 직렬화 키 = 원본 키)
-- [ ] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
+- [x] `lease_companion_ai.schemas.unified` import 성공 (GenerationResult·validate_generation_result_for_analysis 포함)
+- [x] fixture 7개 `model_validate_json` 검증 성공
+- [x] 저장 → 조회 → 재검증 왕복 성공 (sqlite + `AnalysisRun`·`InputSnapshotRecord` 실모델, `model_validate` 재검증 통과)
+- [x] 최초 추출값(`extracted_value`)과 수정값(`user_corrected_value`) 분리 저장 확인 (`account_holder`: extracted=null 보존, corrected 별도)
+- [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 7개 모두 직렬화 키 = 원본 키)
+- [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
+
+추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장). 저장소 전체 248 passed, 1 skipped.
 
 ## 6. C 담당 (Frontend)
 

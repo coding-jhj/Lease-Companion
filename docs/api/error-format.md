@@ -51,6 +51,8 @@
 | `unknown_correction_field` | 422 | 수정 대상 필드가 추출 결과에 없음 |
 | `contract_id_mismatch` | 422 | 요청 본문의 contract_id가 경로의 계약 건과 다름 |
 | `no_confirmed_snapshot` | 422 | 확인 완료된 추출값 없이 분석 실행 요청 |
+| `missing_contract_context` | 422 | 계약 상황 필수값(contract_type·contract_stage·deposit_paid·signed) 미입력 상태로 확인 완료·분석 요청 |
+| `contract_context_changed` | 422 | 스냅샷 생성 후 계약 상황이 변경됨 — 재확인(confirm)으로 새 스냅샷 생성 필요 |
 
 새 API에서 코드를 추가하는 것은 자유(소문자 snake_case 준수), 기존 코드 변경은 팀 공유 후에만.
 

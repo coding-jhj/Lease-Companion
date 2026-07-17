@@ -25,10 +25,12 @@ class ExtractionState(BaseModel):
 
 
 class SnapshotResponse(BaseModel):
-    """확인 완료로 생성된 불변 스냅샷."""
+    """확인 완료로 생성된 불변 스냅샷 — snapshot에 canonical InputSnapshot JSON 전체 포함
+    (2026-07-17 A 권장안: contract_context 포함 여부를 클라이언트가 바로 확인 가능)."""
 
     input_snapshot_id: str
     created_at: datetime
+    snapshot: dict[str, Any]
 
     model_config = {"from_attributes": True}
 

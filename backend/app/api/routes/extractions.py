@@ -20,7 +20,7 @@ from lease_companion_ai.schemas.adapters import (
 from lease_companion_ai.schemas.unified import CorrectionRequest, DocumentExtraction, DocumentType
 
 from app.api.dependencies.auth import get_current_user
-from app.api.routes.contracts import _get_owned_contract, _registry_file
+from app.api.routes.contracts import _contract_context, _get_owned_contract, _registry_file
 from app.core.db import get_db
 from app.models.analysis import STATUS_COMPLETED, CorrectionRecord, ExtractionRun, InputSnapshotRecord
 from app.models.contract import ContractProject
@@ -200,17 +200,19 @@ def confirm_extraction(
     contract_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> InputSnapshotRecord:
+) -> SnapshotResponse:
     """사용자의 추출값 확인 완료 — 서버가 불변 InputSnapshot을 생성·보존한다.
 
     이후 분석 실행(POST …/analysis-runs)은 이 스냅샷을 사용한다.
     """
     contract = _get_owned_contract(contract_id, user, db)
+    context = _contract_context(contract)  # 상황 미입력 시 422 missing_contract_context
     run = _completed_extraction(db, contract)
     documents = _replayed_documents(db, run)
     snapshot = build_snapshot(
         input_snapshot_id=f"snap-{uuid.uuid4().hex}",
         contract_id=contract.id,
+        contract_context=context,
         case_id=contract.registry_case_id,
         contract_doc=confirm_document(documents[DocumentType.CONTRACT]),
         registry_doc=confirm_document(documents[DocumentType.REGISTRY]),
@@ -224,4 +226,8 @@ def confirm_extraction(
     db.add(record)
     db.commit()
     db.refresh(record)
-    return record
+    return SnapshotResponse(
+        input_snapshot_id=record.input_snapshot_id,
+        created_at=record.created_at,
+        snapshot=record.payload,
+    )

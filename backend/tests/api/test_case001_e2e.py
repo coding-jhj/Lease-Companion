@@ -100,6 +100,9 @@ def test_case001_full_flow(client):
     assert detail["status"] == "completed", detail.get("error")
     results = detail["result"]["results"]
     assert [r["rule_id"] for r in results] == [f"R{i:02d}" for i in range(1, 11)]
+    # 생성 결과 분리 저장 — 키 없는 오프라인 실행도 template fallback으로 완료
+    assert detail["generation_status"] == "completed"
+    assert detail["generation_result"]["guardrail_passed"] is True
     # 통합 검증 항목: 단정 문구가 저장 결과 어디에도 없어야 한다
     assert "안전합니다" not in json.dumps(detail["result"], ensure_ascii=False)
 
