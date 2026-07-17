@@ -2,7 +2,16 @@
 
 슬기로운 계약생활의 사용자 화면. **회원·계약 관리를 포함한 모바일 최적화 웹앱**이다. PC 중심이 아니라 모바일 웹앱을 기준으로 설계한다.
 
-> **기술 스택 확정(2026-07-16): React + Vite + TypeScript.** ([`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)) 프로젝트 초기화는 이제 가능하며 별도 구현 작업으로 진행한다 — 현재는 폴더 구조와 지시서만 존재한다(미초기화).
+> **기술 스택 확정(2026-07-16): React + Vite + TypeScript SPA.** 상위 플랫폼 결정은 [`2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md), 프론트 구현 상세는 [`2026-07-16-frontend-react-vite.md`](../docs/decisions/2026-07-16-frontend-react-vite.md)를 따른다. 프로젝트 초기화는 별도 구현 작업으로 진행하며 현재는 미초기화 상태다.
+
+## 기술 스택
+
+- React + Vite + TypeScript SPA
+- React Router
+- `fetch` 기반 API 서비스 계층
+- MSW
+- Vitest + Testing Library
+- npm
 
 ## 목적
 
@@ -57,7 +66,7 @@ tests/                  components/ features/ pages/
 ## 현재 상태 / TODO
 
 - 폴더 구조·지시서만 존재. 화면 미구현. 프로젝트 미초기화.
-- 확정(2026-07-16): **React + Vite + TypeScript**. 인증은 JWT Bearer(토큰 정책 TODO — Backend 기준을 따름).
+- 확정(2026-07-16): **React + Vite + TypeScript SPA**. 인증은 JWT Bearer(토큰 세부 정책 TODO — Backend 기준을 따름).
 - **TODO**: 프로젝트 초기화 후 의존성·실행 명령 기록 (구현 작업에서 진행)
 - **TODO**: 백엔드 API 확정 후 `src/types` 정의 — mock과 실제 API가 같은 응답 타입 사용, 추출값 확인·수정 화면은 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)을 따름
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

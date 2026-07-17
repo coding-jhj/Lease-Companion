@@ -18,6 +18,7 @@
 - 임베딩·검색: gemini-embedding-001 + BM25 → Cohere rerank-v4.0-pro (2026-07-14 선정표)
 - OCR: Gemini VLM 통합 → [`2026-07-14-ocr-gemini-integration.md`](2026-07-14-ocr-gemini-integration.md)
 - 플랫폼 스택: PostgreSQL / JWT Bearer + bcrypt 계열 / React + Vite + TypeScript / Chroma 로컬 모드 / 현재 로컬 실행 → [`2026-07-16-mvp-platform-stack.md`](2026-07-16-mvp-platform-stack.md)
+- 프론트엔드 구현 스택: React + Vite + TypeScript SPA / React Router / fetch 서비스 계층 / MSW / Vitest + Testing Library / npm → [`2026-07-16-frontend-react-vite.md`](2026-07-16-frontend-react-vite.md)
 - 통합 스키마: `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본 → [`2026-07-16-shared-pydantic-schema.md`](2026-07-16-shared-pydantic-schema.md)
 
 ## 현재 미정 (결정 대기)
