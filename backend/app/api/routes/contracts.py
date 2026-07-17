@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
+from lease_companion_ai.schemas.unified import ContractContext
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,14 +30,12 @@ def _registry_file(case_id: str) -> Path | None:
     return None
 
 
-def _contract_context(contract: ContractProject) -> "ContractContext":
+def _contract_context(contract: ContractProject) -> ContractContext:
     """계약 상황 입력 → canonical ContractContext. 필수값 미입력이면 422.
 
     필수: contract_type·contract_stage·deposit_paid·signed (A 확정, 2026-07-17).
     move_in_date·balance_payment_date·is_proxy_contract는 null 허용.
     """
-    from lease_companion_ai.schemas.unified import ContractContext
-
     required = {
         "contract_type": contract.contract_type,
         "contract_stage": contract.contract_stage,
@@ -52,15 +51,17 @@ def _contract_context(contract: ContractProject) -> "ContractContext":
                 "message": f"계약 상황 입력이 필요합니다. 누락: {', '.join(missing)}",
             },
         )
-    return ContractContext(
-        contract_id=contract.id,
-        contract_type=contract.contract_type,
-        contract_stage=contract.contract_stage,
-        deposit_paid=contract.deposit_paid,
-        signed=contract.signed,
-        move_in_date=contract.move_in_date,
-        balance_payment_date=contract.balance_payment_date,
-        is_proxy_contract=contract.is_proxy_contract,
+    return ContractContext.model_validate(
+        {
+            "contract_id": contract.id,
+            "contract_type": contract.contract_type,
+            "contract_stage": contract.contract_stage,
+            "deposit_paid": contract.deposit_paid,
+            "signed": contract.signed,
+            "move_in_date": contract.move_in_date,
+            "balance_payment_date": contract.balance_payment_date,
+            "is_proxy_contract": contract.is_proxy_contract,
+        }
     )
 
 

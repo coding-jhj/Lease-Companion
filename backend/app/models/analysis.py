@@ -82,10 +82,10 @@ class AnalysisRun(Base):
     input_snapshot: Mapped[dict] = mapped_column(_JSON)
     result: Mapped[dict | None] = mapped_column(_JSON)
     # 생성 결과 (2026-07-17 3인 합의): 규칙 판정(result)과 분리 저장, 같은 analysis_run_id로 연결.
-    # guardrail_passed=true인 GenerationResult JSON만 저장. 워커 연결은 A의 canonical 확정 후.
+    # guardrail_passed=true인 GenerationResult JSON만 저장한다.
     # 생성 실패는 규칙 결과에 전파하지 않는다 — 상태·오류를 별도 필드로 남긴다(status는 분석과 별개).
     generation_result: Mapped[dict | None] = mapped_column(_JSON)
-    generation_status: Mapped[str | None] = mapped_column(String(20))  # 워커 연결 전 null
+    generation_status: Mapped[str | None] = mapped_column(String(20))
     generation_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

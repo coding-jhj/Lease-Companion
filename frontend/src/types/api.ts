@@ -64,7 +64,7 @@ export type FieldValue = string | number | boolean | string[] | null;
 export type VerificationStatus = "unverified" | "confirmed" | "corrected";
 export type ExtractionConfidence = "추출됨" | "불확실" | "실패";
 export type DocumentType = "contract" | "registry";
-export type SchemaVersion = "1.1.0";
+export type SchemaVersion = "1.2.0";
 
 export interface SourceEvidenceDto {
   page: number | null;

@@ -138,7 +138,7 @@ CorrectionRequest.corrected_value
 | 단계 | 상태 |
 |---|---|
 | 1. A 패키지 준비 | **완료** — canonical v1.2.0, InputSnapshot.contract_context, GenerationResult, Schema 6개, fixture 7개 |
-| 2. B 소비 확인 | **진행 대기** — confirm ContractContext 복사·422, worker 생성/검증/분리 저장, OpenAPI 재생성 필요 |
+| 2. B 소비 확인 | **완료** — confirm ContractContext 복사·422, worker 생성/검증/분리 저장, OpenAPI 재생성 완료 |
 | 3. C 소비 확인 | **대기** — 6절 체크리스트 통과 시 완료 |
 
 최종 인수인계는 B·C가 각자 체크리스트를 통과하고 **필드명 변경이 없음**을 확인한 뒤 완료된다.
