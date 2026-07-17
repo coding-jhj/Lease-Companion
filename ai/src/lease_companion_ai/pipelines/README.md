@@ -2,24 +2,18 @@
 
 ## 책임
 
-개별 모듈을 순서대로 연결해 처리 흐름을 구성한다. PoC는 기술 검증 흐름, MVP는 실제 사용자 서비스 흐름이다. 두 범위를 혼용하지 않는다.
+개별 AI 모듈을 순서대로 연결한다. PoC 기술 검증과 MVP 사용자 흐름을 혼용하지 않는다.
 
-## 하위 구조
+## 현재 구현
 
-- `poc/` — 기술 검증 파이프라인: 샘플 입력 → PDF·OCR(Gemini 3.5 Flash VLM 통합) 처리 → 추출·정규화 → 상용 LLM 구조화(Gemini 3.5 Flash) → 핵심 판정 → 규칙 교차검증 → RAG 근거 → 구조화 JSON → 모델 비교평가 (로컬 7B는 선택 성능비교 대상)
-- `mvp/` — 서비스 파이프라인: 문서 업로드 → 추출값 확인·수정 → 12개 판정 → 등기사항증명서 교차검증 → 근거·질문·행동 리포트 → guardrail → 저장·재조회
+- `minimum_mvp.py`: canonical `InputSnapshot`을 받아 R01~R10 규칙과 공식 근거 enrichment를 실행한다.
+- Backend worker가 이 결과를 저장한 뒤 `GenerationService`와 Guardrail을 실행한다.
+- `minimum_mvp.py`는 현재 Backend 실행 경로에서 사용되므로 legacy 이름만 보고 삭제하지 않는다.
 
-## 입력
+## 후속 범위
 
-- PoC: 비식별 샘플 문서 / MVP: 계약 건에 업로드된 사용자 문서
+- J01~J12 전체 판정 연결
+- 독립 routing·classification 계층 연결
+- 외부 embedding·rerank 실행 경로와 fallback 평가 보강
 
-## 출력
-
-- PoC: 구조화 JSON + 모델 비교평가 결과
-- MVP: 판정·근거·질문·행동 리포트 (저장·재조회 대상, 저장은 `backend/`)
-
-## TODO
-
-- 각 모듈 구현 후 흐름 연결
-- 단계별 처리 모델 선택은 `routing/`에 위임
-- 저장·오케스트레이션은 `backend/`, 여기서는 AI 흐름만
+저장과 사용자별 실행 오케스트레이션은 `backend/`가 담당한다.

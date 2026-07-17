@@ -13,10 +13,10 @@ KIND_POST_ACTION = "post_action"
 class ChecklistItemState(Base):
     """체크리스트·계약 직후 행동 항목의 사용자 확인 상태 (계약 건 단위 저장·재조회).
 
-    항목 내용(문구·근거)은 분석 결과·A 3단계 생성 산출물이 원본이므로 저장하지 않는다 —
+    항목 내용(문구·근거)은 분석 결과·생성 산출물이 원본이므로 저장하지 않는다 —
     여기는 (contract_id, kind, item_key)별 done 상태만 남긴다.
-    ponytail: item_key는 클라이언트가 보내는 안정 식별자(예: rule_id) — A의 생성 스키마
-    확정 후 항목 존재 검증을 붙일 수 있다.
+    item_key는 클라이언트가 보내는 안정 식별자(예: rule_id)다. 생성 항목 원본과의 존재
+    검증은 후속 작업이다.
     """
 
     __tablename__ = "checklist_item_states"

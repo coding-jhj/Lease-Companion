@@ -1,9 +1,9 @@
 # 인증과 영속 저장
 
-> 회원 인증과 계약 건 단위 영속 저장의 **설계 방향**을 기록한다.
+> 회원 인증과 계약 건 단위 영속 저장의 **현재 구현과 후속 설계 방향**을 기록한다.
 > 기능 확정 + 방식 확정(2026-07-16): DB **PostgreSQL**, 인증 **JWT Bearer + bcrypt 계열 해시**
 > (→ [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)). 구현은 PyJWT + Passlib-bcrypt, Access Token 24시간(로컬 MVP 임시값).
-> 루트 [`AGENTS.md`](../../AGENTS.md) 기준. 코드 구현·경로·스키마는 이 문서 범위 밖.
+> 루트 [`AGENTS.md`](../../AGENTS.md) 기준. 정확한 공개 API는 [`../api/openapi.json`](../api/openapi.json)을 따른다.
 
 ## 왜 세션이 아니라 사용자·계약 건인가
 
@@ -40,10 +40,11 @@
 - 데이터베이스: **PostgreSQL** (2026-07-16 확정). 벡터 데이터베이스(RAG용): **Chroma 로컬 모드**.
 - 도메인 데이터 타입은 `ai/src/lease_companion_ai/schemas/`의 Pydantic 공통 타입을 재사용한다(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
 
-**미정 (TODO)**
+**현재 구현 / TODO**
 
-- 테이블 스키마·마이그레이션 상세 (`app/models/`·`app/repositories/` 구현 작업에서 확정)
-- 업로드 원본 파일 스토리지 정책
+- SQLAlchemy 영속 모델과 PostgreSQL 테이블 구조는 구현됐다.
+- Alembic 마이그레이션 체계와 별도 repository 계층은 아직 구현하지 않았다.
+- 업로드 원본 파일의 보존 기간·암호화·삭제 정책은 TODO다.
 
 ### 도메인 엔터티
 
@@ -69,17 +70,16 @@
 - 계약 직후 행동 상태 (`PostContractAction`)
 - 사용자 피드백 (`UserFeedback`)
 
-### 관계 (설계 방향, 미확정)
+### 현재 물리 저장 구조
 
 - `User` 1 — N `ContractProject`
-- `ContractProject` 1 — N `Document` · `AnalysisRun` · `ChecklistItem` · `PostContractAction`
-- `Document` 1 — N `ExtractedField`
-- `AnalysisRun` 1 — N `JudgmentResult`
-- `JudgmentResult` — N `EvidenceSource` · `QuestionCard`
+- `ContractProject` 1 — N `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback`
+- 원본 추출 JSON은 `ExtractionRun`, 수정은 append-only `CorrectionRecord`, 확인 입력은 불변 `InputSnapshotRecord`에 저장한다.
+- 규칙 판정·원문 증거·공식 근거는 `AnalysisRun.result`, 생성 설명·질문·행동은 `AnalysisRun.generation_result` JSON에 분리 저장한다.
 
 ## 관련 계층
 
 - `app/api/dependencies/` — 인증 주체·DB 세션 주입, 계약 건 소유권 확인
-- `app/repositories/` — 도메인 엔터티 영속화 (DB 확정 전 경계만)
-- `app/models/` — 영속 모델 (DB 확정 후)
+- `app/repositories/` — 목표 저장소 경계. 현재 별도 구현은 없고 라우트·워커가 SQLAlchemy 세션을 직접 사용
+- `app/models/` — 구현된 SQLAlchemy 영속 모델
 - `app/core/` — 설정·보안 유틸

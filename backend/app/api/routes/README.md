@@ -2,21 +2,18 @@
 
 ## 책임
 
-HTTP 엔드포인트 계층. 요청·응답 처리, 입력·업로드 파일 검증, 공통 오류 형식 반환.
-비즈니스 로직·AI 호출·저장은 하지 않는다. `services/`에 위임한다.
+FastAPI HTTP 엔드포인트 계층. 요청·응답, 인증·소유권, 입력·업로드 검증, 공통 오류 형식을 처리한다.
 
-## API 책임 영역
+현재 로컬 MVP는 일부 흐름과 SQLAlchemy 세션 작업을 라우트에서 직접 수행한다. 장기 목표는 공통 비즈니스 로직을 `services/`, DB 접근을 `repositories/`로 옮기는 것이지만 이번 정리에서는 동작을 변경하지 않는다.
 
-`auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
+## 구현 영역
 
-## 입출력
+- `auth`: 회원가입·로그인·현재 사용자
+- `contracts`: 계약 생성·목록·상세·상황 입력·삭제
+- `documents`: 업로드·목록·모의 등기 연결
+- `extractions`: 시작·폴링·수정·확인
+- `analyses`: 실행·이력·상세 폴링
+- `checklists`: 체크리스트·계약 직후 행동 상태
+- `feedback`: 사용자 피드백 이력
 
-- 입력: HTTP 요청(경로·쿼리·본문·업로드 파일), 의존성 주입값(`api/dependencies/`)
-- 출력: 검증된 요청을 서비스에 전달, 서비스 결과를 응답 스키마(`schemas/`)로 반환
-- 오류: 공통 오류 형식 ([`docs/api/error-format.md`](../../../../docs/api/error-format.md))
-
-## TODO (미정)
-
-- 실제 경로·HTTP 메서드·요청/응답 스키마 (확정 전 [`docs/api/api-overview.md`](../../../../docs/api/api-overview.md))
-- 인증 방식 확정 후 `auth` 라우트 구현
-- 비동기 분석 상태 전달 방식(폴링 vs 콜백)
+정확한 경로·메서드·요청·응답은 [`docs/api/openapi.json`](../../../../docs/api/openapi.json)을 기준으로 한다. 현재 로컬 비동기 상태 전달은 HTTP 폴링이다.

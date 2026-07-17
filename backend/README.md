@@ -54,10 +54,10 @@ app/
   main.py            FastAPI 진입점
   api/routes/        엔드포인트 (요청·응답, 입력 검증, 오류 형식)
   api/dependencies/  요청 의존성 주입 (인증 주체·DB 세션·검증)
-  services/          계약 건·분석 실행 흐름 오케스트레이션 (ai/ 호출)
-  repositories/      도메인 엔터티 영속화 (DB 확정 전 경계)
+  services/          목표 오케스트레이션 계층 + legacy minimum MVP 서비스
+  repositories/      목표 저장소 경계 (현재 별도 구현 없음)
   schemas/           요청·응답 Pydantic 모델
-  models/            도메인/영속 모델 (DB 확정 후)
+  models/            구현된 SQLAlchemy 영속 모델
   core/              설정·공통 오류·보안 유틸
   workers/           분석 실행 등 비동기·백그라운드 작업
 tests/               api/services/repositories 테스트
@@ -129,8 +129,7 @@ python scripts/seed_dev.py        # admin / 1234 다시 생성
 **미정 (TODO)**
 
 - refresh token·토큰 폐기·서명 키 관리 (토큰 만료는 **24h 확정** — 2026-07-16)
-- 문서·분석·결과 영역의 구체 API 경로·메서드·요청/응답 스키마 (`registry-link` 전체 경로 포함)
-- 비동기 분석 상태 전달 방식(폴링 vs 콜백)
+- 운영용 외부 작업 큐·재시도·상태 전달 방식 (현재 로컬 MVP는 BackgroundTasks + HTTP 폴링)
 
 ## 현재 상태
 
@@ -140,7 +139,7 @@ python scripts/seed_dev.py        # admin / 1234 다시 생성
 - **문서 업로드 구현 완료**: `POST/GET /api/contracts/{id}/documents` (pdf·jpg·png 20MB 이하, 재업로드 이력 유지, 파일은 `UPLOAD_DIR`(기본 `backend/uploads/`, gitignore됨)에 저장) + 모의 등기 연결 `POST /api/contracts/{id}/registry-link`.
 - **분석 결과 저장·재조회 구현 완료**: `POST/GET /api/contracts/{id}/analysis-runs` — 현재 로컬 MVP는 비동기 실행 후 폴링(status: pending/running/completed/failed). 운영 상태 전달 방식은 TODO. 최신 확인 완료 스냅샷으로 실행, `AnalysisRunResult`를 JSONB로 저장(재분석마다 새 행 = 이력). 계약 상황 입력도 통합 ContractContext 전체 필드(deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract)로 확장.
 - **추출 실행·확인·수정 API 구현 완료**: `POST …/extractions`(비동기, 업로드 문서 + 모의 등기 연결 기반) · `GET …/extractions/latest`(폴링) · `POST …/corrections`(원본 보존 + CorrectionRequest 이력) · `POST …/extractions/confirm`(서버 측 불변 InputSnapshot 생성). data-contract-v1 B 인수 체크리스트 5항목 전부 테스트로 충족.
-- **체크리스트·계약 직후 행동 상태 API 구현 완료**: `GET /api/contracts/{id}/checklist-items`(?kind 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert). 항목 문구는 분석 결과가 원본 — 상태만 계약 건 단위 저장·재조회. item_key 항목 존재 검증은 A 3단계 생성 스키마 확정 후 TODO.
+- **체크리스트·계약 직후 행동 상태 API 구현 완료**: `GET /api/contracts/{id}/checklist-items`(?kind 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert). 항목 문구는 분석 결과가 원본 — 상태만 계약 건 단위 저장·재조회. 생성 항목 원본과 item_key 존재 검증은 후속 TODO.
 - 백그라운드 실행은 FastAPI BackgroundTasks(`app/workers/analysis.py`) — 별도 워커 프로세스 분리는 LLM 파이프라인 장시간화 시. **기동 시 stale 실행 복구**(2026-07-17): 서버 재시작으로 pending/running에 멈춘 추출·분석·생성 실행을 failed로 정리해 클라이언트 무한 폴링을 방지한다(`fail_stale_runs`). 규칙 결과가 이미 저장된 행의 `result`·`status=completed`는 건드리지 않는다.
 - **CASE-001 통합 시나리오 테스트**: `tests/api/test_case001_e2e.py` — 회원가입→로그인→계약 건→상황 입력→업로드+registry-link→추출→수정→확인→분석 폴링→체크리스트→**재로그인 후 재조회**까지 8단계 흐름 1건 (4단계 통합 검증의 백엔드 몫).
 - **주의(Alembic 도입 전)**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 모델에 컬럼이 추가되면 기존 dev DB에는 수동 `ALTER TABLE … ADD COLUMN` 필요 (예: 2026-07-16 `contract_projects`에 deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract 추가 / 2026-07-17 `analysis_runs`에 `generation_result` JSONB·`generation_status` VARCHAR(20)·`generation_error` TEXT 추가). 마이그레이션 도구 도입은 TODO.

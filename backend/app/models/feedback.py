@@ -9,7 +9,7 @@ from app.core.db import Base
 class UserFeedback(Base):
     """사용자 피드백 (계약 건 단위 이력 — 수정·삭제 없이 쌓기만 한다).
 
-    ponytail: 자유 텍스트 + 선택 평점 최소형. 판정 항목별 피드백 등 세분화는
+    자유 텍스트 + 선택 평점 최소형. 판정 항목별 피드백 등 세분화는
     화면 요구가 생기면 필드 추가로 확장(canonical 스키마와 무관한 backend 전용 엔터티).
     """
 

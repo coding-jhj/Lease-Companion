@@ -40,5 +40,5 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# TODO: results 통합 리포트 라우터 — A의 canonical GenerationResult 확정 후 모양 결정
-#       (현재는 analysis-runs result JSON + checklist-items 조합으로 커버)
+# 독립 results 라우터는 두지 않는다. 현재 리포트는 analysis-runs의 result·generation_result와
+# checklist-items를 조합해 제공한다.

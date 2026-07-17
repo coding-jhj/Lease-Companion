@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/contracts/{contract_id}/documents", tags=["docum
 
 # .txt는 비식별·합성 샘플(데모·CASE 검증)용 — 실제 계약서는 pdf·이미지
 ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".txt"}
-# ponytail: 20MB 임시 상한 — 실제 스캔본 크기 보고 조정
+# 로컬 MVP 20MB 임시 상한 — 실제 스캔본 측정과 운영 정책 확정 후 재검토
 MAX_SIZE_BYTES = 20 * 1024 * 1024
 
 

@@ -22,13 +22,13 @@
 
 ## 도메인 엔터티
 
-`User` · `ContractProject` · `Document` · `ExtractedField` · `AnalysisRun`(표준 명칭, 동의어 `AnalysisJob`) · `JudgmentResult` · `EvidenceSource` · `QuestionCard` · `ChecklistItem` · `PostContractAction` · `UserFeedback`
+현재 영속 모델: `User` · `ContractProject` · `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback`. 판정·근거·생성 안내는 canonical JSON으로 `AnalysisRun`에 분리 저장한다.
 
 ## API 책임 영역
 
 `auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
 
-경로·메서드·스키마는 미확정. 확정 전 [`docs/api/api-overview.md`](../docs/api/api-overview.md)에 `TODO`로 둔다.
+구현 경로·메서드·스키마는 [`docs/api/openapi.json`](../docs/api/openapi.json)을 단일 기준으로 한다. 미구현 영역만 [`docs/api/api-overview.md`](../docs/api/api-overview.md)에 `TODO`로 둔다.
 
 ## 계층 경계
 
@@ -37,9 +37,9 @@
 | API 라우트 | `app/api/routes/` | 요청·응답, 입력·업로드 검증, 오류 형식 |
 | 의존성 | `app/api/dependencies/` | 요청 의존성 주입(인증 주체·DB 세션·공통 검증) |
 | 서비스 | `app/services/` | 계약 건·분석 실행 흐름 오케스트레이션, `ai/` 호출 |
-| 저장소 | `app/repositories/` | 도메인 엔터티 영속화 (PostgreSQL — 구현은 후속 작업) |
+| 저장소 | `app/repositories/` | 목표 저장소 경계. 현재 로컬 MVP는 라우트·워커가 SQLAlchemy 세션을 직접 사용하며 별도 저장소 구현은 후속 |
 | 스키마 | `app/schemas/` | 요청·응답 wrapper (도메인 타입은 AI Pydantic 공통 타입 재사용, 중복 정의 금지) |
-| 모델 | `app/models/` | 도메인/영속 모델 (PostgreSQL — 구현은 후속 작업) |
+| 모델 | `app/models/` | 구현된 SQLAlchemy 영속 모델. Alembic 마이그레이션 체계는 후속 |
 | 워커 | `app/workers/` | 분석 실행 등 비동기·백그라운드 작업 |
 | 코어 | `app/core/` | 설정·공통 오류·보안 유틸 |
 
@@ -50,5 +50,5 @@
 미정 (TODO — 임의 확정·설치 금지):
 
 - refresh token·토큰 폐기·운영 서명 키 관리와 운영용 토큰 만료 정책.
-- 비동기 분석 상태 전달 방식(폴링 vs 콜백).
+- 외부 작업 큐·재시도·운영 상태 전달 방식. 현재 로컬 MVP는 FastAPI BackgroundTasks와 HTTP 폴링을 사용한다.
 - 운영 배포 플랫폼 (현재 MVP는 로컬 실행).

@@ -1,6 +1,6 @@
 # src/features/
 
-흐름 단계별 기능 모듈 디렉터리. 각 디렉터리는 이미 존재하며 `.gitkeep`으로 유지한다. **`.gitkeep`을 삭제하지 않는다.** 스택은 React + Vite + TypeScript로 확정(2026-07-16) — 코드 채움은 프로젝트 초기화 후 구현 작업에서 진행한다.
+흐름 단계별 기능 모듈 디렉터리. React + Vite + TypeScript 초기화와 핵심 feature 구현이 완료됐으며, 실제 추적 파일이 있는 디렉터리에는 `.gitkeep`을 두지 않는다.
 
 ## 최신 feature 책임 (한 줄)
 
@@ -11,7 +11,7 @@
 | `contract-stage` | 3 | 계약 상황(단계·유형) 입력 |
 | `document-upload` | 4 | 계약서·등기 등 문서 업로드 |
 | `extraction-review` | 5 | AI 추출값 확인·수정 |
-| `judgment-results` | 7 | 12개 판정 결과 표시 (결과 상태 9개·시급도 5개) |
+| `judgment-results` | 7 | 현재 R01~R10 결과 표시. J01~J12 확장 후 동일 feature에서 전체 판정 소비 |
 | `evidence-sources` | 7 | 원문 증거·공식 근거(RAG) 표시 |
 | `question-cards` | 7 | 임대인·공인중개사 대상 확인 질문 카드 |
 | `signing-checklist` | 8 | 서명 전 체크리스트 |

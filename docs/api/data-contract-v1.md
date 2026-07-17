@@ -15,7 +15,7 @@
 
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
-- **남은 일**: 새 Backend API·저장 경계에서 이 모델을 사용하는 것은 **B 작업**, fixture 기반 mock→실제 API 연결은 **C 작업**이다. B·C의 실제 소비 확인은 아직 수행되지 않았다(아래 7절 체크리스트).
+- **현재 소비 상태**: Backend는 confirm·분석 worker·생성 결과 분리 저장에 canonical v1.2.0을 사용한다. Frontend는 실제 API DTO를 v1.2.0에 맞췄으며 `generation_result`의 null·실패·fallback 표시 등 일부 화면 통합은 후속 범위다.
 - **v1.2.0 생성 계약**: `GenerationResult`·`RuleGuidance`는 `schemas.unified`의 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`rule_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
 
 ## 2. 설치·검증 명령
@@ -39,7 +39,7 @@ $env:RUN_OPENAI_SMOKE='1'
 conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case001_smoke.py -q
 ```
 
-A v1.2.0 범위 실측 결과(2026-07-17, 외부 호출 없음): **195 passed, 1 skipped, 3 warnings**. Backend confirm은 새 필수 `contract_context` 인수를 아직 전달하지 않아 B 인수 전 관련 테스트가 예상대로 실패한다. 최신 통합 결과는 B 연결 후 다시 기록한다.
+검증 결과는 시점마다 달라지므로 이 문서에 고정 개수를 복제하지 않는다. 위 명령과 저장소의 현재 CI·작업 기록으로 확인한다. OpenAI 실제 호출은 기본 회귀에서 제외한다.
 
 ## 3. 핵심 모델 요약
 
@@ -108,7 +108,7 @@ CorrectionRequest.corrected_value
 - [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 7개 모두 직렬화 키 = 원본 키)
 - [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
 
-추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장). 저장소 전체 248 passed, 1 skipped.
+추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장).
 
 ## 6. C 담당 (Frontend)
 
@@ -123,7 +123,7 @@ CorrectionRequest.corrected_value
 - `result_type`으로 판정(`judgment`)과 사실 플래그(`fact_flag`)를 구분하고, `triggers_actions=true`인 결과만 질문·체크리스트·행동 활성화 대상으로 처리한다.
 - B가 OpenAPI에 공개한 `generation_result`를 canonical `GenerationResult` 구조로 소비한다. `null`·생성 실패·`template_fallback`을 처리하고 규칙 `status`·`urgency`·`reason`은 변경하지 않는다.
 
-**C 인계 확인 체크리스트** (C가 직접 확인 — 미리 체크하지 않음):
+**Frontend 공식 소비자 검증 체크리스트** (아래 항목의 일괄 검증은 대기, 기본 DTO 연결은 부분 완료):
 
 - [ ] fixture를 별도 변환 없이 로드
 - [ ] `추출됨`·`불확실`·`실패` 3등급 구분 표시
@@ -139,9 +139,9 @@ CorrectionRequest.corrected_value
 |---|---|
 | 1. A 패키지 준비 | **완료** — canonical v1.2.0, InputSnapshot.contract_context, GenerationResult, Schema 6개, fixture 7개 |
 | 2. B 소비 확인 | **완료** — confirm ContractContext 복사·422, worker 생성/검증/분리 저장, OpenAPI 재생성 완료 |
-| 3. C 소비 확인 | **대기** — 6절 체크리스트 통과 시 완료 |
+| 3. Frontend 소비 확인 | **부분 완료** — v1.2.0 기본 추출·수정·R01~R10 DTO는 연결됨. snapshot 전체·generation 상태/결과·`result_type`·`triggers_actions`의 화면 소비는 후속 |
 
-최종 인수인계는 B·C가 각자 체크리스트를 통과하고 **필드명 변경이 없음**을 확인한 뒤 완료된다.
+최종 소비 완료는 위 체크리스트와 OpenAPI 소비자 테스트에서 **필드명 변경이 없음**을 확인한 시점이다.
 
 **호환성 변경 규칙**: 필드 이름·의미·Enum 변경은 3인 합의 + `SCHEMA_VERSION` 상향 + Schema·fixture 재생성 + 테스트·이 문서 갱신을 함께 한다. 필드는 추가만 한다(J01–J12 확장 포함). 생성 파일은 손으로 수정하지 않는다.
 

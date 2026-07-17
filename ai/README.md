@@ -79,9 +79,9 @@ tests/            컴포넌트별·전체 흐름 테스트
 ## 현재 상태 / TODO
 
 - 구현됨(최소 MVP 범위): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 1회 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `rules`(R01~R10), `pipelines`, canonical `schemas` v1.2.0 + 관련 테스트.
-- 구현됨(RAG 배치 1~3): 공식 출처 manifest·법령 원문 2개, 내부 계약·결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R01~R10 공식 근거 enrichment, dev/test retrieval 평가. 외부 Gemini·Cohere 실호출은 미수행.
-- 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, OpenAI Responses API `gpt-5.6-sol` provider와 opt-in CASE-001 smoke 경계. 실제 유료 smoke와 Backend 저장 연결은 미수행.
-- 미구현: `classification` 독립 계층, GPT 저신뢰 재검토 경로, `routing`, `local_model`, retrieval 외 평가 실행기, Backend 전체 파이프라인 연결.
+- 구현됨(RAG 배치 1~3): 공식 출처 manifest·법령 원문 2개, 내부 계약·결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R01~R10 공식 근거 enrichment, dev/test retrieval 평가. 현재 Backend worker 런타임은 local BM25 근거 경로를 사용하며 Chroma·Gemini embedding·Hybrid/RRF·Cohere 연결과 외부 실호출은 후속이다.
+- 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, OpenAI Responses API `gpt-5.6-sol` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
+- 미구현·후속: `classification` 독립 계층, GPT 저신뢰 재검토 경로, 독립 `routing` 구현, `local_model`, retrieval 외 평가 실행기, J01~J12 전체 판정.
 - 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토). 공식 API model ID는 `gpt-5.6-sol`; 실제 유료 호출은 키·비용 승인 후 수행.
 - 확정(2026-07-14 변경): 스캔 PDF·이미지는 Gemini 3.5 Flash가 원본에서 고정 Pydantic 필드를 1회 호출로 직접 추출한다. 디지털 PDF는 PyMuPDF 텍스트 경로다. PaddleOCR-VL은 선택 비교실험이다 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`).
 - 확정·구현(offline 경계): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro·Chroma 로컬 모드. 실제 유료 호출 smoke test는 별도 승인 필요 (`../docs/decisions/2026-07-16-mvp-platform-stack.md`).

@@ -44,7 +44,7 @@ src/
 tests/                  components/ features/ pages/
 ```
 
-각 페이지·feature 디렉터리는 이미 존재하며 `.gitkeep`으로 유지한다. **`.gitkeep`을 삭제하지 않는다.**
+페이지·feature 디렉터리에 실제 코드가 있으며, `.gitkeep`은 빈 디렉터리를 유지할 때만 사용한다.
 
 ## 로컬 실행
 
@@ -80,5 +80,6 @@ npm run dev
 - React + Vite + TypeScript SPA 초기화와 사용자 흐름 8단계 화면 구현 완료.
 - JWT Bearer 로그인, 계약·문서·추출·분석·체크리스트 실제 API 연결 완료. refresh token과 운영 토큰 정책은 Backend TODO를 따른다.
 - 추출과 분석은 `pending`·`running`·`completed`·`failed` 상태를 실제 API 폴링으로 처리한다.
-- `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
+- `src/types`는 추출·수정 기본 필드(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)를 canonical 계약에 맞췄다.
+- canonical snapshot 전체와 generation 상태·결과, J01~J12 전체 판정 화면 소비 및 실제 브라우저 E2E는 후속 범위다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

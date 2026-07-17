@@ -47,7 +47,14 @@ ai/src/lease_companion_ai/schemas/
 
 - 스키마에 버전 필드를 두고, 필드 추가·의미 변경 시 버전을 올린다.
 - 분석 결과에는 사용된 스키마 버전을 기록해 재분석·이력 조회 시 대조할 수 있게 한다.
-- 현재 버전은 **1.1.0**이다. R01~R10 결과 역할을 구분하는 `result_type`과 현재 결과의 행동 활성화 여부인 `triggers_actions`를 additive 필드로 추가했다.
+- 이 결정 당시 구현 버전은 **1.1.0**이었다. R01~R10 결과 역할을 구분하는 `result_type`과 현재 결과의 행동 활성화 여부인 `triggers_actions`를 additive 필드로 추가했다.
+
+### 2026-07-17 구현 부록
+
+- 현재 canonical 버전은 **1.2.0**이다.
+- `InputSnapshot.contract_context`와 공개 `GenerationResult`·`RuleGuidance`를 추가했다.
+- 기존 스냅샷은 덮어쓰지 않으며 계약 상황 변경 후 재확인으로 새 스냅샷을 생성한다.
+- 생성 결과는 `AnalysisRunResult`와 분리하고 `analysis_run_id`·`rule_id`·공식 `source_ids` 연결을 저장 전에 검증한다.
 
 ## JSON Schema 생성 원칙
 
