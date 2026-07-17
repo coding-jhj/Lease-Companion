@@ -7,15 +7,29 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import contractExtractionFixture from "../../../data/sample/fixtures/case-001/contract_extraction.json";
 import registryExtractionFixture from "../../../data/sample/fixtures/case-001/registry_extraction.json";
 import correctionRequestFixture from "../../../data/sample/fixtures/case-001/correction_request.json";
-import inputSnapshotFixture from "../../../data/sample/fixtures/case-001/input_snapshot.json";
 import { ExtractionReviewPage } from "../../src/pages/extraction-review/ExtractionReviewPage";
 import { mvpService } from "../../src/services/mvpService";
-import type { CorrectionRequestDto, DocumentExtractionDto, InputSnapshotDto } from "../../src/types/api";
+import type { DocumentExtractionDto, ExtractionStateDto } from "../../src/types/api";
 
 const documents = [
   contractExtractionFixture as DocumentExtractionDto,
   registryExtractionFixture as DocumentExtractionDto,
 ];
+
+const completedExtraction: ExtractionStateDto = {
+  id: 1,
+  status: "completed",
+  error: null,
+  contract_doc: documents[0],
+  registry_doc: documents[1],
+  created_at: "2026-07-16T00:00:00Z",
+};
+
+const emptyExtraction: ExtractionStateDto = {
+  ...completedExtraction,
+  contract_doc: null,
+  registry_doc: null,
+};
 
 function renderPage() {
   return render(
@@ -35,17 +49,17 @@ afterEach(() => {
 
 describe("ExtractionReviewPage", () => {
   it("shows canonical states and sends only changed fields before confirmation", async () => {
-    vi.spyOn(mvpService, "getExtraction").mockResolvedValue(documents);
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
     const submit = vi.spyOn(mvpService, "submitCorrections").mockResolvedValue(
-      correctionRequestFixture as CorrectionRequestDto,
+      completedExtraction,
     );
     const confirm = vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
-      inputSnapshotFixture as InputSnapshotDto,
+      { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" },
     );
 
     renderPage();
 
-    expect(screen.getByText("추출값을 불러오는 중")).toBeInTheDocument();
+    expect(screen.getByText("추출 상태를 확인하는 중")).toBeInTheDocument();
     expect(await screen.findByLabelText("입금 계좌 예금주 값")).toHaveValue("");
     expect(screen.getAllByText("추출됨").length).toBeGreaterThan(0);
     expect(screen.getByText("불확실")).toBeInTheDocument();
@@ -74,9 +88,9 @@ describe("ExtractionReviewPage", () => {
   });
 
   it("renders load error, retry, and empty states", async () => {
-    vi.spyOn(mvpService, "getExtraction")
+    vi.spyOn(mvpService, "getLatestExtraction")
       .mockRejectedValueOnce(new Error("network down"))
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce(emptyExtraction);
 
     renderPage();
 
@@ -86,7 +100,7 @@ describe("ExtractionReviewPage", () => {
   });
 
   it("blocks analysis while unverified fields remain", async () => {
-    vi.spyOn(mvpService, "getExtraction").mockResolvedValue(documents);
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
     renderPage();
 
     const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 분석하기" });
@@ -95,10 +109,10 @@ describe("ExtractionReviewPage", () => {
   });
 
   it("keeps correction and confirmation failures separate and retryable", async () => {
-    vi.spyOn(mvpService, "getExtraction").mockResolvedValue(documents);
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
     vi.spyOn(mvpService, "submitCorrections")
       .mockRejectedValueOnce(new Error("correction down"))
-      .mockResolvedValueOnce(correctionRequestFixture as CorrectionRequestDto);
+      .mockResolvedValueOnce(completedExtraction);
     vi.spyOn(mvpService, "confirmExtraction").mockRejectedValue(
       new Error("confirmation down"),
     );

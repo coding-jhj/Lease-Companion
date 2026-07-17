@@ -6,7 +6,7 @@ import inputSnapshotFixture from "../../../data/sample/fixtures/case-001/input_s
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
 import type {
   AnalysisRunResultDto,
-  ChecklistItem,
+  ChecklistItemStateDto,
   ContractSummaryDto,
   CorrectionRequestDto,
   DocumentExtractionDto,
@@ -15,10 +15,17 @@ import type {
 import { CASE_001_CONTRACT_ID, mockOnlyMvpRoutes } from "./mockRoutes";
 
 const mockContract: ContractSummaryDto = {
-  contract_id: CASE_001_CONTRACT_ID,
+  id: CASE_001_CONTRACT_ID,
   title: "CASE-001 전세 계약",
-  stage: "추출값 확인 전",
-  updated_at: "2026-07-16",
+  contract_type: "전세",
+  contract_stage: "계약금 입금 전",
+  deposit_paid: false,
+  signed: false,
+  move_in_date: null,
+  balance_payment_date: null,
+  is_proxy_contract: null,
+  registry_case_id: "CASE-001",
+  created_at: "2026-07-16T00:00:00Z",
 };
 
 export const case001Fixtures = {
@@ -29,16 +36,15 @@ export const case001Fixtures = {
   analysis_run_result: analysisRunResultFixture as AnalysisRunResultDto,
 };
 
-const checklist: ChecklistItem[] = [
-  { id: "check-1", label: "등기사항증명서의 소유자 이름 확인", completed: false },
-  { id: "check-2", label: "입금 계좌 명의 확인", completed: false },
-  { id: "check-3", label: "계약서와 이체 내역 보관", completed: true },
+const checklist: ChecklistItemStateDto[] = [
+  { kind: "checklist", item_key: "R01", done: false, updated_at: "2026-07-16T00:00:00Z" },
+  { kind: "post_action", item_key: "keep-records", done: true, updated_at: "2026-07-16T00:00:00Z" },
 ];
 
 export const handlers = [
-  http.post("/api/auth/:mode", async ({ request }) => {
-    const body = (await request.json()) as { email?: string };
-    if (!body.email) {
+  http.post("/api/auth/:mode", async ({ params, request }) => {
+    const body = (await request.json()) as { username?: string; email?: string; password?: string };
+    if (!body.username || !body.password || (params.mode === "signup" && !body.email)) {
       return HttpResponse.json(
         {
           error: {
@@ -56,7 +62,9 @@ export const handlers = [
         { status: 422 },
       );
     }
-    return HttpResponse.json({ access_token: "mock-access-token", token_type: "bearer" });
+    return params.mode === "signup"
+      ? HttpResponse.json({ id: 1, username: body.username, email: body.email }, { status: 201 })
+      : HttpResponse.json({ access_token: "mock-access-token", token_type: "bearer" });
   }),
   http.get("/api/contracts", () => HttpResponse.json([mockContract])),
   http.post("/api/contracts", async ({ request }) => {
@@ -81,8 +89,8 @@ export const handlers = [
     }
     return HttpResponse.json({ ...mockContract, title: body.title }, { status: 201 });
   }),
-  http.put("/api/contracts/:contractId/situation", ({ params }) =>
-    HttpResponse.json({ contract_id: Number(params.contractId) }),
+  http.put("/api/contracts/:contractId/situation", async ({ request }) =>
+    HttpResponse.json({ ...mockContract, ...await request.json() as object }),
   ),
   http.post("/api/contracts/:contractId/documents", () =>
     HttpResponse.json({ document_id: "DOC-1001-CONTRACT" }, { status: 201 }),
@@ -118,5 +126,5 @@ export const handlers = [
   http.get(mockOnlyMvpRoutes.analysisResult(CASE_001_CONTRACT_ID), () =>
     HttpResponse.json(case001Fixtures.analysis_run_result),
   ),
-  http.get("/api/contracts/:contractId/checklist", () => HttpResponse.json(checklist)),
+  http.get("/api/contracts/:contractId/checklist-items", () => HttpResponse.json(checklist)),
 ];

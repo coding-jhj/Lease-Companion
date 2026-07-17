@@ -17,11 +17,47 @@ export interface AuthResponse {
   token_type: "bearer";
 }
 
+export interface UserDto {
+  id: number;
+  username: string;
+  email: string;
+}
+
 export interface ContractSummaryDto {
-  contract_id: number;
+  id: number;
   title: string;
-  stage: string;
-  updated_at: string;
+  contract_type: ContractType | null;
+  contract_stage: ContractStage | null;
+  deposit_paid: boolean | null;
+  signed: boolean | null;
+  move_in_date: string | null;
+  balance_payment_date: string | null;
+  is_proxy_contract: boolean | null;
+  registry_case_id: string | null;
+  created_at: string;
+}
+
+export type ContractType = "전세" | "보증부 월세" | "일반 월세";
+export type ContractStage = "계약금 입금 전" | "서명 전" | "계약 직후";
+
+export interface SituationRequestDto {
+  contract_type: ContractType;
+  contract_stage: ContractStage;
+  deposit_paid: boolean;
+  signed: boolean;
+  move_in_date: string | null;
+  balance_payment_date: string | null;
+  is_proxy_contract: boolean | null;
+}
+
+export type UploadDocumentType = "계약서" | "등기사항증명서" | "중개대상물 확인설명서";
+
+export interface DocumentDto {
+  id: number;
+  doc_type: UploadDocumentType;
+  filename: string;
+  size_bytes: number;
+  created_at: string;
 }
 
 export type FieldValue = string | number | boolean | string[] | null;
@@ -120,6 +156,34 @@ export interface AnalysisRunResultDto {
   results: RuleResultDto[];
 }
 
+export type AsyncRunStatus = "pending" | "running" | "completed" | "failed";
+
+export interface ExtractionStateDto {
+  id: number;
+  status: AsyncRunStatus;
+  error: string | null;
+  contract_doc: DocumentExtractionDto | null;
+  registry_doc: DocumentExtractionDto | null;
+  created_at: string;
+}
+
+export interface SnapshotResponseDto {
+  input_snapshot_id: string;
+  created_at: string;
+}
+
+export interface AnalysisRunSummaryDto {
+  analysis_run_id: string;
+  input_snapshot_id: string;
+  status: AsyncRunStatus;
+  created_at: string;
+}
+
+export interface AnalysisRunDetailDto extends AnalysisRunSummaryDto {
+  error: string | null;
+  result: AnalysisRunResultDto | null;
+}
+
 /** DTO와 분리된 화면 전용 타입. */
 export interface FieldViewModel {
   key: string;
@@ -129,8 +193,11 @@ export interface FieldViewModel {
   field: ExtractedFieldDto;
 }
 
-export interface ChecklistItem {
-  id: string;
-  label: string;
-  completed: boolean;
+export type ChecklistItemKind = "checklist" | "post_action";
+
+export interface ChecklistItemStateDto {
+  kind: ChecklistItemKind;
+  item_key: string;
+  done: boolean;
+  updated_at: string;
 }

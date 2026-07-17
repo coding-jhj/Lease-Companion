@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -18,6 +18,8 @@ const verificationLabels: Record<VerificationStatus, string> = {
   corrected: "수정됨",
 };
 
+const POLL_INTERVAL_MS = 1000;
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -26,22 +28,37 @@ export function ExtractionReviewPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [verificationByKey, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
   const [savedDraftKeys, setSavedDraftKeys] = useState<string[]>([]);
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "processing" | "success" | "error">("loading");
+  const [runStatus, setRunStatus] = useState<"pending" | "running">("pending");
   const [errorMessage, setErrorMessage] = useState("");
   const [correctionError, setCorrectionError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const pollGeneration = useRef(0);
   const fields = fieldViewModels(documents);
 
   async function loadExtraction() {
+    const generation = ++pollGeneration.current;
     setStatus("loading");
     try {
-      const response = await mvpService.getExtraction(contractId);
-      setDocuments(response);
+      let response = await mvpService.getLatestExtraction(contractId);
+      while (response.status === "pending" || response.status === "running") {
+        if (generation !== pollGeneration.current) return;
+        setRunStatus(response.status);
+        setStatus("processing");
+        await new Promise((resolve) => window.setTimeout(resolve, POLL_INTERVAL_MS));
+        response = await mvpService.getLatestExtraction(contractId);
+      }
+      if (generation !== pollGeneration.current) return;
+      if (response.status === "failed") throw new Error(response.error ?? "문서 추출에 실패했습니다.");
+      const extractedDocuments = [response.contract_doc, response.registry_doc].filter(
+        (document): document is DocumentExtractionDto => document !== null,
+      );
+      setDocuments(extractedDocuments);
       setDrafts({});
       setSavedDraftKeys([]);
       setVerificationByKey(Object.fromEntries(
-        fieldViewModels(response).map((view) => [view.key, view.field.verification_status]),
+        fieldViewModels(extractedDocuments).map((view) => [view.key, view.field.verification_status]),
       ));
       setStatus("success");
     } catch (error) {
@@ -50,7 +67,10 @@ export function ExtractionReviewPage() {
     }
   }
 
-  useEffect(() => { void loadExtraction(); }, [contractId]);
+  useEffect(() => {
+    void loadExtraction();
+    return () => { pollGeneration.current += 1; };
+  }, [contractId]);
 
   function updateField(view: FieldViewModel, value: string) {
     setSavedDraftKeys((current) => current.filter((key) => key !== view.key));
@@ -128,7 +148,8 @@ export function ExtractionReviewPage() {
   return (
     <PageShell step="5 / 8" title="추출값 확인·수정" description="분석 전에 문서에서 읽은 값이 맞는지 직접 확인하세요.">
       <div className="stack">
-        {status === "loading" && <LoadingState title="추출값을 불러오는 중" description="계약서에서 읽은 내용을 준비하고 있습니다." />}
+        {status === "loading" && <LoadingState title="추출 상태를 확인하는 중" description="서버의 최신 추출 실행을 찾고 있습니다." />}
+        {status === "processing" && <LoadingState title={runStatus === "pending" ? "추출 대기 중" : "문서에서 값을 추출하는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
         {status === "error" && <ErrorState title="추출값을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadExtraction()} />}
         {status === "success" && fields.length === 0 && <EmptyState title="확인할 추출값이 없습니다" description="문서를 다시 업로드하거나 처리 상태를 확인해 주세요." />}
         {status === "success" && fields.length > 0 && (

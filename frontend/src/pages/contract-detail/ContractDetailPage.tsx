@@ -3,13 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
-import type { ChecklistItem } from "../../types/api";
+import type { ChecklistItemStateDto } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
 
 export function ContractDetailPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
-  const [items, setItems] = useState<ChecklistItem[]>([]);
+  const [items, setItems] = useState<ChecklistItemStateDto[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -26,8 +26,11 @@ export function ContractDetailPage() {
 
   useEffect(() => { void loadChecklist(); }, [contractId]);
 
-  function toggle(id: string) {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, completed: !item.completed } : item));
+  async function toggle(item: ChecklistItemStateDto) {
+    const updated = await mvpService.updateChecklistItem(contractId, item.kind, item.item_key, !item.done);
+    setItems((current) => current.map((candidate) =>
+      candidate.kind === updated.kind && candidate.item_key === updated.item_key ? updated : candidate,
+    ));
   }
 
   return (
@@ -36,7 +39,7 @@ export function ContractDetailPage() {
         {status === "loading" && <LoadingState title="체크리스트를 불러오는 중" description="저장된 확인 상태를 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="체크리스트를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadChecklist()} />}
         {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="리포트가 생성되면 확인 행동이 여기에 표시됩니다." />}
-        {status === "success" && items.map((item) => <label className="check-item" key={item.id}><input type="checkbox" checked={item.completed} onChange={() => toggle(item.id)} />{item.label}</label>)}
+        {status === "success" && items.map((item) => <label className="check-item" key={item.kind + ":" + item.item_key}><input type="checkbox" checked={item.done} onChange={() => void toggle(item)} />{item.kind === "checklist" ? "서명 전" : "계약 직후"} · {item.item_key}</label>)}
         <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>리포트 다시 보기</Link>
         <Link className="button-link" to="/contracts">대시보드로 돌아가기</Link>
       </div>
