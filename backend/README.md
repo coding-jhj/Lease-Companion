@@ -28,13 +28,13 @@
 
 루트 [`../AGENTS.md`](../AGENTS.md)와 [`docs/backend/auth-and-persistence.md`](../docs/backend/auth-and-persistence.md) 기준.
 
-영속 모델 구현 완료: `User` · `ContractProject` · `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState`. 추출 필드와 판정·근거·질문·행동 결과는 canonical Pydantic JSON으로 실행 이력에 저장한다. `UserFeedback` API는 후속 대상이다.
+영속 모델 구현 완료: `User` · `ContractProject` · `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback`. 추출 필드와 판정·근거·질문·행동 결과는 canonical Pydantic JSON으로 실행 이력에 저장한다.
 
 > `AnalysisRun`을 표준 명칭으로 사용한다. (루트 AGENTS.md의 `AnalysisJob`은 동의 표기)
 
 ## API 책임 영역
 
-`auth`·`contracts`·`documents`·`extractions`·`analysis-runs`·`checklist-items` 경로가 구현되어 있다. 분석 결과는 완료된 `analysis-runs`의 `result` JSON으로 조회한다. 피드백 API는 TODO다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
+`auth`·`contracts`·`documents`·`extractions`·`analysis-runs`·`checklist-items`·`feedback` 경로가 구현되어 있다. 분석 결과는 완료된 `analysis-runs`의 `result`(규칙 판정)·`generation_result`(생성 안내) JSON으로 조회한다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
 
 `auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
 
@@ -141,7 +141,7 @@ python scripts/seed_dev.py        # admin / 1234 다시 생성
 - **분석 결과 저장·재조회 구현 완료**: `POST/GET /api/contracts/{id}/analysis-runs` — 현재 로컬 MVP는 비동기 실행 후 폴링(status: pending/running/completed/failed). 운영 상태 전달 방식은 TODO. 최신 확인 완료 스냅샷으로 실행, `AnalysisRunResult`를 JSONB로 저장(재분석마다 새 행 = 이력). 계약 상황 입력도 통합 ContractContext 전체 필드(deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract)로 확장.
 - **추출 실행·확인·수정 API 구현 완료**: `POST …/extractions`(비동기, 업로드 문서 + 모의 등기 연결 기반) · `GET …/extractions/latest`(폴링) · `POST …/corrections`(원본 보존 + CorrectionRequest 이력) · `POST …/extractions/confirm`(서버 측 불변 InputSnapshot 생성). data-contract-v1 B 인수 체크리스트 5항목 전부 테스트로 충족.
 - **체크리스트·계약 직후 행동 상태 API 구현 완료**: `GET /api/contracts/{id}/checklist-items`(?kind 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert). 항목 문구는 분석 결과가 원본 — 상태만 계약 건 단위 저장·재조회. item_key 항목 존재 검증은 A 3단계 생성 스키마 확정 후 TODO.
-- 백그라운드 실행은 FastAPI BackgroundTasks(`app/workers/analysis.py`) — 별도 워커 프로세스 분리는 LLM 파이프라인 장시간화 시.
+- 백그라운드 실행은 FastAPI BackgroundTasks(`app/workers/analysis.py`) — 별도 워커 프로세스 분리는 LLM 파이프라인 장시간화 시. **기동 시 stale 실행 복구**(2026-07-17): 서버 재시작으로 pending/running에 멈춘 추출·분석·생성 실행을 failed로 정리해 클라이언트 무한 폴링을 방지한다(`fail_stale_runs`). 규칙 결과가 이미 저장된 행의 `result`·`status=completed`는 건드리지 않는다.
 - **CASE-001 통합 시나리오 테스트**: `tests/api/test_case001_e2e.py` — 회원가입→로그인→계약 건→상황 입력→업로드+registry-link→추출→수정→확인→분석 폴링→체크리스트→**재로그인 후 재조회**까지 8단계 흐름 1건 (4단계 통합 검증의 백엔드 몫).
 - **주의(Alembic 도입 전)**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 모델에 컬럼이 추가되면 기존 dev DB에는 수동 `ALTER TABLE … ADD COLUMN` 필요 (예: 2026-07-16 `contract_projects`에 deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract 추가 / 2026-07-17 `analysis_runs`에 `generation_result` JSONB·`generation_status` VARCHAR(20)·`generation_error` TEXT 추가). 마이그레이션 도구 도입은 TODO.
 - **피드백 API 구현 완료**(2026-07-17): `POST/GET /api/contracts/{id}/feedback` — 자유 텍스트(1~2000자) + 선택 평점(1~5), 계약 건 단위 이력(수정·삭제 없음), 본인 소유만. 신규 테이블 `user_feedbacks`는 기동 시 `create_all`이 자동 생성.

@@ -8,6 +8,8 @@ import logging
 import os
 from pathlib import Path
 
+from sqlalchemy import select
+
 from lease_companion_ai.generation.service import GenerationService
 from lease_companion_ai.pipelines.minimum_mvp import extract_documents
 from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvider
@@ -22,12 +24,42 @@ from app.core.db import SessionLocal
 from app.models.analysis import (
     STATUS_COMPLETED,
     STATUS_FAILED,
+    STATUS_PENDING,
     STATUS_RUNNING,
     AnalysisRun,
     ExtractionRun,
 )
 
 logger = logging.getLogger(__name__)
+
+# 서버 재시작으로 중단된 실행에 남기는 사용자 노출용 문구
+_INTERRUPTED = "서버 재시작으로 실행이 중단되었습니다. 다시 실행해 주세요."
+
+
+def fail_stale_runs() -> None:
+    """기동 시 pending/running으로 남은 실행을 failed로 정리한다.
+
+    BackgroundTasks는 프로세스 내 실행이라 서버가 내려가면 진행 중이던 행이
+    영원히 pending/running으로 남아 클라이언트가 무한 폴링하게 된다.
+    """
+    with SessionLocal() as db:
+        stale_states = (STATUS_PENDING, STATUS_RUNNING)
+        for extraction_run in db.scalars(
+            select(ExtractionRun).where(ExtractionRun.status.in_(stale_states))
+        ):
+            extraction_run.status = STATUS_FAILED
+            extraction_run.error = _INTERRUPTED
+        for analysis_run in db.scalars(
+            select(AnalysisRun).where(AnalysisRun.status.in_(stale_states))
+        ):
+            analysis_run.status = STATUS_FAILED
+            analysis_run.error = _INTERRUPTED
+        for generation_run in db.scalars(
+            select(AnalysisRun).where(AnalysisRun.generation_status.in_(stale_states))
+        ):
+            generation_run.generation_status = STATUS_FAILED
+            generation_run.generation_error = _INTERRUPTED
+        db.commit()
 
 
 def run_extraction(extraction_run_id: int, contract_path: str, contract_filename: str,

@@ -10,12 +10,15 @@ from fastapi import FastAPI
 from app.api.routes import analyses, auth, checklists, contracts, documents, extractions, feedback
 from app.core.db import Base, engine
 from app.core.errors import register_error_handlers
+from app.workers.analysis import fail_stale_runs
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Alembic 도입 전 로컬 MVP 임시 처리. 기존 테이블 변경은 적용하지 못한다.
     Base.metadata.create_all(engine)
+    # 재시작으로 중단된 추출·분석·생성 실행을 failed로 정리 — 클라이언트 무한 폴링 방지
+    fail_stale_runs()
     yield
 
 
