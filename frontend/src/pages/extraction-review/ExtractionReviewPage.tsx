@@ -102,7 +102,7 @@ export function ExtractionReviewPage() {
         };
       });
       const request: CorrectionRequestDto = {
-        schema_version: "1.0.0",
+        schema_version: "1.1.0",
         contract_id: contractId,
         corrections,
       };

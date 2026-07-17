@@ -28,6 +28,7 @@ export type FieldValue = string | number | boolean | string[] | null;
 export type VerificationStatus = "unverified" | "confirmed" | "corrected";
 export type ExtractionConfidence = "추출됨" | "불확실" | "실패";
 export type DocumentType = "contract" | "registry";
+export type SchemaVersion = "1.1.0";
 
 export interface SourceEvidenceDto {
   page: number | null;
@@ -47,7 +48,7 @@ export interface ExtractedFieldDto {
 }
 
 export interface DocumentExtractionDto {
-  schema_version: "1.0.0";
+  schema_version: SchemaVersion;
   document_id: string;
   document_type: DocumentType;
   fields: Record<string, ExtractedFieldDto>;
@@ -61,13 +62,13 @@ export interface FieldCorrectionDto {
 }
 
 export interface CorrectionRequestDto {
-  schema_version: "1.0.0";
+  schema_version: SchemaVersion;
   contract_id: number;
   corrections: FieldCorrectionDto[];
 }
 
 export interface InputSnapshotDto {
-  schema_version: "1.0.0";
+  schema_version: SchemaVersion;
   input_snapshot_id: string;
   contract_id: number;
   case_id: string | null;
@@ -111,7 +112,7 @@ export interface RuleResultDto {
 }
 
 export interface AnalysisRunResultDto {
-  schema_version: "1.0.0";
+  schema_version: SchemaVersion;
   analysis_run_id: string;
   input_snapshot_id: string;
   contract_id: number;
