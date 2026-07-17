@@ -38,6 +38,10 @@ def analyze(request: Any) -> list[dict[str, Any]]:
     if not request.user_confirmed:
         raise MinimumMvpInputError("추출값 확인 완료 후에만 분석할 수 있습니다.")
     try:
-        return analyze_verified_fields(request.contract_fields, request.registry_fields)
+        return analyze_verified_fields(
+            request.contract_fields,
+            request.registry_fields,
+            request.contract_context,
+        )
     except (TypeError, ValueError) as exc:
         raise MinimumMvpInputError("확인한 추출값 형식이 올바르지 않습니다.") from exc

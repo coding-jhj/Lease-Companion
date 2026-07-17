@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "GenerationMethod": {
+      "description": "사용자 안내 생성 방식 — provider와 안전한 template fallback을 구분한다.",
+      "enum": [
+        "provider",
+        "template_fallback"
+      ],
+      "title": "GenerationMethod",
+      "type": "string"
+    },
+    "RuleGuidance": {
+      "additionalProperties": false,
+      "description": "검증 또는 fallback을 마친 규칙 1개의 공개 사용자 안내.",
+      "properties": {
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "fallback_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Reason"
+        },
+        "generation_method": {
+          "$ref": "#/$defs/GenerationMethod"
+        },
+        "post_contract_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Post Contract Actions",
+          "type": "array"
+        },
+        "provider_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Model"
+        },
+        "questions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Questions",
+          "type": "array"
+        },
+        "rule_id": {
+          "pattern": "^R\\d{2}$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "signing_checklist": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Signing Checklist",
+          "type": "array"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rule_id",
+        "explanation",
+        "generation_method"
+      ],
+      "title": "RuleGuidance",
+      "type": "object"
+    }
+  },
+  "$id": "lease-companion/generation-result-v1.2.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과.",
+  "properties": {
+    "analysis_run_id": {
+      "minLength": 1,
+      "title": "Analysis Run Id",
+      "type": "string"
+    },
+    "guardrail_passed": {
+      "const": true,
+      "default": true,
+      "title": "Guardrail Passed",
+      "type": "boolean"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/RuleGuidance"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.2.0",
+      "default": "1.2.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "analysis_run_id",
+    "items"
+  ],
+  "title": "GenerationResult",
+  "type": "object",
+  "x-schema-version": "1.2.0"
+}

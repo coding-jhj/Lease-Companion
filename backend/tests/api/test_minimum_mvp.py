@@ -8,6 +8,16 @@ from app.mvp_app import app
 
 ROOT = Path(__file__).resolve().parents[3]
 client = TestClient(app)
+CONTRACT_CONTEXT = {
+    "contract_id": 1,
+    "contract_type": "전세",
+    "contract_stage": "계약금 입금 전",
+    "deposit_paid": False,
+    "signed": False,
+    "move_in_date": None,
+    "balance_payment_date": None,
+    "is_proxy_contract": False,
+}
 
 
 def _document(path: Path) -> dict[str, str]:
@@ -33,6 +43,7 @@ def test_extract_review_analyze_flow():
         json={
             "contract_fields": extraction["contract"]["fields"],
             "registry_fields": extraction["registry"]["fields"],
+            "contract_context": CONTRACT_CONTEXT,
             "user_confirmed": False,
         },
     )
@@ -43,6 +54,7 @@ def test_extract_review_analyze_flow():
         json={
             "contract_fields": extraction["contract"]["fields"],
             "registry_fields": extraction["registry"]["fields"],
+            "contract_context": CONTRACT_CONTEXT,
             "user_confirmed": True,
         },
     )
@@ -64,6 +76,7 @@ def test_analyze_rejects_wrong_canonical_field_type_as_422():
         json={
             "contract_fields": {"landlord_name": 123},
             "registry_fields": {"owner_names": ["박성우"]},
+            "contract_context": CONTRACT_CONTEXT,
             "user_confirmed": True,
         },
     )

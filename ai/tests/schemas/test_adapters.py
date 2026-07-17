@@ -22,6 +22,7 @@ from lease_companion_ai.schemas.adapters import (
 )
 from lease_companion_ai.schemas.unified import (
     Confidence,
+    ContractContext,
     CorrectionRequest,
     DocumentType,
     FieldCorrection,
@@ -33,6 +34,16 @@ from lease_companion_ai.schemas.unified import (
 
 ROOT = Path(__file__).resolve().parents[3]
 CONFIRMED_AT = datetime(2026, 7, 16, tzinfo=timezone.utc)
+
+def _context(contract_id: int = 1) -> ContractContext:
+    return ContractContext(
+        contract_id=contract_id,
+        contract_type="전세",
+        contract_stage="계약금 입금 전",
+        deposit_paid=False,
+        signed=False,
+        is_proxy_contract=False,
+    )
 
 
 def _load_case001_goldsets():
@@ -123,6 +134,7 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
         input_snapshot_id="SNAP-1",
         contract_id=1,
         case_id="CASE-001",
+        contract_context=_context(),
         contract_doc=contract_doc,
         registry_doc=registry_doc,
         confirmed_at=CONFIRMED_AT,
@@ -176,6 +188,7 @@ def test_regex_parser_output_feeds_adapter_and_rules():
     snapshot = build_snapshot(
         input_snapshot_id="SNAP-1",
         contract_id=1,
+        contract_context=_context(),
         contract_doc=confirm_document(
             document_from_legacy(legacy_contract, document_id="DOC-C")
         ),
@@ -195,6 +208,7 @@ def test_analysis_statuses_stay_within_rule_spec_allowed_sets():
     snapshot = build_snapshot(
         input_snapshot_id="SNAP-1",
         contract_id=1,
+        contract_context=_context(),
         contract_doc=contract_doc,
         registry_doc=registry_doc,
         confirmed_at=CONFIRMED_AT,
@@ -242,6 +256,7 @@ def test_build_snapshot_requires_explicit_confirmation():
         build_snapshot(
             input_snapshot_id="SNAP-1",
             contract_id=1,
+            contract_context=_context(),
             contract_doc=raw_contract,
             registry_doc=raw_registry,
             confirmed_at=CONFIRMED_AT,
@@ -250,6 +265,7 @@ def test_build_snapshot_requires_explicit_confirmation():
     snapshot = build_snapshot(
         input_snapshot_id="SNAP-1",
         contract_id=1,
+        contract_context=_context(),
         contract_doc=confirm_document(raw_contract),
         registry_doc=confirm_document(raw_registry),
         confirmed_at=CONFIRMED_AT,

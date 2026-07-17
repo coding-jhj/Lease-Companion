@@ -21,8 +21,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-SchemaVersion = Literal["1.1.0"]
-SCHEMA_VERSION: SchemaVersion = "1.1.0"
+SchemaVersion = Literal["1.2.0"]
+SCHEMA_VERSION: SchemaVersion = "1.2.0"
 
 # 필드 값 타입 — R01~R10 입력이 쓰는 형태만 허용(str·int·bool·list[str]·null).
 # dict 등 구조체 값은 거부한다. 새 값 형태가 필요하면 J 확장에서 타입을 "추가"한다.
@@ -113,6 +113,22 @@ class ContractStage(str, Enum):
     BEFORE_DEPOSIT = "계약금 입금 전"
     BEFORE_SIGNING = "서명 전"
     AFTER_CONTRACT = "계약 직후"
+
+
+class ContractContext(BaseModel):
+    """계약 상황 입력 — 스냅샷에 포함되는 불변 분석 입력."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    contract_id: ContractId
+    contract_type: ContractType
+    contract_stage: ContractStage
+    deposit_paid: bool
+    signed: bool
+    move_in_date: date | None = None
+    balance_payment_date: date | None = None
+    is_proxy_contract: bool | None = None  # null = 모름
 
 
 # 현행 R01~R10이 실제로 사용하는 canonical 필드 — 키는 추출 결과에 항상 존재해야 한다.
@@ -334,11 +350,14 @@ class InputSnapshot(BaseModel):
     input_snapshot_id: str = Field(min_length=1)
     contract_id: ContractId
     case_id: str | None = None  # 합성·평가 fixture 연결 전용. 실계약 식별자가 아니다.
+    contract_context: ContractContext
     confirmed_fields: SnapshotFields
     confirmed_at: datetime
 
     @model_validator(mode="after")
     def _check(self) -> "InputSnapshot":
+        if self.contract_context.contract_id != self.contract_id:
+            raise ValueError("InputSnapshot과 ContractContext의 contract_id가 다릅니다.")
         for doc_fields in (self.confirmed_fields.contract, self.confirmed_fields.registry):
             for item in doc_fields.values():
                 if item.verification_status is VerificationStatus.UNVERIFIED:
@@ -424,20 +443,91 @@ class AnalysisRunResult(BaseModel):
         return self
 
 
-class ContractContext(BaseModel):
-    """계약 상황 입력 — 2026-07-16 팀 확정 필드."""
+class GenerationMethod(str, Enum):
+    """사용자 안내 생성 방식 — provider와 안전한 template fallback을 구분한다."""
 
-    model_config = ConfigDict(extra="forbid")
+    PROVIDER = "provider"
+    TEMPLATE_FALLBACK = "template_fallback"
+
+
+def _validate_unique_non_empty(values: tuple[str, ...], *, label: str) -> tuple[str, ...]:
+    if any(not value.strip() for value in values):
+        raise ValueError(f"{label} 목록에는 빈 문자열을 넣을 수 없습니다.")
+    if len(values) != len(set(values)):
+        raise ValueError(f"{label} 목록에는 중복 값을 넣을 수 없습니다.")
+    return values
+
+
+class RuleGuidance(BaseModel):
+    """검증 또는 fallback을 마친 규칙 1개의 공개 사용자 안내."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_id: str = Field(pattern=r"^R\d{2}$")
+    explanation: str = Field(min_length=1)
+    questions: tuple[str, ...] = ()
+    signing_checklist: tuple[str, ...] = ()
+    post_contract_actions: tuple[str, ...] = ()
+    source_ids: tuple[str, ...] = ()
+    generation_method: GenerationMethod
+    provider_model: str | None = None
+    fallback_reason: str | None = None
+
+    @field_validator(
+        "questions", "signing_checklist", "post_contract_actions", "source_ids"
+    )
+    @classmethod
+    def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _validate_unique_non_empty(values, label="안내")
+
+    @model_validator(mode="after")
+    def _method_metadata(self) -> "RuleGuidance":
+        if self.generation_method is GenerationMethod.PROVIDER:
+            if self.provider_model is None or self.fallback_reason is not None:
+                raise ValueError("provider 생성에는 provider_model만 필요합니다.")
+        elif self.fallback_reason is None or self.provider_model is not None:
+            raise ValueError("template fallback에는 fallback_reason만 필요합니다.")
+        return self
+
+
+class GenerationResult(BaseModel):
+    """AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: SchemaVersion = SCHEMA_VERSION
-    contract_id: ContractId
-    contract_type: ContractType
-    contract_stage: ContractStage
-    deposit_paid: bool
-    signed: bool
-    move_in_date: date | None = None
-    balance_payment_date: date | None = None
-    is_proxy_contract: bool | None = None  # null = 모름
+    analysis_run_id: str = Field(min_length=1)
+    items: tuple[RuleGuidance, ...]
+    guardrail_passed: Literal[True] = True
+
+    @model_validator(mode="after")
+    def _unique_rules(self) -> "GenerationResult":
+        rule_ids = [item.rule_id for item in self.items]
+        if len(rule_ids) != len(set(rule_ids)):
+            raise ValueError("생성 결과에는 중복 rule_id를 넣을 수 없습니다.")
+        return self
+
+
+def validate_generation_result_for_analysis(
+    analysis: AnalysisRunResult, generation: GenerationResult
+) -> GenerationResult:
+    """저장 전 분석 결과와 생성 결과의 식별자·공식 근거 연결을 검증한다."""
+
+    if generation.analysis_run_id != analysis.analysis_run_id:
+        raise ValueError("GenerationResult와 AnalysisRunResult의 analysis_run_id가 다릅니다.")
+    rules = {result.rule_id: result for result in analysis.results}
+    for item in generation.items:
+        rule = rules.get(item.rule_id)
+        if rule is None:
+            raise ValueError(f"분석 결과에 없는 rule_id입니다: {item.rule_id}")
+        allowed_source_ids = {source.source_id for source in rule.evidence_sources}
+        unknown_source_ids = set(item.source_ids) - allowed_source_ids
+        if unknown_source_ids:
+            raise ValueError(
+                f"{item.rule_id}의 공식 근거가 아닌 source_id입니다: "
+                f"{sorted(unknown_source_ids)}"
+            )
+    return generation
 
 
 class FieldCorrection(BaseModel):

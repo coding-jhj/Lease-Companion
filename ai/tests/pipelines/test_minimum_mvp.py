@@ -7,7 +7,11 @@ from lease_companion_ai.pipelines.minimum_mvp import (
     extract_documents,
 )
 from lease_companion_ai.rules.minimum_mvp import run_rules
-from lease_companion_ai.schemas.unified import DocumentExtraction, VerificationStatus
+from lease_companion_ai.schemas.unified import (
+    ContractContext,
+    DocumentExtraction,
+    VerificationStatus,
+)
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -250,7 +254,18 @@ def test_verified_legacy_analysis_uses_canonical_result_contract():
         (ROOT / "data/sample/registry-records/registry_001.txt").read_text(encoding="utf-8")
     ).fields
 
-    results = analyze_verified_fields(contract, registry)
+    results = analyze_verified_fields(
+        contract,
+        registry,
+        ContractContext(
+            contract_id=1,
+            contract_type="전세",
+            contract_stage="계약금 입금 전",
+            deposit_paid=False,
+            signed=False,
+            is_proxy_contract=False,
+        ),
+    )
 
     assert [result["rule_id"] for result in results] == [f"R{i:02d}" for i in range(1, 11)]
     assert all(set(result) == {

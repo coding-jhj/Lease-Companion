@@ -79,7 +79,7 @@
 
 선행 조건: 4단계 통과.
 
-- R01~R10의 `result_type(judgment|fact_flag)`·`triggers_actions`는 canonical v1.1.0에 구현 완료했다. J 확장에서는 이 계약을 유지하며 미구현 판정(J03·J04·J06·J07·J08·J09·J12)을 추가한다.
+- R01~R10의 `result_type(judgment|fact_flag)`·`triggers_actions`는 canonical v1.2.0에서 유지했다. J 확장에서는 이 계약을 유지하며 미구현 판정(J03·J04·J06·J07·J08·J09·J12)을 추가한다.
 - 통합 스키마는 **필드 추가**로 확장하고 기존 R01~R10 필드의 이름·의미를 바꾸지 않는다(하위 호환 — ADR 참조).
 - R↔J 매핑은 [`../data/judgment-spec.md`](../data/judgment-spec.md)에서 관리한다.
 - 완료 기준: J01~J12가 판정별 허용 상태·시급도·입력 부족 정책에 맞게 실행되고 goldset 회귀를 통과한다.

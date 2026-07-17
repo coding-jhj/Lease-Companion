@@ -24,7 +24,10 @@ from lease_companion_ai.schemas.adapters import (
     document_to_legacy,
 )
 from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction as LegacyDocumentExtraction
-from lease_companion_ai.schemas.unified import DocumentExtraction as UnifiedDocumentExtraction
+from lease_companion_ai.schemas.unified import (
+    ContractContext,
+    DocumentExtraction as UnifiedDocumentExtraction,
+)
 
 
 _KIND_LABELS = {"contract": "계약서", "registry": "등기사항증명서"}
@@ -144,7 +147,11 @@ def extract_documents(contract_content: bytes, contract_filename: str, registry_
         return {"contract": contract_job.result(), "registry": registry_job.result()}
 
 
-def analyze_verified_fields(contract_fields: dict[str, Any], registry_fields: dict[str, Any]) -> list[dict[str, Any]]:
+def analyze_verified_fields(
+    contract_fields: dict[str, Any],
+    registry_fields: dict[str, Any],
+    contract_context: ContractContext,
+) -> list[dict[str, Any]]:
     """legacy 확인 완료 입력을 canonical 스냅샷·분석 경로로 실행한다.
 
     이 호환 API는 최초값과 수정 이력을 따로 받지 않으므로 전달된 최종 필드를
@@ -165,7 +172,8 @@ def analyze_verified_fields(contract_fields: dict[str, Any], registry_fields: di
     )
     snapshot = build_snapshot(
         input_snapshot_id="minimum-mvp-snapshot",
-        contract_id=1,
+        contract_id=contract_context.contract_id,
+        contract_context=contract_context,
         contract_doc=contract_doc,
         registry_doc=registry_doc,
         confirmed_at=datetime.now(timezone.utc),
