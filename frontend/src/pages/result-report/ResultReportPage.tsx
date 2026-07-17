@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { PriorityGroups } from "../../features/judgment-results/PriorityGroups";
@@ -11,6 +11,8 @@ export function ResultReportPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const analysisRunId = searchParams.get("analysisRunId") ?? undefined;
   const [items, setItems] = useState<RuleResultDto[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -18,7 +20,7 @@ export function ResultReportPage() {
   async function loadReport() {
     setStatus("loading");
     try {
-      setItems((await mvpService.getAnalysisResult(contractId)).results);
+      setItems((await mvpService.getAnalysisResult(contractId, analysisRunId)).results);
       setStatus("success");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "리포트를 불러오지 못했습니다.");
@@ -26,7 +28,7 @@ export function ResultReportPage() {
     }
   }
 
-  useEffect(() => { void loadReport(); }, [contractId]);
+  useEffect(() => { void loadReport(); }, [contractId, analysisRunId]);
 
   return (
     <PageShell step="7 / 8" title="계약 확인 리포트" description="항목별 확인 필요성과 다음 질문을 살펴보세요.">

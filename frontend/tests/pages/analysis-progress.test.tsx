@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AnalysisProgressPage } from "../../src/pages/analysis-progress/AnalysisProgressPage";
 import { mvpService } from "../../src/services/mvpService";
+import type { AnalysisRunDetailDto } from "../../src/types/api";
 
 afterEach(() => {
   cleanup();
@@ -14,7 +15,7 @@ afterEach(() => {
 
 describe("AnalysisProgressPage", () => {
   it("shows analyzing and completed states", async () => {
-    let resolveAnalysis!: (value: { analysis_run_id: string }) => void;
+    let resolveAnalysis!: (value: AnalysisRunDetailDto) => void;
     vi.spyOn(mvpService, "startAnalysis").mockReturnValue(
       new Promise((resolve) => {
         resolveAnalysis = resolve;
@@ -29,12 +30,19 @@ describe("AnalysisProgressPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "계약 내용을 확인하고 있어요" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "분석 시작을 기다리고 있어요" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "분석 중…" })).toBeDisabled();
 
-    resolveAnalysis({ analysis_run_id: "RUN-1001-001" });
+    await act(async () => resolveAnalysis({
+      analysis_run_id: "RUN-1001-001",
+      input_snapshot_id: "SNAP-1001",
+      status: "completed",
+      error: null,
+      created_at: "2026-07-16T00:00:00Z",
+      result: null,
+    }));
 
-    expect(await screen.findByRole("heading", { name: "분석 준비 완료" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "분석 완료" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "리포트 보기" })).toBeEnabled();
   });
 });

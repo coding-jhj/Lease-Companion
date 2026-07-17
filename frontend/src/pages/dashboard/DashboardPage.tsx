@@ -30,11 +30,11 @@ export function DashboardPage() {
         {status === "error" && <ErrorState title="계약 목록을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContracts()} />}
         {status === "success" && contracts.length === 0 && <EmptyState title="아직 저장된 계약이 없습니다" description="새 계약을 만들어 확인을 시작해 보세요." />}
         {status === "success" && contracts.map((contract) => (
-          <article className="contract-card" key={contract.contract_id}>
-            <strong>{contract.title}</strong><span>{contract.stage} · {contract.updated_at}</span>
+          <article className="contract-card" key={contract.id}>
+            <strong>{contract.title}</strong><span>{contract.contract_stage ?? "상황 입력 전"} · {new Date(contract.created_at).toLocaleDateString("ko-KR")}</span>
             <div className="card-actions">
-              <Link className="text-link" to={"/contracts/" + contract.contract_id}>계약 상세 보기</Link>
-              <Link className="text-link text-link--report" to={"/contracts/" + contract.contract_id + "/report"}>기존 리포트 다시 보기</Link>
+              <Link className="text-link" to={"/contracts/" + contract.id}>계약 상세 보기</Link>
+              <Link className="text-link text-link--report" to={"/contracts/" + contract.id + "/report"}>기존 리포트 다시 보기</Link>
             </div>
           </article>
         ))}

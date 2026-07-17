@@ -28,13 +28,13 @@
 
 루트 [`../AGENTS.md`](../AGENTS.md)와 [`docs/backend/auth-and-persistence.md`](../docs/backend/auth-and-persistence.md) 기준.
 
-구현 완료: `User` · `ContractProject`. 미구현: `Document` · `ExtractedField` · `AnalysisRun` · `JudgmentResult` · `EvidenceSource` · `QuestionCard` · `ChecklistItem` · `PostContractAction` · `UserFeedback` 및 해당 repository.
+영속 모델 구현 완료: `User` · `ContractProject` · `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState`. 추출 필드와 판정·근거·질문·행동 결과는 canonical Pydantic JSON으로 실행 이력에 저장한다. `UserFeedback` API는 후속 대상이다.
 
 > `AnalysisRun`을 표준 명칭으로 사용한다. (루트 AGENTS.md의 `AnalysisJob`은 동의 표기)
 
 ## API 책임 영역
 
-구현된 auth·contracts·minimum MVP 경로는 확정되어 있다. 나머지 문서·분석·결과 API는 TODO다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
+`auth`·`contracts`·`documents`·`extractions`·`analysis-runs`·`checklist-items` 경로가 구현되어 있다. 분석 결과는 완료된 `analysis-runs`의 `result` JSON으로 조회한다. 피드백 API는 TODO다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
 
 `auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
 
