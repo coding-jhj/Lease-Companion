@@ -59,10 +59,20 @@ def alice(client):
     return _token(client, "alice")
 
 
+SITUATION = {
+    "contract_type": "전세",
+    "contract_stage": "서명 전",
+    "deposit_paid": False,
+    "signed": False,
+    "is_proxy_contract": False,
+}
+
+
 @pytest.fixture(scope="module")
 def contract_id(client, alice):
-    """문서 업로드·추출·수정·확인까지 끝난 계약 건 — 모듈 내 분석 테스트의 공통 전제."""
+    """상황 입력·문서 업로드·추출·수정·확인까지 끝난 계약 건 — 모듈 내 분석 테스트의 공통 전제."""
     cid = client.post("/api/contracts", json={"title": "분석용"}, headers=alice).json()["id"]
+    assert client.put(f"/api/contracts/{cid}/situation", json=SITUATION, headers=alice).status_code == 200
     _upload(client, alice, cid, CONTRACT_TXT, "계약서")
     _upload(client, alice, cid, REGISTRY_TXT, "등기사항증명서")
 
@@ -86,7 +96,12 @@ def contract_id(client, alice):
 
     res = client.post(f"/api/contracts/{cid}/extractions/confirm", headers=alice)
     assert res.status_code == 201
-    assert res.json()["input_snapshot_id"].startswith("snap-")
+    body = res.json()
+    assert body["input_snapshot_id"].startswith("snap-")
+    # A 확정(2026-07-17): 스냅샷에 계약 상황이 불변 포함 + 응답에 canonical payload 전체
+    ctx = body["snapshot"]["contract_context"]
+    assert ctx["contract_type"] == "전세"
+    assert ctx["contract_id"] == cid
     return cid
 
 
@@ -126,10 +141,16 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     detail = res.json()
     assert detail["status"] == "completed", detail.get("error")
     assert len(detail["result"]["results"]) == 10
-    # 생성 결과는 분리 필드(2026-07-17 합의) — 워커 연결 전까지 전부 null
-    assert detail["generation_result"] is None
-    assert detail["generation_status"] is None
+    # 생성 결과 분리 저장(2026-07-17 합의): provider 키 없으면 template fallback으로 정상 완료
+    assert detail["generation_status"] == "completed"
     assert detail["generation_error"] is None
+    generation = detail["generation_result"]
+    assert generation["analysis_run_id"] == run_id
+    assert generation["guardrail_passed"] is True
+    result_rule_ids = {r["rule_id"] for r in detail["result"]["results"]}
+    for item in generation["items"]:
+        assert item["rule_id"] in result_rule_ids
+        assert item["generation_method"] == "template_fallback"  # 키 없는 오프라인 실행
 
     # 저장 → 조회 → canonical 재검증 왕복 (B 인수 체크리스트)
     from lease_companion_ai.schemas.unified import AnalysisRunResult
@@ -204,3 +225,39 @@ def test_other_user_cannot_access(client, alice, contract_id):
 def test_run_not_found_404(client, alice, contract_id):
     res = client.get(f"/api/contracts/{contract_id}/analysis-runs/none", headers=alice)
     assert res.status_code == 404
+
+
+def test_confirm_requires_contract_context(client, alice):
+    """계약 상황 미입력 상태의 confirm → 422 (A 확정 오류 코드)."""
+    cid = client.post("/api/contracts", json={"title": "상황 미입력"}, headers=alice).json()["id"]
+    _upload(client, alice, cid, CONTRACT_TXT, "계약서")
+    _upload(client, alice, cid, REGISTRY_TXT, "등기사항증명서")
+    assert client.post(f"/api/contracts/{cid}/extractions", headers=alice).status_code == 202
+    res = client.post(f"/api/contracts/{cid}/extractions/confirm", headers=alice)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "missing_contract_context"
+
+
+def test_context_change_blocks_analysis_until_reconfirm(client, alice, contract_id):
+    """상황 변경 → 기존 스냅샷 불변 + 분석 차단 → 재확인(새 스냅샷) 후 분석 가능."""
+    before = client.post(f"/api/contracts/{contract_id}/extractions/confirm", headers=alice).json()
+
+    changed = dict(SITUATION, contract_stage="계약 직후", signed=True)
+    assert client.put(f"/api/contracts/{contract_id}/situation", json=changed, headers=alice).status_code == 200
+
+    # 변경 후 분석 요청 → 차단 (기존 스냅샷은 수정·삭제되지 않음)
+    res = client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "contract_context_changed"
+
+    # 재확인 → 새 스냅샷 (기존 것과 다른 id, 새 계약 상황 반영) → 분석 가능
+    after = client.post(f"/api/contracts/{contract_id}/extractions/confirm", headers=alice).json()
+    assert after["input_snapshot_id"] != before["input_snapshot_id"]
+    assert after["snapshot"]["contract_context"]["contract_stage"] == "계약 직후"
+    assert before["snapshot"]["contract_context"]["contract_stage"] == "서명 전"  # 기존 응답 불변
+    res = client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice)
+    assert res.status_code == 202
+
+    # 원상 복구 (다른 테스트가 같은 계약 건을 공유)
+    assert client.put(f"/api/contracts/{contract_id}/situation", json=SITUATION, headers=alice).status_code == 200
+    client.post(f"/api/contracts/{contract_id}/extractions/confirm", headers=alice)

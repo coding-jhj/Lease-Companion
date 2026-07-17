@@ -29,6 +29,41 @@ def _registry_file(case_id: str) -> Path | None:
     return None
 
 
+def _contract_context(contract: ContractProject) -> "ContractContext":
+    """계약 상황 입력 → canonical ContractContext. 필수값 미입력이면 422.
+
+    필수: contract_type·contract_stage·deposit_paid·signed (A 확정, 2026-07-17).
+    move_in_date·balance_payment_date·is_proxy_contract는 null 허용.
+    """
+    from lease_companion_ai.schemas.unified import ContractContext
+
+    required = {
+        "contract_type": contract.contract_type,
+        "contract_stage": contract.contract_stage,
+        "deposit_paid": contract.deposit_paid,
+        "signed": contract.signed,
+    }
+    missing = [name for name, value in required.items() if value is None]
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "missing_contract_context",
+                "message": f"계약 상황 입력이 필요합니다. 누락: {', '.join(missing)}",
+            },
+        )
+    return ContractContext(
+        contract_id=contract.id,
+        contract_type=contract.contract_type,
+        contract_stage=contract.contract_stage,
+        deposit_paid=contract.deposit_paid,
+        signed=contract.signed,
+        move_in_date=contract.move_in_date,
+        balance_payment_date=contract.balance_payment_date,
+        is_proxy_contract=contract.is_proxy_contract,
+    )
+
+
 def _get_owned_contract(contract_id: int, user: User, db: Session) -> ContractProject:
     """본인 소유 계약 건만 반환. 남의 것·없는 것 모두 404 (존재 여부 노출 방지)."""
     contract = db.scalar(
