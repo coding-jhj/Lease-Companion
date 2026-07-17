@@ -1008,6 +1008,114 @@
         }
       }
     },
+    "/api/contracts/{contract_id}/feedback": {
+      "post": {
+        "tags": [
+          "feedback"
+        ],
+        "summary": "Create Feedback",
+        "description": "피드백 등록 — 이력으로 쌓이며 수정·삭제하지 않는다.",
+        "operationId": "create_feedback_api_contracts__contract_id__feedback_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "feedback"
+        ],
+        "summary": "List Feedback",
+        "description": "본인 계약 건의 피드백 이력 (최신순).",
+        "operationId": "list_feedback_api_contracts__contract_id__feedback_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedbackResponse"
+                  },
+                  "title": "Response List Feedback Api Contracts  Contract Id  Feedback Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1075,6 +1183,40 @@
               }
             ],
             "title": "Result"
+          },
+          "generation_result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Result"
+          },
+          "generation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Status"
+          },
+          "generation_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Error"
           }
         },
         "type": "object",
@@ -1085,7 +1227,7 @@
           "created_at"
         ],
         "title": "AnalysisRunDetail",
-        "description": "분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null."
+        "description": "분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null.\n\ngeneration_result는 규칙 판정과 분리된 생성 결과(GenerationResult JSON, 2026-07-17 합의).\n생성 미연결·guardrail 미통과·생성 실패 시 null — 규칙 result에는 영향 없음."
       },
       "AnalysisRunSummary": {
         "properties": {
@@ -1387,6 +1529,76 @@
         ],
         "title": "ExtractionState",
         "description": "추출 실행 상태 + (완료 시) 수정 이력 반영된 현재 추출값."
+      },
+      "FeedbackCreateRequest": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Content"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "FeedbackCreateRequest",
+        "description": "피드백 등록: 자유 텍스트 필수 + 평점(1~5) 선택."
+      },
+      "FeedbackResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "contract_id": {
+            "type": "integer",
+            "title": "Contract Id"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contract_id",
+          "content",
+          "rating",
+          "created_at"
+        ],
+        "title": "FeedbackResponse"
       },
       "HTTPValidationError": {
         "properties": {

@@ -45,7 +45,11 @@ class AnalysisRunSummary(BaseModel):
 
 
 class AnalysisRunDetail(BaseModel):
-    """분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null."""
+    """분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null.
+
+    generation_result는 규칙 판정과 분리된 생성 결과(GenerationResult JSON, 2026-07-17 합의).
+    생성 미연결·guardrail 미통과·생성 실패 시 null — 규칙 result에는 영향 없음.
+    """
 
     analysis_run_id: str
     input_snapshot_id: str
@@ -53,5 +57,8 @@ class AnalysisRunDetail(BaseModel):
     error: str | None = None
     created_at: datetime
     result: dict[str, Any] | None = None
+    generation_result: dict[str, Any] | None = None
+    generation_status: str | None = None
+    generation_error: str | None = None
 
     model_config = {"from_attributes": True}

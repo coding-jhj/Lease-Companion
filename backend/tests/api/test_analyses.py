@@ -126,6 +126,10 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     detail = res.json()
     assert detail["status"] == "completed", detail.get("error")
     assert len(detail["result"]["results"]) == 10
+    # 생성 결과는 분리 필드(2026-07-17 합의) — 워커 연결 전까지 전부 null
+    assert detail["generation_result"] is None
+    assert detail["generation_status"] is None
+    assert detail["generation_error"] is None
 
     # 저장 → 조회 → canonical 재검증 왕복 (B 인수 체크리스트)
     from lease_companion_ai.schemas.unified import AnalysisRunResult
