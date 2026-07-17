@@ -13,7 +13,7 @@ predictions.jsonl 포맷 = goldset와 같은 구조, 줄마다:
     {"case_id": "CASE-001", "extraction": {"contract": {...}, "registry": {...}}}
 
 범위: 필드 추출 층만 채점한다. OCR 텍스트 정확도(CER/WER)는 별도 지표다.
-ponytail: exact-match(정규화 후) 채점. 부분점수·의미유사도 필요하면 그때 확장.
+정규화 후 exact-match로 채점한다. 부분점수·의미유사도는 범위 밖이다.
 """
 import json
 import os

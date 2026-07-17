@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from threading import BoundedSemaphore, Lock
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -21,6 +21,7 @@ from lease_companion_ai.ingestion.limits import (
     MAX_CONCURRENT_VLM_CALLS,
     MAX_EXTERNAL_CALLS_PER_REQUEST,
 )
+from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
 
 _MODEL = "gemini-3.5-flash"
 _PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "extraction"
@@ -80,7 +81,7 @@ _VLM_SEMAPHORE = BoundedSemaphore(MAX_CONCURRENT_VLM_CALLS)
 
 
 def _client():
-    # 구조화 호출 전용 클라이언트. 제공자 계층 구현 전까지 이 모듈 안에서 관리한다.
+    # 구조화 추출 전용 SDK 경계. 검색·생성 provider와 책임을 섞지 않는다.
     envf = Path(__file__).resolve().parents[4] / ".env"  # …/extraction/gemini_extractor.py → repo root
     if envf.exists():
         for line in envf.read_text(encoding="utf-8").splitlines():
@@ -122,21 +123,42 @@ def _generate(contents: list, schema: type[BaseModel], budget: ExternalCallBudge
                 config=_generation_config(schema),
             )
     except (errors.ServerError, errors.APIError) as exc:
-        raise GeminiExtractError(f"구조화 추출 API 오류: {exc}") from exc
+        raise GeminiExtractError("구조화 추출 API 오류가 발생했습니다.") from exc
     except Exception as exc:
-        raise GeminiExtractError(f"구조화 추출 호출에 실패했습니다: {exc}") from exc
+        raise GeminiExtractError("구조화 추출 호출에 실패했습니다.") from exc
 
     parsed = resp.parsed
     if isinstance(parsed, schema):
         return parsed.model_dump()
     if resp.text:  # parsed가 비면 원문 JSON을 스키마로 재검증
-        return schema.model_validate_json(resp.text).model_dump()
+        try:
+            return schema.model_validate_json(resp.text).model_dump()
+        except Exception as exc:
+            raise GeminiExtractError(
+                "구조화 추출 결과가 스키마와 일치하지 않습니다."
+            ) from exc
     raise GeminiExtractError("구조화 추출 결과가 비어 있습니다.")
 
 
 def _extract(text: str, prompt_file: str, schema: type[BaseModel]) -> dict:
-    prompt = (_PROMPTS / prompt_file).read_text(encoding="utf-8").replace("{text}", text)
-    return _generate([prompt], schema)
+    tokenizer = PiiTokenizer()
+    deidentified = tokenizer.tokenize(text)
+    if deidentified is None or contains_raw_pii(deidentified):
+        raise GeminiExtractError("개인정보 비식별화에 실패했습니다.")
+    prompt = (_PROMPTS / prompt_file).read_text(encoding="utf-8").replace(
+        "{text}", deidentified
+    )
+    return _restore_values(_generate([prompt], schema), tokenizer)
+
+
+def _restore_values(value: Any, tokenizer: PiiTokenizer) -> Any:
+    if isinstance(value, str):
+        return tokenizer.restore(value)
+    if isinstance(value, list):
+        return [_restore_values(item, tokenizer) for item in value]
+    if isinstance(value, dict):
+        return {key: _restore_values(item, tokenizer) for key, item in value.items()}
+    return value
 
 
 def extract_contract_fields(text: str) -> dict:

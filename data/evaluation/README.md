@@ -26,4 +26,5 @@
 
 - `end-to-end/` — held-out test 10쌍(TEST-001~010: 계약서·등기부·건축물대장 txt) + 최종 정답셋 3종(`final_testset_extraction.jsonl`·`final_testset_rule.jsonl`·`final_testset_rag.jsonl`). dev(`../sample/`)와 엔티티·표기 스타일 분리.
 - `extraction/` — `eval_extraction.py` 추출 평가 스크립트.
-- TODO: rules·retrieval·generation·routing 단계별 평가셋 작성(`docs/ai/evaluation-plan.md` 기준).
+- `retrieval/` — 분리된 dev/test goldset과 `scripts/evaluate_retrieval.py` 평가 실행기. 실측 결과는 `../rag/evaluation/`에 기록한다.
+- TODO: rules·generation·routing 단계별 평가셋 작성(`docs/ai/evaluation-plan.md` 기준).

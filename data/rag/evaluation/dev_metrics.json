@@ -1,0 +1,21 @@
+{
+  "case_count": 34,
+  "citation_count": 276,
+  "complete_citation_count": 276,
+  "config_version": "local-bm25-chunk-v1",
+  "expected_source_count": 194,
+  "expected_source_hit_count": 20,
+  "expected_source_recall": 0.10309278350515463,
+  "measured_at": "2026-07-17",
+  "provider_fallback_count": 0,
+  "query_count": 124,
+  "source_retrieval_frequency": {
+    "SRC-HTA-DECREE": 60,
+    "SRC-HTA-LAW": 216
+  },
+  "split": "dev",
+  "top_k": 5,
+  "top_k_answer_inclusion_count": 20,
+  "top_k_answer_inclusion_rate": 0.16129032258064516,
+  "unofficial_source_exposure_count": 0
+}

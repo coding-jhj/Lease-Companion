@@ -45,8 +45,14 @@
 - hybrid Top-20을 `rerank-v4.0-pro` Top-5로 재정렬한다. vector 실패 시 BM25, rerank 실패·빈 응답 시 hybrid 순위를 유지한다.
 - 실제 Gemini·Cohere 유료 호출은 하지 않았다. SDK 어댑터는 fake client로 검증했다.
 
+## 배치 3 구현 상태 (2026-07-17)
+
+- R01~R10 행동 발동 결과에 로컬 공식 원문 검색 결과만 연결한다. `RuleStatus`·`urgency`·`reason` 등 판정 필드는 검색 전후 동일하게 유지한다.
+- dev 34건과 최종 test 10건을 분리해 Top-5 포함률·expected source recall·인용 메타데이터·비공식 출처 노출을 측정했다. 결과는 `data/rag/evaluation/`에 있다.
+- 검색 가능한 로컬 원문이 법령 2개뿐이고 나머지 정답 출처는 metadata-only라 현재 포함률은 낮다. 목표값으로 보정하지 않고 실측값과 제한을 함께 기록한다.
+
 ## 후속 TODO
 
 - 재배포 조건이 명시적으로 허용된 공식 원문의 실제 문서 구조를 확인한 뒤 기본 청킹 크기(`1200`)·중첩(`120`)을 평가
-- R01~R10 결과 뒤의 근거 enrichment와 retrieval 평가 하네스 구현
+- metadata-only 공식자료 중 허용 원문을 추가한 뒤 retrieval 평가 재실행
 - 별도 키·비용 승인 후 Gemini·Cohere smoke test

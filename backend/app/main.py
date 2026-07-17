@@ -14,7 +14,7 @@ from app.core.errors import register_error_handlers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ponytail: Alembic 도입 전 임시 — 테이블이 없으면 만든다 (기존 테이블 변경은 못 함)
+    # Alembic 도입 전 로컬 MVP 임시 처리. 기존 테이블 변경은 적용하지 못한다.
     Base.metadata.create_all(engine)
     yield
 

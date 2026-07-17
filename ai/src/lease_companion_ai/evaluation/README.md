@@ -18,8 +18,9 @@ AI 컴포넌트별·end-to-end 평가를 실행한다. 추출·정규화·로컬
 
 - 컴포넌트별·전체 평가 지표 리포트
 
-## TODO
+## 구현 상태 / TODO
 
-- 평가 데이터셋 미구성 → 실행 보류
+- 구현됨: retrieval dev/test goldset 로더·지표 집계·평가 CLI. 실측 결과는 `data/rag/evaluation/`에 기록.
+- TODO: 추출·정규화·분류·규칙·생성·routing·end-to-end 평가 실행기와 각 분리 데이터셋.
 - **목표 성능 수치는 실제 측정 전 임의로 만들지 않는다.**
 - 로컬 7B 파인튜닝 평가(선택 성능비교 실험 — MVP 크리티컬 패스 아님)는 `ai/training/evaluation/`과 역할 구분 유지 (여기는 서비스 파이프라인 평가)

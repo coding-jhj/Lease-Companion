@@ -12,7 +12,7 @@
 실행: python data/gen_dataset.py   (파일 생성 + 도출로직 self-check)
 검증: python data/check_dataset.py
 
-ponytail: 생성 계약서는 ₩숫자 금액만 사용(한글 금액 없음). J07(금액 표기 일치)는
+생성 계약서는 ₩숫자 금액만 사용한다. J07(금액 표기 일치)는
 R01–R10 범위 밖이라 한글 금액 변환기 불필요. 파일럿은 한글 금액 realism 유지.
 """
 import csv

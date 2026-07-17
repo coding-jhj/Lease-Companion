@@ -95,7 +95,7 @@ def test_rules_return_all_ten_results_without_safety_score():
     assert not any("사기 가능성 점수" in result.reason for result in results)
 
 
-def test_only_official_verified_sources_are_exposed(monkeypatch):
+def test_rule_engine_never_exposes_static_source_map(monkeypatch):
     from lease_companion_ai.rules import minimum_mvp as rules
 
     real_read = rules._read_csv
@@ -115,16 +115,15 @@ def test_only_official_verified_sources_are_exposed(monkeypatch):
     results = rules.run_rules({}, {})
     sources = {source.source_id for result in results for source in result.evidence_sources}
 
-    assert sources == {"SRC-STD-LEASE"}
+    assert sources == set()
 
 
-def test_missing_official_evidence_does_not_change_rule_status_or_urgency(monkeypatch):
+def test_rule_engine_status_and_urgency_do_not_depend_on_evidence():
     from lease_companion_ai.rules import minimum_mvp as rules
 
     contract = {"landlord_name": "임대인", "account_holder": "다른이", "deposit_return_condition": "명확", "repair_responsibility": "명확", "rights_change_clause_present": True}
     registry = {"owner_names": ["소유자"], "mortgage_present": True, "seizure_present": False, "provisional_seizure_present": False, "trust_present": False, "issue_date": "2026-07-01"}
     baseline = [(item.rule_id, item.status, item.urgency) for item in rules.run_rules(contract, registry)]
-    monkeypatch.setattr(rules, "_evidence_catalog", lambda: {})
     without_evidence = rules.run_rules(contract, registry)
 
     assert [(item.rule_id, item.status, item.urgency) for item in without_evidence] == baseline
@@ -261,11 +260,14 @@ def test_verified_legacy_analysis_uses_canonical_result_contract():
     } for result in results)
     legacy_results = [result.to_dict() for result in run_rules(contract, registry)]
     for result, legacy in zip(results, legacy_results, strict=True):
-        assert {
+        comparable = {
             key: value
             for key, value in result.items()
-            if key not in {"result_type", "triggers_actions"}
-        } == legacy
+            if key not in {"result_type", "triggers_actions", "evidence_sources"}
+        }
+        assert comparable == {key: value for key, value in legacy.items() if key != "evidence_sources"}
+        assert legacy["evidence_sources"] == []
+        assert all(source["source_id"].startswith("SRC-") for source in result["evidence_sources"])
 
 
 def test_registry_parser_keeps_only_latest_full_transfer_owner():

@@ -138,9 +138,8 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
         assert result.urgency.value == legacy.urgency
         assert result.reason == legacy.reason
         assert result.recommended_actions == legacy.recommended_actions
-        assert [s.source_id for s in result.evidence_sources] == [
-            s.source_id for s in legacy.evidence_sources
-        ]
+        assert legacy.evidence_sources == []
+        assert all(source.source_id.startswith("SRC-") for source in result.evidence_sources)
         expected_type = (
             ResultType.FACT_FLAG
             if result.rule_id in {"R03", "R04", "R05", "R07", "R10"}

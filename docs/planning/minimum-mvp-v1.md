@@ -24,7 +24,7 @@
 ### 1. 문서 입력
 
 - 1차 필수 입력은 계약서 PDF 1개다.
-- 파일 형식·크기·페이지 수 제한값은 미정(TODO)이며, 임의로 확정하지 않는다.
+- 로컬 MVP 기본 제한은 파일당 10 MiB, PDF 20쪽, 이미지 한 변 6,000px·총 4천만 픽셀이다. 값은 `ai/src/lease_companion_ai/ingestion/limits.py`의 환경변수 설정을 단일 원본으로 사용한다.
 - 스캔 PDF·사진 OCR은 상용 LLM Gemini 3.5 Flash VLM 통합으로 확정(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). 최소 데모에 구현 완료: 디지털 PDF는 PyMuPDF 텍스트 레이어, 텍스트 레이어가 없는 스캔 PDF·이미지(jpg·png)만 OCR 폴백. OCR 충실도·비용·지연은 미측정(TODO).
 - 등기사항증명서는 아래 교차검증 규칙에 필요하다. 계약서만 받는 버전에서는 관련 규칙을 추측 실행하지 않고 `확인 불가`로 반환한다.
 
@@ -83,7 +83,7 @@
 - 수집일
 - 사용자용 근거 요약
 
-공식 근거는 설명을 뒷받침하지만 규칙 판정을 변경하지 않는다. 실제 자료와 URL은 공식 출처 확인 후 [`../../data/rag/metadata/`](../../data/rag/metadata/)에 등록한다(TODO).
+공식 근거는 설명을 뒷받침하지만 규칙 판정을 변경하지 않는다. 검증된 9개 공식자료 manifest는 [`../../data/rag/metadata/official_sources.jsonl`](../../data/rag/metadata/official_sources.jsonl)에 등록돼 있으며, 이용조건이 확인된 원문만 저장한다.
 
 ### 6. 리포트
 

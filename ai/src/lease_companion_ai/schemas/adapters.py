@@ -201,18 +201,25 @@ def rule_result_from_legacy(result: legacy.RuleResult) -> RuleResult:
 
 
 def analyze_snapshot(snapshot: InputSnapshot, *, analysis_run_id: str) -> AnalysisRunResult:
-    """스냅샷의 effective value로 기존 R01~R10을 실행하고 통합 결과로 반환한다."""
+    """스냅샷의 effective value로 R01~R10 실행 후 실제 공식 근거를 검색한다."""
     legacy_results = run_rules(
         rule_inputs(snapshot.confirmed_fields.contract),
         rule_inputs(snapshot.confirmed_fields.registry),
     )
-    return AnalysisRunResult(
+    analysis = AnalysisRunResult(
         analysis_run_id=analysis_run_id,
         input_snapshot_id=snapshot.input_snapshot_id,
         contract_id=snapshot.contract_id,
         case_id=snapshot.case_id,
         results=[rule_result_from_legacy(result) for result in legacy_results],
     )
+    # 로컬 공식 원문 검색 실패는 규칙 분석 실패로 전파하지 않는다.
+    try:
+        from lease_companion_ai.rag.service import get_local_evidence_service
+
+        return get_local_evidence_service().enrich(analysis)
+    except (OSError, ValueError):
+        return analysis
 
 
 def allowed_statuses(rule_id: str) -> set[RuleStatus]:

@@ -25,6 +25,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["app*"]
 
-# TODO: 파일 검증, 린터·포매터·테스트 도구 확정 후 추가.
+# 파일 검증은 ai/ingestion 단일 원본을 재사용하고, 저장소 루트 Ruff·Mypy 설정과 pytest를 공통 사용한다.
 # DB PostgreSQL·인증 JWT Bearer+bcrypt 계열 확정(2026-07-16 ADR).
 # 인증 구체 라이브러리 확정(2026-07-16 팀): PyJWT + Passlib-bcrypt.

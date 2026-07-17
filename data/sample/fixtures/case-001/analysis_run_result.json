@@ -8,18 +8,18 @@
       "completed": false,
       "evidence_sources": [
         {
-          "institution": "법무부",
-          "source_id": "SRC-STD-LEASE",
-          "source_url": "https://www.moj.go.kr/moj/163/subview.do",
-          "summary": "계약서 스키마·기본 특약의 기준 문서. 반환·수리·권리변동 표준 문구 포함.",
-          "title": "주택임대차 표준계약서(2023.10.6. 개정·사용용)"
+          "institution": "국가법령정보센터·법무부·국토교통부",
+          "source_id": "SRC-HTA-DECREE",
+          "source_url": "https://law.go.kr/LSW/lsInfoP.do?lsId=004950",
+          "summary": "주소, 주민등록번호(외국인은 외국인등록번호)\n나. 법인이거나 법인 아닌 단체인 경우\n법인명ㆍ단체명, 법인등록번호ㆍ부동산등기용등록번호, 본점ㆍ주사무소 소재지\n4. 주택 소재지\n5. 임대차 목적물\n6. 임대차 기간\n7. 차임ㆍ보증금\n8. 신청인의 성명과 주민등록번호 앞 6자리(외국인은 외국인등록번호 앞 6자리)\n② 확정일자는 확정일자번호, 확정일자 부여일 및 확정일자부여기관을 주택임대차계약증서에 표시하는 방법으로 부여한다.\n③ 제1항 및 제2항에서 규정한 사항 외에 확정일자부 작성방법 및 확정일자 부여 시 확인사항 등 확정일자 부여 사무에 관하여 필요한 사항은 법무부령으로 정한다.\n[본조신설 2013. 12. 30.][종전 제4조는 제11조로 이동 <2013. 12. 30.>]\n제5조(주택의 임대차에 이해관계가 있는 자의 범위) 법 제3조의6제3항에 따라 정보제공을 요청할 수 있는 주택의 임대차에 이해관계가 있는 자(이하 “이해관계인”이라 한다)는 다음 각 호의 어느 하나에 해당하는 자",
+          "title": "주택임대차보호법 시행령"
         },
         {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
+          "institution": "국가법령정보센터·법무부·국토교통부",
+          "source_id": "SRC-HTA-LAW",
+          "source_url": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291",
+          "summary": "자료명: 주택임대차보호법\nsource_id: SRC-HTA-LAW\n공식 본문 URL: https://www.law.go.kr/LSW/lsInfoR.do?lsiSeq=276291&efYd=20260102\n제1조(목적) 이 법은 주거용 건물의 임대차(賃貸借)에 관하여 「민법」에 대한 특례를 규정함으로써 국민 주거생활의 안정을 보장함을 목적으로 한다.\n[전문개정 2008. 3. 21.]\n제2조(적용 범위) 이 법은 주거용 건물(이하 “주택”이라 한다)의 전부 또는 일부의 임대차에 관하여 적용한다. 그 임차주택(賃借住宅)의 일부가 주거 외의 목적으로 사용되는 경우에도 또한 같다.\n[전문개정 2008. 3. 21.]\n제3조(대항력 등) ① 임대차는 그 등기(登記)가 없는 경우에도 임차인(賃借人)이 주택의 인도(引渡)와 주민등록을 마친 때에는 그 다음 날부터 제삼자에 대하여 효력이 생긴다. 이 경우 전입신고를 한 때에 주민등록이 된 것으로 본다.\n② 주택도시기금을 재원으로 하여 저소득층 무주택",
+          "title": "주택임대차보호법"
         }
       ],
       "judgment_id": "J01",
@@ -38,22 +38,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "법무부",
-          "source_id": "SRC-STD-LEASE",
-          "source_url": "https://www.moj.go.kr/moj/163/subview.do",
-          "summary": "계약서 스키마·기본 특약의 기준 문서. 반환·수리·권리변동 표준 문구 포함.",
-          "title": "주택임대차 표준계약서(2023.10.6. 개정·사용용)"
-        },
-        {
-          "institution": "국가법령정보센터·국토교통부",
-          "source_id": "SRC-CONFIRM-FORM",
-          "source_url": "https://www.law.go.kr/LSW/flDownload.do?bylClsCd=110202&flSeq=141860969&gubun=",
-          "summary": "권리관계·관리비 등 중개사 확인·설명 기재 서식.",
-          "title": "중개대상물 확인·설명서[Ⅰ](주거용 건축물)"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": "J02",
       "limitations": "표기 차이와 실제 불일치는 다릅니다. 등기가 없으면 확인 불가.",
       "question": null,
@@ -68,15 +53,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": null,
       "limitations": "근저당 존재는 위험 확정이 아니라 확인 대상입니다. 채권최고액 기반 위험도 계산은 하지 않습니다.",
       "question": "현재 설정된 근저당권의 채권최고액과 선순위 관계를 확인할 수 있나요?",
@@ -93,15 +70,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": null,
       "limitations": "압류·가압류의 법적 효과를 임의 해석하지 않습니다. 확인 대상 신호입니다.",
       "question": null,
@@ -116,15 +85,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": null,
       "limitations": "신탁 부동산이므로 계약 불가로 단정하지 않습니다. 권한 확인 대상입니다.",
       "question": null,
@@ -139,22 +100,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "법무부",
-          "source_id": "SRC-STD-LEASE",
-          "source_url": "https://www.moj.go.kr/moj/163/subview.do",
-          "summary": "계약서 스키마·기본 특약의 기준 문서. 반환·수리·권리변동 표준 문구 포함.",
-          "title": "주택임대차 표준계약서(2023.10.6. 개정·사용용)"
-        },
-        {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": "J05",
       "limitations": "제3자·법인 계좌가 항상 문제인 것은 아니나 사유 확인이 필요합니다.",
       "question": null,
@@ -171,11 +117,11 @@
       "completed": false,
       "evidence_sources": [
         {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
+          "institution": "국가법령정보센터·법무부·국토교통부",
+          "source_id": "SRC-HTA-LAW",
+          "source_url": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291",
+          "summary": "고려하여 대통령령으로 정하는 비율\n2. 한국은행에서 공시한 기준금리에 대통령령으로 정하는 이율을 더한 비율\n[전문개정 2008. 3. 21.]\n제8조(보증금 중 일정액의 보호) ① 임차인은 보증금 중 일정액을 다른 담보물권자(擔保物權者)보다 우선하여 변제받을 권리가 있다. 이 경우 임차인은 주택에 대한 경매신청의 등기 전에 제3조제1항의 요건을 갖추어야 한다.\n② 제1항의 경우에는 제3조의2제4항부터 제6항까지의 규정을 준용한다.\n③ 제1항에 따라 우선변제를 받을 임차인 및 보증금 중 일정액의 범위와 기준은 제8조의2에 따른 주택임대차위원회의 심의를 거쳐 대통령령으로 정한다. 다만, 보증금 중 일정액의 범위와 기준은 주택가액(대지의 가액을 포함한다)의 2분의 1을 넘지 못한다. <개정 2009. 5. 8.>\n[전문개정 2008. 3. 21.]\n제8조의2(주택임대차위원회) ① 제8조에 따라 우선변제를 받을 임차인 및 보증금 중 일정액의 범위와 기준을 심의하기 위하여 법무부에 주택임대차",
+          "title": "주택임대차보호법"
         }
       ],
       "judgment_id": null,
@@ -194,22 +140,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "국가법령정보센터·법무부·국토교통부",
-          "source_id": "SRC-HTA-LAW",
-          "source_url": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291",
-          "summary": "임대차 보호·대항력·우선변제·보증금 반환 등 임차인 보호 기본 법령.",
-          "title": "주택임대차보호법"
-        },
-        {
-          "institution": "법무부",
-          "source_id": "SRC-STD-LEASE",
-          "source_url": "https://www.moj.go.kr/moj/163/subview.do",
-          "summary": "계약서 스키마·기본 특약의 기준 문서. 반환·수리·권리변동 표준 문구 포함.",
-          "title": "주택임대차 표준계약서(2023.10.6. 개정·사용용)"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": "J10",
       "limitations": "조항 해석의 모호성은 확인 대상이며 법적 효력 판단은 하지 않습니다.",
       "question": null,
@@ -224,22 +155,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "국가법령정보센터·법무부·국토교통부",
-          "source_id": "SRC-HTA-LAW",
-          "source_url": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291",
-          "summary": "임대차 보호·대항력·우선변제·보증금 반환 등 임차인 보호 기본 법령.",
-          "title": "주택임대차보호법"
-        },
-        {
-          "institution": "법무부",
-          "source_id": "SRC-STD-LEASE",
-          "source_url": "https://www.moj.go.kr/moj/163/subview.do",
-          "summary": "계약서 스키마·기본 특약의 기준 문서. 반환·수리·권리변동 표준 문구 포함.",
-          "title": "주택임대차 표준계약서(2023.10.6. 개정·사용용)"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": "J11",
       "limitations": "민법상 수선의무 해석은 하지 않으며 기재 명확성만 확인합니다.",
       "question": null,
@@ -254,29 +170,7 @@
     },
     {
       "completed": false,
-      "evidence_sources": [
-        {
-          "institution": "법무부",
-          "source_id": "SRC-STD-LEASE",
-          "source_url": "https://www.moj.go.kr/moj/163/subview.do",
-          "summary": "계약서 스키마·기본 특약의 기준 문서. 반환·수리·권리변동 표준 문구 포함.",
-          "title": "주택임대차 표준계약서(2023.10.6. 개정·사용용)"
-        },
-        {
-          "institution": "국가법령정보센터·법무부·국토교통부",
-          "source_id": "SRC-HTA-LAW",
-          "source_url": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291",
-          "summary": "임대차 보호·대항력·우선변제·보증금 반환 등 임차인 보호 기본 법령.",
-          "title": "주택임대차보호법"
-        },
-        {
-          "institution": "국토교통부·법무부·대법원·경찰청·HUG",
-          "source_id": "SRC-MOLIT-CHECKLIST",
-          "source_url": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091157",
-          "summary": "계약 전·후 확인 항목 공식 체크리스트.",
-          "title": "안심 전세계약 체크리스트"
-        }
-      ],
+      "evidence_sources": [],
       "judgment_id": null,
       "limitations": "특약 부재가 위법은 아닙니다. 권리 보호 강화를 위한 확인 항목입니다.",
       "question": null,

@@ -54,7 +54,9 @@ model-metadata/          모델 메타데이터 (가중치 제외)
 - `schemas/generated/`만 canonical Pydantic v1.1.0 생성본이며 `schemas/legacy/`는 과거 설계 참고자료다.
 - `rules/source_inventory.csv`의 공식자료 후보 15개는 공식 검증·합성 참고·미검증·제외로 분류했다.
 - `rules/rule_evidence_map.csv`와 dev/test RAG goldset은 `official_verified` source ID만 허용하도록 계약 검사를 적용했다.
+- 공식 검증 9개 manifest와 이용조건이 확인된 법령 원문 2개·SHA-256이 `rag/metadata`·`rag/sources`에 있다. 나머지 7개는 원문 재배포 조건 때문에 metadata-only다.
+- `rag/evaluation/`에 분리된 dev/test retrieval 실측 결과가 있다. 로컬 검색 가능한 원문이 2개뿐이라는 제한을 함께 기록한다.
 - TODO: 라벨 정의·경계 사례 문서화 → `labels/`.
 - TODO: 파인튜닝 데이터셋 수집·라벨링·분할 (`docs/data/training-dataset.md` 기준) → `datasets/`.
-- TODO: `official_verified` 자료의 이용조건에 맞는 원문 수집·청킹·Chroma 인덱싱 (`docs/data/rag-sources.md` 기준) → `rag/`.
-- TODO: 단계별 평가 데이터셋 구성 (`docs/ai/evaluation-plan.md` 기준) → `evaluation/`.
+- TODO: metadata-only 공식자료 7개의 이용조건을 확인해 허용되는 원문만 추가하고 retrieval 평가를 다시 측정한다.
+- TODO: retrieval 외 추출·생성·routing 단계별 평가 데이터셋과 실행기를 구성한다 (`docs/ai/evaluation-plan.md`).

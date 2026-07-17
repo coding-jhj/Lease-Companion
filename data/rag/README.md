@@ -45,4 +45,5 @@
 - 2개 법령은 자유이용 근거를 확인해 정규화 원문과 SHA-256을 보존한다. 나머지 7개는 `metadata_only`로 원문을 커밋하지 않는다.
 - 배치 1 완료: 공식 source ID 전용 map·dev/test goldset 계약, RAG 내부 모델, 결정적 청킹, 로컬 BM25, provider protocol과 fake provider 검증.
 - 배치 2 완료: Chroma 로컬 인덱스·stale 탐지, Gemini embedding, RRF hybrid, Cohere rerank 어댑터와 offline 검증. 생성 인덱스는 Git에서 제외한다.
-- TODO: 재배포가 명시적으로 허용된 공식 원문 수집, R01~R10 검색 연결·평가. Gemini·Cohere 실호출은 별도 키·비용 승인이 필요하다.
+- 배치 3 완료: R01~R10 공식 근거 enrichment와 분리된 dev/test retrieval 평가.
+- TODO: 재배포가 명시적으로 허용된 공식 원문 추가. Gemini·Cohere 실호출은 별도 키·비용 승인이 필요하다.

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from lease_companion_ai.normalization.core import normalize_address, normalize_name
-from lease_companion_ai.schemas.minimum_mvp import EvidenceSource, RuleResult
+from lease_companion_ai.schemas.minimum_mvp import RuleResult
 
 
 _CLEAN_STATUSES = {"일치", "명확", "적용 제외"}
@@ -21,26 +21,6 @@ def _read_csv(name: str) -> list[dict[str, str]]:
     path = _repo_root() / "data" / "rules" / name
     with path.open(encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
-
-
-def _evidence_catalog() -> dict[str, EvidenceSource]:
-    catalog: dict[str, EvidenceSource] = {}
-    for row in _read_csv("source_inventory.csv"):
-        # OfficialSource는 담당자가 1차 공식 원문·기관·이용조건을 확인한 자료만 허용한다.
-        if row.get("source_status") != "official_verified":
-            continue
-        raw_url = row["source_url"].strip()
-        institution = row["institution"].strip()
-        if not institution or not raw_url.startswith(("http://", "https://")):
-            continue
-        catalog[row["source_id"]] = EvidenceSource(
-            source_id=row["source_id"],
-            title=row["title"],
-            institution=institution,
-            summary=row["summary"],
-            source_url=raw_url,
-        )
-    return catalog
 
 
 def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str, str]:
@@ -110,7 +90,6 @@ def _presentation(
 
 def run_rules(contract: dict[str, Any], registry: dict[str, Any]) -> list[RuleResult]:
     definitions = _read_csv("rule_spec.csv")
-    catalog = _evidence_catalog()
     statuses = _status_map(contract, registry)
     results: list[RuleResult] = []
 
@@ -118,11 +97,6 @@ def run_rules(contract: dict[str, Any], registry: dict[str, Any]) -> list[RuleRe
         rule_id = definition["rule_id"]
         status = statuses[rule_id]
         urgency, reason, question, actions = _presentation(rule_id, status, definition)
-        evidence = [
-            catalog[source_id]
-            for source_id in definition["official_source_ids"].split(";")
-            if source_id in catalog
-        ]
         results.append(
             RuleResult(
                 rule_id=rule_id,
@@ -133,7 +107,8 @@ def run_rules(contract: dict[str, Any], registry: dict[str, Any]) -> list[RuleRe
                 reason=reason,
                 question=question,
                 recommended_actions=actions,
-                evidence_sources=evidence,
+                # 공식 근거는 규칙 판정 뒤 RAG가 실제 검색한 결과만 연결한다.
+                evidence_sources=[],
                 limitations=definition["limitations"],
             )
         )

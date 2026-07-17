@@ -23,4 +23,4 @@
 ## 확정 / TODO
 
 - 확정(2026-07-14): 추출·구조화=상용 LLM Gemini 3.5 Flash(멀티모달). VLM은 OCR과 동일한 Gemini에 통합 — 별도 VLM 모델 없음.
-- 문서별 필드 스키마 확정(`docs/data/document-fields.md`) 후 `field_mapper/` 구현 (TODO)
+- Canonical 추출 스키마와 최소 MVP 매핑은 구현됐다. J01~J12 확장 필드와 독립 `field_mapper/` 계층은 후속 대상이다.

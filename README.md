@@ -155,4 +155,4 @@ http://127.0.0.1:8000
 
 구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
 
-RAG 배치 1의 내부 계약·결정적 청킹·로컬 BM25·provider protocol은 구현됐다. 공식 코퍼스·Chroma·Gemini embedding·Cohere rerank·규칙 근거 enrichment와 생성(GPT-5.6 Sol)은 아직 구현되지 않았다. 회원·계약 건 영속 저장·전체 12개 판정·정식 프론트엔드도 후속 대상이다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
+RAG 배치 1~3으로 공식 출처 manifest, 이용조건이 확인된 법령 원문 2개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid 검색·규칙 근거 enrichment·retrieval 평가가 구현됐다. 외부 Gemini·Cohere 실호출은 수행하지 않았으며 현재 로컬 공식 원문이 2개라 retrieval 실측치는 낮다. 생성 배치 4~5와 A10 offline 작업으로 내부 생성 계약·fake provider·안전 fallback·PII 토큰화·Guardrail, OpenAI Responses API `gpt-5.6-sol` provider와 opt-in CASE-001 smoke 경계가 구현됐다. 실제 유료 GPT smoke와 Backend 저장 경로 연결은 미수행이다. 회원·계약 건 영속 저장은 구현됐고, 문서·분석·결과 저장 API, 전체 12개 판정, 정식 프론트엔드는 후속 대상이다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.

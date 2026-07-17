@@ -21,4 +21,4 @@
 ## 현재 상태 / TODO
 
 - `.gitkeep`만 존재. 산출물 없음.
-- TODO: 추출·정규화 출력 스키마 확정(`data/schemas/`와 정합).
+- 출력은 `ai/src/lease_companion_ai/schemas/`의 canonical Pydantic 모델과 `data/schemas/generated/` 생성본을 따른다.

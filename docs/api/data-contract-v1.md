@@ -7,15 +7,16 @@
 | 항목 | 위치 |
 |---|---|
 | Pydantic 단일 원본 | `ai/src/lease_companion_ai/schemas/unified.py` |
-| R01~R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
+| R01–R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
 | 생성 JSON Schema 5개 | `data/schemas/generated/` (손으로 수정 금지) |
 | CASE-001 fixture 6개 | `data/sample/fixtures/case-001/` |
 
 **현재 상태를 정확히 구분한다:**
 
-- **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01~R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
+- **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
 - **남은 일**: 새 Backend API·저장 경계에서 이 모델을 사용하는 것은 **B 작업**, fixture 기반 mock→실제 API 연결은 **C 작업**이다. B·C의 실제 소비 확인은 아직 수행되지 않았다(아래 7절 체크리스트).
+- **A10 생성 경계**: `generation.GenerationResult`는 아직 내부 타입이다. 이번 작업은 canonical schema 1.1.0, 생성 JSON Schema 5개, CASE-001 fixture 6개를 변경하지 않는다. B·C는 기존 계약으로 구현을 계속하고, 생성 결과 저장·노출 필드는 별도 3인 합의와 schema version 상향 후 추가한다.
 
 ## 2. 설치·검증 명령
 
@@ -31,7 +32,14 @@ conda run -n lease-py310 python scripts/generate_case001_fixture.py    # fixture
 conda run -n lease-py310 python -m pytest ai/tests backend/tests -q    # 전체 테스트
 ```
 
-실측 결과(2026-07-16, API 키 차단 로컬 실행): **169 passed, 3 warnings**. Schema·fixture 재생성 후 모델과 일치하며 CASE-001 rule goldset 자체검증 통과. 경고 3건은 Starlette/FastAPI 의존성 deprecation이다.
+OpenAI 실제 호출은 기본 테스트에서 실행되지 않는다. 키·비용을 별도 승인한 경우에만 합성 CASE-001 하나로 실행한다.
+
+```powershell
+$env:RUN_OPENAI_SMOKE='1'
+conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case001_smoke.py -q
+```
+
+최신 저장소 전체 실측 결과(2026-07-17, API 키 차단 로컬 실행): **217 passed, 1 skipped, 3 warnings**. skip 1건은 명시적 키·비용 승인이 필요한 CASE-001 OpenAI smoke다. Schema·fixture 계약 테스트와 CASE-001 rule goldset 자체검증을 통과했다. 경고 3건은 Starlette/FastAPI 의존성 deprecation이다. 이후 테스트 수는 기능 추가에 따라 변할 수 있으므로 최신 값은 `work/THREAD.md`를 우선한다.
 
 ## 3. 핵심 모델 요약
 
@@ -42,7 +50,7 @@ conda run -n lease-py310 python -m pytest ai/tests backend/tests -q    # 전체 
 | `ContractContext` | 계약 상황 입력 | contract_type·contract_stage·deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract | `contract_context.json` |
 | `DocumentExtraction` | 문서 1건 추출 결과(수정 전 원본) | document_id·document_type·fields(dict[str, ExtractedField])·warnings | `contract_extraction.json` / `registry_extraction.json` |
 | `ExtractedField` | 필드 1개 | field_name·extracted_value·normalized_value·user_corrected_value·verification_status·confidence·source_evidence(page/text)·failure_reason | (위 파일 내부) |
-| `CorrectionRequest` | 사용자 수정 요청 | contract_id·corrections[](document_type·field_name·corrected_value) | `correction_request.json` |
+| `CorrectionRequest` | 사용자 수정 요청 | `contract_id` · `corrections[]` (`document_type` · `field_name` · `corrected_value`) | `correction_request.json` |
 | `InputSnapshot` | 확인 완료 입력의 **불변** 사본 | input_snapshot_id·contract_id·case_id·confirmed_fields·confirmed_at | `input_snapshot.json` |
 | `RuleResult` | 규칙 결과 1개 | **rule_id·rule_name·judgment_id·result_type·triggers_actions·status·urgency·reason·question·recommended_actions·evidence_sources·limitations·completed** | (아래 파일 내부) |
 | `AnalysisRunResult` | 분석 실행 1회 묶음 | analysis_run_id·input_snapshot_id·contract_id·case_id·results[RuleResult] | `analysis_run_result.json` |
@@ -51,7 +59,7 @@ conda run -n lease-py310 python -m pytest ai/tests backend/tests -q    # 전체 
 
 **공통 값 규약**: `contract_id` = Backend DB와 같은 **양의 정수**(fixture `1001`, 문자열·bool 거부) / `case_id` = 합성 평가 문자열(`CASE-001`) / `contract_type` = `전세`·`보증부 월세`·`일반 월세` / `contract_stage` = `계약금 입금 전`·`서명 전`·`계약 직후`.
 
-**공통 규칙**: R01~R10 필수 13키는 값이 null이어도 항상 존재 · 판독 실패 = null + `confidence:"실패"` + `failure_reason` · 빈 목록 금지 · `source_evidence.page`/`text`는 키 상존·값 null 허용 · 필드 타입은 모델이 강제(예: `owner_names`는 비어 있지 않은 `string[]`) · `InputSnapshot`은 애플리케이션의 일반 변경 API에서 내부 필드·목록·매핑 수정을 차단 · `AnalysisRunResult`는 R01~R10을 순서대로 정확히 10개 요구.
+**공통 규칙**: R01–R10 필수 13키는 값이 null이어도 항상 존재 · 판독 실패 = null + `confidence:"실패"` + `failure_reason` · 빈 목록 금지 · `source_evidence.page`/`text`는 키 상존·값 null 허용 · 필드 타입은 모델이 강제(예: `owner_names`는 비어 있지 않은 `string[]`) · `InputSnapshot`은 애플리케이션의 일반 변경 API에서 내부 필드·목록·매핑 수정을 차단 · `AnalysisRunResult`는 R01–R10을 순서대로 정확히 10개 요구.
 
 **결과 역할·행동 규칙**: `result_type`은 R01·R02·R06·R08·R09=`judgment`, R03·R04·R05·R07·R10=`fact_flag`로 고정된다. `triggers_actions`는 현재 status가 `일치`·`명확`·`적용 제외`면 `false`, 그 외(`불일치`·`불명확`·`미기재`·`상충 가능`·`확인 필요`·`확인 불가`)면 `true`다. 모델은 잘못된 조합을 거부한다.
 
@@ -85,6 +93,7 @@ CorrectionRequest.corrected_value
 - 저장 후 조회한 JSON이 `model_validate_json`을 통과하는지 확인한다.
 - 기존 legacy minimum MVP API(`/api/minimum-mvp/*`)와 새 API 경계를 혼용하지 않는다 — 새 저장 경계는 통합 모델만 사용.
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
+- 내부 `GenerationResult`를 현재 DB·API 계약에 임의 추가하지 않는다. 저장 요구가 확정되면 canonical 모델·JSON Schema·fixture·OpenAPI를 한 변경으로 제안한다.
 
 **B 인계 확인 체크리스트** (B가 직접 확인 — 미리 체크하지 않음):
 
@@ -106,6 +115,7 @@ CorrectionRequest.corrected_value
 - 수정 요청은 `correction_request.json` 구조로 생성해 전송한다.
 - 결과 화면은 `analysis_run_result.json`의 `status`·`urgency`로 구현한다. **status·urgency를 종합 안전·위험 점수로 바꾸지 않는다**(화면 3그룹 매핑은 `frontend/AGENTS.md`).
 - `result_type`으로 판정(`judgment`)과 사실 플래그(`fact_flag`)를 구분하고, `triggers_actions=true`인 결과만 질문·체크리스트·행동 활성화 대상으로 처리한다.
+- 현재 화면은 `RuleResult.question`·`recommended_actions`를 사용한다. 내부 `GenerationResult` 필드를 추측해 mock 타입에 추가하지 않는다.
 
 **C 인계 확인 체크리스트** (C가 직접 확인 — 미리 체크하지 않음):
 
@@ -113,7 +123,7 @@ CorrectionRequest.corrected_value
 - [ ] `추출됨`·`불확실`·`실패` 3등급 구분 표시
 - [ ] `unverified`·`confirmed`·`corrected` 상태 처리
 - [ ] `correction_request.json` 구조로 수정 요청 JSON 생성
-- [ ] R01~R10 결과(`RuleResult` 13개 필드) 렌더링
+- [ ] R01–R10 결과(`RuleResult` 13개 필드) 렌더링
 - [ ] `judgment`·`fact_flag` 구분 및 `triggers_actions` 처리
 - [ ] null 원문 증거 처리("원문 위치 미확인")
 
@@ -121,16 +131,16 @@ CorrectionRequest.corrected_value
 
 | 단계 | 상태 |
 |---|---|
-| 1. A 패키지 준비 | **완료** (모델·실제 AI 경로 어댑터·Schema·fixture·테스트 169 passed) |
+| 1. A 패키지 준비 | **완료** (모델·AI provider 경계·Schema·fixture·저장소 전체 오프라인 테스트 217 passed, 유료 smoke 1 skipped) |
 | 2. B 소비 확인 | **대기** — 5절 체크리스트 통과 시 완료 |
 | 3. C 소비 확인 | **대기** — 6절 체크리스트 통과 시 완료 |
 
 최종 인수인계는 B·C가 각자 체크리스트를 통과하고 **필드명 변경이 없음**을 확인한 뒤 완료된다.
 
-**호환성 변경 규칙**: 필드 이름·의미·Enum 변경은 3인 합의 + `SCHEMA_VERSION` 상향 + Schema·fixture 재생성 + 테스트·이 문서 갱신을 함께 한다. 필드는 추가만 한다(J01~J12 확장 포함). 생성 파일은 손으로 수정하지 않는다.
+**호환성 변경 규칙**: 필드 이름·의미·Enum 변경은 3인 합의 + `SCHEMA_VERSION` 상향 + Schema·fixture 재생성 + 테스트·이 문서 갱신을 함께 한다. 필드는 추가만 한다(J01–J12 확장 포함). 생성 파일은 손으로 수정하지 않는다.
 
 ## 8. 알려진 한계
 
-- **정규화 위치**: 현재 legacy 경로는 기존 규칙 엔진 내부 정규화(`normalize_name()`·`normalize_address()`)를 유지한다 — 어댑터는 `normalized_value`를 채우지 않으며 현재 R01~R10 결과에 영향 없다. 스키마 단계 정규화는 후속 책임 분리 작업이다.
+- **정규화 위치**: 현재 legacy 경로는 기존 규칙 엔진 내부 정규화(`normalize_name()`·`normalize_address()`)를 유지한다 — 어댑터는 `normalized_value`를 채우지 않으며 현재 R01–R10 결과에 영향 없다. 스키마 단계 정규화는 후속 책임 분리 작업이다.
 - **legacy 수정 이력**: `/api/minimum-mvp/analyze`는 최종 평면 필드만 받으므로 최초 추출값과 수정값을 분리 복원할 수 없다. 새 Backend 저장 경계에서 `DocumentExtraction` 원본과 `CorrectionRequest`를 각각 보존해야 한다.
 - **JSON Schema 검증 범위**: Pydantic fixture 검증과 생성 Schema↔모델 드리프트 검증은 완료. 단, 생성 JSON Schema는 Python custom validator 제약(필수 13키 존재, R별 허용 status, 명시적 확인 완료, 빈 목록 금지 등)을 **전부 표현하지 못한다**. 별도 Frontend JSON Schema validator 교차 검증은 C 작업에서 수행 예정이며, C는 실제 API 연결 전에 소비자 측 계약 테스트를 추가해야 한다.

@@ -9,6 +9,7 @@ dependencies = [
     "cohere>=7,<8",
     "PyMuPDF>=1.24,<2",
     "google-genai>=2,<3",
+    "openai>=2.45,<3",
     "pydantic>=2,<3",
 ]
 
@@ -19,4 +20,4 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-# TODO: 린터·포매터·테스트 도구 미확정. 확정 후 설정 추가 (예: ruff, pytest).
+# 저장소 루트 pyproject.toml의 Ruff·Mypy 설정과 pytest 회귀 검증을 공통 사용한다.

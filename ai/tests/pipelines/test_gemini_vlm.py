@@ -82,3 +82,45 @@ def test_vlm_semaphore_caps_concurrency(monkeypatch):
         list(pool.map(lambda _: gemini._generate(["prompt"], gemini.ContractFields), range(5)))
 
     assert maximum == 2
+
+
+def test_digital_text_is_deidentified_before_gemini_and_restored(monkeypatch):
+    calls = []
+
+    class Models:
+        def generate_content(self, **kwargs):
+            calls.append(kwargs)
+            fields = _contract_fields().model_copy(
+                update={
+                    "landlord_name": "[PERSON_1]",
+                    "property_address": "[ADDRESS_1]",
+                }
+            )
+            return SimpleNamespace(parsed=fields, text=None)
+
+    monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
+
+    result = gemini.extract_contract_fields(
+        "임대인: 홍길동\n소 재 지: 서울특별시 종로구 새싹로 12"
+    )
+
+    sent_prompt = calls[0]["contents"][0]
+    assert "홍길동" not in sent_prompt
+    assert "서울특별시 종로구 새싹로 12" not in sent_prompt
+    assert "[PERSON_1]" in sent_prompt
+    assert "[ADDRESS_1]" in sent_prompt
+    assert result["landlord_name"] == "홍길동"
+    assert result["property_address"] == "서울특별시 종로구 새싹로 12"
+
+
+def test_provider_exception_does_not_expose_sdk_message(monkeypatch):
+    class Models:
+        def generate_content(self, **kwargs):
+            raise RuntimeError("SECRET_PROVIDER_DETAIL")
+
+    monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
+
+    with pytest.raises(gemini.GeminiExtractError) as exc_info:
+        gemini.extract_contract_fields("임대인: 홍길동")
+
+    assert "SECRET_PROVIDER_DETAIL" not in str(exc_info.value)
