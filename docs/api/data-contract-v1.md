@@ -95,14 +95,14 @@ CorrectionRequest.corrected_value
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - 내부 `GenerationResult`를 현재 DB·API 계약에 임의 추가하지 않는다. 저장 요구가 확정되면 canonical 모델·JSON Schema·fixture·OpenAPI를 한 변경으로 제안한다.
 
-**B 인계 확인 체크리스트** (B가 직접 확인 — 미리 체크하지 않음):
+**B 인계 확인 체크리스트** (B가 직접 확인 — 2026-07-17 B 확인 완료):
 
-- [ ] `lease_companion_ai.schemas.unified` import 성공
-- [ ] fixture 6개 `model_validate_json` 검증 성공
-- [ ] 저장 → 조회 → 재검증 왕복 성공
-- [ ] 최초 추출값(`extracted_value`)과 수정값(`user_corrected_value`) 분리 저장 확인
-- [ ] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요)
-- [ ] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인
+- [x] `lease_companion_ai.schemas.unified` import 성공
+- [x] fixture 6개 `model_validate_json` 검증 성공
+- [x] 저장 → 조회 → 재검증 왕복 성공 (sqlite + `AnalysisRun`·`InputSnapshotRecord` 실모델, `model_validate` 재검증 통과)
+- [x] 최초 추출값(`extracted_value`)과 수정값(`user_corrected_value`) 분리 저장 확인 (`account_holder`: extracted=null 보존, corrected 별도)
+- [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 6개 모두 직렬화 키 = 원본 키)
+- [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
 
 ## 6. C 담당 (Frontend)
 
@@ -132,7 +132,7 @@ CorrectionRequest.corrected_value
 | 단계 | 상태 |
 |---|---|
 | 1. A 패키지 준비 | **완료** (모델·AI provider 경계·Schema·fixture·저장소 전체 오프라인 테스트 217 passed, 유료 smoke 1 skipped) |
-| 2. B 소비 확인 | **대기** — 5절 체크리스트 통과 시 완료 |
+| 2. B 소비 확인 | **완료**(2026-07-17) — 5절 체크리스트 6항목 통과. backend 테스트 51개 포함 저장소 전체 238 passed, 1 skipped |
 | 3. C 소비 확인 | **대기** — 6절 체크리스트 통과 시 완료 |
 
 최종 인수인계는 B·C가 각자 체크리스트를 통과하고 **필드명 변경이 없음**을 확인한 뒤 완료된다.
