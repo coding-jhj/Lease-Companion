@@ -90,8 +90,13 @@ def put_situation(
 ) -> ContractProject:
     """계약 상황 입력 (사용자 흐름 3단계). 재입력 시 덮어씀."""
     contract = _get_owned_contract(contract_id, user, db)
-    contract.contract_type = body.contract_type
-    contract.contract_stage = body.contract_stage
+    contract.contract_type = body.contract_type.value
+    contract.contract_stage = body.contract_stage.value
+    contract.deposit_paid = body.deposit_paid
+    contract.signed = body.signed
+    contract.move_in_date = body.move_in_date
+    contract.balance_payment_date = body.balance_payment_date
+    contract.is_proxy_contract = body.is_proxy_contract
     db.commit()
     db.refresh(contract)
     return contract

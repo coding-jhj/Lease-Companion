@@ -147,4 +147,8 @@ python scripts/seed_dev.py        # admin / 1234 다시 생성
 - **회원 API 구현 완료**: `POST /api/auth/signup` · `POST /api/auth/login` · `GET /api/auth/me` (PyJWT + Passlib-bcrypt). 오류 응답은 `{"error": {"code", "message"}}` 형식. 실행: `uvicorn app.main:app --reload` (backend/에서, DB 필요 — 위 Docker 섹션). 테스트: `python -m pytest tests`.
 - **계약 건 API 구현 완료**: 생성·목록·상세·삭제 + 계약 상황 입력(`PUT /api/contracts/{id}/situation`). 본인 소유만 접근 가능(그 외 404). 경로 상세: [`../docs/api/api-overview.md`](../docs/api/api-overview.md).
 - **문서 업로드 구현 완료**: `POST/GET /api/contracts/{id}/documents` (pdf·jpg·png 20MB 이하, 재업로드 이력 유지, 파일은 `UPLOAD_DIR`(기본 `backend/uploads/`, gitignore됨)에 저장) + 모의 등기 연결 `POST /api/contracts/{id}/registry-link`.
-- 분석 결과 저장·재조회(2주차 잔여)는 **담당 A의 통합 스키마 확정 대기** (규칙: 스키마 확정 전 추출 데이터 저장 모델 금지). 워커 미구현.
+- **분석 결과 저장·재조회 구현 완료**: `POST/GET /api/contracts/{id}/analysis-runs` — **비동기 + 폴링**(2026-07-16 팀 확정, status: pending/running/completed/failed). 최신 확인 완료 스냅샷으로 실행, `AnalysisRunResult`를 JSONB로 저장(재분석마다 새 행 = 이력). 계약 상황 입력도 통합 ContractContext 전체 필드(deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract)로 확장.
+- **추출 실행·확인·수정 API 구현 완료**: `POST …/extractions`(비동기, 업로드 문서 + 모의 등기 연결 기반) · `GET …/extractions/latest`(폴링) · `POST …/corrections`(원본 보존 + CorrectionRequest 이력) · `POST …/extractions/confirm`(서버 측 불변 InputSnapshot 생성). data-contract-v1 B 인수 체크리스트 5항목 전부 테스트로 충족.
+- **체크리스트·계약 직후 행동 상태 API 구현 완료**: `GET /api/contracts/{id}/checklist-items`(?kind 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert). 항목 문구는 분석 결과가 원본 — 상태만 계약 건 단위 저장·재조회. item_key 항목 존재 검증은 A 3단계 생성 스키마 확정 후 TODO.
+- 백그라운드 실행은 FastAPI BackgroundTasks(`app/workers/analysis.py`) — 별도 워커 프로세스 분리는 LLM 파이프라인 장시간화 시.
+- **주의(Alembic 도입 전)**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 모델에 컬럼이 추가되면 기존 dev DB에는 수동 `ALTER TABLE … ADD COLUMN` 필요 (예: 2026-07-16 `contract_projects`에 deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract 추가됨). 마이그레이션 도구 도입은 TODO.

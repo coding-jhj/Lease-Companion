@@ -1,0 +1,199 @@
+"""추출(비동기)→수정→확인→분석(비동기)→재조회 전체 흐름 테스트.
+
+CASE-001 correction fixture와 합성 샘플 문서를 입력으로 사용한다.
+TestClient는 BackgroundTasks를 요청 처리 중 동기 실행하므로 폴링 GET에서 곧바로 완료 상태를 본다.
+"""
+
+import json
+import os
+import tempfile
+from pathlib import Path
+
+_tmp = tempfile.mkdtemp()
+os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test_analyses.db"
+os.environ["JWT_SECRET"] = "test-secret-at-least-32-bytes-long"
+os.environ["UPLOAD_DIR"] = f"{_tmp}/uploads"
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+ROOT = Path(__file__).resolve().parents[3]
+CONTRACT_TXT = ROOT / "data" / "sample" / "contracts" / "contract_001.txt"
+REGISTRY_TXT = ROOT / "data" / "sample" / "registry-records" / "registry_001.txt"
+CORRECTION_FIXTURE = ROOT / "data" / "sample" / "fixtures" / "case-001" / "correction_request.json"
+
+
+def _token(client, username):
+    client.post(
+        "/api/auth/signup",
+        json={"username": username, "email": f"{username}@test.com", "password": "password1!"},
+    )
+    res = client.post("/api/auth/login", json={"username": username, "password": "password1!"})
+    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+
+
+def _upload(client, headers, contract_id, path, doc_type):
+    with path.open("rb") as f:
+        res = client.post(
+            f"/api/contracts/{contract_id}/documents",
+            files={"file": (path.name, f, "text/plain")},
+            data={"doc_type": doc_type},
+            headers=headers,
+        )
+    assert res.status_code == 201
+
+
+@pytest.fixture(scope="module")
+def client():
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture(scope="module")
+def alice(client):
+    return _token(client, "alice")
+
+
+@pytest.fixture(scope="module")
+def contract_id(client, alice):
+    """문서 업로드·추출·수정·확인까지 끝난 계약 건 — 모듈 내 분석 테스트의 공통 전제."""
+    cid = client.post("/api/contracts", json={"title": "분석용"}, headers=alice).json()["id"]
+    _upload(client, alice, cid, CONTRACT_TXT, "계약서")
+    _upload(client, alice, cid, REGISTRY_TXT, "등기사항증명서")
+
+    res = client.post(f"/api/contracts/{cid}/extractions", headers=alice)
+    assert res.status_code == 202
+    assert res.json()["status"] == "pending"
+
+    # 폴링 — TestClient에선 백그라운드 작업이 이미 끝나 있음
+    state = client.get(f"/api/contracts/{cid}/extractions/latest", headers=alice).json()
+    assert state["status"] == "completed", state.get("error")
+    assert "landlord_name" in state["contract_doc"]["fields"]
+
+    correction = json.loads(CORRECTION_FIXTURE.read_text(encoding="utf-8"))
+    correction["contract_id"] = cid  # fixture는 1001 — 실제 계약 건 id로 맞춤
+    res = client.post(f"/api/contracts/{cid}/corrections", json=correction, headers=alice)
+    assert res.status_code == 201
+    field = res.json()["contract_doc"]["fields"]["account_holder"]
+    # B 인수 체크리스트: 최초 추출값과 수정값 분리 보존
+    assert field["user_corrected_value"] == "이정훈"
+    assert field["verification_status"] == "corrected"
+
+    res = client.post(f"/api/contracts/{cid}/extractions/confirm", headers=alice)
+    assert res.status_code == 201
+    assert res.json()["input_snapshot_id"].startswith("snap-")
+    return cid
+
+
+def test_correction_preserves_original(client, alice, contract_id):
+    """수정을 다시 적용해도 원본 extracted_value는 절대 덮이지 않는다."""
+    before = client.get(f"/api/contracts/{contract_id}/extractions/latest", headers=alice).json()
+    original = before["contract_doc"]["fields"]["landlord_name"]["extracted_value"]
+
+    res = client.post(
+        f"/api/contracts/{contract_id}/corrections",
+        json={
+            "contract_id": contract_id,
+            "corrections": [
+                {"document_type": "contract", "field_name": "landlord_name", "corrected_value": "수정된이름"}
+            ],
+            "schema_version": "1.0.0",
+        },
+        headers=alice,
+    )
+    assert res.status_code == 201
+    field = res.json()["contract_doc"]["fields"]["landlord_name"]
+    assert field["user_corrected_value"] == "수정된이름"
+    assert field["extracted_value"] == original  # 원본 보존
+    assert field["verification_status"] == "corrected"
+
+
+def test_analysis_run_poll_and_reload(client, alice, contract_id):
+    res = client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice)
+    assert res.status_code == 202
+    body = res.json()
+    assert body["status"] == "pending"
+    assert body["result"] is None
+    run_id = body["analysis_run_id"]
+
+    # 폴링
+    res = client.get(f"/api/contracts/{contract_id}/analysis-runs/{run_id}", headers=alice)
+    detail = res.json()
+    assert detail["status"] == "completed", detail.get("error")
+    assert len(detail["result"]["results"]) == 10
+
+    # 저장 → 조회 → canonical 재검증 왕복 (B 인수 체크리스트)
+    from lease_companion_ai.schemas.unified import AnalysisRunResult
+
+    reloaded = AnalysisRunResult.model_validate(detail["result"])
+    assert reloaded.analysis_run_id == run_id
+    # 수정값이 규칙 입력에 반영됐는지 — R06(계좌 명의)이 확인 불가/확인 필요가 아님
+    r06 = next(r for r in reloaded.results if r.rule_id == "R06")
+    assert r06.status.value in {"일치", "불일치"}
+
+
+def test_rerun_appends_history(client, alice, contract_id):
+    first = client.get(f"/api/contracts/{contract_id}/analysis-runs", headers=alice).json()
+    assert client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice).status_code == 202
+    history = client.get(f"/api/contracts/{contract_id}/analysis-runs", headers=alice).json()
+    assert len(history) == len(first) + 1
+    assert all(run["status"] == "completed" for run in history)
+
+
+def test_analysis_requires_confirmed_snapshot(client, alice):
+    cid = client.post("/api/contracts", json={"title": "스냅샷 없음"}, headers=alice).json()["id"]
+    res = client.post(f"/api/contracts/{cid}/analysis-runs", headers=alice)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "no_confirmed_snapshot"
+
+
+def test_extraction_requires_documents(client, alice):
+    cid = client.post("/api/contracts", json={"title": "문서 없음"}, headers=alice).json()["id"]
+    res = client.post(f"/api/contracts/{cid}/extractions", headers=alice)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "missing_contract_document"
+
+    _upload(client, alice, cid, CONTRACT_TXT, "계약서")
+    res = client.post(f"/api/contracts/{cid}/extractions", headers=alice)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "missing_registry_source"
+
+
+def test_corrections_require_completed_extraction(client, alice):
+    cid = client.post("/api/contracts", json={"title": "추출 전"}, headers=alice).json()["id"]
+    res = client.post(
+        f"/api/contracts/{cid}/corrections",
+        json={"contract_id": cid, "corrections": [], "schema_version": "1.0.0"},
+        headers=alice,
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "extraction_not_ready"
+
+
+def test_unknown_correction_field_422(client, alice, contract_id):
+    res = client.post(
+        f"/api/contracts/{contract_id}/corrections",
+        json={
+            "contract_id": contract_id,
+            "corrections": [
+                {"document_type": "contract", "field_name": "no_such_field", "corrected_value": "x"}
+            ],
+            "schema_version": "1.0.0",
+        },
+        headers=alice,
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "unknown_correction_field"
+
+
+def test_other_user_cannot_access(client, alice, contract_id):
+    mallory = _token(client, "mallory")
+    assert client.get(f"/api/contracts/{contract_id}/analysis-runs", headers=mallory).status_code == 404
+    assert client.get(f"/api/contracts/{contract_id}/extractions/latest", headers=mallory).status_code == 404
+
+
+def test_run_not_found_404(client, alice, contract_id):
+    res = client.get(f"/api/contracts/{contract_id}/analysis-runs/none", headers=alice)
+    assert res.status_code == 404

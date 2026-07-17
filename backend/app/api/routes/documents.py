@@ -17,7 +17,8 @@ from app.schemas.document import DocumentResponse, DocType
 
 router = APIRouter(prefix="/api/contracts/{contract_id}/documents", tags=["documents"])
 
-ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
+# .txt는 비식별·합성 샘플(데모·CASE 검증)용 — 실제 계약서는 pdf·이미지
+ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".txt"}
 # ponytail: 20MB 임시 상한 — 실제 스캔본 크기 보고 조정
 MAX_SIZE_BYTES = 20 * 1024 * 1024
 
@@ -44,7 +45,7 @@ async def upload_document(
             status_code=422,
             detail={
                 "code": "unsupported_file_type",
-                "message": "PDF 또는 이미지(jpg, png) 파일만 업로드할 수 있습니다.",
+                "message": "PDF·이미지(jpg, png) 또는 합성 샘플 텍스트(txt)만 업로드할 수 있습니다.",
             },
         )
 

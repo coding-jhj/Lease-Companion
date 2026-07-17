@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -17,6 +17,12 @@ class ContractProject(Base):
     # 계약 상황 입력(사용자 흐름 3단계)에서 채워짐 — 생성 시점에는 비어 있음
     contract_type: Mapped[str | None] = mapped_column(String(20))  # 전세/보증부 월세/일반 월세
     contract_stage: Mapped[str | None] = mapped_column(String(50))  # 계약금 입금 전/서명 전/계약 직후 (2026-07-16 팀 확정)
+    # 통합 ContractContext 나머지 필드 (unified.py 기준). 입력 전에는 null
+    deposit_paid: Mapped[bool | None] = mapped_column(Boolean)
+    signed: Mapped[bool | None] = mapped_column(Boolean)
+    move_in_date: Mapped[date | None] = mapped_column(Date)
+    balance_payment_date: Mapped[date | None] = mapped_column(Date)
+    is_proxy_contract: Mapped[bool | None] = mapped_column(Boolean)  # null = 모름
     # 모의 등기 연결(registry-link). 합성 사례 식별자 — contract_id와 다른 축 (루트 AGENTS.md 식별자 구분)
     registry_case_id: Mapped[str | None] = mapped_column(String(30))
     created_at: Mapped[datetime] = mapped_column(

@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, contracts, documents
+from app.api.routes import analyses, auth, checklists, contracts, documents, extractions
 from app.core.db import Base, engine
 
 
@@ -25,6 +25,9 @@ app = FastAPI(title="슬기로운 계약생활 API", version="0.0.0", lifespan=l
 app.include_router(auth.router)
 app.include_router(contracts.router)
 app.include_router(documents.router)
+app.include_router(extractions.router)
+app.include_router(analyses.router)
+app.include_router(checklists.router)
 
 
 @app.exception_handler(HTTPException)
@@ -54,4 +57,4 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# TODO: 남은 라우터 등록 (extractions·analyses·results·checklists·feedback)
+# TODO: 남은 라우터 등록 (results·feedback — results는 analysis-runs result JSON이 현재 커버)
