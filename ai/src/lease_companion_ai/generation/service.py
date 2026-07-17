@@ -20,7 +20,11 @@ from lease_companion_ai.providers.generation import (
     GenerationProvider,
     GenerationRequest,
 )
-from lease_companion_ai.schemas.unified import AnalysisRunResult, RuleResult
+from lease_companion_ai.schemas.unified import (
+    AnalysisRunResult,
+    RuleResult,
+    validate_generation_result_for_analysis,
+)
 
 PROMPT_VERSION = "v1"
 PROMPT_NAMES = ("questions", "checklists", "summaries")
@@ -61,7 +65,10 @@ class GenerationService:
         )
         if analysis.model_dump(mode="json") != before:
             raise RuntimeError("생성 단계가 규칙 결과를 변경했습니다.")
-        return GenerationResult(analysis_run_id=analysis.analysis_run_id, items=items)
+        generated = GenerationResult(
+            analysis_run_id=analysis.analysis_run_id, items=items
+        )
+        return validate_generation_result_for_analysis(analysis, generated)
 
     def _generate_rule(self, result: RuleResult) -> RuleGuidance:
         if not result.evidence_sources:

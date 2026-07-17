@@ -24,6 +24,7 @@ from lease_companion_ai.schemas.unified import (  # noqa: E402
     ContractContext,
     CorrectionRequest,
     DocumentExtraction,
+    GenerationResult,
     InputSnapshot,
 )
 
@@ -35,6 +36,7 @@ MODELS = {
     "input-snapshot": InputSnapshot,
     "correction-request": CorrectionRequest,
     "analysis-run-result": AnalysisRunResult,
+    "generation-result": GenerationResult,
 }
 
 

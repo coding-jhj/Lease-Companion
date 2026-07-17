@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from lease_companion_ai.schemas.unified import ContractContext
+
 
 class EncodedDocument(BaseModel):
     filename: str = Field(min_length=1, max_length=255)
@@ -28,6 +30,7 @@ class ExtractionResponse(BaseModel):
 class AnalysisRequest(BaseModel):
     contract_fields: dict[str, Any]
     registry_fields: dict[str, Any]
+    contract_context: ContractContext
     user_confirmed: bool
 
 

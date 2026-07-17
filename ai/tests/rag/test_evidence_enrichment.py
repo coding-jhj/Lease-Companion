@@ -3,7 +3,7 @@ from __future__ import annotations
 from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.rag.models import RetrievalHit
 from lease_companion_ai.rag.service import EvidenceRetrievalService
-from lease_companion_ai.schemas.unified import AnalysisRunResult
+from lease_companion_ai.schemas.unified import AnalysisRunResult, ContractContext
 
 
 class _StaticRetriever:
@@ -41,6 +41,14 @@ def test_enrichment_preserves_rule_fields_and_adds_only_searched_official_source
             "provisional_seizure_present": False,
             "trust_present": False,
         },
+        ContractContext(
+            contract_id=1,
+            contract_type="전세",
+            contract_stage="계약금 입금 전",
+            deposit_paid=False,
+            signed=False,
+            is_proxy_contract=False,
+        ),
     )
     analysis = AnalysisRunResult(
         analysis_run_id="RUN-EVIDENCE",

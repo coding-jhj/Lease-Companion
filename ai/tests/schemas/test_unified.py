@@ -14,12 +14,17 @@ from lease_companion_ai.schemas.unified import (
     DocumentType,
     ExtractedField,
     FieldCorrection,
+    GenerationMethod,
+    GenerationResult,
     InputSnapshot,
+    OfficialSource,
     ResultType,
+    RuleGuidance,
     RuleResult,
     SnapshotFields,
     SourceEvidence,
     VerificationStatus,
+    validate_generation_result_for_analysis,
 )
 
 
@@ -185,7 +190,7 @@ def test_correction_request_enforces_rule_field_type():
 
 
 def test_models_reject_unknown_schema_version():
-    assert SCHEMA_VERSION == "1.1.0"
+    assert SCHEMA_VERSION == "1.2.0"
     with pytest.raises(ValidationError):
         ContractContext(
             schema_version="1.0.0",
@@ -196,6 +201,17 @@ def test_models_reject_unknown_schema_version():
             signed=False,
         )
 
+
+
+def _context(contract_id: int = 1) -> ContractContext:
+    return ContractContext(
+        contract_id=contract_id,
+        contract_type="전세",
+        contract_stage="계약금 입금 전",
+        deposit_paid=False,
+        signed=False,
+        is_proxy_contract=False,
+    )
 
 def _snapshot(contract_id=1, case_id=None, status=VerificationStatus.CONFIRMED):
     contract = {
@@ -210,6 +226,7 @@ def _snapshot(contract_id=1, case_id=None, status=VerificationStatus.CONFIRMED):
         input_snapshot_id="SNAP-1",
         contract_id=contract_id,
         case_id=case_id,
+        contract_context=_context(contract_id),
         confirmed_fields=SnapshotFields(contract=contract, registry=registry),
         confirmed_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
     )
@@ -242,6 +259,8 @@ def test_snapshot_is_frozen():
         snapshot.confirmed_fields.contract["landlord_name"].extracted_value = "변조"
     with pytest.raises(TypeError):
         snapshot.confirmed_fields.registry["owner_names"].extracted_value.append("변조")
+    with pytest.raises(ValidationError):
+        snapshot.contract_context.deposit_paid = True
 
 
 def test_snapshot_serialization_round_trip():
@@ -439,4 +458,77 @@ def test_contract_context_matches_backend_api_values():
             contract_stage="before_deposit",
             deposit_paid=False,
             signed=False,
+        )
+
+def test_snapshot_rejects_contract_context_id_mismatch():
+    snapshot = _snapshot()
+    payload = snapshot.model_dump()
+    payload["contract_context"]["contract_id"] = 2
+    with pytest.raises(ValidationError, match="contract_id"):
+        InputSnapshot.model_validate(payload)
+
+
+def test_generation_result_validates_analysis_and_official_sources():
+    results = _complete_results()
+    results[0] = results[0].model_copy(
+        update={
+            "evidence_sources": [
+                OfficialSource(
+                    source_id="SRC-1",
+                    title="공식 자료",
+                    institution="공공기관",
+                )
+            ]
+        }
+    )
+    analysis = AnalysisRunResult(
+        analysis_run_id="RUN-1",
+        input_snapshot_id="SNAP-1",
+        contract_id=1,
+        results=results,
+    )
+    generation = GenerationResult(
+        analysis_run_id="RUN-1",
+        items=(
+            RuleGuidance(
+                rule_id="R01",
+                explanation="공식 자료를 확인하십시오.",
+                source_ids=("SRC-1",),
+                generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+                fallback_reason="provider_unavailable",
+            ),
+        ),
+    )
+
+    assert generation.schema_version == SCHEMA_VERSION
+    assert validate_generation_result_for_analysis(analysis, generation) is generation
+
+    with pytest.raises(ValueError, match="analysis_run_id"):
+        validate_generation_result_for_analysis(
+            analysis,
+            generation.model_copy(update={"analysis_run_id": "RUN-2"}),
+        )
+    with pytest.raises(ValueError, match="없는 rule_id"):
+        validate_generation_result_for_analysis(
+            analysis,
+            generation.model_copy(
+                update={
+                    "items": (
+                        generation.items[0].model_copy(update={"rule_id": "R99"}),
+                    )
+                }
+            ),
+        )
+    with pytest.raises(ValueError, match="공식 근거"):
+        validate_generation_result_for_analysis(
+            analysis,
+            generation.model_copy(
+                update={
+                    "items": (
+                        generation.items[0].model_copy(
+                            update={"source_ids": ("SRC-UNKNOWN",)}
+                        ),
+                    )
+                }
+            ),
         )

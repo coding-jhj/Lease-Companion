@@ -22,6 +22,7 @@ from lease_companion_ai.schemas.unified import (
     RESULT_TYPE_BY_RULE_ID,
     AnalysisRunResult,
     Confidence,
+    ContractContext,
     CorrectionRequest,
     DocumentExtraction,
     DocumentType,
@@ -155,6 +156,7 @@ def build_snapshot(
     *,
     input_snapshot_id: str,
     contract_id: int,
+    contract_context: ContractContext,
     contract_doc: DocumentExtraction,
     registry_doc: DocumentExtraction,
     confirmed_at: datetime,
@@ -165,6 +167,7 @@ def build_snapshot(
         input_snapshot_id=input_snapshot_id,
         contract_id=contract_id,
         case_id=case_id,
+        contract_context=contract_context,
         confirmed_at=confirmed_at,
         confirmed_fields=SnapshotFields(
             contract=dict(contract_doc.fields),

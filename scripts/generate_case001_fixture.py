@@ -25,6 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "ai" / "src"))
 
+from lease_companion_ai.generation.service import GenerationService  # noqa: E402
 from lease_companion_ai.schemas.adapters import (  # noqa: E402
     analyze_snapshot,
     apply_correction_request,
@@ -169,24 +170,28 @@ def main() -> None:
     )
     confirmed_contract = confirm_document(corrected[DocumentType.CONTRACT])
     confirmed_registry = confirm_document(corrected[DocumentType.REGISTRY])
+    context = contract_context()
     snapshot = build_snapshot(
         input_snapshot_id=SNAPSHOT_ID,
         contract_id=CONTRACT_ID,
         case_id=CASE_ID,
+        contract_context=context,
         contract_doc=confirmed_contract,
         registry_doc=confirmed_registry,
         confirmed_at=CONFIRMED_AT,
     )
     analysis = analyze_snapshot(snapshot, analysis_run_id=ANALYSIS_RUN_ID)
+    generation = GenerationService().generate(analysis)
     _self_check(analysis)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    _write(OUTPUT_DIR / "contract_context.json", contract_context())
+    _write(OUTPUT_DIR / "contract_context.json", context)
     _write(OUTPUT_DIR / "contract_extraction.json", contract_doc)
     _write(OUTPUT_DIR / "registry_extraction.json", registry_doc)
     _write(OUTPUT_DIR / "correction_request.json", request)
     _write(OUTPUT_DIR / "input_snapshot.json", snapshot)
     _write(OUTPUT_DIR / "analysis_run_result.json", analysis)
+    _write(OUTPUT_DIR / "generation_result.json", generation)
 
 
 if __name__ == "__main__":

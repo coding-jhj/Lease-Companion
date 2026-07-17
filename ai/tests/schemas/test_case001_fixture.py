@@ -17,6 +17,7 @@ from lease_companion_ai.schemas.unified import (
     ContractContext,
     CorrectionRequest,
     DocumentExtraction,
+    GenerationResult,
     InputSnapshot,
     ResultType,
     VerificationStatus,
@@ -33,6 +34,7 @@ FIXTURE_MODELS = {
     "correction_request.json": CorrectionRequest,
     "input_snapshot.json": InputSnapshot,
     "analysis_run_result.json": AnalysisRunResult,
+    "generation_result.json": GenerationResult,
 }
 
 
@@ -147,4 +149,20 @@ def test_fixture_analysis_matches_rule_goldset():
         result.triggers_actions
         is (result.status.value not in {"일치", "명확", "적용 제외"})
         for result in analysis.results
+    )
+
+def test_fixture_generation_result_links_to_analysis_sources():
+    analysis = AnalysisRunResult.model_validate_json(
+        (FIXTURE_DIR / "analysis_run_result.json").read_text(encoding="utf-8")
+    )
+    generation = GenerationResult.model_validate_json(
+        (FIXTURE_DIR / "generation_result.json").read_text(encoding="utf-8")
+    )
+    assert generation.analysis_run_id == analysis.analysis_run_id
+    rules = {result.rule_id: result for result in analysis.results}
+    assert all(item.rule_id in rules for item in generation.items)
+    assert all(
+        set(item.source_ids)
+        <= {source.source_id for source in rules[item.rule_id].evidence_sources}
+        for item in generation.items
     )
