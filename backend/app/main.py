@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.routes import auth, contracts
+from app.api.routes import analyses, auth, checklists, contracts, documents, extractions
 from app.core.db import Base, engine
 from app.core.errors import register_error_handlers
 
@@ -24,6 +24,10 @@ register_error_handlers(app)
 
 app.include_router(auth.router)
 app.include_router(contracts.router)
+app.include_router(documents.router)
+app.include_router(extractions.router)
+app.include_router(analyses.router)
+app.include_router(checklists.router)
 
 
 @app.get("/health")
@@ -32,4 +36,4 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# TODO: 남은 라우터 등록 (documents·extractions·analyses·results·checklists·feedback)
+# TODO: 남은 라우터 등록 (results·feedback — results는 analysis-runs result JSON이 현재 커버)

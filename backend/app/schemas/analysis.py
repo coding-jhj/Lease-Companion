@@ -1,0 +1,57 @@
+"""추출·분석 API 요청·응답 wrapper.
+
+도메인 본문(DocumentExtraction/InputSnapshot/AnalysisRunResult)은 통합 스키마가
+단일 원본 — 여기서는 실행 상태·목록 요약만 정의하고 본문은 canonical JSON 그대로 반환.
+status: pending → running → completed | failed (폴링 — 2026-07-16 팀 확정).
+"""
+
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel
+
+
+class ExtractionState(BaseModel):
+    """추출 실행 상태 + (완료 시) 수정 이력 반영된 현재 추출값."""
+
+    id: int
+    status: str
+    error: str | None = None
+    contract_doc: dict[str, Any] | None = None
+    registry_doc: dict[str, Any] | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SnapshotResponse(BaseModel):
+    """확인 완료로 생성된 불변 스냅샷."""
+
+    input_snapshot_id: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AnalysisRunSummary(BaseModel):
+    """재분석 이력 목록 항목."""
+
+    analysis_run_id: str
+    input_snapshot_id: str
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AnalysisRunDetail(BaseModel):
+    """분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null."""
+
+    analysis_run_id: str
+    input_snapshot_id: str
+    status: str
+    error: str | None = None
+    created_at: datetime
+    result: dict[str, Any] | None = None
+
+    model_config = {"from_attributes": True}

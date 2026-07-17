@@ -331,6 +331,683 @@
         }
       }
     },
+    "/api/contracts/{contract_id}/registry-link": {
+      "post": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Link Registry",
+        "description": "모의 등기 데이터 연결 (2026-07-16 팀 합의 API). 규칙 엔진 교차검증에 사용.",
+        "operationId": "link_registry_api_contracts__contract_id__registry_link_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/documents": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload Document",
+        "operationId": "upload_document_api_contracts__contract_id__documents_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_api_contracts__contract_id__documents_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "List Documents",
+        "description": "업로드 이력 전체 (최신순). 같은 종류 재업로드도 모두 남는다.",
+        "operationId": "list_documents_api_contracts__contract_id__documents_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentResponse"
+                  },
+                  "title": "Response List Documents Api Contracts  Contract Id  Documents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/extractions": {
+      "post": {
+        "tags": [
+          "extractions"
+        ],
+        "summary": "Start Extraction",
+        "description": "업로드된 계약서(+등기 문서 또는 모의 등기 연결)로 추출을 시작한다.\n\n즉시 202를 반환하고, 완료 여부는 GET …/extractions/latest 폴링으로 확인한다.",
+        "operationId": "start_extraction_api_contracts__contract_id__extractions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/extractions/latest": {
+      "get": {
+        "tags": [
+          "extractions"
+        ],
+        "summary": "Get Latest Extraction",
+        "description": "최신 추출 상태 폴링 + (완료 시) 수정 이력이 반영된 현재 추출값.",
+        "operationId": "get_latest_extraction_api_contracts__contract_id__extractions_latest_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/corrections": {
+      "post": {
+        "tags": [
+          "extractions"
+        ],
+        "summary": "Apply Corrections",
+        "description": "통합 CorrectionRequest를 검증·적용하고 이력으로 보존한다. 원본 추출값은 유지된다.",
+        "operationId": "apply_corrections_api_contracts__contract_id__corrections_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/extractions/confirm": {
+      "post": {
+        "tags": [
+          "extractions"
+        ],
+        "summary": "Confirm Extraction",
+        "description": "사용자의 추출값 확인 완료 — 서버가 불변 InputSnapshot을 생성·보존한다.\n\n이후 분석 실행(POST …/analysis-runs)은 이 스냅샷을 사용한다.",
+        "operationId": "confirm_extraction_api_contracts__contract_id__extractions_confirm_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/analysis-runs": {
+      "post": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Start Analysis",
+        "description": "최신 확인 완료 스냅샷으로 분석을 시작한다. 재분석마다 새 행이 쌓인다(이력).",
+        "operationId": "start_analysis_api_contracts__contract_id__analysis_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "List Analysis Runs",
+        "description": "재분석 이력 (최신순).",
+        "operationId": "list_analysis_runs_api_contracts__contract_id__analysis_runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnalysisRunSummary"
+                  },
+                  "title": "Response List Analysis Runs Api Contracts  Contract Id  Analysis Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/analysis-runs/{analysis_run_id}": {
+      "get": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Get Analysis Run",
+        "description": "분석 상태·결과 폴링. completed면 result에 통합 AnalysisRunResult JSON이 담긴다.",
+        "operationId": "get_analysis_run_api_contracts__contract_id__analysis_runs__analysis_run_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          },
+          {
+            "name": "analysis_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Analysis Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/checklist-items": {
+      "get": {
+        "tags": [
+          "checklists"
+        ],
+        "summary": "List Item States",
+        "description": "저장된 항목 상태 재조회. kind로 체크리스트/계약 직후 행동 필터 가능.",
+        "operationId": "list_item_states_api_contracts__contract_id__checklist_items_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "checklist",
+                    "post_action"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemStateResponse"
+                  },
+                  "title": "Response List Item States Api Contracts  Contract Id  Checklist Items Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/checklist-items/{kind}/{item_key}": {
+      "put": {
+        "tags": [
+          "checklists"
+        ],
+        "summary": "Put Item State",
+        "description": "항목 상태 저장 (upsert — 없으면 생성, 있으면 갱신).",
+        "operationId": "put_item_state_api_contracts__contract_id__checklist_items__kind___item_key__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "checklist",
+                "post_action"
+              ],
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "item_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "title": "Item Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemStateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -357,6 +1034,113 @@
   },
   "components": {
     "schemas": {
+      "AnalysisRunDetail": {
+        "properties": {
+          "analysis_run_id": {
+            "type": "string",
+            "title": "Analysis Run Id"
+          },
+          "input_snapshot_id": {
+            "type": "string",
+            "title": "Input Snapshot Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_run_id",
+          "input_snapshot_id",
+          "status",
+          "created_at"
+        ],
+        "title": "AnalysisRunDetail",
+        "description": "분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null."
+      },
+      "AnalysisRunSummary": {
+        "properties": {
+          "analysis_run_id": {
+            "type": "string",
+            "title": "Analysis Run Id"
+          },
+          "input_snapshot_id": {
+            "type": "string",
+            "title": "Input Snapshot Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_run_id",
+          "input_snapshot_id",
+          "status",
+          "created_at"
+        ],
+        "title": "AnalysisRunSummary",
+        "description": "재분석 이력 목록 항목."
+      },
+      "Body_upload_document_api_contracts__contract_id__documents_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "doc_type": {
+            "type": "string",
+            "enum": [
+              "계약서",
+              "등기사항증명서",
+              "중개대상물 확인설명서"
+            ],
+            "title": "Doc Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "doc_type"
+        ],
+        "title": "Body_upload_document_api_contracts__contract_id__documents_post"
+      },
       "ContractCreateRequest": {
         "properties": {
           "title": {
@@ -402,6 +1186,74 @@
               }
             ]
           },
+          "deposit_paid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deposit Paid"
+          },
+          "signed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed"
+          },
+          "move_in_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move In Date"
+          },
+          "balance_payment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance Payment Date"
+          },
+          "is_proxy_contract": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Proxy Contract"
+          },
+          "registry_case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registry Case Id"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -414,6 +1266,12 @@
           "title",
           "contract_type",
           "contract_stage",
+          "deposit_paid",
+          "signed",
+          "move_in_date",
+          "balance_payment_date",
+          "is_proxy_contract",
+          "registry_case_id",
           "created_at"
         ],
         "title": "ContractResponse"
@@ -436,6 +1294,100 @@
         ],
         "title": "ContractType"
       },
+      "DocumentResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "doc_type": {
+            "type": "string",
+            "title": "Doc Type"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "doc_type",
+          "filename",
+          "size_bytes",
+          "created_at"
+        ],
+        "title": "DocumentResponse"
+      },
+      "ExtractionState": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "contract_doc": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Doc"
+          },
+          "registry_doc": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registry Doc"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "created_at"
+        ],
+        "title": "ExtractionState",
+        "description": "추출 실행 상태 + (완료 시) 수정 이력 반영된 현재 추출값."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -448,6 +1400,52 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ItemStateRequest": {
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "done"
+        ],
+        "title": "ItemStateRequest"
+      },
+      "ItemStateResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "checklist",
+              "post_action"
+            ],
+            "title": "Kind"
+          },
+          "item_key": {
+            "type": "string",
+            "title": "Item Key"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "item_key",
+          "done",
+          "updated_at"
+        ],
+        "title": "ItemStateResponse"
       },
       "LoginRequest": {
         "properties": {
@@ -466,6 +1464,23 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "RegistryLinkRequest": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Case Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_id"
+        ],
+        "title": "RegistryLinkRequest",
+        "description": "모의 등기 연결 — data/sample/registry-records의 합성 사례 식별자."
       },
       "SignupRequest": {
         "properties": {
@@ -503,6 +1518,63 @@
           },
           "contract_stage": {
             "$ref": "#/components/schemas/ContractStage"
+          },
+          "deposit_paid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deposit Paid"
+          },
+          "signed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed"
+          },
+          "move_in_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move In Date"
+          },
+          "balance_payment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance Payment Date"
+          },
+          "is_proxy_contract": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Proxy Contract"
           }
         },
         "type": "object",
@@ -511,7 +1583,27 @@
           "contract_stage"
         ],
         "title": "SituationRequest",
-        "description": "계약 상황 입력 (사용자 흐름 3단계): 계약 유형 + 계약 단계."
+        "description": "계약 상황 입력 (사용자 흐름 3단계). 필드 구성은 통합 ContractContext 기준.\n\ndeposit_paid 이하 5개는 기존 클라이언트·mock 호환을 위해 선택 입력(None 허용).\n분석 실행 시 ContractContext가 필수값을 최종 검증한다."
+      },
+      "SnapshotResponse": {
+        "properties": {
+          "input_snapshot_id": {
+            "type": "string",
+            "title": "Input Snapshot Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_snapshot_id",
+          "created_at"
+        ],
+        "title": "SnapshotResponse",
+        "description": "확인 완료로 생성된 불변 스냅샷."
       },
       "TokenResponse": {
         "properties": {

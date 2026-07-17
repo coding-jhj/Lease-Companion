@@ -75,6 +75,30 @@ def test_backend_reuses_canonical_contract_enums():
     assert BackendContractStage is ContractStage
 
 
+def test_situation_full_context_fields(client, alice):
+    """통합 ContractContext 나머지 필드 저장·재조회 (기존 2필드 요청도 그대로 동작)."""
+    cid = client.post("/api/contracts", json={"title": "전체상황입력용"}, headers=alice).json()["id"]
+    res = client.put(
+        f"/api/contracts/{cid}/situation",
+        json={
+            "contract_type": "전세",
+            "contract_stage": "서명 전",
+            "deposit_paid": False,
+            "signed": False,
+            "move_in_date": "2026-09-01",
+            "balance_payment_date": "2026-08-30",
+            "is_proxy_contract": None,
+        },
+        headers=alice,
+    )
+    assert res.status_code == 200
+    body = client.get(f"/api/contracts/{cid}", headers=alice).json()
+    assert body["deposit_paid"] is False
+    assert body["move_in_date"] == "2026-09-01"
+    assert body["balance_payment_date"] == "2026-08-30"
+    assert body["is_proxy_contract"] is None
+
+
 def test_situation_invalid_stage(client, alice):
     cid = client.post("/api/contracts", json={"title": "단계검증용"}, headers=alice).json()["id"]
     res = client.put(

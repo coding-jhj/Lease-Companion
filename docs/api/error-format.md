@@ -37,10 +37,20 @@
 | `unauthorized` | 401 | 토큰 없음·만료·무효 상태로 보호된 API 호출 |
 | `username_taken` | 409 | 가입 시 아이디 중복 |
 | `email_taken` | 409 | 가입 시 이메일 중복 |
-| `not_found` | 404 | 리소스 없음. 남의 계약 건 접근도 동일 응답 (존재 여부 노출 방지) |
+| `not_found` | 404 | 리소스 없음. 남의 계약 건 접근·없는 모의 등기 case_id도 동일 응답 (존재 여부 노출 방지) |
 | `document_processing_failed` | 422 | 최소 MVP 업로드 형식·크기·페이지·픽셀 또는 문서 처리 오류 |
 | `extraction_not_confirmed` | 422 | 추출값 미확인 또는 확인 입력 형식 오류 |
 | `http_error` | 해당 HTTP 상태 | 별도 도메인 코드가 없는 HTTP 예외의 공통 폴백 |
+| `unsupported_file_type` | 422 | 업로드 파일 형식이 pdf·jpg·jpeg·png가 아님 |
+| `empty_file` | 422 | 빈 파일 업로드 |
+| `file_too_large` | 422 | 업로드 파일 20MB 초과 |
+| `missing_contract_document` | 422 | 추출 실행 시 업로드된 계약서 없음 |
+| `missing_registry_source` | 422 | 추출 실행 시 등기 문서·모의 등기 연결 둘 다 없음 |
+| `extraction_not_ready` | 422 | 완료된 추출 결과가 없는 상태에서 수정·확인 요청 |
+| `invalid_correction_request` | 422 | 수정 요청이 통합 CorrectionRequest 스키마 검증 실패 |
+| `unknown_correction_field` | 422 | 수정 대상 필드가 추출 결과에 없음 |
+| `contract_id_mismatch` | 422 | 요청 본문의 contract_id가 경로의 계약 건과 다름 |
+| `no_confirmed_snapshot` | 422 | 확인 완료된 추출값 없이 분석 실행 요청 |
 
 새 API에서 코드를 추가하는 것은 자유(소문자 snake_case 준수), 기존 코드 변경은 팀 공유 후에만.
 
