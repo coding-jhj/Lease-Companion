@@ -10,7 +10,9 @@
 
 - `create_all`은 **새 테이블만** 만들고 기존 테이블의 컬럼 추가·변경은 적용하지 못한다.
 - 모델에 컬럼이 추가될 때마다 팀원 각자 자기 dev DB에 수동 SQL을 실행해야 한다.
-  실제 발생 사례 2회: 2026-07-16 `contract_projects` 컬럼 5개, 2026-07-17 `analysis_runs.generation_result`.
+  실제 발생 사례 2회: 2026-07-16 `contract_projects` 컬럼 5개, 2026-07-17 `analysis_runs`의
+  generation_result·generation_status·generation_error (후자는 `feat/lmk` 커밋 9becf95 — main 병합 전.
+  B dev DB에는 ALTER 적용 완료).
 - 수동 실행을 빠뜨리면 사람마다 DB 상태가 달라지고, 원인 찾기 어려운 오류가 난다.
 - A의 canonical schema v1.2.0 확정(contract_context·GenerationResult) 시 스키마 변경이 또 예정되어 있다.
 
@@ -42,14 +44,22 @@
 ## 주의사항 (도입 시 운영 수칙)
 
 1. **autogenerate는 rename을 인식하지 못한다** — 컬럼·테이블 이름 변경을 "삭제+추가"로 생성하므로 그대로 적용하면 **데이터 유실**. 생성된 마이그레이션 파일은 적용 전 반드시 내용을 확인하고, rename은 `op.alter_column(..., new_column_name=...)`으로 손수 수정한다.
-2. **기존 dev DB 이행**: 이미 `create_all`로 만들어진 DB에서 기준선을 실행하면 "테이블 이미 존재" 오류. 기존 DB는 `alembic stamp head`(적용된 것으로 표시만), 새로 만드는 DB만 `alembic upgrade head`.
+2. **기존 dev DB 이행 (A 검토 반영 — 무조건 stamp 금지)**: `stamp`는 표시만 하므로 baseline과 다른 DB에 stamp하면 누락 컬럼이 이후에도 생성되지 않는다. 절차:
+   ① 기존 DB 스키마와 baseline 일치 여부 비교 → ② 일치하면 `alembic stamp <baseline_revision>` → ③ 불일치하면 누락 컬럼 보정 또는 DB 재생성 → ④ 이후 `alembic upgrade head`. **빈 DB는 stamp 대상이 아니며 `upgrade head`만 실행.**
 3. **동시 작업 충돌**: 두 사람이 동시에 revision을 만들면 head가 갈라짐(multiple heads) — merge revision 필요. 현재 DB 모델은 B만 변경하므로 위험 낮음. 모델을 만지는 사람이 늘면 이 수칙 재공유.
-4. **테스트와 분리**: 테스트는 sqlite + `create_all` 유지, 마이그레이션은 실DB(PostgreSQL) 전용. 혼용하지 않는다.
+4. **테스트와 분리**: 단위 테스트는 sqlite + `create_all` 유지, 마이그레이션은 실DB(PostgreSQL) 전용. 혼용하지 않는다. 도입 시 **PostgreSQL migration smoke test**(빈 DB → `upgrade head` → 모델과 스키마 일치 확인)를 별도 추가한다(A 검토 반영).
 5. `server_default` 등 미세 차이는 autogenerate가 놓칠 수 있음 — 1번과 같은 수칙(적용 전 확인)으로 대응.
 
 **GCP 이전 관련**: Cloud SQL PostgreSQL로 이전 시 새 인스턴스에 `alembic upgrade head`로 스키마 재현 — 문제 없음(오히려 이전이 쉬워짐). 데이터 이전은 Alembic 범위 밖(`pg_dump`/`pg_restore` 별도). PostgreSQL 계열 유지가 전제.
 
-## 결정 기준
+## 결정 기준·시점
 
-- 팀 3인 합의 시 도입 확정 → B가 기준선 생성·README 갱신까지 수행 (실작업 1~2시간)
+- 팀 3인 합의 시 도입 확정 → B가 기준선 생성·적용 절차 문서화·README 갱신까지 수행 (실작업 1~2시간)
+- **baseline 생성 시점은 A의 canonical v1.2.0 + Backend 생성 결과 저장 구조 확정 후** (A 검토 반영 —
+  변경이 곧 예정된 상태에서 지금 만들면 초기 revision만 낭비)
 - 합의 전까지는 현행 수동 ALTER 방식 유지 (README의 주의 섹션 참조)
+
+## 검토 이력
+
+- 2026-07-17 A 검토: 방향 동의. 수정 2건 반영 — ① 무조건 `stamp head` 지침 철회(위 주의사항 2번),
+  ② baseline 시점을 v1.2.0 이후로. generation_* ALTER 사례는 `feat/lmk` 푸시본 기준 실재로 정정.
