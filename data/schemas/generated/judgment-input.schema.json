@@ -1,0 +1,375 @@
+{
+  "$defs": {
+    "Confidence": {
+      "description": "추출 신뢰도 3등급. 숫자 confidence는 허용하지 않는다(ADR 확정).",
+      "enum": [
+        "추출됨",
+        "불확실",
+        "실패"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "ContractContext": {
+      "additionalProperties": false,
+      "description": "계약 상황 입력 — 스냅샷에 포함되는 불변 분석 입력.",
+      "properties": {
+        "balance_payment_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Balance Payment Date"
+        },
+        "contract_id": {
+          "exclusiveMinimum": 0,
+          "title": "Contract Id",
+          "type": "integer"
+        },
+        "contract_stage": {
+          "$ref": "#/$defs/ContractStage"
+        },
+        "contract_type": {
+          "$ref": "#/$defs/ContractType"
+        },
+        "deposit_paid": {
+          "title": "Deposit Paid",
+          "type": "boolean"
+        },
+        "is_proxy_contract": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Proxy Contract"
+        },
+        "move_in_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Move In Date"
+        },
+        "schema_version": {
+          "const": "1.7.0",
+          "default": "1.7.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "signed": {
+          "title": "Signed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "contract_id",
+        "contract_type",
+        "contract_stage",
+        "deposit_paid",
+        "signed"
+      ],
+      "title": "ContractContext",
+      "type": "object"
+    },
+    "ContractStage": {
+      "enum": [
+        "계약금 입금 전",
+        "서명 전",
+        "계약 직후"
+      ],
+      "title": "ContractStage",
+      "type": "string"
+    },
+    "ContractType": {
+      "enum": [
+        "전세",
+        "보증부 월세",
+        "일반 월세"
+      ],
+      "title": "ContractType",
+      "type": "string"
+    },
+    "ExtractedField": {
+      "additionalProperties": false,
+      "description": "추출 필드 1개.\n\n- extracted_value: AI 최초 추출값. 사용자 수정으로 덮어쓰지 않는다(불변 보존).\n- user_corrected_value: 사용자 수정값(user_corrected_value 규약).\n- 규칙 입력(effective_value): user_corrected_value → normalized_value → extracted_value.\n- 판독 실패는 값 null + failure_reason 으로 표현한다.",
+      "properties": {
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "extracted_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extracted Value"
+        },
+        "failure_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Reason"
+        },
+        "field_name": {
+          "minLength": 1,
+          "title": "Field Name",
+          "type": "string"
+        },
+        "issue_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldIssueCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "normalized_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalized Value"
+        },
+        "source_evidence": {
+          "$ref": "#/$defs/SourceEvidence"
+        },
+        "user_corrected_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Corrected Value"
+        },
+        "verification_status": {
+          "$ref": "#/$defs/VerificationStatus",
+          "default": "unverified"
+        }
+      },
+      "required": [
+        "field_name",
+        "confidence"
+      ],
+      "title": "ExtractedField",
+      "type": "object"
+    },
+    "FieldIssueCode": {
+      "description": "J 판정에서 null·모호 값의 의미를 자유문 대신 구조화한다.",
+      "enum": [
+        "not_stated",
+        "unreadable",
+        "ambiguous",
+        "parse_failed",
+        "not_applicable"
+      ],
+      "title": "FieldIssueCode",
+      "type": "string"
+    },
+    "SourceEvidence": {
+      "additionalProperties": false,
+      "description": "원문 증거. page/text 키는 항상 존재하고 값은 둘 다 null 허용(ADR 확정).",
+      "properties": {
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "title": "SourceEvidence",
+      "type": "object"
+    },
+    "VerificationStatus": {
+      "description": "사용자 확인 상태 — 기존 minimum-mvp-extraction-v1 어휘 재사용.",
+      "enum": [
+        "unverified",
+        "confirmed",
+        "corrected"
+      ],
+      "title": "VerificationStatus",
+      "type": "string"
+    }
+  },
+  "$id": "lease-companion/judgment-input-v1.7.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "사용자 확인 완료 snapshot에서 만든 J 판정 전용 불변 effective input.",
+  "properties": {
+    "case_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Case Id"
+    },
+    "contract_context": {
+      "$ref": "#/$defs/ContractContext"
+    },
+    "contract_fields": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ExtractedField"
+      },
+      "title": "Contract Fields",
+      "type": "object"
+    },
+    "contract_id": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Id",
+      "type": "integer"
+    },
+    "input_snapshot_id": {
+      "minLength": 1,
+      "title": "Input Snapshot Id",
+      "type": "string"
+    },
+    "judgment_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Judgment Ids",
+      "type": "array"
+    },
+    "registry_fields": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ExtractedField"
+      },
+      "title": "Registry Fields",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "1.7.0",
+      "default": "1.7.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "input_snapshot_id",
+    "contract_id",
+    "judgment_ids",
+    "contract_context",
+    "contract_fields",
+    "registry_fields"
+  ],
+  "title": "JudgmentInput",
+  "type": "object",
+  "x-schema-version": "1.7.0"
+}

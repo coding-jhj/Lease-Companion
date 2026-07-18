@@ -104,7 +104,8 @@ export function ExtractionReviewPage() {
 
   const pendingCorrectionKeys = Object.keys(drafts).filter((key) => !savedDraftKeys.includes(key));
   const hasUnverified = fields.some(
-    (view) => (verificationByKey[view.key] ?? view.field.verification_status) === "unverified",
+    (view) => view.field.confidence !== "실패"
+      && (verificationByKey[view.key] ?? view.field.verification_status) === "unverified",
   );
 
   async function confirm() {
@@ -122,7 +123,7 @@ export function ExtractionReviewPage() {
         };
       });
       const request: CorrectionRequestDto = {
-        schema_version: "1.2.0",
+        schema_version: "1.7.0",
         contract_id: contractId,
         corrections,
       };

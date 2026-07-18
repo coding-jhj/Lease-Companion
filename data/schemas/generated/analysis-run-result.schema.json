@@ -1,5 +1,78 @@
 {
   "$defs": {
+    "JudgmentResult": {
+      "additionalProperties": false,
+      "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
+      "properties": {
+        "evidence_sources": {
+          "items": {
+            "$ref": "#/$defs/OfficialSource"
+          },
+          "title": "Evidence Sources",
+          "type": "array"
+        },
+        "judgment_id": {
+          "pattern": "^J(?:0[1-9]|1[0-2])$",
+          "title": "Judgment Id",
+          "type": "string"
+        },
+        "judgment_name": {
+          "minLength": 1,
+          "title": "Judgment Name",
+          "type": "string"
+        },
+        "limitations": {
+          "minLength": 1,
+          "title": "Limitations",
+          "type": "string"
+        },
+        "question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "recommended_actions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recommended Actions",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/RuleStatus"
+        },
+        "triggers_actions": {
+          "title": "Triggers Actions",
+          "type": "boolean"
+        },
+        "urgency": {
+          "$ref": "#/$defs/Urgency"
+        }
+      },
+      "required": [
+        "judgment_id",
+        "judgment_name",
+        "status",
+        "urgency",
+        "triggers_actions",
+        "reason",
+        "limitations"
+      ],
+      "title": "JudgmentResult",
+      "type": "object"
+    },
     "OfficialSource": {
       "additionalProperties": false,
       "description": "공식 근거 참조(정적 카탈로그 항목). 원문 증거(SourceEvidence)와 구분.",
@@ -179,10 +252,10 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/analysis-run-result-v1.2.0.schema.json",
+  "$id": "lease-companion/analysis-run-result-v1.7.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "분석 실행 1회의 R01~R10 결과 묶음.",
+  "description": "분석 실행 1회의 R 규칙 결과와 J 판정 결과 묶음.",
   "properties": {
     "analysis_run_id": {
       "minLength": 1,
@@ -211,6 +284,14 @@
       "title": "Input Snapshot Id",
       "type": "string"
     },
+    "judgments": {
+      "items": {
+        "$ref": "#/$defs/JudgmentResult"
+      },
+      "maxItems": 12,
+      "title": "Judgments",
+      "type": "array"
+    },
     "results": {
       "items": {
         "$ref": "#/$defs/RuleResult"
@@ -221,8 +302,8 @@
       "type": "array"
     },
     "schema_version": {
-      "const": "1.2.0",
-      "default": "1.2.0",
+      "const": "1.7.0",
+      "default": "1.7.0",
       "title": "Schema Version",
       "type": "string"
     }
@@ -235,5 +316,5 @@
   ],
   "title": "AnalysisRunResult",
   "type": "object",
-  "x-schema-version": "1.2.0"
+  "x-schema-version": "1.7.0"
 }

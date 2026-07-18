@@ -26,6 +26,8 @@ from lease_companion_ai.schemas.unified import (  # noqa: E402
     DocumentExtraction,
     GenerationResult,
     InputSnapshot,
+    JudgmentInput,
+    JudgmentResult,
 )
 
 OUTPUT_DIR = ROOT / "data" / "schemas" / "generated"
@@ -36,6 +38,8 @@ MODELS = {
     "input-snapshot": InputSnapshot,
     "correction-request": CorrectionRequest,
     "analysis-run-result": AnalysisRunResult,
+    "judgment-input": JudgmentInput,
+    "judgment-result": JudgmentResult,
     "generation-result": GenerationResult,
 }
 

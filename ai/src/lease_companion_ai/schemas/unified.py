@@ -21,11 +21,12 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-SchemaVersion = Literal["1.2.0"]
-SCHEMA_VERSION: SchemaVersion = "1.2.0"
+SchemaVersion = Literal["1.7.0"]
+SCHEMA_VERSION: SchemaVersion = "1.7.0"
+GenerationPromptVersion = Literal["v1"]
+GENERATION_PROMPT_VERSION: GenerationPromptVersion = "v1"
 
-# 필드 값 타입 — R01~R10 입력이 쓰는 형태만 허용(str·int·bool·list[str]·null).
-# dict 등 구조체 값은 거부한다. 새 값 형태가 필요하면 J 확장에서 타입을 "추가"한다.
+# 필드 값 타입 — 문서 추출·사용자 수정·판정 입력이 공유하는 wire 형태.
 class FrozenList(list):
     """JSON array 모양을 유지하는 불변 list."""
 
@@ -47,7 +48,8 @@ class FrozenDict(dict):
 
 
 FrozenStringList = Annotated[list[str], AfterValidator(FrozenList)]
-FieldValue = Union[str, int, bool, FrozenStringList, None]
+FrozenStringMap = Annotated[dict[str, str], AfterValidator(FrozenDict)]
+FieldValue = Union[str, int, bool, FrozenStringList, FrozenStringMap, None]
 ContractId = Annotated[int, Field(gt=0, strict=True)]
 
 
@@ -65,6 +67,16 @@ class VerificationStatus(str, Enum):
     UNVERIFIED = "unverified"
     CONFIRMED = "confirmed"
     CORRECTED = "corrected"
+
+
+class FieldIssueCode(str, Enum):
+    """J 판정에서 null·모호 값의 의미를 자유문 대신 구조화한다."""
+
+    NOT_STATED = "not_stated"
+    UNREADABLE = "unreadable"
+    AMBIGUOUS = "ambiguous"
+    PARSE_FAILED = "parse_failed"
+    NOT_APPLICABLE = "not_applicable"
 
 
 class DocumentType(str, Enum):
@@ -115,6 +127,24 @@ class ContractStage(str, Enum):
     AFTER_CONTRACT = "계약 직후"
 
 
+JUDGMENT_IDS: tuple[str, ...] = tuple(f"J{index:02d}" for index in range(1, 13))
+
+DEFAULT_JUDGMENT_URGENCY: dict[str, Urgency] = {
+    "J01": Urgency.IMMEDIATE,
+    "J02": Urgency.BEFORE_CONTRACT,
+    "J03": Urgency.BEFORE_CONTRACT,
+    "J04": Urgency.IMMEDIATE,
+    "J05": Urgency.IMMEDIATE,
+    "J06": Urgency.BEFORE_CONTRACT,
+    "J07": Urgency.BEFORE_CONTRACT,
+    "J08": Urgency.BEFORE_CONTRACT,
+    "J09": Urgency.REFERENCE,
+    "J10": Urgency.BEFORE_CONTRACT,
+    "J11": Urgency.REFERENCE,
+    "J12": Urgency.IMMEDIATE,
+}
+
+
 class ContractContext(BaseModel):
     """계약 상황 입력 — 스냅샷에 포함되는 불변 분석 입력."""
 
@@ -129,6 +159,80 @@ class ContractContext(BaseModel):
     move_in_date: date | None = None
     balance_payment_date: date | None = None
     is_proxy_contract: bool | None = None  # null = 모름
+
+
+class JudgmentInputSpec(BaseModel):
+    """판정 1개가 J 실행 경계에서 요구하는 canonical 입력 키."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    contract_fields: tuple[str, ...] = ()
+    registry_fields: tuple[str, ...] = ()
+    context_fields: tuple[str, ...] = ()
+
+
+JUDGMENT_INPUT_SPECS: dict[str, JudgmentInputSpec] = {
+    "J01": JudgmentInputSpec(
+        contract_fields=("landlord_name",),
+        registry_fields=("owner_names",),
+        context_fields=("is_proxy_contract",),
+    ),
+    "J02": JudgmentInputSpec(
+        contract_fields=("property_address",),
+        registry_fields=("property_address",),
+    ),
+    "J03": JudgmentInputSpec(
+        registry_fields=("owner_names", "is_joint_ownership", "owner_shares"),
+    ),
+    "J04": JudgmentInputSpec(
+        contract_fields=("agent_name", "agent_relationship", "proxy_authority_documents"),
+        context_fields=("is_proxy_contract",),
+    ),
+    "J05": JudgmentInputSpec(
+        contract_fields=("account_holder", "landlord_name"),
+        registry_fields=("owner_names",),
+        context_fields=("is_proxy_contract",),
+    ),
+    "J06": JudgmentInputSpec(
+        contract_fields=("deposit", "monthly_rent", "contract_payment", "balance_payment"),
+        context_fields=("contract_type",),
+    ),
+    "J07": JudgmentInputSpec(
+        contract_fields=(
+            "deposit",
+            "deposit_korean_amount",
+            "monthly_rent",
+            "monthly_rent_korean_amount",
+            "contract_payment",
+            "contract_payment_korean_amount",
+            "balance_payment",
+            "balance_payment_korean_amount",
+        ),
+        context_fields=("contract_type",),
+    ),
+    "J08": JudgmentInputSpec(
+        contract_fields=(
+            "contract_payment_date",
+            "balance_payment_date",
+            "move_in_date",
+            "start_date",
+            "end_date",
+        ),
+        context_fields=("move_in_date", "balance_payment_date"),
+    ),
+    "J09": JudgmentInputSpec(
+        contract_fields=("management_fee_present", "management_fee", "management_fee_items"),
+    ),
+    "J10": JudgmentInputSpec(
+        contract_fields=("deposit_return_condition", "deposit_return_clause"),
+    ),
+    "J11": JudgmentInputSpec(
+        contract_fields=("repair_responsibility", "repair_responsibility_clause"),
+    ),
+    "J12": JudgmentInputSpec(
+        contract_fields=("main_clauses", "special_clauses_present", "special_clauses"),
+    ),
+}
 
 
 # 현행 R01~R10이 실제로 사용하는 canonical 필드 — 키는 추출 결과에 항상 존재해야 한다.
@@ -180,6 +284,47 @@ R_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
     },
 }
 
+J_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
+    DocumentType.CONTRACT: {
+        "agent_name": str,
+        "agent_relationship": str,
+        "proxy_authority_documents": list,
+        "deposit": int,
+        "deposit_korean_amount": int,
+        "monthly_rent": int,
+        "monthly_rent_korean_amount": int,
+        "contract_payment": int,
+        "contract_payment_korean_amount": int,
+        "balance_payment": int,
+        "balance_payment_korean_amount": int,
+        "contract_payment_date": str,
+        "balance_payment_date": str,
+        "move_in_date": str,
+        "start_date": str,
+        "end_date": str,
+        "management_fee_present": bool,
+        "management_fee": int,
+        "management_fee_items": list,
+        "deposit_return_clause": str,
+        "repair_responsibility_clause": str,
+        "main_clauses": list,
+        "special_clauses_present": bool,
+        "special_clauses": list,
+    },
+    DocumentType.REGISTRY: {
+        "is_joint_ownership": bool,
+        "owner_shares": dict,
+    },
+}
+
+CANONICAL_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
+    document_type: {
+        **R_FIELD_TYPES_BY_DOCUMENT[document_type],
+        **J_FIELD_TYPES_BY_DOCUMENT[document_type],
+    }
+    for document_type in DocumentType
+}
+
 ALLOWED_RULE_STATUSES: dict[str, frozenset[RuleStatus]] = {
     "R01": frozenset({RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
     "R02": frozenset({RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
@@ -191,6 +336,56 @@ ALLOWED_RULE_STATUSES: dict[str, frozenset[RuleStatus]] = {
     "R08": frozenset({RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}),
     "R09": frozenset({RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}),
     "R10": frozenset({RuleStatus.CLEAR, RuleStatus.NOT_STATED, RuleStatus.CANNOT_CHECK}),
+}
+
+ALLOWED_JUDGMENT_STATUSES: dict[str, frozenset[RuleStatus]] = {
+    "J01": frozenset(
+        {RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}
+    ),
+    "J02": frozenset(
+        {RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}
+    ),
+    "J03": frozenset(
+        {RuleStatus.CHECK_NEEDED, RuleStatus.NOT_APPLICABLE, RuleStatus.CANNOT_CHECK}
+    ),
+    "J04": frozenset(
+        {RuleStatus.CHECK_NEEDED, RuleStatus.NOT_APPLICABLE, RuleStatus.CANNOT_CHECK}
+    ),
+    "J05": frozenset(
+        {RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}
+    ),
+    "J06": frozenset(
+        {RuleStatus.CLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED, RuleStatus.NOT_APPLICABLE}
+    ),
+    "J07": frozenset(
+        {RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}
+    ),
+    "J08": frozenset(
+        {RuleStatus.MATCH, RuleStatus.MISMATCH, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}
+    ),
+    "J09": frozenset(
+        {
+            RuleStatus.CLEAR,
+            RuleStatus.UNCLEAR,
+            RuleStatus.NOT_STATED,
+            RuleStatus.NOT_APPLICABLE,
+            RuleStatus.CHECK_NEEDED,
+        }
+    ),
+    "J10": frozenset(
+        {RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}
+    ),
+    "J11": frozenset(
+        {RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}
+    ),
+    "J12": frozenset(
+        {
+            RuleStatus.POSSIBLE_CONFLICT,
+            RuleStatus.CLEAR,
+            RuleStatus.CHECK_NEEDED,
+            RuleStatus.NOT_APPLICABLE,
+        }
+    ),
 }
 
 RESULT_TYPE_BY_RULE_ID: dict[str, ResultType] = {
@@ -205,6 +400,10 @@ RESULT_TYPE_BY_RULE_ID: dict[str, ResultType] = {
     "R09": ResultType.JUDGMENT,
     "R10": ResultType.FACT_FLAG,
 }
+
+CLEAN_STATUSES: frozenset[RuleStatus] = frozenset(
+    {RuleStatus.MATCH, RuleStatus.CLEAR, RuleStatus.NOT_APPLICABLE}
+)
 
 ACTION_TRIGGER_STATUSES: frozenset[RuleStatus] = frozenset(
     {
@@ -245,11 +444,12 @@ class ExtractedField(BaseModel):
     verification_status: VerificationStatus = VerificationStatus.UNVERIFIED
     confidence: Confidence
     source_evidence: SourceEvidence = Field(default_factory=SourceEvidence)
+    issue_code: FieldIssueCode | None = None
     failure_reason: str | None = None
 
     @field_validator("extracted_value", "normalized_value", "user_corrected_value")
     @classmethod
-    def _no_empty_list(cls, value: FieldValue) -> FieldValue:
+    def _no_empty_collection(cls, value: FieldValue) -> FieldValue:
         # 빈 목록 금지: "없음을 읽음"은 값으로, "못 읽음"은 null+failure_reason으로 표현한다.
         # (owner_names 등 list 필드는 non-null이면 항목 1개 이상 — ADR 권장 기준)
         if isinstance(value, list):
@@ -257,6 +457,17 @@ class ExtractedField(BaseModel):
                 raise ValueError("빈 목록은 허용하지 않습니다. 판독 실패는 null과 failure_reason으로 표현하세요.")
             if not all(isinstance(item, str) and item for item in value):
                 raise ValueError("목록 값은 비어 있지 않은 문자열이어야 합니다.")
+        if isinstance(value, dict):
+            if not value:
+                raise ValueError("빈 매핑은 허용하지 않습니다. 값이 없으면 null을 사용하세요.")
+            if not all(
+                isinstance(key, str)
+                and bool(key.strip())
+                and isinstance(item, str)
+                and bool(item.strip())
+                for key, item in value.items()
+            ):
+                raise ValueError("매핑 키와 값은 비어 있지 않은 문자열이어야 합니다.")
         return value
 
     @model_validator(mode="after")
@@ -282,28 +493,38 @@ class ExtractedField(BaseModel):
 def _validate_fields_map(
     fields: dict[str, ExtractedField], document_type: DocumentType
 ) -> dict[str, ExtractedField]:
-    for key, item in fields.items():
-        if key != item.field_name:
-            raise ValueError(f"fields 키 '{key}'와 field_name '{item.field_name}'이 다릅니다.")
+    for key, mapped_field in fields.items():
+        if key != mapped_field.field_name:
+            raise ValueError(
+                f"fields 키 '{key}'와 field_name '{mapped_field.field_name}'이 다릅니다."
+            )
     missing = REQUIRED_FIELDS_BY_TYPE[document_type] - fields.keys()
     if missing:
         raise ValueError(
             f"{document_type.value} 추출 결과에 필수 키가 없습니다: {sorted(missing)} "
             "(값을 못 읽어도 키는 null로 존재해야 합니다)"
         )
-    for field_name, expected_type in R_FIELD_TYPES_BY_DOCUMENT[document_type].items():
-        item = fields[field_name]
+    for field_name, expected_type in CANONICAL_FIELD_TYPES_BY_DOCUMENT[document_type].items():
+        typed_field = fields.get(field_name)
+        if typed_field is None:
+            continue
         for value_name in ("extracted_value", "normalized_value", "user_corrected_value"):
-            value = getattr(item, value_name)
+            value = getattr(typed_field, value_name)
             if value is None:
                 continue
             valid = (
-                isinstance(value, list)
-                if expected_type is list
+                isinstance(value, expected_type)
+                if expected_type in {list, dict}
                 else type(value) is expected_type
             )
             if not valid:
-                expected_name = "list[str]" if expected_type is list else expected_type.__name__
+                expected_name = (
+                    "list[str]"
+                    if expected_type is list
+                    else "dict[str, str]"
+                    if expected_type is dict
+                    else expected_type.__name__
+                )
                 raise ValueError(
                     f"{document_type.value}.{field_name}.{value_name}는 "
                     f"{expected_name} 또는 null이어야 합니다."
@@ -367,6 +588,162 @@ class InputSnapshot(BaseModel):
         return self
 
 
+def _validate_judgment_ids(judgment_ids: tuple[str, ...]) -> tuple[str, ...]:
+    if not judgment_ids:
+        raise ValueError("judgment_ids는 1개 이상이어야 합니다.")
+    if len(judgment_ids) != len(set(judgment_ids)):
+        raise ValueError("judgment_ids에 중복이 있습니다.")
+    unknown = [judgment_id for judgment_id in judgment_ids if judgment_id not in JUDGMENT_INPUT_SPECS]
+    if unknown:
+        raise ValueError(f"알 수 없는 judgment_id입니다: {unknown}")
+    expected_order = tuple(
+        judgment_id for judgment_id in JUDGMENT_IDS if judgment_id in judgment_ids
+    )
+    if judgment_ids != expected_order:
+        raise ValueError("judgment_ids는 J01~J12 canonical 순서를 따라야 합니다.")
+    return judgment_ids
+
+
+def _required_judgment_fields(
+    judgment_ids: tuple[str, ...], document_type: DocumentType
+) -> tuple[str, ...]:
+    attribute = (
+        "contract_fields"
+        if document_type is DocumentType.CONTRACT
+        else "registry_fields"
+    )
+    ordered: list[str] = []
+    for judgment_id in judgment_ids:
+        for field_name in getattr(JUDGMENT_INPUT_SPECS[judgment_id], attribute):
+            if field_name not in ordered:
+                ordered.append(field_name)
+    return tuple(ordered)
+
+
+def _validate_judgment_field_map(
+    values: dict[str, ExtractedField],
+    *,
+    judgment_ids: tuple[str, ...],
+    document_type: DocumentType,
+) -> None:
+    required = _required_judgment_fields(judgment_ids, document_type)
+    if set(values) != set(required):
+        missing = sorted(set(required) - values.keys())
+        unexpected = sorted(values.keys() - set(required))
+        raise ValueError(
+            f"{document_type.value} J 입력 필드 불일치: "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+    types = CANONICAL_FIELD_TYPES_BY_DOCUMENT[document_type]
+    for field_name, field in values.items():
+        if field.field_name != field_name:
+            raise ValueError(
+                f"{document_type.value} J 입력 키 '{field_name}'와 "
+                f"field_name '{field.field_name}'이 다릅니다."
+            )
+        if field.verification_status is VerificationStatus.UNVERIFIED:
+            raise ValueError(
+                f"{document_type.value}.{field_name} J 입력은 확인 완료 상태여야 합니다."
+            )
+        value = field.effective_value
+        if value is None:
+            if field.issue_code is None:
+                raise ValueError(
+                    f"{document_type.value}.{field_name}의 값이 null이면 "
+                    "J 입력에는 issue_code가 필요합니다."
+                )
+            continue
+        expected_type = types[field_name]
+        valid = (
+            isinstance(value, expected_type)
+            if expected_type in {list, dict}
+            else type(value) is expected_type
+        )
+        if not valid:
+            raise ValueError(
+                f"{document_type.value}.{field_name} J 입력 타입이 올바르지 않습니다."
+            )
+
+
+FrozenExtractedFieldMap = Annotated[
+    dict[str, ExtractedField], AfterValidator(FrozenDict)
+]
+
+
+class JudgmentInput(BaseModel):
+    """사용자 확인 완료 snapshot에서 만든 J 판정 전용 불변 effective input."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    input_snapshot_id: str = Field(min_length=1)
+    contract_id: ContractId
+    case_id: str | None = None
+    judgment_ids: tuple[str, ...] = Field(min_length=1, max_length=12)
+    contract_context: ContractContext
+    contract_fields: FrozenExtractedFieldMap
+    registry_fields: FrozenExtractedFieldMap
+
+    @model_validator(mode="after")
+    def _check(self) -> "JudgmentInput":
+        _validate_judgment_ids(self.judgment_ids)
+        if self.contract_context.contract_id != self.contract_id:
+            raise ValueError("JudgmentInput과 ContractContext의 contract_id가 다릅니다.")
+        _validate_judgment_field_map(
+            self.contract_fields,
+            judgment_ids=self.judgment_ids,
+            document_type=DocumentType.CONTRACT,
+        )
+        _validate_judgment_field_map(
+            self.registry_fields,
+            judgment_ids=self.judgment_ids,
+            document_type=DocumentType.REGISTRY,
+        )
+        return self
+
+
+def build_judgment_input(
+    snapshot: InputSnapshot,
+    *,
+    judgment_ids: tuple[str, ...] = JUDGMENT_IDS,
+) -> JudgmentInput:
+    """확인 완료 snapshot에서 선택한 J 판정이 요구하는 effective value만 복사한다."""
+
+    judgment_ids = _validate_judgment_ids(judgment_ids)
+    contract_names = _required_judgment_fields(judgment_ids, DocumentType.CONTRACT)
+    registry_names = _required_judgment_fields(judgment_ids, DocumentType.REGISTRY)
+    missing_contract = [
+        field_name
+        for field_name in contract_names
+        if field_name not in snapshot.confirmed_fields.contract
+    ]
+    missing_registry = [
+        field_name
+        for field_name in registry_names
+        if field_name not in snapshot.confirmed_fields.registry
+    ]
+    if missing_contract or missing_registry:
+        raise ValueError(
+            "J 입력 필드가 snapshot에 없습니다: "
+            f"contract={missing_contract}, registry={missing_registry}"
+        )
+    return JudgmentInput(
+        input_snapshot_id=snapshot.input_snapshot_id,
+        contract_id=snapshot.contract_id,
+        case_id=snapshot.case_id,
+        judgment_ids=judgment_ids,
+        contract_context=snapshot.contract_context,
+        contract_fields={
+            field_name: snapshot.confirmed_fields.contract[field_name]
+            for field_name in contract_names
+        },
+        registry_fields={
+            field_name: snapshot.confirmed_fields.registry[field_name]
+            for field_name in registry_names
+        },
+    )
+
+
 class OfficialSource(BaseModel):
     """공식 근거 참조(정적 카탈로그 항목). 원문 증거(SourceEvidence)와 구분."""
 
@@ -420,8 +797,47 @@ class RuleResult(BaseModel):
         return self
 
 
+class JudgmentResult(BaseModel):
+    """J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    judgment_name: str = Field(min_length=1)
+    status: RuleStatus
+    urgency: Urgency
+    triggers_actions: bool
+    reason: str = Field(min_length=1)
+    question: str | None = None
+    recommended_actions: list[str] = Field(default_factory=list)
+    evidence_sources: list[OfficialSource] = Field(default_factory=list)
+    limitations: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check(self) -> "JudgmentResult":
+        allowed = ALLOWED_JUDGMENT_STATUSES[self.judgment_id]
+        if self.status not in allowed:
+            values = ", ".join(sorted(status.value for status in allowed))
+            raise ValueError(
+                f"{self.judgment_id}에서 허용되지 않는 status입니다: "
+                f"{self.status.value} (허용: {values})"
+            )
+        expected_trigger = self.status in ACTION_TRIGGER_STATUSES
+        if self.triggers_actions is not expected_trigger:
+            raise ValueError(
+                f"status={self.status.value}의 triggers_actions는 "
+                f"{str(expected_trigger).lower()}이어야 합니다."
+            )
+        if self.status is RuleStatus.CANNOT_CHECK:
+            if self.urgency is not Urgency.NOT_ANALYZABLE:
+                raise ValueError("확인 불가 판정의 urgency는 분석 불가여야 합니다.")
+        elif self.urgency is Urgency.NOT_ANALYZABLE:
+            raise ValueError("분석 불가 urgency는 확인 불가 판정에만 사용할 수 있습니다.")
+        return self
+
+
 class AnalysisRunResult(BaseModel):
-    """분석 실행 1회의 R01~R10 결과 묶음."""
+    """분석 실행 1회의 R 규칙 결과와 J 판정 결과 묶음."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -431,6 +847,8 @@ class AnalysisRunResult(BaseModel):
     contract_id: ContractId
     case_id: str | None = None
     results: list[RuleResult] = Field(min_length=10, max_length=10)
+    # 1단계 R-only 실행은 빈 목록, 2단계 J 확장 실행은 J01~J12 전체를 요구한다.
+    judgments: list[JudgmentResult] = Field(default_factory=list, max_length=12)
 
     @model_validator(mode="after")
     def _check(self) -> "AnalysisRunResult":
@@ -440,6 +858,14 @@ class AnalysisRunResult(BaseModel):
         expected = [f"R{index:02d}" for index in range(1, 11)]
         if rule_ids != expected:
             raise ValueError("results에는 R01~R10이 순서대로 각각 정확히 1개씩 있어야 합니다.")
+        if self.judgments:
+            judgment_ids = [result.judgment_id for result in self.judgments]
+            expected_judgments = [f"J{index:02d}" for index in range(1, 13)]
+            if judgment_ids != expected_judgments:
+                raise ValueError(
+                    "judgments에는 J01~J12가 순서대로 각각 정확히 1개씩 있거나 "
+                    "R-only 실행을 나타내는 빈 목록이어야 합니다."
+                )
         return self
 
 
@@ -490,6 +916,60 @@ class RuleGuidance(BaseModel):
         return self
 
 
+class JudgmentGuidance(BaseModel):
+    """검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    explanation: str = Field(min_length=1)
+    questions: tuple[str, ...] = ()
+    signing_checklist: tuple[str, ...] = ()
+    post_contract_actions: tuple[str, ...] = ()
+    source_ids: tuple[str, ...] = ()
+    generation_method: GenerationMethod
+    provider_model: str | None = None
+    fallback_reason: str | None = None
+
+    @field_validator(
+        "questions", "signing_checklist", "post_contract_actions", "source_ids"
+    )
+    @classmethod
+    def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _validate_unique_non_empty(values, label="J 안내")
+
+    @model_validator(mode="after")
+    def _method_metadata(self) -> "JudgmentGuidance":
+        if self.generation_method is GenerationMethod.PROVIDER:
+            if self.provider_model is None or self.fallback_reason is not None:
+                raise ValueError("provider 생성에는 provider_model만 필요합니다.")
+        elif self.fallback_reason is None or self.provider_model is not None:
+            raise ValueError("template fallback에는 fallback_reason만 필요합니다.")
+        return self
+
+
+class StageGuidance(BaseModel):
+    """ContractContext와 J 판정을 결합한 단계별 사용자 행동 묶음."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    contract_context: ContractContext
+    before_deposit_questions: tuple[str, ...] = ()
+    signing_checklist: tuple[str, ...] = ()
+    post_contract_actions: tuple[str, ...] = ()
+    record_retention: tuple[str, ...] = ()
+
+    @field_validator(
+        "before_deposit_questions",
+        "signing_checklist",
+        "post_contract_actions",
+        "record_retention",
+    )
+    @classmethod
+    def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _validate_unique_non_empty(values, label="단계별 안내")
+
+
 class GenerationResult(BaseModel):
     """AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과."""
 
@@ -497,7 +977,10 @@ class GenerationResult(BaseModel):
 
     schema_version: SchemaVersion = SCHEMA_VERSION
     analysis_run_id: str = Field(min_length=1)
+    prompt_version: GenerationPromptVersion
     items: tuple[RuleGuidance, ...]
+    judgment_items: tuple[JudgmentGuidance, ...]
+    stage_guidance: StageGuidance
     guardrail_passed: Literal[True] = True
 
     @model_validator(mode="after")
@@ -505,6 +988,9 @@ class GenerationResult(BaseModel):
         rule_ids = [item.rule_id for item in self.items]
         if len(rule_ids) != len(set(rule_ids)):
             raise ValueError("생성 결과에는 중복 rule_id를 넣을 수 없습니다.")
+        judgment_ids = [item.judgment_id for item in self.judgment_items]
+        if len(judgment_ids) != len(set(judgment_ids)):
+            raise ValueError("생성 결과에는 중복 judgment_id를 넣을 수 없습니다.")
         return self
 
 
@@ -515,16 +1001,37 @@ def validate_generation_result_for_analysis(
 
     if generation.analysis_run_id != analysis.analysis_run_id:
         raise ValueError("GenerationResult와 AnalysisRunResult의 analysis_run_id가 다릅니다.")
+    if generation.stage_guidance.contract_context.contract_id != analysis.contract_id:
+        raise ValueError("GenerationResult ContractContext의 contract_id가 분석 결과와 다릅니다.")
     rules = {result.rule_id: result for result in analysis.results}
-    for item in generation.items:
-        rule = rules.get(item.rule_id)
+    for rule_guidance in generation.items:
+        rule = rules.get(rule_guidance.rule_id)
         if rule is None:
-            raise ValueError(f"분석 결과에 없는 rule_id입니다: {item.rule_id}")
+            raise ValueError(
+                f"분석 결과에 없는 rule_id입니다: {rule_guidance.rule_id}"
+            )
         allowed_source_ids = {source.source_id for source in rule.evidence_sources}
-        unknown_source_ids = set(item.source_ids) - allowed_source_ids
+        unknown_source_ids = set(rule_guidance.source_ids) - allowed_source_ids
         if unknown_source_ids:
             raise ValueError(
-                f"{item.rule_id}의 공식 근거가 아닌 source_id입니다: "
+                f"{rule_guidance.rule_id}의 공식 근거가 아닌 source_id입니다: "
+                f"{sorted(unknown_source_ids)}"
+            )
+    judgments = {result.judgment_id: result for result in analysis.judgments}
+    for judgment_guidance in generation.judgment_items:
+        judgment = judgments.get(judgment_guidance.judgment_id)
+        if judgment is None:
+            raise ValueError(
+                "분석 결과에 없는 judgment_id입니다: "
+                f"{judgment_guidance.judgment_id}"
+            )
+        allowed_source_ids = {
+            source.source_id for source in judgment.evidence_sources
+        }
+        unknown_source_ids = set(judgment_guidance.source_ids) - allowed_source_ids
+        if unknown_source_ids:
+            raise ValueError(
+                f"{judgment_guidance.judgment_id}의 공식 근거가 아닌 source_id입니다: "
                 f"{sorted(unknown_source_ids)}"
             )
     return generation
@@ -537,27 +1044,37 @@ class FieldCorrection(BaseModel):
 
     document_type: DocumentType
     field_name: str = Field(min_length=1)
-    corrected_value: str | int | bool | list[str]
+    corrected_value: str | int | bool | list[str] | dict[str, str]
 
     @field_validator("corrected_value")
     @classmethod
-    def _no_empty_list(cls, value: str | int | bool | list[str]) -> str | int | bool | list[str]:
-        if isinstance(value, list) and not value:
-            raise ValueError("빈 목록으로 수정할 수 없습니다.")
+    def _no_empty_collection(
+        cls, value: str | int | bool | list[str] | dict[str, str]
+    ) -> str | int | bool | list[str] | dict[str, str]:
+        if isinstance(value, (list, dict)) and not value:
+            raise ValueError("빈 목록·매핑으로 수정할 수 없습니다.")
         return value
 
     @model_validator(mode="after")
-    def _check_r_field_type(self) -> "FieldCorrection":
-        expected_type = R_FIELD_TYPES_BY_DOCUMENT[self.document_type].get(self.field_name)
+    def _check_canonical_field_type(self) -> "FieldCorrection":
+        expected_type = CANONICAL_FIELD_TYPES_BY_DOCUMENT[self.document_type].get(
+            self.field_name
+        )
         if expected_type is None:
             return self
         valid = (
-            isinstance(self.corrected_value, list)
-            if expected_type is list
+            isinstance(self.corrected_value, expected_type)
+            if expected_type in {list, dict}
             else type(self.corrected_value) is expected_type
         )
         if not valid:
-            expected_name = "list[str]" if expected_type is list else expected_type.__name__
+            expected_name = (
+                "list[str]"
+                if expected_type is list
+                else "dict[str, str]"
+                if expected_type is dict
+                else expected_type.__name__
+            )
             raise ValueError(
                 f"{self.document_type.value}.{self.field_name}.corrected_value는 {expected_name}이어야 합니다."
             )

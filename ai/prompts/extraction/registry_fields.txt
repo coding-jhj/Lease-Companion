@@ -4,6 +4,7 @@
 - 문서에 실제로 있는 값만 추출한다. 추론·창작 금지.
 - owner_names: 갑구의 **현재 소유자** 성명 목록(말소된 등기는 제외). 소유자를 읽을 수 없으면 null.
 - is_joint_ownership: 공동소유(지분권자가 2인 이상)면 true, 단독소유면 false, 알 수 없으면 null.
+- owner_shares: 현재 소유자별 지분을 `{소유자명: "분자/분모"}` 형태로 낸다. 단독소유는 `{"성명":"1/1"}`. 지분을 읽을 수 없으면 null이며 추정하지 않는다.
 - property_address: 표제부의 부동산 소재지.
 - issue_date: 열람일시 또는 발급일. YYYY-MM-DD. 없거나 읽을 수 없으면 null.
 - mortgage_present: 을구에 **말소되지 않은 근저당권**이 있으면 true, 없음이 확인되면 false.

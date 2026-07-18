@@ -43,6 +43,12 @@
               "type": "array"
             },
             {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
               "type": "null"
             }
           ],
@@ -66,6 +72,17 @@
           "title": "Field Name",
           "type": "string"
         },
+        "issue_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldIssueCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "normalized_value": {
           "anyOf": [
             {
@@ -82,6 +99,12 @@
                 "type": "string"
               },
               "type": "array"
+            },
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
             },
             {
               "type": "null"
@@ -111,6 +134,12 @@
               "type": "array"
             },
             {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
               "type": "null"
             }
           ],
@@ -128,6 +157,18 @@
       ],
       "title": "ExtractedField",
       "type": "object"
+    },
+    "FieldIssueCode": {
+      "description": "J 판정에서 null·모호 값의 의미를 자유문 대신 구조화한다.",
+      "enum": [
+        "not_stated",
+        "unreadable",
+        "ambiguous",
+        "parse_failed",
+        "not_applicable"
+      ],
+      "title": "FieldIssueCode",
+      "type": "string"
     },
     "SourceEvidence": {
       "additionalProperties": false,
@@ -172,7 +213,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/document-extraction-v1.2.0.schema.json",
+  "$id": "lease-companion/document-extraction-v1.7.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "문서 1건의 추출 결과. R01~R10 필수 키는 값이 null이어도 항상 존재한다.",
@@ -193,8 +234,8 @@
       "type": "object"
     },
     "schema_version": {
-      "const": "1.2.0",
-      "default": "1.2.0",
+      "const": "1.7.0",
+      "default": "1.7.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -213,5 +254,5 @@
   ],
   "title": "DocumentExtraction",
   "type": "object",
-  "x-schema-version": "1.2.0"
+  "x-schema-version": "1.7.0"
 }

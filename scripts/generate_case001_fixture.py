@@ -34,6 +34,7 @@ from lease_companion_ai.schemas.adapters import (  # noqa: E402
 )
 from lease_companion_ai.schemas.unified import (  # noqa: E402
     Confidence,
+    CANONICAL_FIELD_TYPES_BY_DOCUMENT,
     ContractContext,
     ContractStage,
     ContractType,
@@ -42,6 +43,7 @@ from lease_companion_ai.schemas.unified import (  # noqa: E402
     DocumentType,
     ExtractedField,
     FieldCorrection,
+    FieldIssueCode,
     SourceEvidence,
 )
 
@@ -67,6 +69,24 @@ def _extracted(name: str, value, page: int | None = None, text: str | None = Non
     )
 
 
+def _with_unreadable_fields(
+    fields: dict[str, ExtractedField], document_type: DocumentType
+) -> dict[str, ExtractedField]:
+    """대표 fixture에도 J 실행에 필요한 canonical 키를 모두 보존한다."""
+    completed = dict(fields)
+    for name in CANONICAL_FIELD_TYPES_BY_DOCUMENT[document_type]:
+        completed.setdefault(
+            name,
+            ExtractedField(
+                field_name=name,
+                confidence=Confidence.FAILED,
+                failure_reason="대표 fixture 문서에서 값을 읽지 못했습니다.",
+                issue_code=FieldIssueCode.UNREADABLE,
+            ),
+        )
+    return completed
+
+
 def contract_extraction() -> DocumentExtraction:
     """수정 전 계약서 추출 결과 — goldset 값 + account_holder 판독 실패."""
     fields = {
@@ -79,6 +99,7 @@ def contract_extraction() -> DocumentExtraction:
             field_name="account_holder",
             confidence=Confidence.FAILED,
             failure_reason="입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.",
+            issue_code=FieldIssueCode.UNREADABLE,
         ),
         "deposit_return_condition": _extracted(
             "deposit_return_condition", "명확", 2, "임대인은 계약 종료일에 보증금 전액을 반환한다."
@@ -89,7 +110,9 @@ def contract_extraction() -> DocumentExtraction:
         "rights_change_clause_present": _extracted("rights_change_clause_present", True, 2, "특약 제3항"),
     }
     return DocumentExtraction(
-        document_id=CONTRACT_DOC_ID, document_type=DocumentType.CONTRACT, fields=fields
+        document_id=CONTRACT_DOC_ID,
+        document_type=DocumentType.CONTRACT,
+        fields=_with_unreadable_fields(fields, DocumentType.CONTRACT),
     )
 
 
@@ -111,7 +134,9 @@ def registry_extraction() -> DocumentExtraction:
         "trust_present": _extracted("trust_present", False),
     }
     return DocumentExtraction(
-        document_id=REGISTRY_DOC_ID, document_type=DocumentType.REGISTRY, fields=fields
+        document_id=REGISTRY_DOC_ID,
+        document_type=DocumentType.REGISTRY,
+        fields=_with_unreadable_fields(fields, DocumentType.REGISTRY),
     )
 
 
@@ -181,7 +206,7 @@ def main() -> None:
         confirmed_at=CONFIRMED_AT,
     )
     analysis = analyze_snapshot(snapshot, analysis_run_id=ANALYSIS_RUN_ID)
-    generation = GenerationService().generate(analysis)
+    generation = GenerationService().generate(analysis, context)
     _self_check(analysis)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

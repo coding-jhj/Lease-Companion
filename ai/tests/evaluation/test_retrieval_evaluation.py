@@ -7,7 +7,7 @@ from lease_companion_ai.evaluation.retrieval import (
     evaluate_retrieval,
 )
 from lease_companion_ai.rag.models import RetrievalQuery
-from lease_companion_ai.rag.service import get_local_evidence_service
+from lease_companion_ai.rag.service import get_default_evidence_service
 from lease_companion_ai.schemas.unified import RuleStatus
 
 
@@ -26,7 +26,7 @@ def _case(case_id: str) -> RetrievalEvaluationCase:
 def test_retrieval_metrics_measure_official_local_corpus():
     metrics = evaluate_retrieval(
         [_case("CASE-001")],
-        get_local_evidence_service(),
+        get_default_evidence_service(),
         split="dev",
         measured_at=date(2026, 7, 17),
         config_version="rag-local-v1",
@@ -42,7 +42,7 @@ def test_dev_and_test_ids_cannot_mix():
     with pytest.raises(ValueError, match="TEST"):
         evaluate_retrieval(
             [_case("TEST-001")],
-            get_local_evidence_service(),
+            get_default_evidence_service(),
             split="dev",
             measured_at=date(2026, 7, 17),
             config_version="rag-local-v1",

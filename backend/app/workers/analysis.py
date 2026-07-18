@@ -16,6 +16,7 @@ from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvi
 from lease_companion_ai.schemas.adapters import analyze_snapshot, document_from_legacy
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
+    ContractContext,
     InputSnapshot,
     validate_generation_result_for_analysis,
 )
@@ -121,11 +122,16 @@ def run_analysis(analysis_run_pk: int) -> None:
         # 규칙 결과를 먼저 안전하게 저장한 뒤 생성 단계로 넘어간다 (2026-07-17 합의).
         run.generation_status = STATUS_RUNNING
         db.commit()
-        _run_generation(db, run, analysis)
+        _run_generation(db, run, analysis, snapshot.contract_context)
         db.commit()
 
 
-def _run_generation(db, run: AnalysisRun, analysis: AnalysisRunResult) -> None:
+def _run_generation(
+    db,
+    run: AnalysisRun,
+    analysis: AnalysisRunResult,
+    contract_context: ContractContext,
+) -> None:
     """생성·Guardrail 단계. 실패해도 규칙 결과(result)는 건드리지 않는다.
 
     provider 없음·개별 규칙 실패는 GenerationService가 template fallback으로 흡수하므로
@@ -133,7 +139,9 @@ def _run_generation(db, run: AnalysisRun, analysis: AnalysisRunResult) -> None:
     """
     try:
         provider = OpenAIGenerationProvider() if os.getenv("OPENAI_API_KEY") else None
-        generation = GenerationService(provider=provider).generate(analysis)
+        generation = GenerationService(provider=provider).generate(
+            analysis, contract_context
+        )
         # 저장 직전 canonical 연결 재검증 (analysis_run_id·rule_id·source_ids)
         validate_generation_result_for_analysis(analysis, generation)
         run.generation_result = generation.model_dump(mode="json")

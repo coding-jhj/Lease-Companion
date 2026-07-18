@@ -10,7 +10,12 @@ from typing import Any, cast
 
 from lease_companion_ai.providers.embeddings import EmbeddingProvider, validate_embeddings
 from lease_companion_ai.providers.errors import ProviderError
-from lease_companion_ai.rag.models import RagChunk, RetrievalHit, RetrievalQuery
+from lease_companion_ai.rag.models import (
+    EvidenceQuery,
+    RagChunk,
+    RetrievalHit,
+    query_to_search_text,
+)
 
 
 DEFAULT_COLLECTION_NAME = "lease_companion_official"
@@ -105,6 +110,8 @@ class ChromaVectorIndex:
         existing_fingerprint = (collection.metadata or {}).get("index_fingerprint")
         if collection.count() and existing_fingerprint != fingerprint:
             raise StaleIndexError("저장된 Chroma 인덱스는 재색인이 필요합니다.")
+        if collection.count() == len(chunks) and existing_fingerprint == fingerprint:
+            return fingerprint
         if not collection.count() and existing_fingerprint != fingerprint:
             collection.modify(metadata=metadata)
 
@@ -126,7 +133,7 @@ class ChromaVectorIndex:
 
     def search(
         self,
-        query: RetrievalQuery | str,
+        query: EvidenceQuery | str,
         *,
         top_k: int = 20,
     ) -> list[RetrievalHit]:
@@ -134,37 +141,36 @@ class ChromaVectorIndex:
             raise ValueError("top_k는 양수여야 합니다.")
         try:
             collection = self._client.get_collection(name=self._collection_name)
-        except Exception:
-            raise ProviderError("Chroma 인덱스가 준비되지 않았습니다.") from None
-        if collection.count() == 0:
-            return []
-
-        query_text = query.to_search_text() if isinstance(query, RetrievalQuery) else query
-        embedding = validate_embeddings(
-            [self._provider.embed_query(query_text)],
-            expected_count=1,
-        )[0]
-        try:
+            collection_count = collection.count()
+            if collection_count == 0:
+                return []
+            query_text = query_to_search_text(query)
+            embedding = validate_embeddings(
+                [self._provider.embed_query(query_text)],
+                expected_count=1,
+            )[0]
             query_embeddings = cast(
                 list[Sequence[float] | Sequence[int]],
                 [embedding],
             )
             result = collection.query(
                 query_embeddings=query_embeddings,
-                n_results=min(top_k, collection.count()),
+                n_results=min(top_k, collection_count),
                 include=["metadatas", "distances"],
             )
+            metadatas = (result.get("metadatas") or [[]])[0]
+            distances = (result.get("distances") or [[]])[0]
+            candidates: list[tuple[float, RagChunk]] = []
+            for metadata, distance in zip(metadatas, distances, strict=True):
+                if metadata is None or distance is None:
+                    continue
+                chunk = RagChunk.model_validate_json(metadata["rag_chunk_json"])
+                score = 1.0 / (1.0 + max(float(distance), 0.0))
+                candidates.append((score, chunk))
+        except ProviderError:
+            raise
         except Exception:
             raise ProviderError("Chroma vector 검색에 실패했습니다.") from None
-        metadatas = (result.get("metadatas") or [[]])[0]
-        distances = (result.get("distances") or [[]])[0]
-        candidates: list[tuple[float, RagChunk]] = []
-        for metadata, distance in zip(metadatas, distances, strict=True):
-            if metadata is None or distance is None:
-                continue
-            chunk = RagChunk.model_validate_json(metadata["rag_chunk_json"])
-            score = 1.0 / (1.0 + max(float(distance), 0.0))
-            candidates.append((score, chunk))
         ranked = sorted(candidates, key=lambda item: (-item[0], item[1].chunk_id))
         return [
             RetrievalHit(

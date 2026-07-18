@@ -50,6 +50,11 @@ export interface SituationRequestDto {
   is_proxy_contract: boolean | null;
 }
 
+export interface ContractContextDto extends SituationRequestDto {
+  schema_version: SchemaVersion;
+  contract_id: number;
+}
+
 export type UploadDocumentType = "계약서" | "등기사항증명서" | "중개대상물 확인설명서";
 
 export interface DocumentDto {
@@ -60,11 +65,12 @@ export interface DocumentDto {
   created_at: string;
 }
 
-export type FieldValue = string | number | boolean | string[] | null;
+export type FieldValue = string | number | boolean | string[] | Record<string, string> | null;
 export type VerificationStatus = "unverified" | "confirmed" | "corrected";
 export type ExtractionConfidence = "추출됨" | "불확실" | "실패";
+export type FieldIssueCode = "not_stated" | "unreadable" | "ambiguous" | "parse_failed" | "not_applicable";
 export type DocumentType = "contract" | "registry";
-export type SchemaVersion = "1.2.0";
+export type SchemaVersion = "1.7.0";
 
 export interface SourceEvidenceDto {
   page: number | null;
@@ -80,6 +86,7 @@ export interface ExtractedFieldDto {
   verification_status: VerificationStatus;
   confidence: ExtractionConfidence;
   source_evidence: SourceEvidenceDto;
+  issue_code: FieldIssueCode | null;
   failure_reason: string | null;
 }
 
@@ -108,6 +115,7 @@ export interface InputSnapshotDto {
   input_snapshot_id: string;
   contract_id: number;
   case_id: string | null;
+  contract_context: ContractContextDto;
   confirmed_fields: Record<DocumentType, Record<string, ExtractedFieldDto>>;
   confirmed_at: string;
 }
@@ -147,6 +155,19 @@ export interface RuleResultDto {
   completed: boolean;
 }
 
+export interface JudgmentResultDto {
+  judgment_id: `J${string}`;
+  judgment_name: string;
+  status: RuleStatus;
+  urgency: Urgency;
+  triggers_actions: boolean;
+  reason: string;
+  question: string | null;
+  recommended_actions: string[];
+  evidence_sources: OfficialSourceDto[];
+  limitations: string;
+}
+
 export interface AnalysisRunResultDto {
   schema_version: SchemaVersion;
   analysis_run_id: string;
@@ -154,6 +175,51 @@ export interface AnalysisRunResultDto {
   contract_id: number;
   case_id: string | null;
   results: RuleResultDto[];
+  judgments: JudgmentResultDto[];
+}
+
+export type GenerationMethod = "provider" | "template_fallback";
+
+export interface RuleGuidanceDto {
+  rule_id: string;
+  explanation: string;
+  questions: string[];
+  signing_checklist: string[];
+  post_contract_actions: string[];
+  source_ids: string[];
+  generation_method: GenerationMethod;
+  provider_model: string | null;
+  fallback_reason: string | null;
+}
+
+export interface JudgmentGuidanceDto {
+  judgment_id: string;
+  explanation: string;
+  questions: string[];
+  signing_checklist: string[];
+  post_contract_actions: string[];
+  source_ids: string[];
+  generation_method: GenerationMethod;
+  provider_model: string | null;
+  fallback_reason: string | null;
+}
+
+export interface StageGuidanceDto {
+  contract_context: ContractContextDto;
+  before_deposit_questions: string[];
+  signing_checklist: string[];
+  post_contract_actions: string[];
+  record_retention: string[];
+}
+
+export interface GenerationResultDto {
+  schema_version: SchemaVersion;
+  analysis_run_id: string;
+  prompt_version: "v1";
+  items: RuleGuidanceDto[];
+  judgment_items: JudgmentGuidanceDto[];
+  stage_guidance: StageGuidanceDto;
+  guardrail_passed: true;
 }
 
 export type AsyncRunStatus = "pending" | "running" | "completed" | "failed";
@@ -182,6 +248,9 @@ export interface AnalysisRunSummaryDto {
 export interface AnalysisRunDetailDto extends AnalysisRunSummaryDto {
   error: string | null;
   result: AnalysisRunResultDto | null;
+  generation_result: GenerationResultDto | null;
+  generation_status: AsyncRunStatus | null;
+  generation_error: string | null;
 }
 
 /** DTO와 분리된 화면 전용 타입. */

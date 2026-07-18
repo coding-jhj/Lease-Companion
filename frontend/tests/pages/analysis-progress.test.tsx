@@ -40,6 +40,9 @@ describe("AnalysisProgressPage", () => {
       error: null,
       created_at: "2026-07-16T00:00:00Z",
       result: null,
+      generation_result: null,
+      generation_status: null,
+      generation_error: null,
     }));
 
     expect(await screen.findByRole("heading", { name: "분석 완료" })).toBeInTheDocument();

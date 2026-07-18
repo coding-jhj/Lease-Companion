@@ -9,7 +9,7 @@ import pytest
 
 from lease_companion_ai.generation.service import GenerationService
 from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvider
-from lease_companion_ai.schemas.unified import AnalysisRunResult
+from lease_companion_ai.schemas.unified import AnalysisRunResult, ContractContext
 
 
 pytestmark = pytest.mark.skipif(
@@ -23,7 +23,10 @@ def test_case001_openai_generation_smoke():
     analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
     provider = OpenAIGenerationProvider(max_calls=10, max_output_tokens=1_500)
 
-    result = GenerationService(provider).generate(analysis)
+    context = ContractContext.model_validate_json(
+        (fixture.parent / "contract_context.json").read_text(encoding="utf-8")
+    )
+    result = GenerationService(provider).generate(analysis, context)
 
     assert result.analysis_run_id == analysis.analysis_run_id
     assert result.guardrail_passed is True

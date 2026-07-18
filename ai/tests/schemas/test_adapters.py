@@ -26,6 +26,8 @@ from lease_companion_ai.schemas.unified import (
     CorrectionRequest,
     DocumentType,
     FieldCorrection,
+    FieldIssueCode,
+    J_FIELD_TYPES_BY_DOCUMENT,
     REQUIRED_CONTRACT_FIELDS,
     REQUIRED_REGISTRY_FIELDS,
     ResultType,
@@ -83,6 +85,25 @@ def test_document_from_legacy_always_has_rule_field_keys():
     assert missing.extracted_value is None
     assert missing.confidence is Confidence.FAILED
     assert missing.failure_reason
+
+
+def test_document_from_legacy_always_has_judgment_field_keys_and_issue_codes():
+    contract = document_from_legacy(
+        {"document_type": "contract", "fields": {"landlord_name": "이정훈"}},
+        document_id="DOC-C",
+    )
+    registry = document_from_legacy(
+        {"document_type": "registry_record", "fields": {"owner_names": ["이정훈"]}},
+        document_id="DOC-R",
+    )
+    for doc, document_type in (
+        (contract, DocumentType.CONTRACT),
+        (registry, DocumentType.REGISTRY),
+    ):
+        assert J_FIELD_TYPES_BY_DOCUMENT[document_type].keys() <= doc.fields.keys()
+        for name in J_FIELD_TYPES_BY_DOCUMENT[document_type]:
+            if doc.fields[name].effective_value is None:
+                assert doc.fields[name].issue_code is FieldIssueCode.UNREADABLE
 
 
 def test_document_from_legacy_normalizes_empty_list_to_null():
@@ -144,6 +165,9 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
     direct = run_rules(gold_extraction["contract"], gold_extraction["registry"])
     direct_by_id = {r.rule_id: r for r in direct}
     assert len(analysis.results) == 10
+    assert [item.judgment_id for item in analysis.judgments] == [
+        f"J{index:02d}" for index in range(1, 13)
+    ]
     for result in analysis.results:
         legacy = direct_by_id[result.rule_id]
         assert result.status.value == legacy.status

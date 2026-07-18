@@ -136,6 +136,9 @@ def test_fixture_analysis_matches_rule_goldset():
             gold = {item["rule_id"]: item["status"] for item in record["gold_rules"]}
     assert gold is not None
     assert {r.rule_id: r.status.value for r in analysis.results} == gold
+    assert [item.judgment_id for item in analysis.judgments] == [
+        f"J{index:02d}" for index in range(1, 13)
+    ]
     assert all(
         result.result_type
         is (
@@ -165,4 +168,14 @@ def test_fixture_generation_result_links_to_analysis_sources():
         set(item.source_ids)
         <= {source.source_id for source in rules[item.rule_id].evidence_sources}
         for item in generation.items
+    )
+    judgments = {result.judgment_id: result for result in analysis.judgments}
+    assert all(item.judgment_id in judgments for item in generation.judgment_items)
+    assert all(
+        set(item.source_ids)
+        <= {
+            source.source_id
+            for source in judgments[item.judgment_id].evidence_sources
+        }
+        for item in generation.judgment_items
     )

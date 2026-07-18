@@ -6,8 +6,8 @@
   "expected_source_count": 39,
   "expected_source_hit_count": 4,
   "expected_source_recall": 0.10256410256410256,
-  "measured_at": "2026-07-17",
-  "provider_fallback_count": 0,
+  "measured_at": "2026-07-18",
+  "provider_fallback_count": 19,
   "query_count": 27,
   "source_retrieval_frequency": {
     "SRC-HTA-DECREE": 9,

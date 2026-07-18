@@ -92,6 +92,7 @@ class OpenAIGenerationProvider:
     @staticmethod
     def _serialize_request(request: GenerationRequest) -> str:
         payload = {
+            "prompt_version": request.prompt_version,
             "rule": {
                 "rule_id": request.rule_id,
                 "rule_name": request.rule_name,

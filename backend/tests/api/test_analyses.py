@@ -141,12 +141,22 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     detail = res.json()
     assert detail["status"] == "completed", detail.get("error")
     assert len(detail["result"]["results"]) == 10
+    assert [item["judgment_id"] for item in detail["result"]["judgments"]] == [
+        f"J{index:02d}" for index in range(1, 13)
+    ]
     # 생성 결과 분리 저장(2026-07-17 합의): provider 키 없으면 template fallback으로 정상 완료
     assert detail["generation_status"] == "completed"
     assert detail["generation_error"] is None
     generation = detail["generation_result"]
     assert generation["analysis_run_id"] == run_id
+    assert generation["prompt_version"] == "v1"
     assert generation["guardrail_passed"] is True
+    stage_guidance = generation["stage_guidance"]
+    assert stage_guidance["contract_context"]["contract_stage"] == "서명 전"
+    assert stage_guidance["contract_context"]["deposit_paid"] is False
+    assert stage_guidance["contract_context"]["signed"] is False
+    assert stage_guidance["signing_checklist"]
+    assert stage_guidance["post_contract_actions"] == []
     result_rule_ids = {r["rule_id"] for r in detail["result"]["results"]}
     for item in generation["items"]:
         assert item["rule_id"] in result_rule_ids
@@ -157,6 +167,7 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
 
     reloaded = AnalysisRunResult.model_validate(detail["result"])
     assert reloaded.analysis_run_id == run_id
+    assert len(reloaded.judgments) == 12
     # 수정값이 규칙 입력에 반영됐는지 — R06(계좌 명의)이 확인 불가/확인 필요가 아님
     r06 = next(r for r in reloaded.results if r.rule_id == "R06")
     assert r06.status.value in {"일치", "불일치"}

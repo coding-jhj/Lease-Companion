@@ -7,7 +7,12 @@ import re
 from collections import Counter
 from collections.abc import Callable, Sequence
 
-from lease_companion_ai.rag.models import RagChunk, RetrievalHit, RetrievalQuery
+from lease_companion_ai.rag.models import (
+    EvidenceQuery,
+    RagChunk,
+    RetrievalHit,
+    query_to_search_text,
+)
 
 
 Tokenizer = Callable[[str], list[str]]
@@ -71,13 +76,13 @@ class BM25Index:
 
     def search(
         self,
-        query: RetrievalQuery | str,
+        query: EvidenceQuery | str,
         *,
         top_k: int = 20,
     ) -> list[RetrievalHit]:
         if top_k <= 0:
             raise ValueError("top_k는 양수여야 합니다.")
-        query_text = query.to_search_text() if isinstance(query, RetrievalQuery) else query
+        query_text = query_to_search_text(query)
         query_terms = set(self._tokenizer(query_text))
         if not query_terms:
             return []

@@ -1,0 +1,3 @@
+{"case_id":"GR-001","with_evidence":true,"explanation":"이 계약은 안전합니다.","source_ids":["SRC-EVAL-001"],"expected_reasons":["prohibited_claim"]}
+{"case_id":"GR-002","with_evidence":false,"explanation":"내용을 확인하세요.","signing_checklist":["서명 전에 확인하세요."],"source_ids":[],"expected_reasons":["ungrounded_action","ungrounded_explanation"]}
+{"case_id":"GR-003","with_evidence":true,"explanation":"연결된 근거를 확인하세요.","source_ids":["SRC-NOT-ALLOWED"],"expected_reasons":["invalid_source_id"]}

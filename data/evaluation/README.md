@@ -22,9 +22,11 @@
 - 규칙 평가 정답은 공통 9개 상태·시급도로 표기한다.
 - 파인튜닝 평가는 `datasets/test`를 사용하며 train/validation과 분리한다.
 
-## 현재 상태 / TODO
+## 현재 상태
 
 - `end-to-end/` — held-out test 10쌍(TEST-001~010: 계약서·등기부·건축물대장 txt) + 최종 정답셋 3종(`final_testset_extraction.jsonl`·`final_testset_rule.jsonl`·`final_testset_rag.jsonl`). dev(`../sample/`)와 엔티티·표기 스타일 분리.
 - `extraction/` — `eval_extraction.py` 추출 평가 스크립트.
+- `generation/` — R/J 공통 Guardrail adversarial fixture 3건과 합성 PII tokenization·복원 fixture 5건.
 - `retrieval/` — 분리된 dev/test goldset과 `scripts/evaluate_retrieval.py` 평가 실행기. 실측 결과는 `../rag/evaluation/`에 기록한다.
-- TODO: rules·generation·routing 단계별 평가셋 작성(`docs/ai/evaluation-plan.md` 기준).
+- `results/` — `scripts/evaluate_ai_pipeline.py`로 생성한 외부 호출 없는 test 기준선. 추출·판독 실패 표현·사용자 수정·R01~R10·J01~J12·RAG·R/J template 생성·Guardrail·PII·end-to-end를 분리 기록한다.
+- 상용 provider·routing·주관 설명 품질은 비교 설정 또는 사람/독립 judge 라벨이 없어 미측정이다.

@@ -14,11 +14,13 @@ from datetime import datetime
 from typing import Any
 
 from lease_companion_ai.rules.minimum_mvp import run_rules
+from lease_companion_ai.rules.judgments import run_judgments
 from lease_companion_ai.schemas import minimum_mvp as legacy
 from lease_companion_ai.schemas.unified import (
     ACTION_TRIGGER_STATUSES,
-    REQUIRED_FIELDS_BY_TYPE,
     ALLOWED_RULE_STATUSES,
+    CANONICAL_FIELD_TYPES_BY_DOCUMENT,
+    REQUIRED_FIELDS_BY_TYPE,
     RESULT_TYPE_BY_RULE_ID,
     AnalysisRunResult,
     Confidence,
@@ -28,6 +30,7 @@ from lease_companion_ai.schemas.unified import (
     DocumentType,
     ExtractedField,
     FieldValue,
+    FieldIssueCode,
     InputSnapshot,
     OfficialSource,
     RuleResult,
@@ -35,6 +38,7 @@ from lease_companion_ai.schemas.unified import (
     SnapshotFields,
     Urgency,
     VerificationStatus,
+    build_judgment_input,
 )
 
 _READ_FAILURE_REASON = "문서에서 값을 읽지 못했습니다."
@@ -59,7 +63,9 @@ def document_from_legacy(
     doc_type = _LEGACY_TYPE_MAP[legacy_doc["document_type"]]
     raw_fields: dict[str, Any] = dict(legacy_doc.get("fields") or {})
 
-    field_names = set(raw_fields) | set(REQUIRED_FIELDS_BY_TYPE[doc_type])
+    field_names = set(raw_fields) | set(REQUIRED_FIELDS_BY_TYPE[doc_type]) | set(
+        CANONICAL_FIELD_TYPES_BY_DOCUMENT[doc_type]
+    )
     fields: dict[str, ExtractedField] = {}
     for name in sorted(field_names):
         value = raw_fields.get(name)
@@ -70,6 +76,7 @@ def document_from_legacy(
                 field_name=name,
                 confidence=Confidence.FAILED,
                 failure_reason=_READ_FAILURE_REASON,
+                issue_code=FieldIssueCode.UNREADABLE,
             )
         else:
             fields[name] = ExtractedField(
@@ -91,6 +98,7 @@ def apply_correction(field: ExtractedField, corrected_value: FieldValue) -> Extr
         update={
             "user_corrected_value": corrected_value,
             "verification_status": VerificationStatus.CORRECTED,
+            "issue_code": None if corrected_value is not None else field.issue_code,
         }
     )
     # model_copy는 validator를 다시 돌리지 않는다 — 수정값도 스키마 규칙을 지키도록 재검증.
@@ -204,7 +212,7 @@ def rule_result_from_legacy(result: legacy.RuleResult) -> RuleResult:
 
 
 def analyze_snapshot(snapshot: InputSnapshot, *, analysis_run_id: str) -> AnalysisRunResult:
-    """스냅샷의 effective value로 R01~R10 실행 후 실제 공식 근거를 검색한다."""
+    """확인 완료 스냅샷으로 R01~R10과 J01~J12를 실행한다."""
     legacy_results = run_rules(
         rule_inputs(snapshot.confirmed_fields.contract),
         rule_inputs(snapshot.confirmed_fields.registry),
@@ -215,12 +223,13 @@ def analyze_snapshot(snapshot: InputSnapshot, *, analysis_run_id: str) -> Analys
         contract_id=snapshot.contract_id,
         case_id=snapshot.case_id,
         results=[rule_result_from_legacy(result) for result in legacy_results],
+        judgments=run_judgments(build_judgment_input(snapshot)),
     )
     # 로컬 공식 원문 검색 실패는 규칙 분석 실패로 전파하지 않는다.
     try:
-        from lease_companion_ai.rag.service import get_local_evidence_service
+        from lease_companion_ai.rag.service import get_default_evidence_service
 
-        return get_local_evidence_service().enrich(analysis)
+        return get_default_evidence_service().enrich(analysis)
     except (OSError, ValueError):
         return analysis
 

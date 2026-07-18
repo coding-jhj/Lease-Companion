@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import re
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -15,6 +15,7 @@ from lease_companion_ai.schemas.unified import RuleStatus
 _SOURCE_ID_PATTERN = r"^SRC-[A-Z0-9-]+$"
 _CHUNK_ID_PATTERN = r"^SRC-[A-Z0-9-]+:[0-9a-f]{64}$"
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+SourceId = Annotated[str, Field(pattern=_SOURCE_ID_PATTERN)]
 
 
 class RagSourceMetadata(BaseModel):
@@ -77,6 +78,38 @@ class RetrievalQuery(BaseModel):
         if self.deidentified_clause_context:
             parts.append(self.deidentified_clause_context)
         return " ".join(parts)
+
+
+class JudgmentRetrievalQuery(BaseModel):
+    """판정별 허용 공식자료 범위를 포함한 J01~J12 검색 질의."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    judgment_name: str = Field(min_length=1)
+    status: RuleStatus
+    allowed_source_ids: tuple[SourceId, ...] = Field(min_length=1)
+    deidentified_clause_context: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("allowed_source_ids")
+    @classmethod
+    def _unique_sources(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        if len(values) != len(set(values)):
+            raise ValueError("J 검색 허용 source ID는 중복될 수 없습니다.")
+        return values
+
+    def to_search_text(self) -> str:
+        parts = [self.judgment_id, self.judgment_name, self.status.value]
+        if self.deidentified_clause_context:
+            parts.append(self.deidentified_clause_context)
+        return " ".join(parts)
+
+
+EvidenceQuery = RetrievalQuery | JudgmentRetrievalQuery
+
+
+def query_to_search_text(query: EvidenceQuery | str) -> str:
+    return query if isinstance(query, str) else query.to_search_text()
 
 
 class RetrievalHit(BaseModel):

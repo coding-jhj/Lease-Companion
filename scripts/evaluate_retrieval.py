@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from lease_companion_ai.evaluation.retrieval import evaluate_retrieval, load_gold_cases
-from lease_companion_ai.rag.service import get_local_evidence_service
+from lease_companion_ai.rag.service import build_evidence_service, load_local_official_chunks
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +16,7 @@ OUTPUT = ROOT / "data" / "rag" / "evaluation"
 
 
 def main() -> None:
-    service = get_local_evidence_service()
+    service = build_evidence_service(load_local_official_chunks(ROOT))
     rule_spec = ROOT / "data" / "rules" / "rule_spec.csv"
     inputs: dict[Literal["dev", "test"], tuple[Path, Path]] = {
         "dev": (

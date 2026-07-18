@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.providers.rerank import RerankProvider, validate_rerank_results
-from lease_companion_ai.rag.models import RetrievalHit, RetrievalQuery
+from lease_companion_ai.rag.models import EvidenceQuery, RetrievalHit
 
 
 class RerankingService:
@@ -15,7 +15,7 @@ class RerankingService:
 
     def rerank(
         self,
-        query: RetrievalQuery,
+        query: EvidenceQuery,
         hits: Sequence[RetrievalHit],
         *,
         top_n: int = 5,

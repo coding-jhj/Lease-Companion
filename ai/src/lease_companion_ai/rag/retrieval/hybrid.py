@@ -6,14 +6,14 @@ from collections.abc import Sequence
 from typing import Protocol
 
 from lease_companion_ai.providers.errors import ProviderError
-from lease_companion_ai.rag.models import RetrievalHit, RetrievalQuery
+from lease_companion_ai.rag.models import EvidenceQuery, RetrievalHit
 from lease_companion_ai.rag.retrieval.bm25 import BM25Index
 
 
 class VectorSearcher(Protocol):
     def search(
         self,
-        query: RetrievalQuery | str,
+        query: EvidenceQuery | str,
         *,
         top_k: int = 20,
     ) -> list[RetrievalHit]: ...
@@ -57,7 +57,7 @@ class HybridRetriever:
 
     def search(
         self,
-        query: RetrievalQuery | str,
+        query: EvidenceQuery | str,
         *,
         top_k: int = 20,
     ) -> list[RetrievalHit]:

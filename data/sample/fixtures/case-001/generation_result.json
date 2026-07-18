@@ -51,5 +51,140 @@
       ]
     }
   ],
-  "schema_version": "1.2.0"
+  "judgment_items": [
+    {
+      "explanation": "계약서 임대인=등기 소유자: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J01",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "계약 상대의 권한 근거를 확인하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "공동소유 여부·추가확인: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J03",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "공동소유자 전원의 동의·서명을 확인하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "입금 계좌 명의=계약 상대: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J05",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "입금 계좌 명의가 다른 이유를 확인하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "보증금·월세·계약금·잔금 기재 상태: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J06",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "필수 금액이 모두 기재됐습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "금액 숫자·한글 표기 일치: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J07",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "두 금액 표기를 대조하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "지급일·입주일·계약기간 일관성: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J08",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "날짜 순서와 계약 상황 입력을 대조하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "관리비 금액·포함 항목 명확성: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J09",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "관리비 세부 항목을 확인하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "본문·특약 상충 가능성: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "judgment_id": "J12",
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "어떤 조항이 우선하는지 확인하셨습니까?"
+      ],
+      "signing_checklist": [],
+      "source_ids": []
+    }
+  ],
+  "prompt_version": "v1",
+  "schema_version": "1.7.0",
+  "stage_guidance": {
+    "before_deposit_questions": [
+      "계약 상대의 권한 근거를 확인하셨습니까?",
+      "입금 계좌 명의가 다른 이유를 확인하셨습니까?",
+      "두 금액 표기를 대조하셨습니까?"
+    ],
+    "contract_context": {
+      "balance_payment_date": null,
+      "contract_id": 1001,
+      "contract_stage": "계약금 입금 전",
+      "contract_type": "전세",
+      "deposit_paid": false,
+      "is_proxy_contract": false,
+      "move_in_date": null,
+      "schema_version": "1.7.0",
+      "signed": false
+    },
+    "post_contract_actions": [],
+    "record_retention": [
+      "계약 관련 대화와 확인 자료를 보관하세요."
+    ],
+    "signing_checklist": [
+      "누락·모호한 금액을 계약서에 구체적으로 기재하세요.",
+      "모순되거나 누락된 날짜를 계약서에서 정리하세요.",
+      "관리비 금액·포함·별도 부과 항목을 문서로 확인하세요.",
+      "상충 가능 문구를 하나의 명확한 조건으로 정리하세요."
+    ]
+  }
 }

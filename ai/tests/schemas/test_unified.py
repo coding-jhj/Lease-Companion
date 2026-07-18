@@ -17,13 +17,21 @@ from lease_companion_ai.schemas.unified import (
     GenerationMethod,
     GenerationResult,
     InputSnapshot,
+    JudgmentInput,
+    JudgmentGuidance,
+    JudgmentResult,
+    JUDGMENT_IDS,
+    JUDGMENT_INPUT_SPECS,
     OfficialSource,
     ResultType,
     RuleGuidance,
     RuleResult,
     SnapshotFields,
+    StageGuidance,
     SourceEvidence,
+    Urgency,
     VerificationStatus,
+    build_judgment_input,
     validate_generation_result_for_analysis,
 )
 
@@ -66,9 +74,16 @@ def _registry_fields() -> dict[str, ExtractedField]:
 
 # --- ExtractedField ---
 
-def test_rejects_wrong_value_type():
+def test_rejects_wrong_nested_value_type():
     with pytest.raises(ValidationError):
-        _field(value={"nested": "dict"})
+        _field(value={"owner": 1})
+
+
+def test_accepts_and_freezes_string_mapping_value():
+    field = _field(name="owner_shares", value={"박성우": "1/1"})
+    assert field.effective_value == {"박성우": "1/1"}
+    with pytest.raises(TypeError):
+        field.extracted_value["박성우"] = "1/2"
 
 
 def test_rejects_numeric_confidence():
@@ -190,7 +205,7 @@ def test_correction_request_enforces_rule_field_type():
 
 
 def test_models_reject_unknown_schema_version():
-    assert SCHEMA_VERSION == "1.2.0"
+    assert SCHEMA_VERSION == "1.7.0"
     with pytest.raises(ValidationError):
         ContractContext(
             schema_version="1.0.0",
@@ -230,6 +245,131 @@ def _snapshot(contract_id=1, case_id=None, status=VerificationStatus.CONFIRMED):
         confirmed_fields=SnapshotFields(contract=contract, registry=registry),
         confirmed_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
     )
+
+
+def _judgment_snapshot(*, remove_contract=(), remove_registry=()) -> InputSnapshot:
+    snapshot = _snapshot()
+    contract_values = {
+        "agent_name": "박대리",
+        "agent_relationship": "가족",
+        "proxy_authority_documents": ["위임장", "인감증명서"],
+        "deposit": 100_000_000,
+        "deposit_korean_amount": 100_000_000,
+        "monthly_rent": 0,
+        "monthly_rent_korean_amount": 0,
+        "contract_payment": 10_000_000,
+        "contract_payment_korean_amount": 10_000_000,
+        "balance_payment": 90_000_000,
+        "balance_payment_korean_amount": 90_000_000,
+        "contract_payment_date": "2026-07-18",
+        "balance_payment_date": "2026-08-31",
+        "move_in_date": "2026-08-31",
+        "start_date": "2026-08-31",
+        "end_date": "2028-08-30",
+        "management_fee_present": True,
+        "management_fee": 100_000,
+        "management_fee_items": ["수도", "공용전기"],
+        "deposit_return_clause": "계약 종료일에 보증금을 반환한다.",
+        "repair_responsibility_clause": "주요 설비 수리는 임대인이 부담한다.",
+        "main_clauses": ["계약기간은 2026-08-31부터 2028-08-30까지다."],
+        "special_clauses_present": True,
+        "special_clauses": ["계약기간은 본문과 동일하다."],
+    }
+    registry_values = {
+        "is_joint_ownership": False,
+        "owner_shares": {"박성우": "1/1"},
+    }
+    contract = dict(snapshot.confirmed_fields.contract)
+    registry = dict(snapshot.confirmed_fields.registry)
+    contract.update(
+        {
+            name: _field(name, value, verification_status=VerificationStatus.CONFIRMED)
+            for name, value in contract_values.items()
+            if name not in remove_contract
+        }
+    )
+    registry.update(
+        {
+            name: _field(name, value, verification_status=VerificationStatus.CONFIRMED)
+            for name, value in registry_values.items()
+            if name not in remove_registry
+        }
+    )
+    return snapshot.model_copy(
+        update={"confirmed_fields": SnapshotFields(contract=contract, registry=registry)}
+    )
+
+
+def test_judgment_input_specs_cover_all_judgments_and_known_fields():
+    assert tuple(JUDGMENT_INPUT_SPECS) == JUDGMENT_IDS
+    assert JUDGMENT_INPUT_SPECS["J03"].registry_fields == (
+        "owner_names",
+        "is_joint_ownership",
+        "owner_shares",
+    )
+    assert JUDGMENT_INPUT_SPECS["J04"].context_fields == ("is_proxy_contract",)
+    assert JUDGMENT_INPUT_SPECS["J08"].context_fields == (
+        "move_in_date",
+        "balance_payment_date",
+    )
+
+
+def test_build_judgment_input_selects_exact_required_effective_values():
+    result = build_judgment_input(_judgment_snapshot(), judgment_ids=("J03",))
+    assert isinstance(result, JudgmentInput)
+    assert result.judgment_ids == ("J03",)
+    assert result.contract_fields == {}
+    assert {
+        name: field.effective_value for name, field in result.registry_fields.items()
+    } == {
+        "owner_names": ["박성우"],
+        "is_joint_ownership": False,
+        "owner_shares": {"박성우": "1/1"},
+    }
+    with pytest.raises(TypeError):
+        result.registry_fields["owner_names"] = ["변조"]
+
+
+def test_build_judgment_input_rejects_missing_or_unknown_inputs():
+    with pytest.raises(ValueError, match="owner_shares"):
+        build_judgment_input(
+            _judgment_snapshot(remove_registry=("owner_shares",)),
+            judgment_ids=("J03",),
+        )
+    with pytest.raises(ValueError, match="알 수 없는 judgment_id"):
+        build_judgment_input(_judgment_snapshot(), judgment_ids=("J13",))
+    with pytest.raises(ValueError, match="중복"):
+        build_judgment_input(_judgment_snapshot(), judgment_ids=("J01", "J01"))
+
+
+def test_judgment_input_direct_validation_requires_confirmed_matching_fields():
+    judgment_input = build_judgment_input(_judgment_snapshot(), judgment_ids=("J03",))
+    payload = judgment_input.model_dump()
+    payload["registry_fields"]["owner_shares"]["verification_status"] = "unverified"
+    with pytest.raises(ValidationError, match="확인 완료"):
+        JudgmentInput.model_validate(payload)
+
+    payload = judgment_input.model_dump()
+    payload["registry_fields"]["owner_shares"]["field_name"] = "owner_names"
+    with pytest.raises(ValidationError, match="field_name"):
+        JudgmentInput.model_validate(payload)
+
+
+def test_judgment_known_fields_enforce_types_and_corrections_accept_share_map():
+    fields = _registry_fields()
+    fields["owner_shares"] = _field("owner_shares", ["박성우:1/1"])
+    with pytest.raises(ValidationError, match="owner_shares"):
+        DocumentExtraction(
+            document_id="D1",
+            document_type=DocumentType.REGISTRY,
+            fields=fields,
+        )
+    correction = FieldCorrection(
+        document_type=DocumentType.REGISTRY,
+        field_name="owner_shares",
+        corrected_value={"박성우": "1/1"},
+    )
+    assert correction.corrected_value == {"박성우": "1/1"}
 
 
 def test_contract_id_uses_positive_backend_integer_identity():
@@ -409,6 +549,81 @@ def _complete_results() -> list[RuleResult]:
     ]
 
 
+def _judgment_result(
+    judgment_id: str = "J01",
+    status: str = "일치",
+    urgency: str | None = None,
+    **overrides,
+) -> JudgmentResult:
+    trigger = status not in {"일치", "명확", "적용 제외"}
+    payload = {
+        "judgment_id": judgment_id,
+        "judgment_name": f"{judgment_id} 판정",
+        "status": status,
+        "urgency": urgency or ("분석 불가" if status == "확인 불가" else "참고"),
+        "triggers_actions": trigger,
+        "reason": "판정 근거입니다.",
+        "limitations": "이 결과만으로 법률 결론을 내리지 않습니다.",
+    }
+    payload.update(overrides)
+    return JudgmentResult(**payload)
+
+
+def _complete_judgments() -> list[JudgmentResult]:
+    statuses = {
+        "J01": "일치",
+        "J02": "일치",
+        "J03": "적용 제외",
+        "J04": "적용 제외",
+        "J05": "일치",
+        "J06": "명확",
+        "J07": "일치",
+        "J08": "일치",
+        "J09": "명확",
+        "J10": "명확",
+        "J11": "명확",
+        "J12": "명확",
+    }
+    return [
+        _judgment_result(judgment_id=judgment_id, status=status)
+        for judgment_id, status in statuses.items()
+    ]
+
+
+@pytest.mark.parametrize(
+    ("judgment_id", "allowed", "rejected"),
+    [
+        ("J01", "일치", "명확"),
+        ("J02", "불일치", "미기재"),
+        ("J03", "적용 제외", "일치"),
+        ("J04", "확인 필요", "불일치"),
+        ("J05", "확인 불가", "명확"),
+        ("J06", "미기재", "불일치"),
+        ("J07", "불일치", "불명확"),
+        ("J08", "미기재", "확인 불가"),
+        ("J09", "불명확", "일치"),
+        ("J10", "불명확", "불일치"),
+        ("J11", "미기재", "적용 제외"),
+        ("J12", "상충 가능", "미기재"),
+    ],
+)
+def test_judgment_result_enforces_allowed_statuses(judgment_id, allowed, rejected):
+    assert _judgment_result(judgment_id, allowed).status.value == allowed
+    with pytest.raises(ValidationError, match=judgment_id):
+        _judgment_result(judgment_id, rejected)
+
+
+def test_judgment_result_enforces_action_trigger_and_unanalyzable_urgency():
+    assert _judgment_result("J01", "일치").triggers_actions is False
+    assert _judgment_result("J01", "불일치").triggers_actions is True
+    with pytest.raises(ValidationError, match="triggers_actions"):
+        _judgment_result("J01", "불일치", triggers_actions=False)
+    cannot_check = _judgment_result("J01", "확인 불가")
+    assert cannot_check.urgency is Urgency.NOT_ANALYZABLE
+    with pytest.raises(ValidationError, match="분석 불가"):
+        _judgment_result("J01", "확인 불가", urgency="즉시 확인")
+
+
 def test_analysis_run_rejects_duplicate_rule_ids_and_id_confusion():
     with pytest.raises(ValidationError):
         AnalysisRunResult(
@@ -439,6 +654,28 @@ def test_analysis_run_rejects_duplicate_rule_ids_and_id_confusion():
         results=_complete_results(),
     )
     assert [result.rule_id for result in complete.results] == [f"R{i:02d}" for i in range(1, 11)]
+    assert complete.judgments == []
+
+
+def test_analysis_run_accepts_empty_or_complete_judgments_only():
+    base = {
+        "analysis_run_id": "RUN-1",
+        "input_snapshot_id": "SNAP-1",
+        "contract_id": 1,
+        "results": _complete_results(),
+    }
+    complete = AnalysisRunResult(**base, judgments=_complete_judgments())
+    assert [item.judgment_id for item in complete.judgments] == [
+        f"J{i:02d}" for i in range(1, 13)
+    ]
+    with pytest.raises(ValidationError, match="J01~J12"):
+        AnalysisRunResult(**base, judgments=_complete_judgments()[:-1])
+    with pytest.raises(ValidationError, match="J01~J12"):
+        AnalysisRunResult(**base, judgments=list(reversed(_complete_judgments())))
+    duplicate = _complete_judgments()
+    duplicate[-1] = _judgment_result("J11", "명확")
+    with pytest.raises(ValidationError, match="J01~J12"):
+        AnalysisRunResult(**base, judgments=duplicate)
 
 
 def test_contract_context_matches_backend_api_values():
@@ -486,9 +723,19 @@ def test_generation_result_validates_analysis_and_official_sources():
         input_snapshot_id="SNAP-1",
         contract_id=1,
         results=results,
+        judgments=_complete_judgments(),
+    )
+    analysis.judgments[0].evidence_sources.append(
+        OfficialSource(
+            source_id="SRC-J01",
+            title="J01 공식 자료",
+            institution="공공기관",
+        )
     )
     generation = GenerationResult(
         analysis_run_id="RUN-1",
+        prompt_version="v1",
+        stage_guidance=StageGuidance(contract_context=_context()),
         items=(
             RuleGuidance(
                 rule_id="R01",
@@ -498,15 +745,36 @@ def test_generation_result_validates_analysis_and_official_sources():
                 fallback_reason="provider_unavailable",
             ),
         ),
+        judgment_items=(
+            JudgmentGuidance(
+                judgment_id="J01",
+                explanation="계약 상대와 등기 소유자를 확인하십시오.",
+                source_ids=("SRC-J01",),
+                generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+                fallback_reason="provider_unavailable",
+            ),
+        ),
     )
 
     assert generation.schema_version == SCHEMA_VERSION
     assert validate_generation_result_for_analysis(analysis, generation) is generation
 
+    missing_judgment_items = generation.model_dump()
+    missing_judgment_items.pop("judgment_items")
+    with pytest.raises(ValidationError, match="judgment_items"):
+        GenerationResult.model_validate(missing_judgment_items)
+
     with pytest.raises(ValueError, match="analysis_run_id"):
         validate_generation_result_for_analysis(
             analysis,
             generation.model_copy(update={"analysis_run_id": "RUN-2"}),
+        )
+    with pytest.raises(ValueError, match="contract_id"):
+        validate_generation_result_for_analysis(
+            analysis,
+            generation.model_copy(
+                update={"stage_guidance": StageGuidance(contract_context=_context(2))}
+            ),
         )
     with pytest.raises(ValueError, match="없는 rule_id"):
         validate_generation_result_for_analysis(
@@ -531,4 +799,46 @@ def test_generation_result_validates_analysis_and_official_sources():
                     )
                 }
             ),
+        )
+    with pytest.raises(ValueError, match="중복 judgment_id"):
+        GenerationResult(
+            analysis_run_id="RUN-1",
+            prompt_version="v1",
+            stage_guidance=StageGuidance(contract_context=_context()),
+            items=(),
+            judgment_items=(generation.judgment_items[0],) * 2,
+        )
+    with pytest.raises(ValueError, match="없는 judgment_id"):
+        validate_generation_result_for_analysis(
+            analysis.model_copy(update={"judgments": []}),
+            generation,
+        )
+    with pytest.raises(ValueError, match="공식 근거"):
+        validate_generation_result_for_analysis(
+            analysis,
+            generation.model_copy(
+                update={
+                    "judgment_items": (
+                        generation.judgment_items[0].model_copy(
+                            update={"source_ids": ("SRC-UNKNOWN",)}
+                        ),
+                    )
+                }
+            ),
+        )
+
+
+def test_judgment_guidance_enforces_id_and_generation_metadata():
+    with pytest.raises(ValidationError, match="judgment_id"):
+        JudgmentGuidance(
+            judgment_id="R01",
+            explanation="잘못된 ID 축입니다.",
+            generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+            fallback_reason="provider_unavailable",
+        )
+    with pytest.raises(ValidationError, match="provider_model"):
+        JudgmentGuidance(
+            judgment_id="J01",
+            explanation="provider 메타데이터가 부족합니다.",
+            generation_method=GenerationMethod.PROVIDER,
         )

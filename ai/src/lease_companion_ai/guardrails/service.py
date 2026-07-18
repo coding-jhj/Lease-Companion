@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import logging
 
-from lease_companion_ai.generation.models import RuleGuidance
-from lease_companion_ai.guardrails.grounding import grounding_violations
+from lease_companion_ai.generation.models import JudgmentGuidance, RuleGuidance
+from lease_companion_ai.guardrails.grounding import (
+    grounding_violations,
+    judgment_grounding_violations,
+)
 from lease_companion_ai.guardrails.immutable_rules import changed_rule_fields
 from lease_companion_ai.guardrails.prohibited_claims import has_prohibited_claim
-from lease_companion_ai.schemas.unified import RuleResult
+from lease_companion_ai.schemas.unified import JudgmentResult, RuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,30 @@ class GuardrailService:
                 extra={"rule_id": rule.rule_id, "reason_codes": unique_reasons},
             )
             raise GuardrailBlocked(rule.rule_id, unique_reasons)
+        return guidance
+
+    def enforce_judgment(
+        self, judgment: JudgmentResult, guidance: JudgmentGuidance
+    ) -> JudgmentGuidance:
+        texts = (
+            guidance.explanation,
+            *guidance.questions,
+            *guidance.signing_checklist,
+            *guidance.post_contract_actions,
+        )
+        reasons = list(judgment_grounding_violations(judgment, guidance))
+        if has_prohibited_claim(texts):
+            reasons.append("prohibited_claim")
+        unique_reasons = tuple(dict.fromkeys(reasons))
+        if unique_reasons:
+            logger.warning(
+                "generation_guardrail_blocked",
+                extra={
+                    "judgment_id": judgment.judgment_id,
+                    "reason_codes": unique_reasons,
+                },
+            )
+            raise GuardrailBlocked(judgment.judgment_id, unique_reasons)
         return guidance
 
     def enforce_rule_immutability(

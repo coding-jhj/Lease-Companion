@@ -1,0 +1,5 @@
+{"case_id":"PII-001","text":"임대인: 홍길동"}
+{"case_id":"PII-002","text":"주소: 서울특별시 종로구 새싹로 12"}
+{"case_id":"PII-003","text":"계좌번호: 110-123-456789"}
+{"case_id":"PII-004","text":"연락처: 010-1234-5678"}
+{"case_id":"PII-005","text":"이메일: tenant@example.com"}

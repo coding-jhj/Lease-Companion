@@ -46,6 +46,22 @@ class ContractFields(BaseModel):
     deposit_return_condition: ClarityStatus
     repair_responsibility: ClarityStatus
     rights_change_clause_present: bool
+    agent_relationship: Optional[str] = None
+    proxy_authority_documents: Optional[list[str]] = None
+    deposit_korean_amount: Optional[int] = None
+    monthly_rent_korean_amount: Optional[int] = None
+    contract_payment_korean_amount: Optional[int] = None
+    balance_payment_korean_amount: Optional[int] = None
+    contract_payment_date: Optional[str] = None
+    balance_payment_date: Optional[str] = None
+    management_fee_present: Optional[bool] = None
+    management_fee: Optional[int] = None
+    management_fee_items: Optional[list[str]] = None
+    deposit_return_clause: Optional[str] = None
+    repair_responsibility_clause: Optional[str] = None
+    main_clauses: Optional[list[str]] = None
+    special_clauses_present: Optional[bool] = None
+    special_clauses: Optional[list[str]] = None
 
 
 class RegistryFields(BaseModel):
@@ -57,6 +73,7 @@ class RegistryFields(BaseModel):
     seizure_present: Optional[bool]
     provisional_seizure_present: Optional[bool]
     trust_present: Optional[bool]
+    owner_shares: Optional[dict[str, str]] = None
 
 
 class GeminiExtractError(RuntimeError):

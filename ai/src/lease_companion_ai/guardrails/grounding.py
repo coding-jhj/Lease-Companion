@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
-from lease_companion_ai.generation.models import RuleGuidance
-from lease_companion_ai.schemas.unified import RuleResult
+from lease_companion_ai.generation.models import JudgmentGuidance, RuleGuidance
+from lease_companion_ai.schemas.unified import JudgmentResult, RuleResult
 
 
 def grounding_violations(
     rule: RuleResult, guidance: RuleGuidance
 ) -> tuple[str, ...]:
     allowed = {source.source_id for source in rule.evidence_sources}
+    violations: list[str] = []
+    if not set(guidance.source_ids).issubset(allowed):
+        violations.append("invalid_source_id")
+    if not guidance.source_ids:
+        if guidance.signing_checklist or guidance.post_contract_actions:
+            violations.append("ungrounded_action")
+        if "공식 근거 확인이 필요" not in guidance.explanation:
+            violations.append("ungrounded_explanation")
+    return tuple(violations)
+
+
+def judgment_grounding_violations(
+    judgment: JudgmentResult, guidance: JudgmentGuidance
+) -> tuple[str, ...]:
+    allowed = {source.source_id for source in judgment.evidence_sources}
     violations: list[str] = []
     if not set(guidance.source_ids).issubset(allowed):
         violations.append("invalid_source_id")

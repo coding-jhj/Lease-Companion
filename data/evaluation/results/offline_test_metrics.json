@@ -1,0 +1,394 @@
+{
+  "config_version": "offline-regex-bm25-template-v2",
+  "corrections": {
+    "corrected_status_count": 1,
+    "corrected_value_applied_count": 1,
+    "correction_count": 1,
+    "original_value_preserved_count": 1,
+    "pass_rate": 1.0
+  },
+  "end_to_end": {
+    "case_count": 10,
+    "completed_case_count": 10,
+    "completion_rate": 1.0,
+    "elapsed_seconds": 0.03561,
+    "external_provider_call_count": 0,
+    "external_provider_cost_krw": 0,
+    "mean_seconds_per_case": 0.003561
+  },
+  "extraction": {
+    "accuracy": 1.0,
+    "case_count": 10,
+    "field_count": 240,
+    "matched_count": 240,
+    "per_field": {
+      "contract.account_holder": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.agent_name": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.balance_payment": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.contract_payment": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.contract_type": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.deposit": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.deposit_return_condition": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.end_date": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.landlord_name": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.monthly_rent": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.move_in_date": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.property_address": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.repair_responsibility": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.rights_change_clause_present": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.start_date": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "contract.tenant_name": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.is_joint_ownership": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.issue_date": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.mortgage_present": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.owner_names": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.property_address": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.provisional_seizure_present": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.seizure_present": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      },
+      "registry.trust_present": {
+        "accuracy": 1.0,
+        "item_count": 10,
+        "matched_count": 10
+      }
+    },
+    "schema_valid_count": 20,
+    "schema_valid_rate": 1.0,
+    "unreadable_field_count": 14,
+    "unreadable_representation_valid_count": 14,
+    "unreadable_representation_valid_rate": 1.0
+  },
+  "generation": {
+    "active_judgment_count": 50,
+    "active_rule_count": 27,
+    "analysis_immutable_count": 10,
+    "analysis_immutable_rate": 1.0,
+    "case_count": 10,
+    "grounding_violation_count": 0,
+    "guidance_item_count": 27,
+    "judgment_grounding_violation_count": 0,
+    "judgment_guidance_item_count": 50,
+    "judgment_trigger_coverage_rate": 1.0,
+    "missing_evidence_fallback_count": 58,
+    "prohibited_claim_count": 0,
+    "prompt_version_match_count": 10,
+    "provider_call_count": 0,
+    "schema_valid_count": 10,
+    "schema_valid_rate": 1.0,
+    "subjective_quality": "not_measured:no_human_or_independent_judge_labels",
+    "template_fallback_count": 77,
+    "trigger_coverage_rate": 1.0
+  },
+  "guardrail": {
+    "blocked_count": 6,
+    "case_count": 6,
+    "expected_reason_match_count": 6,
+    "expected_reason_match_rate": 1.0,
+    "false_negative_count": 0,
+    "judgment_case_count": 3,
+    "rule_case_count": 3
+  },
+  "judgment_retrieval": {
+    "expected_source_count": 41,
+    "expected_source_recall": 0.0,
+    "locally_available_expected_source_count": 0,
+    "query_count": 32,
+    "retrieved_expected_source_count": 0,
+    "unofficial_source_exposure_count": 0
+  },
+  "judgments": {
+    "case_count": 47,
+    "judgment_count": 12,
+    "per_judgment": {
+      "J01": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J02": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J03": {
+        "accuracy": 1.0,
+        "item_count": 3,
+        "matched_count": 3
+      },
+      "J04": {
+        "accuracy": 1.0,
+        "item_count": 3,
+        "matched_count": 3
+      },
+      "J05": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J06": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J07": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J08": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J09": {
+        "accuracy": 1.0,
+        "item_count": 5,
+        "matched_count": 5
+      },
+      "J10": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J11": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      },
+      "J12": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
+      }
+    },
+    "status": {
+      "accuracy": 1.0,
+      "confusion_matrix": {
+        "명확": {
+          "명확": 5
+        },
+        "미기재": {
+          "미기재": 5
+        },
+        "불명확": {
+          "불명확": 3
+        },
+        "불일치": {
+          "불일치": 5
+        },
+        "상충 가능": {
+          "상충 가능": 1
+        },
+        "일치": {
+          "일치": 5
+        },
+        "적용 제외": {
+          "적용 제외": 5
+        },
+        "확인 불가": {
+          "확인 불가": 6
+        },
+        "확인 필요": {
+          "확인 필요": 12
+        }
+      },
+      "item_count": 47,
+      "matched_count": 47
+    },
+    "urgency": {
+      "accuracy": 1.0,
+      "confusion_matrix": {
+        "계약 전 확인": {
+          "계약 전 확인": 13
+        },
+        "분석 불가": {
+          "분석 불가": 6
+        },
+        "즉시 확인": {
+          "즉시 확인": 7
+        },
+        "참고": {
+          "참고": 21
+        }
+      },
+      "item_count": 47,
+      "matched_count": 47
+    }
+  },
+  "limitations": [
+    "추출 지표는 Gemini 3.5 Flash가 아닌 로컬 정규식 fallback 기준선입니다.",
+    "검색 지표는 외부 embedding·rerank 없이 로컬 BM25만 측정했습니다.",
+    "생성 지표는 template fallback의 구조·grounding·금지 단정만 측정했습니다.",
+    "쉬운 설명의 주관 품질은 사람 또는 독립 judge 라벨이 없어 측정하지 않았습니다.",
+    "실제 provider latency와 비용은 외부 호출 승인이 없어 측정하지 않았습니다."
+  ],
+  "measured_at": "2026-07-18",
+  "pii": {
+    "case_count": 5,
+    "restoration_pass_rate": 1.0,
+    "restored_exact_count": 5,
+    "tokenization_pass_rate": 1.0,
+    "tokenized_without_raw_count": 5
+  },
+  "retrieval": {
+    "case_count": 10,
+    "citation_count": 57,
+    "complete_citation_count": 57,
+    "config_version": "offline-regex-bm25-template-v2",
+    "expected_source_count": 39,
+    "expected_source_hit_count": 4,
+    "expected_source_recall": 0.10256410256410256,
+    "measured_at": "2026-07-18",
+    "provider_fallback_count": 19,
+    "query_count": 27,
+    "source_retrieval_frequency": {
+      "SRC-HTA-DECREE": 9,
+      "SRC-HTA-LAW": 48
+    },
+    "split": "test",
+    "top_k": 5,
+    "top_k_answer_inclusion_count": 4,
+    "top_k_answer_inclusion_rate": 0.14814814814814814,
+    "unofficial_source_exposure_count": 0
+  },
+  "rules": {
+    "case_count": 10,
+    "rule_count": 100,
+    "status": {
+      "accuracy": 1.0,
+      "confusion_matrix": {
+        "명확": {
+          "명확": 25
+        },
+        "미기재": {
+          "미기재": 2
+        },
+        "불명확": {
+          "불명확": 3
+        },
+        "불일치": {
+          "불일치": 5
+        },
+        "일치": {
+          "일치": 25
+        },
+        "적용 제외": {
+          "적용 제외": 23
+        },
+        "확인 필요": {
+          "확인 필요": 17
+        }
+      },
+      "item_count": 100,
+      "matched_count": 100
+    },
+    "urgency": {
+      "accuracy": 1.0,
+      "confusion_matrix": {
+        "계약 전 확인": {
+          "계약 전 확인": 18
+        },
+        "즉시 확인": {
+          "즉시 확인": 8
+        },
+        "참고": {
+          "참고": 1
+        }
+      },
+      "item_count": 27,
+      "matched_count": 27
+    }
+  },
+  "split": "test"
+}

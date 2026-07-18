@@ -17,6 +17,7 @@ from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvi
 
 def _request() -> GenerationRequest:
     return GenerationRequest(
+        prompt_version="v1",
         rule_id="R01",
         rule_name="임대인과 등기 소유자 일치",
         status="확인 필요",
@@ -74,6 +75,7 @@ def test_openai_provider_uses_fixed_model_structured_output_and_limits():
     assert call["store"] is False
     payload = json.loads(str(call["input"]))
     assert payload["rule"]["rule_id"] == "R01"
+    assert payload["prompt_version"] == "v1"
     assert payload["official_evidence"][0]["source_id"] == "SRC-HTA-LAW"
 
 
@@ -96,6 +98,7 @@ def test_openai_provider_enforces_call_budget():
 def test_openai_provider_rejects_request_without_official_evidence():
     request = _request()
     request = GenerationRequest(
+        prompt_version=request.prompt_version,
         rule_id=request.rule_id,
         rule_name=request.rule_name,
         status=request.status,

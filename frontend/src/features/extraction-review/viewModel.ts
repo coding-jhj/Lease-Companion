@@ -28,6 +28,9 @@ export function formatFieldValue(value: FieldValue): string {
   if (Array.isArray(value)) return value.join(", ");
   if (typeof value === "boolean") return value ? "있음" : "없음";
   if (typeof value === "number") return value.toLocaleString("ko-KR");
+  if (typeof value === "object") {
+    return Object.entries(value).map(([key, item]) => `${key}:${item}`).join(", ");
+  }
   return value;
 }
 
@@ -53,6 +56,15 @@ export function correctionValue(
   if (typeof original === "boolean") return rawValue === "있음" || rawValue === "true";
   if (Array.isArray(original)) {
     return rawValue.split(",").map((value) => value.trim()).filter(Boolean);
+  }
+  if (typeof original === "object" && original !== null) {
+    return Object.fromEntries(
+      rawValue
+        .split(",")
+        .map((entry) => entry.split(":"))
+        .filter((parts) => parts.length >= 2)
+        .map(([key, ...parts]) => [key.trim(), parts.join(":").trim()]),
+    );
   }
   // 실패로 원래 타입을 알 수 없는 현재 canonical 필드는 account_holder(string)다.
   if (documentType === "contract" && field.field_name === "account_holder") return rawValue;

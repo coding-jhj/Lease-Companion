@@ -51,8 +51,23 @@
 - dev 34건과 최종 test 10건을 분리해 Top-5 포함률·expected source recall·인용 메타데이터·비공식 출처 노출을 측정했다. 결과는 `data/rag/evaluation/`에 있다.
 - 검색 가능한 로컬 원문이 법령 2개뿐이고 나머지 정답 출처는 metadata-only라 현재 포함률은 낮다. 목표값으로 보정하지 않고 실측값과 제한을 함께 기록한다.
 
+## 배치 4 구현 상태 (2026-07-18)
+
+- `analyze_snapshot()`의 기본 evidence factory를 영속 Chroma vector+BM25 RRF Top-20 경로로 연결했다. Gemini 키가 없거나 embedding·Chroma 준비가 실패하면 BM25로 축소한다.
+- Cohere 키가 있으면 공식 검증 후보를 `rerank-v4.0-pro` Top-5로 재정렬한다. rerank 실패·빈 응답은 hybrid/BM25 순서를 유지한다.
+- source hash·청킹 버전·embedding model fingerprint가 같은 인덱스는 재임베딩하지 않는다. stale fingerprint는 생성 인덱스 컬렉션만 자동 재구축한다.
+- runtime factory·동일 인덱스 재사용·stale 재구축·BM25 fallback은 fake provider와 임시 Chroma client로 검증했다. 실제 유료 호출은 수행하지 않았다.
+
+## 배치 5 구현 상태 (2026-07-18)
+
+- R01~R10의 `RetrievalQuery`와 분리된 J01~J12 전용 `JudgmentRetrievalQuery`를 추가했다. J 질의는 판정 ID·판정명·상태·선택적 비식별 문맥과 판정별 허용 source ID를 포함한다.
+- 판정별 허용 source ID는 `data/rules/judgment_spec.csv`의 `official_source_ids`를 단일 입력으로 읽는다. 검색 후보는 이 allowlist에 포함된 `official_verified` 청크만 남긴 뒤 Top-5를 구성한다.
+- 행동이 발동된 J 판정만 근거를 보강한다. 검색 전후 `status`·`urgency`·`reason`은 동일하며, 허용 원문이 로컬 corpus에 없으면 다른 유사 자료를 붙이지 않고 `evidence_sources=[]`를 유지한다.
+- 현재 J 명세가 주로 참조하는 표준계약서·체크리스트·등기 자료는 metadata-only이므로 기본 로컬 실행에서 J 근거가 비는 것이 정상이다. 원문 추가 전까지 검색 성공률을 임의로 보정하지 않는다.
+
 ## 후속 TODO
 
 - 재배포 조건이 명시적으로 허용된 공식 원문의 실제 문서 구조를 확인한 뒤 기본 청킹 크기(`1200`)·중첩(`120`)을 평가
 - metadata-only 공식자료 중 허용 원문을 추가한 뒤 retrieval 평가 재실행
-- 별도 키·비용 승인 후 Gemini·Cohere smoke test
+- metadata-only 원문 추가 후 J01~J12 판정별 retrieval goldset·source recall 측정
+- 별도 키·비용 승인 후 Gemini·Cohere smoke test와 실측 latency·비용 기록

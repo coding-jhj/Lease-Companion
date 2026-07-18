@@ -3,13 +3,14 @@
 실행: python data/check_dataset.py
 검증 항목:
   1) rule_spec R01–R10 × 14열, 결과상태 어휘
-  2) 스키마 파싱
-  3) source_inventory / RAG manifest / rule_evidence_map 유효성
-  4) dev goldset 3종 case_id 집합 일치·상태 어휘·문서 존재·근거 유효
-  5) 커버리지: 규칙별 해당≥10·비해당≥10 (R07은 항상 발동 → 보고만)
-  6) 누수: dev∩test 문서 본문(case_id 제외) 중복 0
-  7) 테스트셋(final_testset) 파싱·문서 존재·근거 유효
-  8) 개인정보: 실제형 주민번호·휴대폰 패턴 0
+  2) judgment_spec J01–J12 메타데이터·상태·구현 경로
+  3) 스키마 파싱
+  4) source_inventory / RAG manifest / rule_evidence_map 유효성
+  5) dev R goldset 3종 정합성 + J01~J12 입력·상태 goldset 파싱
+  6) 커버리지: 규칙별 해당≥10·비해당≥10 (R07은 항상 발동 → 보고만)
+  7) 누수: dev∩test 문서 본문(case_id 제외) 중복 0
+  8) 테스트셋(final_testset) 파싱·문서 존재·근거 유효
+  9) 개인정보: 실제형 주민번호·휴대폰 패턴 0
 """
 import csv
 import hashlib
@@ -25,6 +26,7 @@ COMMON_STATUS = {"일치", "불일치", "명확", "불명확", "미기재", "상
 CLEAN = {"일치", "명확", "적용 제외"}                        # 비해당
 FIRED = {"불일치", "확인 필요", "불명확", "미기재", "상충 가능"}  # 해당
 RULE_IDS = [f"R{n:02d}" for n in range(1, 11)]
+JUDGMENT_IDS = [f"J{n:02d}" for n in range(1, 13)]
 QUOTA_RULES = [r for r in RULE_IDS if r != "R07"]           # R07은 항상 발동, 쿼터 제외
 QUOTA = 10
 
@@ -66,12 +68,23 @@ def main():
         for status in r["result_status"].split("|"):
             assert status in COMMON_STATUS, f"{r['rule_id']} 미허용 상태 {status}"
 
-    # 2) 스키마
+    # 2) J 판정 메타데이터
+    with open(os.path.join(BASE, "rules/judgment_spec.csv"), encoding="utf-8") as f:
+        judgment_rows = list(csv.DictReader(f))
+    assert [row["judgment_id"] for row in judgment_rows] == JUDGMENT_IDS
+    assert len(judgment_rows[0].keys()) == 15
+    for row in judgment_rows:
+        assert row["version"], f"{row['judgment_id']} version 누락"
+        assert row["implementation"].startswith("rules/judgments.py:_j")
+        for status in row["result_status"].split("|"):
+            assert status in COMMON_STATUS, f"{row['judgment_id']} 미허용 상태 {status}"
+
+    # 3) 스키마
     for name in ("legacy/contract_schema.json", "legacy/registry_schema.json"):
         with open(os.path.join(BASE, "schemas", name), encoding="utf-8") as f:
             json.load(f)
 
-    # 3) source_inventory / evidence_map
+    # 4) source_inventory / evidence_map
     with open(os.path.join(BASE, "rules/source_inventory.csv"), encoding="utf-8") as f:
         source_rows = list(csv.DictReader(f))
     assert len(source_rows) == 15, f"source_inventory 행 {len(source_rows)} != 15"
@@ -114,7 +127,7 @@ def main():
             assert row["source_id"] in sources, f"evidence_map 미확인 근거 {row['source_id']}"
             assert row["source_id"] in official_sources, f"evidence_map 비공식 근거 {row['source_id']}"
 
-    # 4) dev goldset 3종
+    # 5) dev R goldset 3종 + J 입력·상태 goldset
     er = os.path.join(SAMPLE, "expected-results")
     rule_g = read_jsonl(os.path.join(er, "rule_goldset.jsonl"))
     extr_g = read_jsonl(os.path.join(er, "extraction_goldset.jsonl"))
@@ -122,6 +135,17 @@ def main():
     ids = {c["case_id"] for c in rule_g}
     assert {c["case_id"] for c in extr_g} == ids == {c["case_id"] for c in rag_g}, "dev goldset case_id 불일치"
     assert len(ids) >= 30, f"dev 케이스 {len(ids)} < 30"
+    judgment_g = read_jsonl(os.path.join(er, "judgment_goldset.jsonl"))
+    assert [row["judgment_id"] for row in judgment_g] == JUDGMENT_IDS
+    judgment_case_ids = []
+    for row in judgment_g:
+        assert row["cases"], f"{row['judgment_id']} gold case 없음"
+        for case in row["cases"]:
+            judgment_case_ids.append(case["case_id"])
+            assert case["expected_status"] in COMMON_STATUS
+            assert case["contract_fields"] is not None
+            assert case["registry_fields"] is not None
+    assert len(judgment_case_ids) == len(set(judgment_case_ids)), "J gold case_id 중복"
 
     def validate(rule_rows, extr_rows, rag_rows, label):
         for c in rule_rows:
@@ -144,7 +168,7 @@ def main():
 
     validate(rule_g, extr_g, rag_g, "dev")
 
-    # 5) 커버리지: 규칙별 해당/비해당
+    # 6) 커버리지: 규칙별 해당/비해당
     tally = {rid: {"해당": 0, "비해당": 0, "불가": 0} for rid in RULE_IDS}
     for c in rule_g:
         for gr in c["gold_rules"]:
@@ -159,7 +183,7 @@ def main():
         assert tally[rid]["해당"] >= QUOTA, f"{rid} 해당 {tally[rid]['해당']} < {QUOTA}"
         assert tally[rid]["비해당"] >= QUOTA, f"{rid} 비해당 {tally[rid]['비해당']} < {QUOTA}"
 
-    # 6) 누수: dev vs test 문서 본문 중복 0
+    # 7) 누수: dev vs test 문서 본문 중복 0
     trule = read_jsonl(os.path.join(E2E, "final_testset_rule.jsonl"))
     textr = read_jsonl(os.path.join(E2E, "final_testset_extraction.jsonl"))
     trag = read_jsonl(os.path.join(E2E, "final_testset_rag.jsonl"))
@@ -173,26 +197,29 @@ def main():
     leak = dev_hashes & test_hashes
     assert not leak, f"누수: dev/test 동일 본문 {len(leak)}건"
 
-    # 7) 테스트셋
+    # 8) 테스트셋
     tids = {c["case_id"] for c in trule}
     assert {c["case_id"] for c in textr} == tids == {c["case_id"] for c in trag}, "test goldset case_id 불일치"
     assert tids and all(t.startswith("TEST") for t in tids), "test case_id 접두 오류"
     assert len(tids) >= 10, f"test 케이스 {len(tids)} < 10"
     validate(trule, textr, trag, "test")
 
-    # 8) 개인정보 스캔 (dev + test 문서 + RAG 로컬 원문)
+    # 9) 개인정보 스캔 (dev + test 문서 + RAG 로컬 원문)
     real_rrn = re.compile(r"\d{6}-[1-4]\d{6}")
     phone = re.compile(r"01[016789]-\d{3,4}-\d{4}")
     for root in (SAMPLE, E2E, os.path.join(BASE, "rag", "sources")):
         for dirpath, _, files in os.walk(root):
             for fn in files:
-                if not fn.endswith(".txt"):
+                if not fn.endswith((".txt", ".json", ".jsonl")):
                     continue
                 text = open(os.path.join(dirpath, fn), encoding="utf-8").read()
                 assert not real_rrn.search(text), f"{fn} 실제형 주민번호 패턴"
                 assert not phone.search(text), f"{fn} 휴대폰 패턴"
 
-    print(f"\nOK: dev {len(ids)}쌍 + test {len(tids)}쌍, 규칙 10, 커버리지 쿼터 충족, 누수 0, 개인정보 0")
+    print(
+        f"\nOK: dev {len(ids)}쌍 + test {len(tids)}쌍, 규칙 10, "
+        f"J gold {len(judgment_case_ids)}건, 누수 0, 개인정보 0"
+    )
 
 
 if __name__ == "__main__":

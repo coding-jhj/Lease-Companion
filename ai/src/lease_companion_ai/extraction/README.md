@@ -23,4 +23,5 @@
 ## 확정 / TODO
 
 - 확정(2026-07-14): 추출·구조화=상용 LLM Gemini 3.5 Flash(멀티모달). VLM은 OCR과 동일한 Gemini에 통합 — 별도 VLM 모델 없음.
-- Canonical 추출 스키마와 최소 MVP 매핑은 구현됐다. J01~J12 확장 필드와 독립 `field_mapper/` 계층은 후속 대상이다.
+- Canonical 추출 스키마와 J01~J12 필드 매핑은 구현됐다. 독립 `field_mapper/` 계층 분리는 후속 대상이다.
+- 외부 키가 없는 합성 TXT 경로는 `minimum_mvp.py`의 결정론적 fallback으로 금액·한글 금액·날짜·공동소유 지분·대리 권한·관리비·본문/특약을 추출한다. 실제 비정형 문서 일반화 성능으로 해석하지 않는다.

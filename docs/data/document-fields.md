@@ -10,6 +10,23 @@
 - **생성값(generated)**: 설명·질문·행동 등 LLM이 만든 값. 추출값과 절대 섞지 않는다.
 - 근거 부족 필드는 `정보 부족`으로 표기한다. 값을 지어내지 않는다.
 
+## Canonical 키·타입
+
+schema v1.7.0의 `JudgmentInput`이 사용하는 타입을 고정한다. 모든 값은 `ExtractedField` 안에 있으며 아래는 `effective_value` 타입이다. `null`은 허용하되 J 입력에서는 `issue_code`가 필요하다.
+
+| 문서 | 키 | 타입 |
+|---|---|---|
+| 계약서 | `landlord_name`, `property_address`, `account_holder`, `agent_name`, `agent_relationship` | `string | null` |
+| 계약서 | `proxy_authority_documents`, `management_fee_items`, `main_clauses`, `special_clauses` | `string[] | null` |
+| 계약서 | `deposit`, `monthly_rent`, `contract_payment`, `balance_payment`, 각 `*_korean_amount`, `management_fee` | `integer | null` |
+| 계약서 | `contract_payment_date`, `balance_payment_date`, `move_in_date`, `start_date`, `end_date` | `YYYY-MM-DD string | null` |
+| 계약서 | `management_fee_present`, `special_clauses_present`, `rights_change_clause_present` | `boolean | null` |
+| 계약서 | `deposit_return_condition`, `deposit_return_clause`, `repair_responsibility`, `repair_responsibility_clause` | `string | null` |
+| 등기사항증명서 | `owner_names` | `string[] | null` |
+| 등기사항증명서 | `is_joint_ownership` | `boolean | null` |
+| 등기사항증명서 | `owner_shares` | `object<string,string> | null` (`소유자명 → 분자/분모`) |
+| 등기사항증명서 | `property_address` | `string | null` |
+
 ## 계약서 / 특약 (contracts) — 필수 문서
 
 | 필드 | 정규화 | 관련 판정 |
@@ -67,6 +84,5 @@
 
 ## 미정 (TODO)
 
-- 필드별 데이터 타입·필수/선택·검증 규칙 → `data/schemas/` 확정 시 반영.
 - 문서 유형 추가 여부(임대차 신고 필증 등).
-- OCR/VLM 신뢰도 점수 필드 포함 여부.
+- OCR/VLM 신뢰도 수치 필드 포함 여부(현행 3등급 confidence 유지).

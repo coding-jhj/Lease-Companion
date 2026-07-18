@@ -36,6 +36,19 @@ _REGISTRY_DOCUMENT_NUMBER = re.compile(r"^\s*제\s*\d+\s*호\s*")
 _REGISTRY_TRAILING_EFFECT = re.compile(
     r"\s+\d+\s*층\s+\d+(?:\.\d+)?(?:\s*㎡)?\s*효력(?:\s.*)?$"
 )
+_KOREAN_DIGITS = {
+    "일": 1,
+    "이": 2,
+    "삼": 3,
+    "사": 4,
+    "오": 5,
+    "육": 6,
+    "칠": 7,
+    "팔": 8,
+    "구": 9,
+}
+_KOREAN_SMALL_UNITS = {"십": 10, "백": 100, "천": 1_000}
+_KOREAN_LARGE_UNITS = {"만": 10_000, "억": 100_000_000, "조": 1_000_000_000_000}
 
 
 def _unreadable(value: str | None) -> bool:
@@ -80,7 +93,12 @@ def _clean_address_candidate(value: str) -> str:
     value = _ADDRESS_LEADING_LABEL.sub("", value, count=1)
     value = _ADDRESS_TRAILING_FIELD.split(value, maxsplit=1)[0]
     value = _REGISTRY_TRAILING_EFFECT.sub("", value, count=1)
-    return value.strip(" \t:：")
+    value = re.split(
+        r"\s*[·ㆍ]\s*(?=(?:전용면적|공급면적|공동주택|구조|용도))",
+        value,
+        maxsplit=1,
+    )[0]
+    return value.strip(" \t:：─-")
 
 
 
@@ -103,7 +121,8 @@ def _address_near_label(text: str, label_pattern: str, lookahead: int = 6) -> st
 
 def _extract_contract_address(text: str) -> str | None:
     return _address_near_label(
-        text, r"(?:소\s*재\s*지|목적물\s*주소|임차주택의\s*표시)"
+        text,
+        r"(?:소\s*재\s*지|목적물\s*주소|임대\s*목적물|임차주택의\s*표시)",
     ) or _first(
         (
             r"(?:소\s*재\s*지|목적물\s*주소)\s*[:：]?\s*(?:\n\s*)?([^\n]+)",
@@ -186,6 +205,175 @@ def _extract_account_holder(text: str) -> str | None:
     )
 
 
+def _contract_type(text: str) -> str | None:
+    compact = re.sub(r"\s+", "", text)
+    for marker in ("보증부월세", "일반월세", "전세"):
+        if marker in compact:
+            return marker
+    return None
+
+
+def _money_line(text: str, pattern: str) -> str | None:
+    label = re.compile(pattern)
+    for line in text.splitlines():
+        match = label.search(line)
+        has_amount = (
+            "₩" in line
+            or bool(re.search(r"\d+\s*(?:만|억)?\s*원", line))
+            or bool(
+                re.search(
+                    r"(?:^|\s)금\s*[일이삼사오육칠팔구십백천만억조]+\s*원",
+                    line,
+                )
+            )
+        )
+        if match and has_amount:
+            return line[match.start() :].strip()
+    return None
+
+
+def _numeric_money(line: str | None) -> int | None:
+    if not line or _unreadable(line):
+        return None
+    won = re.search(r"₩\s*([\d,]+)", line)
+    if won:
+        return int(won.group(1).replace(",", ""))
+    amount = re.search(r"(?<![\d,])(\d+(?:\.\d+)?)\s*(억|만)?\s*원", line)
+    if not amount:
+        return None
+    multiplier = {None: 1, "만": 10_000, "억": 100_000_000}[amount.group(2)]
+    return int(float(amount.group(1)) * multiplier)
+
+
+def _korean_money(line: str | None) -> int | None:
+    if not line or _unreadable(line):
+        return None
+    match = re.search(
+        r"(?:^|\s)금\s*([일이삼사오육칠팔구십백천만억조]+)\s*원(?:정)?",
+        line,
+    )
+    if not match:
+        return None
+    total = 0
+    section = 0
+    number = 0
+    for character in match.group(1):
+        if character in _KOREAN_DIGITS:
+            number = _KOREAN_DIGITS[character]
+        elif character in _KOREAN_SMALL_UNITS:
+            section += (number or 1) * _KOREAN_SMALL_UNITS[character]
+            number = 0
+        else:
+            section += number
+            total += (section or 1) * _KOREAN_LARGE_UNITS[character]
+            section = 0
+            number = 0
+    return total + section + number
+
+
+def _dates(text: str) -> list[str]:
+    found: list[tuple[int, str]] = []
+    for pattern in (_DATE_KR, _DATE_NUM):
+        for match in pattern.finditer(text):
+            parsed = _parse_date(match.group(0))
+            if parsed is not None:
+                found.append((match.start(), parsed))
+    return [value for _, value in sorted(found)]
+
+
+def _line_matching(text: str, pattern: str) -> str | None:
+    expression = re.compile(pattern)
+    return next(
+        (line.strip() for line in text.splitlines() if expression.search(line)),
+        None,
+    )
+
+
+def _agent_fields(text: str) -> tuple[str | None, str | None, list[str] | None]:
+    agent_name = _first(
+        (
+            r"대리인\s*[:：]\s*([가-힣A-Za-z㈜]{2,30})",
+            r"의\s+대리인\s+([가-힣A-Za-z㈜]{2,30})",
+        ),
+        text,
+    )
+    relationship = _first(
+        (
+            r"관계\s*[:：]\s*([^\n)]+)",
+            r"대리인\s*[:：]\s*[^\n(]+\((임대인\s*위임)\)",
+        ),
+        text,
+    )
+    if agent_name is None:
+        return None, None, None
+    documents = [
+        document
+        for document in ("위임장", "인감증명서", "본인서명사실확인서")
+        if document in text
+    ]
+    return agent_name, relationship, documents or None
+
+
+def _management_fields(
+    text: str,
+) -> tuple[bool | None, int | None, list[str] | None]:
+    line = _line_matching(text, r"관리\s*비")
+    if line is None:
+        return False, None, None
+    if _unreadable(line):
+        return None, None, None
+    if "없음" in line or re.search(r"관리\s*비(?:는|가)?\s*없", line):
+        return False, None, None
+    item_match = re.search(r"\(([^)]*포함[^)]*)\)", line)
+    items: list[str] | None = None
+    if item_match:
+        values = re.sub(r"\s*포함\s*$", "", item_match.group(1))
+        items = [
+            item.strip()
+            for item in re.split(r"[·ㆍ,/]|\s+및\s+", values)
+            if item.strip()
+        ] or None
+    return True, _numeric_money(line), items
+
+
+def _clause_sections(
+    text: str,
+) -> tuple[list[str] | None, bool, list[str] | None]:
+    lines = text.splitlines()
+    special_index = next(
+        (index for index, line in enumerate(lines) if "특약사항" in line),
+        None,
+    )
+    boundary = special_index if special_index is not None else len(lines)
+    main = [
+        line.strip()
+        for line in lines[:boundary]
+        if line.strip()
+        and (
+            re.search(r"제\s*\d+\s*조", line)
+            or re.search(r"\[(?:가|제\s*\d+\s*항)\]", line)
+            or "임대차기간" in line
+        )
+    ]
+    if special_index is None:
+        return main or None, False, None
+    header = lines[special_index]
+    following = next(
+        (line.strip() for line in lines[special_index + 1 :] if line.strip()),
+        "",
+    )
+    if "없음" in header or following in {"없음", "(없음)", "기재 사항 없음"}:
+        return main or None, False, None
+    special: list[str] = []
+    for line in lines[special_index + 1 :]:
+        stripped = line.strip()
+        if re.match(r"\d+\.\s+", stripped):
+            break
+        if stripped.startswith(("-", "·", "ㆍ")):
+            special.append(stripped)
+    return main or None, True, special or None
+
+
 
 
 
@@ -223,7 +411,7 @@ def _active_lines(text: str) -> list[str]:
 def _ownership_section(text: str) -> str:
     """갑구 본문만 반환한다. 을구 권리자 이름을 소유자로 오인하지 않는다."""
     match = re.search(
-        r"(?:\[|【)?갑구(?:\]|】)?[^\r\n]*\r?\n(?P<body>.*?)(?=(?:\[|【)?을구(?:\]|】)?|\Z)",
+        r"(?:\[|【)?갑구(?:\]|】)?(?P<body>.*?)(?=(?:\[|【)?을구(?:\]|】)?|\Z)",
         text,
         re.DOTALL | re.IGNORECASE,
     )
@@ -362,8 +550,10 @@ def _apply_owner_change(state: dict[str, Fraction | None], body: str) -> bool:
     return "주소" in body and bool(state)
 
 
-def _current_owner_names(text: str) -> tuple[list[str] | None, list[str]]:
-    """갑구 소유권 사건을 적용해 현재 소유자 후보와 안전 경고를 반환한다."""
+def _current_owners(
+    text: str,
+) -> tuple[dict[str, Fraction | None] | None, list[str]]:
+    """갑구 사건을 적용해 현재 소유자별 지분과 안전 경고를 반환한다."""
     section = _ownership_section(text)
     entries, prefix = _ranked_ownership_entries(section)
     if entries and _holders(prefix):
@@ -373,9 +563,12 @@ def _current_owner_names(text: str) -> tuple[list[str] | None, list[str]]:
             "소유권 사건 일부를 읽지 못했습니다. 현재 소유자를 직접 확인하세요."
         ]
     if not entries:
-        names = list(dict.fromkeys(name for name, _ in _holders(section)))
-        if len(names) <= 1:
-            return (names or None, [])
+        holders = _holders(section)
+        if len(holders) <= 1:
+            if not holders:
+                return None, []
+            name, share = holders[0]
+            return {name: share or Fraction(1, 1)}, []
         return (
             None,
             ["소유권 사건의 순서를 읽지 못했습니다. 현재 소유자를 직접 확인하세요."],
@@ -423,7 +616,7 @@ def _current_owner_names(text: str) -> tuple[list[str] | None, list[str]]:
             "갑구 소유권 이력을 자동으로 확정하지 못했습니다. 현재 소유자를 직접 확인하세요."
         )
         return None, warnings
-    return list(state), warnings
+    return state, warnings
 
 
 def _finalize(document_type: str, fields: dict) -> DocumentExtraction:
@@ -444,6 +637,23 @@ def parse_contract(text: str) -> DocumentExtraction:
     landlord_name = _extract_party_name(text, "임대인", r"임\s*차\s*인|중\s*개")
     tenant_name = _extract_party_name(text, "임차인", r"임\s*대\s*인|중\s*개")
     account_holder = _extract_account_holder(text)
+    agent_name, agent_relationship, proxy_documents = _agent_fields(text)
+    deposit_line = _money_line(text, r"보\s*증\s*금")
+    rent_line = _money_line(text, r"(?:월\s*차임|차\s*임|월세)")
+    contract_payment_line = _money_line(text, r"계\s*약\s*금")
+    balance_payment_line = _money_line(text, r"잔\s*금")
+    contract_date_line = _line_matching(text, r"계약일")
+    contract_payment_date = _parse_date(contract_payment_line or "")
+    if (
+        contract_payment_date is None
+        and contract_payment_line is not None
+        and "계약 시" in contract_payment_line
+    ):
+        contract_payment_date = _parse_date(contract_date_line or "")
+    period_line = _line_matching(text, r"(?:존속\s*기간|임대차\s*기간|\]\s*기간)")
+    period_dates = _dates(period_line or "")
+    move_in_line = _line_matching(text, r"입주(?:일)?")
+    management_present, management_fee, management_items = _management_fields(text)
     return_line = _line_containing(text, "보증금", "반환")
     repair_line = next(
         (
@@ -463,15 +673,41 @@ def parse_contract(text: str) -> DocumentExtraction:
         ),
         None,
     )
+    main_clauses, special_present, special_clauses = _clause_sections(text)
 
     fields = {
+        "contract_type": _contract_type(text),
         "landlord_name": landlord_name,
         "tenant_name": tenant_name,
+        "agent_name": agent_name,
+        "agent_relationship": agent_relationship,
+        "proxy_authority_documents": proxy_documents,
         "property_address": property_address,
+        "deposit": _numeric_money(deposit_line),
+        "deposit_korean_amount": _korean_money(deposit_line),
+        "monthly_rent": _numeric_money(rent_line),
+        "monthly_rent_korean_amount": _korean_money(rent_line),
+        "contract_payment": _numeric_money(contract_payment_line),
+        "contract_payment_korean_amount": _korean_money(contract_payment_line),
+        "balance_payment": _numeric_money(balance_payment_line),
+        "balance_payment_korean_amount": _korean_money(balance_payment_line),
+        "contract_payment_date": contract_payment_date,
+        "balance_payment_date": _parse_date(balance_payment_line or ""),
+        "move_in_date": _parse_date(move_in_line or ""),
+        "start_date": period_dates[0] if period_dates else None,
+        "end_date": period_dates[1] if len(period_dates) > 1 else None,
+        "management_fee_present": management_present,
+        "management_fee": management_fee,
+        "management_fee_items": management_items,
         "account_holder": account_holder,
         "deposit_return_condition": _clause_status(return_line),
+        "deposit_return_clause": return_line,
         "repair_responsibility": _clause_status(repair_line, responsibility=True),
+        "repair_responsibility_clause": repair_line,
         "rights_change_clause_present": rights_line is not None,
+        "main_clauses": main_clauses,
+        "special_clauses_present": special_present,
+        "special_clauses": special_clauses,
     }
     return _finalize("contract", fields)
 
@@ -480,19 +716,32 @@ def parse_registry(text: str) -> DocumentExtraction:
     text = _normalize_extraction_text(text)
     property_address = _address_near_label(
         text,
-        r"(?:소\s*재\s*지\s*번(?:\s*[·,]\s*건물명칭\s*및\s*번호)?|소\s*재\s*지|부동산의\s*표시)",
+        r"(?:소\s*재\s*지\s*번(?:\s*[·,]\s*건물명칭\s*및\s*번호)?|소\s*재\s*지|부동산\s*(?:의\s*)?표시)",
         lookahead=10,
     ) or _first(
-        (r"(?:소재지번[^:：\r\n]*|소재지|부동산의\s*표시)\s*[:：]\s*([^\r\n]+)",),
+        (r"(?:소재지번[^:：\r\n]*|소재지|부동산\s*(?:의\s*)?표시)\s*[:：]\s*([^\r\n]+)",),
         text,
     )
-    owner_names, ownership_warnings = _current_owner_names(text)
+    owners, ownership_warnings = _current_owners(text)
+    owner_names = list(owners) if owners is not None else None
+    owner_shares = (
+        {
+            name: f"{share.numerator}/{share.denominator}"
+            for name, share in owners.items()
+            if share is not None
+        }
+        if owners is not None and all(share is not None for share in owners.values())
+        else None
+    )
     issue_line = next(
-        (line for line in text.splitlines() if "열람" in line or "발급일" in line), ""
+        (line for line in text.splitlines() if "발급일" in line),
+        next((line for line in text.splitlines() if "열람" in line), ""),
     )
     active = "\n".join(_active_lines(text))
     fields = {
         "owner_names": owner_names,
+        "is_joint_ownership": len(owner_names) > 1 if owner_names is not None else None,
+        "owner_shares": owner_shares,
         "property_address": property_address,
         "issue_date": _parse_date(issue_line),
         "mortgage_present": bool(re.search(r"근저당권(?:설정)?", active)),

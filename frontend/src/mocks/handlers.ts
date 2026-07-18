@@ -4,12 +4,14 @@ import registryExtractionFixture from "../../../data/sample/fixtures/case-001/re
 import correctionRequestFixture from "../../../data/sample/fixtures/case-001/correction_request.json";
 import inputSnapshotFixture from "../../../data/sample/fixtures/case-001/input_snapshot.json";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
+import generationResultFixture from "../../../data/sample/fixtures/case-001/generation_result.json";
 import type {
   AnalysisRunResultDto,
   ChecklistItemStateDto,
   ContractSummaryDto,
   CorrectionRequestDto,
   DocumentExtractionDto,
+  GenerationResultDto,
   InputSnapshotDto,
 } from "../types/api";
 import { CASE_001_CONTRACT_ID, mockOnlyMvpRoutes } from "./mockRoutes";
@@ -34,6 +36,7 @@ export const case001Fixtures = {
   correction_request: correctionRequestFixture as CorrectionRequestDto,
   input_snapshot: inputSnapshotFixture as InputSnapshotDto,
   analysis_run_result: analysisRunResultFixture as AnalysisRunResultDto,
+  generation_result: generationResultFixture as GenerationResultDto,
 };
 
 const checklist: ChecklistItemStateDto[] = [

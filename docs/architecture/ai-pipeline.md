@@ -1,6 +1,6 @@
 # AI 파이프라인
 
-계약 문서 입력부터 저장까지의 단계별 흐름과 컴포넌트 책임을 정의한다. 각 단계 출력은 구조화 스키마(`ai/src/lease_companion_ai/schemas/` — **Pydantic 모델 단일 원본**, → [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md))를 따르고, `pipelines`가 PoC·MVP 흐름을 각각 연결한다. 규칙 엔진은 R01~R10을 먼저 완성하고 J01~J12로 후속 확장한다(R과 J는 별도 축).
+계약 문서 입력부터 저장까지의 단계별 흐름과 컴포넌트 책임을 정의한다. 각 단계 출력은 구조화 스키마(`ai/src/lease_companion_ai/schemas/` — **Pydantic 모델 단일 원본**, → [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md))를 따르고, `pipelines`가 PoC·MVP 흐름을 각각 연결한다. 규칙 엔진은 R01~R10 축을 유지하면서 J01~J12 전체 판정을 별도 축으로 실행한다.
 
 ## 단계 흐름
 

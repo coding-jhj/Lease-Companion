@@ -1,6 +1,6 @@
 # 데이터 계약 v1 인수인계 (A → B·C)
 
-> schema_version **1.2.0** · 작성 2026-07-16 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)
+> schema_version **1.7.0** · 작성 2026-07-16 · 최근 갱신 2026-07-18 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)
 
 ## 1. 목적과 현재 상태
 
@@ -8,15 +8,19 @@
 |---|---|
 | Pydantic 단일 원본 | `ai/src/lease_companion_ai/schemas/unified.py` |
 | R01–R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
-| 생성 JSON Schema 6개 | `data/schemas/generated/` (손으로 수정 금지) |
+| 생성 JSON Schema 8개 | `data/schemas/generated/` (손으로 수정 금지) |
 | CASE-001 fixture 7개 | `data/sample/fixtures/case-001/` |
 
 **현재 상태를 정확히 구분한다:**
 
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
-- **현재 소비 상태**: Backend는 confirm·분석 worker·생성 결과 분리 저장에 canonical v1.2.0을 사용한다. Frontend는 실제 API DTO를 v1.2.0에 맞췄으며 `generation_result`의 null·실패·fallback 표시 등 일부 화면 통합은 후속 범위다.
-- **v1.2.0 생성 계약**: `GenerationResult`·`RuleGuidance`는 `schemas.unified`의 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`rule_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
+- **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend의 schema version·wire DTO는 v1.7.0에 맞췄으며 J·생성 결과 화면 소비는 후속 범위다.
+- **v1.4.0 판정 계약**: 기존 R/J 출력 분리를 유지하고, 확인 완료 snapshot에서 판정별 필수 `ExtractedField`를 복사하는 `JudgmentInput`을 추가했다. null J 입력은 구조화 `issue_code`를 요구한다.
+- **v1.5.0 ContractContext 활용 계약**: `GenerationResult.stage_guidance`가 immutable `ContractContext`와 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 기록한다.
+- **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.
+- **v1.7.0 J 생성 계약**: `JudgmentGuidance`와 `GenerationResult.judgment_items`를 추가했다. 기존 R `items`와 J `judgment_items`는 별도 ID 축이며, 각 source ID는 해당 분석 항목의 `evidence_sources`만 참조한다.
+- **생성 계약 유지**: `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`StageGuidance`는 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`contract_id`·`rule_id`·`judgment_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
 
 ## 2. 설치·검증 명령
 
@@ -52,15 +56,19 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case00
 | `ExtractedField` | 필드 1개 | field_name·extracted_value·normalized_value·user_corrected_value·verification_status·confidence·source_evidence(page/text)·failure_reason | (위 파일 내부) |
 | `CorrectionRequest` | 사용자 수정 요청 | `contract_id` · `corrections[]` (`document_type` · `field_name` · `corrected_value`) | `correction_request.json` |
 | `InputSnapshot` | 확인 완료 입력의 **불변** 사본 | input_snapshot_id·contract_id·case_id·**contract_context**·confirmed_fields·confirmed_at | `input_snapshot.json` |
+| `JudgmentInput` | J 판정 실행 전용 불변 입력 | input_snapshot_id·contract_id·case_id·judgment_ids·contract_context·contract_fields·registry_fields | (독립 JSON Schema 제공) |
 | `RuleResult` | 규칙 결과 1개 | **rule_id·rule_name·judgment_id·result_type·triggers_actions·status·urgency·reason·question·recommended_actions·evidence_sources·limitations·completed** | (아래 파일 내부) |
-| `AnalysisRunResult` | 분석 실행 1회 묶음 | analysis_run_id·input_snapshot_id·contract_id·case_id·results[RuleResult] | `analysis_run_result.json` |
-| `GenerationResult` | guardrail 통과 생성 결과 | schema_version·analysis_run_id·items[RuleGuidance]·guardrail_passed | `generation_result.json` |
+| `JudgmentResult` | J 판정 1개 | judgment_id·judgment_name·status·urgency·triggers_actions·reason·question·recommended_actions·evidence_sources·limitations | (AnalysisRunResult 내부, 독립 JSON Schema 제공) |
+| `AnalysisRunResult` | 분석 실행 1회 묶음 | analysis_run_id·input_snapshot_id·contract_id·case_id·results[RuleResult]·judgments[JudgmentResult] | `analysis_run_result.json` |
+| `JudgmentGuidance` | J 판정 1개의 생성 안내 | judgment_id·explanation·questions·signing_checklist·post_contract_actions·source_ids·generation_method·provider_model·fallback_reason | (GenerationResult 내부) |
+| `StageGuidance` | 계약 상황 기반 단계별 행동 | contract_context·before_deposit_questions·signing_checklist·post_contract_actions·record_retention | (GenerationResult 내부) |
+| `GenerationResult` | guardrail 통과 생성 결과 | schema_version·analysis_run_id·prompt_version·items[RuleGuidance]·judgment_items[JudgmentGuidance]·stage_guidance·guardrail_passed | `generation_result.json` |
 
-**Enum 허용값**: `confidence` = `추출됨`·`불확실`·`실패`(숫자 거부) / `verification_status` = `unverified`·`confirmed`·`corrected` / `result_type` = `judgment`·`fact_flag` / `status` 9개·`urgency` 5개 = 루트 `AGENTS.md` 기준(R별 허용 status는 `data/rules/rule_spec.csv`와 일치하도록 모델이 검증) / `document_type` = `contract`·`registry`.
+**Enum 허용값**: `confidence` = `추출됨`·`불확실`·`실패`(숫자 거부) / `verification_status` = `unverified`·`confirmed`·`corrected` / `issue_code` = `not_stated`·`unreadable`·`ambiguous`·`parse_failed`·`not_applicable` / `result_type` = `judgment`·`fact_flag` / `status` 9개·`urgency` 5개 = 루트 `AGENTS.md` 기준 / `document_type` = `contract`·`registry`.
 
 **공통 값 규약**: `contract_id` = Backend DB와 같은 **양의 정수**(fixture `1001`, 문자열·bool 거부) / `case_id` = 합성 평가 문자열(`CASE-001`) / `contract_type` = `전세`·`보증부 월세`·`일반 월세` / `contract_stage` = `계약금 입금 전`·`서명 전`·`계약 직후`.
 
-**공통 규칙**: R01–R10 필수 13키는 값이 null이어도 항상 존재 · 판독 실패 = null + `confidence:"실패"` + `failure_reason` · 빈 목록 금지 · `source_evidence.page`/`text`는 키 상존·값 null 허용 · 필드 타입은 모델이 강제(예: `owner_names`는 비어 있지 않은 `string[]`) · `InputSnapshot`은 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증하며 애플리케이션의 일반 변경 API에서 내부 필드·목록·매핑 수정을 차단 · `AnalysisRunResult`는 R01–R10을 순서대로 정확히 10개 요구.
+**공통 규칙**: R01–R10 필수 13키는 값이 null이어도 항상 존재 · 판독 실패 = null + `confidence:"실패"` + `failure_reason` · 빈 목록 금지 · `source_evidence.page`/`text`는 키 상존·값 null 허용 · 필드 타입은 모델이 강제(예: `owner_names`는 비어 있지 않은 `string[]`) · `InputSnapshot`은 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증하며 애플리케이션의 일반 변경 API에서 내부 필드·목록·매핑 수정을 차단 · `AnalysisRunResult.results`는 R01–R10을 순서대로 정확히 10개 요구 · `judgments`는 빈 목록 또는 J01~J12 전체 순서만 허용.
 
 **결과 역할·행동 규칙**: `result_type`은 R01·R02·R06·R08·R09=`judgment`, R03·R04·R05·R07·R10=`fact_flag`로 고정된다. `triggers_actions`는 현재 status가 `일치`·`명확`·`적용 제외`면 `false`, 그 외(`불일치`·`불명확`·`미기재`·`상충 가능`·`확인 필요`·`확인 불가`)면 `true`다. 모델은 잘못된 조합을 거부한다.
 
@@ -99,7 +107,7 @@ CorrectionRequest.corrected_value
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - `AnalysisRunResult`를 먼저 저장하고, `GenerationResult`는 `validate_generation_result_for_analysis()` 통과 후 별도 `generation_result`에 저장한다. 생성 실패는 규칙 `result`를 실패로 바꾸지 않는다.
 
-**B 인계 확인 체크리스트** (canonical v1.2.0 기준 — 2026-07-17 B 재확인 완료):
+**B 인계 확인 체크리스트** (R/J 저장과 canonical v1.7.0 JudgmentGuidance·StageGuidance·prompt version 소비 확인):
 
 - [x] `lease_companion_ai.schemas.unified` import 성공 (GenerationResult·validate_generation_result_for_analysis 포함)
 - [x] fixture 7개 `model_validate_json` 검증 성공
@@ -107,6 +115,7 @@ CorrectionRequest.corrected_value
 - [x] 최초 추출값(`extracted_value`)과 수정값(`user_corrected_value`) 분리 저장 확인 (`account_holder`: extracted=null 보존, corrected 별도)
 - [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 7개 모두 직렬화 키 = 원본 키)
 - [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
+- [x] `ContractContext` 변경에 따라 단계별 질문·체크리스트·계약 직후 행동·보관 대상이 달라지고 저장 → 조회 왕복 확인
 
 추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장).
 
@@ -120,6 +129,7 @@ CorrectionRequest.corrected_value
 - nullable 원문 증거 처리: `page`/`text`가 null이면 원문 대조 UI를 숨기고 "원문 위치 미확인" 표시(키는 항상 존재).
 - 수정 요청은 `correction_request.json` 구조로 생성해 전송한다.
 - 결과 화면은 `analysis_run_result.json`의 `status`·`urgency`로 구현한다. **status·urgency를 종합 안전·위험 점수로 바꾸지 않는다**(화면 3그룹 매핑은 `frontend/AGENTS.md`).
+- `judgments=[]`이면 R-only 실행으로 처리하고, 값이 있으면 J01~J12 전체를 별도 판정 목록으로 소비한다.
 - `result_type`으로 판정(`judgment`)과 사실 플래그(`fact_flag`)를 구분하고, `triggers_actions=true`인 결과만 질문·체크리스트·행동 활성화 대상으로 처리한다.
 - B가 OpenAPI에 공개한 `generation_result`를 canonical `GenerationResult` 구조로 소비한다. `null`·생성 실패·`template_fallback`을 처리하고 규칙 `status`·`urgency`·`reason`은 변경하지 않는다.
 
@@ -130,6 +140,7 @@ CorrectionRequest.corrected_value
 - [ ] `unverified`·`confirmed`·`corrected` 상태 처리
 - [ ] `correction_request.json` 구조로 수정 요청 JSON 생성
 - [ ] R01–R10 결과(`RuleResult` 13개 필드) 렌더링
+- [ ] J01–J12 결과(`JudgmentResult` 10개 필드) 렌더링 및 부분 목록 거부
 - [ ] `judgment`·`fact_flag` 구분 및 `triggers_actions` 처리
 - [ ] null 원문 증거 처리("원문 위치 미확인")
 
@@ -137,9 +148,9 @@ CorrectionRequest.corrected_value
 
 | 단계 | 상태 |
 |---|---|
-| 1. A 패키지 준비 | **완료** — canonical v1.2.0, InputSnapshot.contract_context, GenerationResult, Schema 6개, fixture 7개 |
-| 2. B 소비 확인 | **완료** — confirm ContractContext 복사·422, worker 생성/검증/분리 저장, OpenAPI 재생성 완료 |
-| 3. Frontend 소비 확인 | **부분 완료** — v1.2.0 기본 추출·수정·R01~R10 DTO는 연결됨. snapshot 전체·generation 상태/결과·`result_type`·`triggers_actions`의 화면 소비는 후속 |
+| 1. A 패키지 준비 | **완료** — canonical v1.7.0, JudgmentInput·JudgmentResult·JudgmentGuidance·StageGuidance·prompt version, Schema 8개, fixture 7개, J gold 47건 |
+| 2. B 소비 확인 | **완료** — confirm ContractContext 복사·변경 차단, worker 단계별 안내 생성/검증/분리 저장 완료 |
+| 3. Frontend 소비 확인 | **부분 완료** — v1.7.0 버전·JudgmentResult·JudgmentGuidance·GenerationResult·StageGuidance·prompt version DTO와 기본 추출·수정 타입 연결. J01~J12·generation 화면 소비는 후속 |
 
 최종 소비 완료는 위 체크리스트와 OpenAPI 소비자 테스트에서 **필드명 변경이 없음**을 확인한 시점이다.
 

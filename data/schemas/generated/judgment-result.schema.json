@@ -1,0 +1,156 @@
+{
+  "$defs": {
+    "OfficialSource": {
+      "additionalProperties": false,
+      "description": "공식 근거 참조(정적 카탈로그 항목). 원문 증거(SourceEvidence)와 구분.",
+      "properties": {
+        "institution": {
+          "title": "Institution",
+          "type": "string"
+        },
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Summary"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "title",
+        "institution"
+      ],
+      "title": "OfficialSource",
+      "type": "object"
+    },
+    "RuleStatus": {
+      "description": "공통 결과 상태 9개 — 루트 AGENTS.md 확정 어휘. 새 상태를 만들지 않는다.",
+      "enum": [
+        "일치",
+        "불일치",
+        "명확",
+        "불명확",
+        "미기재",
+        "상충 가능",
+        "확인 필요",
+        "확인 불가",
+        "적용 제외"
+      ],
+      "title": "RuleStatus",
+      "type": "string"
+    },
+    "Urgency": {
+      "description": "시급도 5개 — 루트 AGENTS.md 확정 어휘. 판정 상태와 별도 축.",
+      "enum": [
+        "즉시 확인",
+        "계약 전 확인",
+        "계약 직후 조치",
+        "참고",
+        "분석 불가"
+      ],
+      "title": "Urgency",
+      "type": "string"
+    }
+  },
+  "$id": "lease-companion/judgment-result-v1.7.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
+  "properties": {
+    "evidence_sources": {
+      "items": {
+        "$ref": "#/$defs/OfficialSource"
+      },
+      "title": "Evidence Sources",
+      "type": "array"
+    },
+    "judgment_id": {
+      "pattern": "^J(?:0[1-9]|1[0-2])$",
+      "title": "Judgment Id",
+      "type": "string"
+    },
+    "judgment_name": {
+      "minLength": 1,
+      "title": "Judgment Name",
+      "type": "string"
+    },
+    "limitations": {
+      "minLength": 1,
+      "title": "Limitations",
+      "type": "string"
+    },
+    "question": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "recommended_actions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Recommended Actions",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/RuleStatus"
+    },
+    "triggers_actions": {
+      "title": "Triggers Actions",
+      "type": "boolean"
+    },
+    "urgency": {
+      "$ref": "#/$defs/Urgency"
+    }
+  },
+  "required": [
+    "judgment_id",
+    "judgment_name",
+    "status",
+    "urgency",
+    "triggers_actions",
+    "reason",
+    "limitations"
+  ],
+  "title": "JudgmentResult",
+  "type": "object",
+  "x-schema-version": "1.7.0"
+}

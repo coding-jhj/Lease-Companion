@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from types import MappingProxyType
 
@@ -10,6 +11,7 @@ from lease_companion_ai.generation.models import (
     GeneratedGuidanceDraft,
     GenerationMethod,
     GenerationResult,
+    JudgmentGuidance,
     RuleGuidance,
 )
 from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
@@ -22,11 +24,15 @@ from lease_companion_ai.providers.generation import (
 )
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
+    ContractContext,
+    ContractStage,
+    GENERATION_PROMPT_VERSION,
+    JudgmentResult,
     RuleResult,
+    StageGuidance,
     validate_generation_result_for_analysis,
 )
 
-PROMPT_VERSION = "v1"
 PROMPT_NAMES = ("questions", "checklists", "summaries")
 logger = logging.getLogger(__name__)
 
@@ -34,13 +40,17 @@ logger = logging.getLogger(__name__)
 def load_generation_prompts(root: Path | None = None) -> MappingProxyType[str, str]:
     prompt_root = root or Path(__file__).resolve().parents[3] / "prompts"
     prompts = {
-        name: (prompt_root / name / f"{PROMPT_VERSION}.txt").read_text(
+        name: (prompt_root / name / f"{GENERATION_PROMPT_VERSION}.txt").read_text(
             encoding="utf-8"
         )
         for name in PROMPT_NAMES
     }
     if any(not prompt.strip() for prompt in prompts.values()):
         raise ValueError("생성 프롬프트는 비어 있을 수 없습니다.")
+    for name, prompt in prompts.items():
+        expected_header = f"버전: {name}-{GENERATION_PROMPT_VERSION}"
+        if prompt.splitlines()[0].strip() != expected_header:
+            raise ValueError(f"생성 프롬프트 헤더는 {expected_header}이어야 합니다.")
     return MappingProxyType(prompts)
 
 
@@ -56,19 +66,97 @@ class GenerationService:
         self._prompts = prompts or load_generation_prompts()
         self._guardrails = guardrails or GuardrailService()
 
-    def generate(self, analysis: AnalysisRunResult) -> GenerationResult:
+    def generate(
+        self, analysis: AnalysisRunResult, contract_context: ContractContext
+    ) -> GenerationResult:
+        if analysis.contract_id != contract_context.contract_id:
+            raise ValueError("분석 결과와 ContractContext의 contract_id가 다릅니다.")
         before = analysis.model_dump(mode="json")
         items = tuple(
             self._generate_rule(result)
             for result in analysis.results
             if result.triggers_actions
         )
+        judgment_items = tuple(
+            self._generate_judgment(result)
+            for result in analysis.judgments
+            if result.triggers_actions
+        )
         if analysis.model_dump(mode="json") != before:
             raise RuntimeError("생성 단계가 규칙 결과를 변경했습니다.")
         generated = GenerationResult(
-            analysis_run_id=analysis.analysis_run_id, items=items
+            analysis_run_id=analysis.analysis_run_id,
+            prompt_version=GENERATION_PROMPT_VERSION,
+            items=items,
+            judgment_items=judgment_items,
+            stage_guidance=self._stage_guidance(analysis, contract_context),
         )
         return validate_generation_result_for_analysis(analysis, generated)
+
+    @staticmethod
+    def _stage_guidance(
+        analysis: AnalysisRunResult, contract_context: ContractContext
+    ) -> StageGuidance:
+        judgments = {item.judgment_id: item for item in analysis.judgments}
+        after_contract = (
+            contract_context.contract_stage is ContractStage.AFTER_CONTRACT
+            or contract_context.signed
+        )
+
+        before_deposit_questions: tuple[str, ...] = ()
+        if not contract_context.deposit_paid and not after_contract:
+            before_deposit_questions = GenerationService._unique(
+                judgments[judgment_id].question
+                for judgment_id in ("J01", "J04", "J05", "J07")
+                if judgment_id in judgments
+                and judgments[judgment_id].triggers_actions
+                and judgments[judgment_id].question
+            )
+
+        signing_checklist: tuple[str, ...] = ()
+        if not after_contract:
+            signing_checklist = GenerationService._unique(
+                action
+                for judgment_id in ("J02", "J06", "J08", "J09", "J10", "J11", "J12")
+                if judgment_id in judgments and judgments[judgment_id].triggers_actions
+                for action in judgments[judgment_id].recommended_actions
+            )
+
+        post_contract_actions: list[str] = []
+        if after_contract:
+            post_contract_actions.append(
+                "실제 입주 후 전입신고·확정일자 등 권리 확보 절차와 요건을 공식 안내에서 확인하세요."
+            )
+            if contract_context.balance_payment_date is not None:
+                post_contract_actions.append(
+                    f"잔금 지급 예정일({contract_context.balance_payment_date.isoformat()})의 "
+                    "이체내역과 잔금 지급 전 확인 자료를 보관하세요."
+                )
+            if contract_context.move_in_date is not None:
+                post_contract_actions.append(
+                    f"입주 예정일({contract_context.move_in_date.isoformat()})에 실제 인도 상태와 "
+                    "열쇠 수령 내용을 기록하세요."
+                )
+
+        record_retention = ["계약 관련 대화와 확인 자료를 보관하세요."]
+        if after_contract:
+            record_retention.append("서명된 계약서 사본을 보관하세요.")
+        if contract_context.deposit_paid:
+            record_retention.append("계약금 이체내역을 보관하세요.")
+        if contract_context.balance_payment_date is not None:
+            record_retention.append("잔금 이체내역을 계약 건에 함께 보관하세요.")
+
+        return StageGuidance(
+            contract_context=contract_context,
+            before_deposit_questions=before_deposit_questions,
+            signing_checklist=signing_checklist,
+            post_contract_actions=GenerationService._unique(post_contract_actions),
+            record_retention=GenerationService._unique(record_retention),
+        )
+
+    @staticmethod
+    def _unique(values: Iterable[str | None]) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(value for value in values if value))
 
     def _generate_rule(self, result: RuleResult) -> RuleGuidance:
         if not result.evidence_sources:
@@ -78,6 +166,7 @@ class GenerationService:
 
         tokenizer = PiiTokenizer()
         request = GenerationRequest(
+            prompt_version=GENERATION_PROMPT_VERSION,
             rule_id=result.rule_id,
             rule_name=self._tokenize_required(tokenizer, result.rule_name),
             status=result.status.value,
@@ -156,6 +245,100 @@ class GenerationService:
             )
             return self._guardrails.enforce(result, minimal)
 
+    def _generate_judgment(self, result: JudgmentResult) -> JudgmentGuidance:
+        if not result.evidence_sources:
+            return self._safe_judgment_fallback(result, "missing_evidence")
+        if self._provider is None:
+            return self._safe_judgment_fallback(result, "provider_unavailable")
+
+        tokenizer = PiiTokenizer()
+        request = GenerationRequest(
+            prompt_version=GENERATION_PROMPT_VERSION,
+            rule_id=result.judgment_id,
+            rule_name=self._tokenize_required(tokenizer, result.judgment_name),
+            status=result.status.value,
+            urgency=result.urgency.value,
+            reason=self._tokenize_required(tokenizer, result.reason),
+            limitations=self._tokenize_required(tokenizer, result.limitations),
+            evidence=tuple(
+                GenerationEvidence(
+                    source_id=source.source_id,
+                    title=self._tokenize_required(tokenizer, source.title),
+                    institution=self._tokenize_required(tokenizer, source.institution),
+                    summary=tokenizer.tokenize(source.summary),
+                    source_url=tokenizer.tokenize(source.source_url),
+                )
+                for source in result.evidence_sources
+            ),
+            prompts=MappingProxyType(
+                {
+                    name: self._tokenize_required(tokenizer, prompt)
+                    for name, prompt in self._prompts.items()
+                }
+            ),
+        )
+        if self._request_contains_raw_pii(request):
+            logger.warning(
+                "generation_pii_gate_blocked",
+                extra={
+                    "judgment_id": result.judgment_id,
+                    "reason_codes": ("raw_pii",),
+                },
+            )
+            return self._safe_judgment_fallback(
+                result, "pii_tokenization_failed"
+            )
+        try:
+            draft = self._provider.generate(request)
+        except ProviderError:
+            return self._safe_judgment_fallback(result, "provider_error")
+
+        restored = self._restore_draft(tokenizer, draft)
+        guidance = JudgmentGuidance(
+            judgment_id=result.judgment_id,
+            explanation=restored.explanation,
+            questions=restored.questions,
+            signing_checklist=restored.signing_checklist,
+            post_contract_actions=restored.post_contract_actions,
+            source_ids=restored.source_ids,
+            generation_method=GenerationMethod.PROVIDER,
+            provider_model=self._provider.model_name,
+        )
+        try:
+            return self._guardrails.enforce_judgment(result, guidance)
+        except GuardrailBlocked as exc:
+            reason = (
+                "invalid_source_id"
+                if exc.reasons == ("invalid_source_id",)
+                else f"guardrail_blocked:{','.join(exc.reasons)}"
+            )
+            return self._safe_judgment_fallback(result, reason)
+
+    def _safe_judgment_fallback(
+        self, result: JudgmentResult, reason: str
+    ) -> JudgmentGuidance:
+        fallback = self._judgment_fallback(result, reason)
+        try:
+            return self._guardrails.enforce_judgment(result, fallback)
+        except GuardrailBlocked as exc:
+            has_evidence = bool(result.evidence_sources)
+            minimal = JudgmentGuidance(
+                judgment_id=result.judgment_id,
+                explanation=(
+                    "이 항목은 연결된 공식 근거와 함께 직접 확인하십시오."
+                    if has_evidence
+                    else "이 항목은 공식 근거 확인이 필요합니다. 직접 확인하십시오."
+                ),
+                source_ids=tuple(
+                    source.source_id for source in result.evidence_sources
+                ),
+                generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+                fallback_reason=(
+                    "guardrail_blocked_fallback:" + ",".join(exc.reasons)
+                ),
+            )
+            return self._guardrails.enforce_judgment(result, minimal)
+
     @staticmethod
     def _fallback(result: RuleResult, reason: str) -> RuleGuidance:
         has_evidence = bool(result.evidence_sources)
@@ -170,6 +353,30 @@ class GenerationService:
             ),
             questions=questions,
             signing_checklist=(tuple(result.recommended_actions) if has_evidence else ()),
+            post_contract_actions=(),
+            source_ids=source_ids,
+            generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+            fallback_reason=reason,
+        )
+
+    @staticmethod
+    def _judgment_fallback(
+        result: JudgmentResult, reason: str
+    ) -> JudgmentGuidance:
+        has_evidence = bool(result.evidence_sources)
+        source_ids = tuple(source.source_id for source in result.evidence_sources)
+        questions = (result.question,) if result.question else ()
+        return JudgmentGuidance(
+            judgment_id=result.judgment_id,
+            explanation=(
+                f"{result.judgment_name}: {result.reason} 공식 근거와 함께 확인하십시오."
+                if has_evidence
+                else f"{result.judgment_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오."
+            ),
+            questions=questions,
+            signing_checklist=(
+                tuple(result.recommended_actions) if has_evidence else ()
+            ),
             post_contract_actions=(),
             source_ids=source_ids,
             generation_method=GenerationMethod.TEMPLATE_FALLBACK,

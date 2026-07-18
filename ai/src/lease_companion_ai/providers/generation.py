@@ -8,6 +8,7 @@ from typing import Mapping, Protocol, runtime_checkable
 
 from lease_companion_ai.generation.models import GeneratedGuidanceDraft
 from lease_companion_ai.providers.errors import ProviderError
+from lease_companion_ai.schemas.unified import GenerationPromptVersion
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +22,10 @@ class GenerationEvidence:
 
 @dataclass(frozen=True, slots=True)
 class GenerationRequest:
+    """R 규칙 또는 J 판정 하나를 생성 provider에 전달하는 내부 요청."""
+
+    prompt_version: GenerationPromptVersion
+    # 기존 provider wire 호환을 위해 이름은 rule_id/rule_name을 유지하며 J ID도 허용한다.
     rule_id: str
     rule_name: str
     status: str

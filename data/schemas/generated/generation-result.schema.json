@@ -1,5 +1,101 @@
 {
   "$defs": {
+    "ContractContext": {
+      "additionalProperties": false,
+      "description": "계약 상황 입력 — 스냅샷에 포함되는 불변 분석 입력.",
+      "properties": {
+        "balance_payment_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Balance Payment Date"
+        },
+        "contract_id": {
+          "exclusiveMinimum": 0,
+          "title": "Contract Id",
+          "type": "integer"
+        },
+        "contract_stage": {
+          "$ref": "#/$defs/ContractStage"
+        },
+        "contract_type": {
+          "$ref": "#/$defs/ContractType"
+        },
+        "deposit_paid": {
+          "title": "Deposit Paid",
+          "type": "boolean"
+        },
+        "is_proxy_contract": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Proxy Contract"
+        },
+        "move_in_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Move In Date"
+        },
+        "schema_version": {
+          "const": "1.7.0",
+          "default": "1.7.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "signed": {
+          "title": "Signed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "contract_id",
+        "contract_type",
+        "contract_stage",
+        "deposit_paid",
+        "signed"
+      ],
+      "title": "ContractContext",
+      "type": "object"
+    },
+    "ContractStage": {
+      "enum": [
+        "계약금 입금 전",
+        "서명 전",
+        "계약 직후"
+      ],
+      "title": "ContractStage",
+      "type": "string"
+    },
+    "ContractType": {
+      "enum": [
+        "전세",
+        "보증부 월세",
+        "일반 월세"
+      ],
+      "title": "ContractType",
+      "type": "string"
+    },
     "GenerationMethod": {
       "description": "사용자 안내 생성 방식 — provider와 안전한 template fallback을 구분한다.",
       "enum": [
@@ -8,6 +104,88 @@
       ],
       "title": "GenerationMethod",
       "type": "string"
+    },
+    "JudgmentGuidance": {
+      "additionalProperties": false,
+      "description": "검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내.",
+      "properties": {
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "fallback_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Reason"
+        },
+        "generation_method": {
+          "$ref": "#/$defs/GenerationMethod"
+        },
+        "judgment_id": {
+          "pattern": "^J(?:0[1-9]|1[0-2])$",
+          "title": "Judgment Id",
+          "type": "string"
+        },
+        "post_contract_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Post Contract Actions",
+          "type": "array"
+        },
+        "provider_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Model"
+        },
+        "questions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Questions",
+          "type": "array"
+        },
+        "signing_checklist": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Signing Checklist",
+          "type": "array"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "judgment_id",
+        "explanation",
+        "generation_method"
+      ],
+      "title": "JudgmentGuidance",
+      "type": "object"
     },
     "RuleGuidance": {
       "additionalProperties": false,
@@ -90,9 +268,55 @@
       ],
       "title": "RuleGuidance",
       "type": "object"
+    },
+    "StageGuidance": {
+      "additionalProperties": false,
+      "description": "ContractContext와 J 판정을 결합한 단계별 사용자 행동 묶음.",
+      "properties": {
+        "before_deposit_questions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Before Deposit Questions",
+          "type": "array"
+        },
+        "contract_context": {
+          "$ref": "#/$defs/ContractContext"
+        },
+        "post_contract_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Post Contract Actions",
+          "type": "array"
+        },
+        "record_retention": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Record Retention",
+          "type": "array"
+        },
+        "signing_checklist": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Signing Checklist",
+          "type": "array"
+        }
+      },
+      "required": [
+        "contract_context"
+      ],
+      "title": "StageGuidance",
+      "type": "object"
     }
   },
-  "$id": "lease-companion/generation-result-v1.2.0.schema.json",
+  "$id": "lease-companion/generation-result-v1.7.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과.",
@@ -115,18 +339,36 @@
       "title": "Items",
       "type": "array"
     },
+    "judgment_items": {
+      "items": {
+        "$ref": "#/$defs/JudgmentGuidance"
+      },
+      "title": "Judgment Items",
+      "type": "array"
+    },
+    "prompt_version": {
+      "const": "v1",
+      "title": "Prompt Version",
+      "type": "string"
+    },
     "schema_version": {
-      "const": "1.2.0",
-      "default": "1.2.0",
+      "const": "1.7.0",
+      "default": "1.7.0",
       "title": "Schema Version",
       "type": "string"
+    },
+    "stage_guidance": {
+      "$ref": "#/$defs/StageGuidance"
     }
   },
   "required": [
     "analysis_run_id",
-    "items"
+    "prompt_version",
+    "items",
+    "judgment_items",
+    "stage_guidance"
   ],
   "title": "GenerationResult",
   "type": "object",
-  "x-schema-version": "1.2.0"
+  "x-schema-version": "1.7.0"
 }

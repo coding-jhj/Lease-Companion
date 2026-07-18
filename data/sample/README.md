@@ -21,6 +21,7 @@
 
 ## 현재 상태 / TODO
 
-- 합성 dev 세트 34쌍 커밋됨: `contracts/`·`registry-records/` 각 34건(파일럿 001~005 + 생성 CASE-006~034, `../gen_dataset.py`로 생성), `expected-results/`에 goldset 3종(`extraction_goldset.jsonl`·`rule_goldset.jsonl`·`rag_goldset.jsonl`).
+- 합성 dev 세트 34쌍 커밋됨: `contracts/`·`registry-records/` 각 34건(파일럿 001~005 + 생성 CASE-006~034, `../gen_dataset.py`로 생성), `expected-results/`에 기존 goldset 3종(`extraction_goldset.jsonl`·`rule_goldset.jsonl`·`rag_goldset.jsonl`)과 J 입력 경계 goldset(`judgment_goldset.jsonl`)이 있다.
+- `judgment_goldset.jsonl`은 J01~J12의 허용 상태 47건을 모두 포함하며 `issue_code`로 null 원인을 구분한다. `rules/judgments.py`의 실제 상태·시급도 회귀평가에 사용한다.
 - held-out test 10쌍은 `../evaluation/end-to-end/`에 분리(엔티티·표기 스타일 dev와 분리).
 - TODO: 확인설명서·건축물대장 샘플 확충, Phase 4 검수.

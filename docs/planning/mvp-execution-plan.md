@@ -23,9 +23,9 @@
 
 ### 현재 구현 기준점 (2026-07-17)
 
-- 0~3단계의 주요 기반과 canonical v1.2.0 Backend 연결, 생성 결과 분리 저장은 구현됐다. Frontend 전체 소비 완료를 뜻하지 않는다.
+- 0~3단계의 주요 기반과 canonical v1.7.0 Backend 연결, J01~J12 실행, ContractContext 기반 단계별 안내·생성 prompt version·R/J 생성 축 분리 저장은 구현됐다. Frontend 결과 화면 전체 소비 완료를 뜻하지 않는다.
 - Frontend는 JWT Bearer와 실제 API DTO, 추출·분석 폴링을 대부분 연결했다.
-- 아래 단계 표는 구현 의존성을 설명하는 계획 기록이며, 현재 미완료 핵심은 J01~J12 전체 판정, 실제 브라우저 CASE-001 E2E, 운영 데이터 정책이다.
+- 아래 단계 표는 구현 의존성을 설명하는 계획 기록이며, 현재 미완료 핵심은 J 판정의 공식 근거·생성 화면 연결, 실제 브라우저 CASE-001 E2E, 운영 데이터 정책이다.
 - 완료 여부는 이 문서의 과거 단계 설명이 아니라 현재 코드·OpenAPI·검증 결과로 확인한다.
 
 | 담당 | 영역 | 책임 |
@@ -82,14 +82,14 @@
 - [ ] 로그에 이름·주소 같은 개인정보가 찍히지 않는가
 - [ ] "안전합니다" 같은 단정 문구가 화면 어디에도 없는가
 
-### 5단계 — J01~J12 전체 판정 확장 (1단계 MVP 완성 후)
+### 5단계 — J01~J12 전체 판정 확장 (2026-07-18 구현 완료)
 
 선행 조건: 4단계 통과.
 
-- R01~R10의 `result_type(judgment|fact_flag)`·`triggers_actions`는 canonical v1.2.0에서 유지했다. J 확장에서는 이 계약을 유지하며 미구현 판정(J03·J04·J06·J07·J08·J09·J12)을 추가한다.
+- R01~R10의 `result_type(judgment|fact_flag)`·`triggers_actions`는 canonical v1.7.0에서도 유지한다. 별도 `JudgmentInput`·`JudgmentResult`·`judgments` 계약과 J goldset 47건을 기준으로 J01~J12 실행 로직을 연결했다.
 - 통합 스키마는 **필드 추가**로 확장하고 기존 R01~R10 필드의 이름·의미를 바꾸지 않는다(하위 호환 — ADR 참조).
 - R↔J 매핑은 [`../data/judgment-spec.md`](../data/judgment-spec.md)에서 관리한다.
-- 완료 기준: J01~J12가 판정별 허용 상태·시급도·입력 부족 정책에 맞게 실행되고 goldset 회귀를 통과한다.
+- 완료 결과: J01~J12가 판정별 허용 상태·시급도·입력 부족 정책에 맞게 실행되고 goldset 47건 및 Backend 저장·조회 회귀를 통과한다.
 
 ## 4. 공동 규칙
 
