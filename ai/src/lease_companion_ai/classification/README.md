@@ -3,8 +3,9 @@
 ## 결정 상태
 
 2026-07-18 ADR에 따라 extraction과 별도 실행 계층으로 분리한다.
-현재 v1.8.0 런타임은 기존 공개 schema 호환을 위해 Gemini extraction 통합 출력을 유지하며,
-이 디렉터리의 Python 실행 코드는 다음 canonical schema 버전에서 구현한다.
+canonical v1.9.0은 ClassificationInput·ClassificationResult를 제공하고 v1.8.0 payload 읽기를
+허용한다. 현재 구현된 실행 코드는 확인 완료 InputSnapshot을 ClassificationInput으로 변환하는
+순수 builder이며, provider·fallback·규칙 adapter 연결은 후속 작업이다.
 
 결정과 전환 순서:
 [`2026-07-18-classification-boundary.md`](../../../../docs/decisions/2026-07-18-classification-boundary.md)
@@ -55,6 +56,10 @@
 
 이름·주소·연락처·계좌번호, 기존 판정 상태, RAG·생성 결과는 입력하지 않는다.
 
+`build_classification_input(snapshot)`은 네 허용 필드의 `effective_value`만 읽는다. 단일 조항은
+ordinal 0, 배열은 빈 항목을 제외한 기존 순서대로 연속 ordinal을 부여한다. snapshot과
+ExtractedField는 변경하지 않는다.
+
 ## 출력
 
 입력 snapshot에 종속된 ClassificationResult.
@@ -93,8 +98,8 @@
 
 ## 후속 구현
 
-1. 다음 canonical schema 버전에 ClassificationInput·ClassificationResult를 추가한다.
-2. Gemini classification prompt와 provider adapter를 분리한다.
+1. Gemini classification prompt와 provider adapter를 분리한다.
+2. provider 실패·응답 검증 실패용 safe fallback을 구현한다.
 3. Backend에 snapshot 이후 classification 실행·저장 단계를 추가한다.
 4. J10~J12 adapter·fixture·평가를 새 계약으로 전환한다.
-5. 공동 전환 완료 후 기존 extraction 명확성 후보 필드 제거 여부를 별도 결정한다.
+5. 공동 전환 완료 후 기존 extraction 명확성 후보 필드를 deprecated/null 정책으로 전환한다.
