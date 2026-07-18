@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
-import { correctionValue, fieldViewModels } from "../../features/extraction-review/viewModel";
+import { clauseValues, correctionValue, fieldViewModels } from "../../features/extraction-review/viewModel";
 import { mvpService } from "../../services/mvpService";
 import type {
   CorrectionRequestDto,
   DocumentExtractionDto,
   FieldViewModel,
+  SchemaVersion,
   VerificationStatus,
 } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
@@ -19,12 +20,14 @@ const verificationLabels: Record<VerificationStatus, string> = {
   corrected: "수정됨",
 };
 
+type DraftValue = string | string[];
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocumentExtractionDto[]>([]);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, DraftValue>>({});
   const [verificationByKey, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
   const [savedDraftKeys, setSavedDraftKeys] = useState<string[]>([]);
   const [status, setStatus] = useState<"loading" | "processing" | "success" | "error">("loading");
@@ -35,6 +38,21 @@ export function ExtractionReviewPage() {
   const [submitting, setSubmitting] = useState(false);
   const activePoll = useRef<AbortController | null>(null);
   const fields = fieldViewModels(documents);
+  const schemaVersion: SchemaVersion = documents.find(
+    (document) => document.document_type === "contract",
+  )?.schema_version ?? documents[0]?.schema_version ?? "1.8.0";
+
+  function hasDraftInput(key: string): boolean {
+    const draft = drafts[key];
+    return Array.isArray(draft)
+      ? draft.some((item) => item.trim().length > 0)
+      : Boolean(draft?.trim());
+  }
+
+  function currentClauseValues(view: FieldViewModel): string[] {
+    const draft = drafts[view.key];
+    return Array.isArray(draft) ? draft : clauseValues(view.field);
+  }
 
   async function loadExtraction() {
     activePoll.current?.abort();
@@ -95,6 +113,35 @@ export function ExtractionReviewPage() {
     setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
   }
 
+  function updateClauseDraft(view: FieldViewModel, nextValues: string[]) {
+    setSavedDraftKeys((current) => current.filter((key) => key !== view.key));
+    if (JSON.stringify(nextValues) === JSON.stringify(clauseValues(view.field))) {
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[view.key];
+        return next;
+      });
+      setVerificationByKey((current) => ({ ...current, [view.key]: view.field.verification_status }));
+      return;
+    }
+    setDrafts((current) => ({ ...current, [view.key]: nextValues }));
+    setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
+  }
+
+  function updateClauseItem(view: FieldViewModel, index: number, value: string) {
+    const next = [...currentClauseValues(view)];
+    next[index] = value;
+    updateClauseDraft(view, next);
+  }
+
+  function addClauseItem(view: FieldViewModel) {
+    updateClauseDraft(view, [...currentClauseValues(view), ""]);
+  }
+
+  function removeClauseItem(view: FieldViewModel, index: number) {
+    updateClauseDraft(view, currentClauseValues(view).filter((_, itemIndex) => itemIndex !== index));
+  }
+
   function confirmField(view: FieldViewModel) {
     setVerificationByKey((current) => ({ ...current, [view.key]: "confirmed" }));
   }
@@ -104,7 +151,7 @@ export function ExtractionReviewPage() {
       ...current,
       ...Object.fromEntries(
         fields
-          .filter((view) => view.field.confidence !== "실패" || drafts[view.key]?.trim())
+          .filter((view) => view.field.confidence !== "실패" || hasDraftInput(view.key))
           .map((view) => [view.key, drafts[view.key] === undefined ? "confirmed" : "corrected"]),
       ),
     }));
@@ -131,7 +178,7 @@ export function ExtractionReviewPage() {
         };
       });
       const request: CorrectionRequestDto = {
-        schema_version: "1.8.0",
+        schema_version: schemaVersion,
         contract_id: contractId,
         corrections,
       };
@@ -167,7 +214,7 @@ export function ExtractionReviewPage() {
         {status === "success" && fields.map((view) => {
           const verification = verificationByKey[view.key] ?? view.field.verification_status;
           const locationUnknown = view.field.source_evidence.page === null || view.field.source_evidence.text === null;
-          const failedWithoutInput = view.field.confidence === "실패" && !drafts[view.key]?.trim();
+          const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput(view.key);
           return (
             <article className="field-card" key={view.key}>
               <div className="field-card__meta">
@@ -175,15 +222,44 @@ export function ExtractionReviewPage() {
                 <span className={"confidence confidence--" + view.field.confidence}>{view.field.confidence}</span>
                 <span className={"verification verification--" + verification}>{verificationLabels[verification]}</span>
               </div>
-              <label>
-                <span className="sr-only">{view.label} 값</span>
-                <input
-                  aria-label={view.label + " 값"}
-                  value={drafts[view.key] ?? view.formattedValue}
-                  placeholder={view.field.confidence === "실패" ? "직접 입력해 주세요" : undefined}
-                  onChange={(event) => updateField(view, event.target.value)}
-                />
-              </label>
+              {view.editor === "clause-list" ? (
+                <div className="clause-list-editor">
+                  {(currentClauseValues(view).length > 0 ? currentClauseValues(view) : [""]).map((value, index) => (
+                    <div className="clause-list-editor__item" key={view.key + ":" + index}>
+                      <label>
+                        <span className="sr-only">{view.label + " " + (index + 1) + " 값"}</span>
+                        <input
+                          aria-label={view.label + " " + (index + 1) + " 값"}
+                          value={value}
+                          placeholder={view.field.confidence === "실패" ? "조항을 직접 입력해 주세요" : undefined}
+                          onChange={(event) => updateClauseItem(view, index, event.target.value)}
+                        />
+                      </label>
+                      <button
+                        className="text-button"
+                        type="button"
+                        aria-label={view.label + " " + (index + 1) + " 삭제"}
+                        onClick={() => removeClauseItem(view, index)}
+                      >
+                        이 조항 삭제
+                      </button>
+                    </div>
+                  ))}
+                  <button className="secondary" type="button" onClick={() => addClauseItem(view)}>
+                    조항 추가
+                  </button>
+                </div>
+              ) : (
+                <label>
+                  <span className="sr-only">{view.label} 값</span>
+                  <input
+                    aria-label={view.label + " 값"}
+                    value={typeof drafts[view.key] === "string" ? drafts[view.key] : view.formattedValue}
+                    placeholder={view.field.confidence === "실패" ? "직접 입력해 주세요" : undefined}
+                    onChange={(event) => updateField(view, event.target.value)}
+                  />
+                </label>
+              )}
               {view.field.failure_reason && <p className="field-error">{view.field.failure_reason}</p>}
               <small>{locationUnknown ? "원문 위치 미확인" : view.field.source_evidence.page + "쪽 · " + view.field.source_evidence.text}</small>
               <button className="text-button" type="button" disabled={verification !== "unverified" || failedWithoutInput} onClick={() => confirmField(view)}>이 값 확인</button>

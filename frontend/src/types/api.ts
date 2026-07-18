@@ -70,7 +70,7 @@ export type VerificationStatus = "unverified" | "confirmed" | "corrected";
 export type ExtractionConfidence = "추출됨" | "불확실" | "실패";
 export type FieldIssueCode = "not_stated" | "unreadable" | "ambiguous" | "parse_failed" | "not_applicable";
 export type DocumentType = "contract" | "registry";
-export type SchemaVersion = "1.8.0";
+export type SchemaVersion = "1.8.0" | "1.9.0";
 
 export interface SourceEvidenceDto {
   page: number | null;
@@ -268,6 +268,7 @@ export interface FieldViewModel {
   document_type: DocumentType;
   label: string;
   formattedValue: string;
+  editor: "scalar" | "clause-list";
   field: ExtractedFieldDto;
 }
 
