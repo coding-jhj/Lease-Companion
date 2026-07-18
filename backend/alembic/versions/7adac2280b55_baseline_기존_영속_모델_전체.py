@@ -1,7 +1,7 @@
 """baseline: 기존 영속 모델 전체
 
 Revision ID: 7adac2280b55
-Revises: 
+Revises:
 Create Date: 2026-07-18 20:22:42.932168
 
 """
