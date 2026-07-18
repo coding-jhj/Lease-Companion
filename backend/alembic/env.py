@@ -3,23 +3,28 @@
 ALEMBIC_DATABASE_URL 환경변수가 있으면 우선한다 (baseline 검증용 scratch DB 등).
 """
 
+import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import create_engine, pool
 
-# 앱과 동일한 Base·URL 로딩 (.env 포함)
-import os
+# baseline 검증용 override는 app.core.db import 전에 적용해야 한다.
+# app.core.db는 import 시 DATABASE_URL을 필수로 읽는다.
+_override_url = os.environ.get("ALEMBIC_DATABASE_URL")
+if _override_url is not None:
+    os.environ["DATABASE_URL"] = _override_url
 
-from app.core.db import DATABASE_URL, Base
+# 앱과 동일한 Base·URL 로딩 (.env 포함)
+from app.core.db import DATABASE_URL, Base  # noqa: E402
 
 # autogenerate가 전체 모델을 보도록 모든 모델 모듈을 import한다
-import app.models.analysis  # noqa: F401
-import app.models.checklist  # noqa: F401
-import app.models.contract  # noqa: F401
-import app.models.document  # noqa: F401
-import app.models.feedback  # noqa: F401
-import app.models.user  # noqa: F401
+import app.models.analysis  # noqa: E402,F401
+import app.models.checklist  # noqa: E402,F401
+import app.models.contract  # noqa: E402,F401
+import app.models.document  # noqa: E402,F401
+import app.models.feedback  # noqa: E402,F401
+import app.models.user  # noqa: E402,F401
 
 config = context.config
 
@@ -28,7 +33,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-_url = os.environ.get("ALEMBIC_DATABASE_URL", DATABASE_URL)
+_url = _override_url or DATABASE_URL
 
 
 def run_migrations_offline() -> None:
