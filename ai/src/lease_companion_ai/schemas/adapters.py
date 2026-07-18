@@ -23,6 +23,7 @@ from lease_companion_ai.schemas.unified import (
     REQUIRED_FIELDS_BY_TYPE,
     RESULT_TYPE_BY_RULE_ID,
     AnalysisRunResult,
+    ClassificationResult,
     Confidence,
     ContractContext,
     CorrectionRequest,
@@ -211,7 +212,12 @@ def rule_result_from_legacy(result: legacy.RuleResult) -> RuleResult:
     )
 
 
-def analyze_snapshot(snapshot: InputSnapshot, *, analysis_run_id: str) -> AnalysisRunResult:
+def analyze_snapshot(
+    snapshot: InputSnapshot,
+    *,
+    analysis_run_id: str,
+    classification_result: ClassificationResult | None = None,
+) -> AnalysisRunResult:
     """확인 완료 스냅샷으로 R01~R10과 J01~J12를 실행한다."""
     legacy_results = run_rules(
         rule_inputs(snapshot.confirmed_fields.contract),
@@ -223,7 +229,12 @@ def analyze_snapshot(snapshot: InputSnapshot, *, analysis_run_id: str) -> Analys
         contract_id=snapshot.contract_id,
         case_id=snapshot.case_id,
         results=[rule_result_from_legacy(result) for result in legacy_results],
-        judgments=run_judgments(build_judgment_input(snapshot)),
+        judgments=run_judgments(
+            build_judgment_input(
+                snapshot,
+                classification_result=classification_result,
+            )
+        ),
     )
     # 로컬 공식 원문 검색 실패는 규칙 분석 실패로 전파하지 않는다.
     try:

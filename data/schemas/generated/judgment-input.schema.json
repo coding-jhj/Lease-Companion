@@ -1,5 +1,66 @@
 {
   "$defs": {
+    "ClarityCandidate": {
+      "enum": [
+        "명확",
+        "불명확",
+        "확인 필요"
+      ],
+      "title": "ClarityCandidate",
+      "type": "string"
+    },
+    "ClauseCandidate": {
+      "additionalProperties": false,
+      "description": "조항 유형·명확성·책임 주체 후보. 규칙 판정 상태를 포함하지 않는다.",
+      "properties": {
+        "clarity_candidate": {
+          "$ref": "#/$defs/ClarityCandidate"
+        },
+        "clause_ref": {
+          "minLength": 1,
+          "title": "Clause Ref",
+          "type": "string"
+        },
+        "clause_type": {
+          "$ref": "#/$defs/ClauseType"
+        },
+        "condition_candidates": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Condition Candidates",
+          "type": "array"
+        },
+        "responsible_party_candidate": {
+          "$ref": "#/$defs/ResponsiblePartyCandidate"
+        },
+        "review_required": {
+          "title": "Review Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "clause_ref",
+        "clause_type",
+        "clarity_candidate",
+        "responsible_party_candidate",
+        "review_required"
+      ],
+      "title": "ClauseCandidate",
+      "type": "object"
+    },
+    "ClauseType": {
+      "description": "LLM이 제안하는 조항 유형 후보. 최종 판정이 아니다.",
+      "enum": [
+        "deposit_return",
+        "repair_restoration",
+        "management_fee",
+        "rights_change",
+        "other"
+      ],
+      "title": "ClauseType",
+      "type": "string"
+    },
     "Confidence": {
       "description": "추출 신뢰도 3등급. 숫자 confidence는 허용하지 않는다(ADR 확정).",
       "enum": [
@@ -261,6 +322,16 @@
       "title": "FieldIssueCode",
       "type": "string"
     },
+    "ResponsiblePartyCandidate": {
+      "enum": [
+        "임대인",
+        "임차인",
+        "공동",
+        "미지정"
+      ],
+      "title": "ResponsiblePartyCandidate",
+      "type": "string"
+    },
     "SourceEvidence": {
       "additionalProperties": false,
       "description": "원문 증거. page/text 키는 항상 존재하고 값은 둘 다 null 허용(ADR 확정).",
@@ -320,6 +391,13 @@
       ],
       "default": null,
       "title": "Case Id"
+    },
+    "classification_candidates": {
+      "items": {
+        "$ref": "#/$defs/ClauseCandidate"
+      },
+      "title": "Classification Candidates",
+      "type": "array"
     },
     "contract_context": {
       "$ref": "#/$defs/ContractContext"

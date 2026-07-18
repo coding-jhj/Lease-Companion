@@ -53,6 +53,7 @@ from lease_companion_ai.schemas.unified import (
     ExtractedField,
     FieldIssueCode,
     GenerationMethod,
+    JUDGMENT_INPUT_SPECS,
     JudgmentGuidance,
     JudgmentInput,
     JudgmentResult,
@@ -63,6 +64,7 @@ from lease_companion_ai.schemas.unified import (
     Urgency,
     VerificationStatus,
     build_judgment_input,
+    legacy_classification_candidates,
 )
 
 _SECTIONS = ("contract", "registry")
@@ -460,20 +462,38 @@ def _evaluate_judgments(root: Path) -> JudgmentEvaluationMetrics:
             context = ContractContext(
                 **{**record["base_context"], **case.get("context_overrides", {})}
             )
+            contract_fields = {
+                name: _confirmed_field(name, payload)
+                for name, payload in case["contract_fields"].items()
+            }
+            classification_candidates = legacy_classification_candidates(
+                contract_fields
+            )
+            required_contract_fields = set(
+                JUDGMENT_INPUT_SPECS[judgment_id].contract_fields
+            )
             judgment_input = JudgmentInput(
+                schema_version=context.schema_version,
                 input_snapshot_id=f"SNAP-{case['case_id']}",
                 contract_id=context.contract_id,
                 case_id=case["case_id"],
                 judgment_ids=(judgment_id,),
                 contract_context=context,
                 contract_fields={
-                    name: _confirmed_field(name, payload)
-                    for name, payload in case["contract_fields"].items()
+                    name: field
+                    for name, field in contract_fields.items()
+                    if name in required_contract_fields
                 },
                 registry_fields={
                     name: _confirmed_field(name, payload)
                     for name, payload in case["registry_fields"].items()
                 },
+                classification_candidates=[
+                    candidate
+                    for candidate in classification_candidates
+                    if candidate.clause_ref.partition(":")[0]
+                    in required_contract_fields
+                ],
             )
             result = run_judgments(judgment_input)[0]
             expected_status = case["expected_status"]

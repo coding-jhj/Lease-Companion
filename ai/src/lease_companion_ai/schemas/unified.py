@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal, Mapping, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -224,10 +224,10 @@ JUDGMENT_INPUT_SPECS: dict[str, JudgmentInputSpec] = {
         contract_fields=("management_fee_present", "management_fee", "management_fee_items"),
     ),
     "J10": JudgmentInputSpec(
-        contract_fields=("deposit_return_condition", "deposit_return_clause"),
+        contract_fields=("deposit_return_clause",),
     ),
     "J11": JudgmentInputSpec(
-        contract_fields=("repair_responsibility", "repair_responsibility_clause"),
+        contract_fields=("repair_responsibility_clause",),
     ),
     "J12": JudgmentInputSpec(
         contract_fields=("main_clauses", "special_clauses_present", "special_clauses"),
@@ -241,8 +241,6 @@ REQUIRED_CONTRACT_FIELDS: frozenset[str] = frozenset(
         "landlord_name",
         "property_address",
         "account_holder",
-        "deposit_return_condition",
-        "repair_responsibility",
         "rights_change_clause_present",
     }
 )
@@ -833,6 +831,72 @@ def _validate_judgment_field_map(
 FrozenExtractedFieldMap = Annotated[
     dict[str, ExtractedField], AfterValidator(FrozenDict)
 ]
+FrozenClauseCandidateList = Annotated[
+    list[ClauseCandidate], AfterValidator(FrozenList)
+]
+
+_CLASSIFICATION_SOURCE_FIELDS = frozenset(
+    source_field.value for source_field in ClauseSourceField
+)
+
+
+def legacy_classification_candidates(
+    contract_fields: Mapping[str, ExtractedField],
+) -> list[ClauseCandidate]:
+    """전환 기간 구 명확성 후보를 J 입력 후보로만 변환한다."""
+
+    candidates: list[ClauseCandidate] = []
+    mappings = (
+        (
+            "deposit_return_condition",
+            "deposit_return_clause",
+            ClauseType.DEPOSIT_RETURN,
+        ),
+        (
+            "repair_responsibility",
+            "repair_responsibility_clause",
+            ClauseType.REPAIR_RESTORATION,
+        ),
+    )
+    for legacy_name, raw_name, clause_type in mappings:
+        legacy_field = contract_fields.get(legacy_name)
+        raw_field = contract_fields.get(raw_name)
+        if legacy_field is None or raw_field is None:
+            continue
+        legacy_value = legacy_field.effective_value
+        raw_value = raw_field.effective_value
+        if not isinstance(raw_value, str):
+            continue
+        try:
+            clarity = ClarityCandidate(legacy_value)
+        except (TypeError, ValueError):
+            continue
+        parties = {party for party in ("임대인", "임차인") if party in raw_value}
+        responsible_party = (
+            ResponsiblePartyCandidate.JOINT
+            if len(parties) == 2
+            else ResponsiblePartyCandidate.LANDLORD
+            if parties == {"임대인"}
+            else ResponsiblePartyCandidate.TENANT
+            if parties == {"임차인"}
+            else ResponsiblePartyCandidate.UNSPECIFIED
+        )
+        candidates.append(
+            ClauseCandidate(
+                clause_ref=f"{raw_name}:0",
+                clause_type=clause_type,
+                clarity_candidate=clarity,
+                responsible_party_candidate=responsible_party,
+                condition_candidates=(
+                    [raw_value]
+                    if clause_type is ClauseType.DEPOSIT_RETURN
+                    and clarity is ClarityCandidate.CLEAR
+                    else []
+                ),
+                review_required=clarity is ClarityCandidate.CHECK_NEEDED,
+            )
+        )
+    return candidates
 
 
 class JudgmentInput(BaseModel):
@@ -848,6 +912,48 @@ class JudgmentInput(BaseModel):
     contract_context: ContractContext
     contract_fields: FrozenExtractedFieldMap
     registry_fields: FrozenExtractedFieldMap
+    classification_candidates: FrozenClauseCandidateList = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _adapt_v18_legacy_fields(cls, data: object) -> object:
+        """구 골드셋의 후보 필드를 canonical 후보로 바꿔 읽기만 호환한다."""
+
+        if not isinstance(data, dict):
+            return data
+        context = data.get("contract_context")
+        context_version: object
+        if isinstance(context, ContractContext):
+            context_version = context.schema_version
+        elif isinstance(context, dict):
+            context_version = context.get("schema_version")
+        else:
+            return data
+        if context_version != "1.8.0":
+            return data
+
+        judgment_ids = tuple(data.get("judgment_ids", ()))
+        contract_fields = data.get("contract_fields")
+        if not judgment_ids or not isinstance(contract_fields, Mapping):
+            return data
+
+        parsed_fields = {
+            name: field
+            if isinstance(field, ExtractedField)
+            else ExtractedField.model_validate(field)
+            for name, field in contract_fields.items()
+        }
+        required = set(_required_judgment_fields(judgment_ids, DocumentType.CONTRACT))
+        normalized = dict(data)
+        normalized.setdefault("schema_version", context_version)
+        normalized["contract_fields"] = {
+            name: field for name, field in parsed_fields.items() if name in required
+        }
+        if not normalized.get("classification_candidates"):
+            normalized["classification_candidates"] = legacy_classification_candidates(
+                parsed_fields
+            )
+        return normalized
 
     @model_validator(mode="after")
     def _check(self) -> "JudgmentInput":
@@ -864,6 +970,22 @@ class JudgmentInput(BaseModel):
             judgment_ids=self.judgment_ids,
             document_type=DocumentType.REGISTRY,
         )
+        candidate_refs = [
+            candidate.clause_ref for candidate in self.classification_candidates
+        ]
+        if len(candidate_refs) != len(set(candidate_refs)):
+            raise ValueError("JudgmentInput에 중복 classification clause_ref가 있습니다.")
+        allowed_sources = set(self.contract_fields) & _CLASSIFICATION_SOURCE_FIELDS
+        invalid_refs = [
+            candidate.clause_ref
+            for candidate in self.classification_candidates
+            if candidate.clause_ref.partition(":")[0] not in allowed_sources
+        ]
+        if invalid_refs:
+            raise ValueError(
+                "JudgmentInput 판정 범위 밖 classification clause_ref가 있습니다: "
+                f"{invalid_refs}"
+            )
         return self
 
 
@@ -871,8 +993,9 @@ def build_judgment_input(
     snapshot: InputSnapshot,
     *,
     judgment_ids: tuple[str, ...] = JUDGMENT_IDS,
+    classification_result: ClassificationResult | None = None,
 ) -> JudgmentInput:
-    """확인 완료 snapshot에서 선택한 J 판정이 요구하는 effective value만 복사한다."""
+    """확인 완료 원문과 검증된 classification 후보를 J 입력으로 복사한다."""
 
     judgment_ids = _validate_judgment_ids(judgment_ids)
     contract_names = _required_judgment_fields(judgment_ids, DocumentType.CONTRACT)
@@ -892,7 +1015,32 @@ def build_judgment_input(
             "J 입력 필드가 snapshot에 없습니다: "
             f"contract={missing_contract}, registry={missing_registry}"
         )
+    if classification_result is not None:
+        if classification_result.schema_version != snapshot.schema_version:
+            raise ValueError(
+                "InputSnapshot과 ClassificationResult의 schema_version이 다릅니다."
+            )
+        if classification_result.input_snapshot_id != snapshot.input_snapshot_id:
+            raise ValueError(
+                "InputSnapshot과 ClassificationResult의 input_snapshot_id가 다릅니다."
+            )
+        if classification_result.contract_id != snapshot.contract_id:
+            raise ValueError(
+                "InputSnapshot과 ClassificationResult의 contract_id가 다릅니다."
+            )
+    classification_sources = set(contract_names) & _CLASSIFICATION_SOURCE_FIELDS
+    source_candidates = (
+        classification_result.candidates
+        if classification_result is not None
+        else legacy_classification_candidates(snapshot.confirmed_fields.contract)
+    )
+    classification_candidates = [
+        candidate
+        for candidate in source_candidates
+        if candidate.clause_ref.partition(":")[0] in classification_sources
+    ]
     return JudgmentInput(
+        schema_version=snapshot.schema_version,
         input_snapshot_id=snapshot.input_snapshot_id,
         contract_id=snapshot.contract_id,
         case_id=snapshot.case_id,
@@ -906,6 +1054,7 @@ def build_judgment_input(
             field_name: snapshot.confirmed_fields.registry[field_name]
             for field_name in registry_names
         },
+        classification_candidates=classification_candidates,
     )
 
 

@@ -17,12 +17,16 @@ from lease_companion_ai.normalization.core import normalize_address, normalize_n
 from lease_companion_ai.schemas.unified import (
     ACTION_TRIGGER_STATUSES,
     CLEAN_STATUSES,
+    ClarityCandidate,
+    ClauseCandidate,
+    ClauseType,
     DEFAULT_JUDGMENT_URGENCY,
     ContractType,
     ExtractedField,
     FieldIssueCode,
     JudgmentInput,
     JudgmentResult,
+    ResponsiblePartyCandidate,
     RuleStatus,
     Urgency,
 )
@@ -228,30 +232,98 @@ def _j09(data: JudgmentInput) -> RuleStatus:
     return RuleStatus.CLEAR
 
 
-def _clarity_status(data: JudgmentInput, field_name: str) -> RuleStatus:
-    mapping = {
-        "명확": RuleStatus.CLEAR,
-        "불명확": RuleStatus.UNCLEAR,
-        "미기재": RuleStatus.NOT_STATED,
-        "확인 필요": RuleStatus.CHECK_NEEDED,
-    }
-    value = _value(data, field_name)
-    return mapping.get(value, RuleStatus.CHECK_NEEDED)
+def _candidate(data: JudgmentInput, clause_ref: str) -> ClauseCandidate | None:
+    return next(
+        (
+            candidate
+            for candidate in data.classification_candidates
+            if candidate.clause_ref == clause_ref
+        ),
+        None,
+    )
+
+
+def _raw_clause_state(data: JudgmentInput, field_name: str) -> RuleStatus | None:
+    field = data.contract_fields[field_name]
+    if field.effective_value is None:
+        return (
+            RuleStatus.NOT_STATED
+            if field.issue_code is FieldIssueCode.NOT_STATED
+            else RuleStatus.CHECK_NEEDED
+        )
+    return None
+
+
+def _candidate_clarity(candidate: ClauseCandidate) -> RuleStatus:
+    if candidate.review_required:
+        return RuleStatus.CHECK_NEEDED
+    if candidate.clarity_candidate is ClarityCandidate.UNCLEAR:
+        return RuleStatus.UNCLEAR
+    if candidate.clarity_candidate is ClarityCandidate.CHECK_NEEDED:
+        return RuleStatus.CHECK_NEEDED
+    return RuleStatus.CLEAR
 
 
 def _j10(data: JudgmentInput) -> RuleStatus:
-    return _clarity_status(data, "deposit_return_condition")
+    raw_state = _raw_clause_state(data, "deposit_return_clause")
+    if raw_state is not None:
+        return raw_state
+    candidate = _candidate(data, "deposit_return_clause:0")
+    if candidate is None or candidate.clause_type is not ClauseType.DEPOSIT_RETURN:
+        return RuleStatus.CHECK_NEEDED
+    clarity = _candidate_clarity(candidate)
+    if clarity is not RuleStatus.CLEAR:
+        return clarity
+    return (
+        RuleStatus.CLEAR
+        if candidate.condition_candidates
+        else RuleStatus.UNCLEAR
+    )
 
 
 def _j11(data: JudgmentInput) -> RuleStatus:
-    return _clarity_status(data, "repair_responsibility")
+    raw_state = _raw_clause_state(data, "repair_responsibility_clause")
+    if raw_state is not None:
+        return raw_state
+    candidate = _candidate(data, "repair_responsibility_clause:0")
+    if candidate is None or candidate.clause_type is not ClauseType.REPAIR_RESTORATION:
+        return RuleStatus.CHECK_NEEDED
+    clarity = _candidate_clarity(candidate)
+    if clarity is not RuleStatus.CLEAR:
+        return clarity
+    return (
+        RuleStatus.UNCLEAR
+        if candidate.responsible_party_candidate
+        is ResponsiblePartyCandidate.UNSPECIFIED
+        else RuleStatus.CLEAR
+    )
+
+
+def _expected_clause_refs(field_name: str, clauses: list[str]) -> list[str]:
+    return [
+        f"{field_name}:{ordinal}"
+        for ordinal, clause in enumerate(clause for clause in clauses if clause.strip())
+    ]
+
+
+def _candidate_conditions(
+    candidates: list[ClauseCandidate],
+) -> dict[ClauseType, set[str]]:
+    grouped: dict[ClauseType, set[str]] = {}
+    for candidate in candidates:
+        grouped.setdefault(candidate.clause_type, set()).update(
+            candidate.condition_candidates
+        )
+    return grouped
 
 
 _DATE_PATTERN = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
 _MONEY_PATTERN = re.compile(r"(?<!\d)\d[\d,]*\s*원")
 
 
-def _clause_values(clauses: list[str], marker: str, pattern: re.Pattern[str]) -> set[str]:
+def _legacy_clause_values(
+    clauses: list[str], marker: str, pattern: re.Pattern[str]
+) -> set[str]:
     return {
         match.replace(" ", "")
         for clause in clauses
@@ -260,11 +332,11 @@ def _clause_values(clauses: list[str], marker: str, pattern: re.Pattern[str]) ->
     }
 
 
-def _has_structured_conflict(main: list[str], special: list[str]) -> bool:
+def _legacy_structured_conflict(main: list[str], special: list[str]) -> bool:
     for marker in ("계약 종료일", "계약 시작일", "보증금", "월세", "계약금", "잔금"):
         pattern = _DATE_PATTERN if "일" in marker else _MONEY_PATTERN
-        main_values = _clause_values(main, marker, pattern)
-        special_values = _clause_values(special, marker, pattern)
+        main_values = _legacy_clause_values(main, marker, pattern)
+        special_values = _legacy_clause_values(special, marker, pattern)
         if main_values and special_values and main_values != special_values:
             return True
     for marker in ("수리", "원상복구"):
@@ -272,7 +344,9 @@ def _has_structured_conflict(main: list[str], special: list[str]) -> bool:
         special_text = " ".join(clause for clause in special if marker in clause)
         if main_text and special_text:
             main_party = {party for party in ("임대인", "임차인") if party in main_text}
-            special_party = {party for party in ("임대인", "임차인") if party in special_text}
+            special_party = {
+                party for party in ("임대인", "임차인") if party in special_text
+            }
             if main_party and special_party and main_party != special_party:
                 return True
     return False
@@ -286,12 +360,48 @@ def _j12(data: JudgmentInput) -> RuleStatus:
         return RuleStatus.CHECK_NEEDED
     main = _value(data, "main_clauses")
     special = _value(data, "special_clauses")
-    if _has_structured_conflict(main, special):
-        return RuleStatus.POSSIBLE_CONFLICT
-    normalized_special = " ".join(special)
-    if "본문과 동일" in normalized_special or main == special:
-        return RuleStatus.CLEAR
-    return RuleStatus.CHECK_NEEDED
+    if not isinstance(main, list) or not isinstance(special, list):
+        return RuleStatus.CHECK_NEEDED
+    if data.schema_version == "1.8.0" and not data.classification_candidates:
+        if _legacy_structured_conflict(main, special):
+            return RuleStatus.POSSIBLE_CONFLICT
+        normalized_special = " ".join(special)
+        if "본문과 동일" in normalized_special or main == special:
+            return RuleStatus.CLEAR
+        return RuleStatus.CHECK_NEEDED
+
+    main_refs = _expected_clause_refs("main_clauses", main)
+    special_refs = _expected_clause_refs("special_clauses", special)
+    candidates_by_ref = {
+        candidate.clause_ref: candidate
+        for candidate in data.classification_candidates
+    }
+    expected_refs = main_refs + special_refs
+    if any(clause_ref not in candidates_by_ref for clause_ref in expected_refs):
+        return RuleStatus.CHECK_NEEDED
+
+    main_candidates = [candidates_by_ref[clause_ref] for clause_ref in main_refs]
+    special_candidates = [
+        candidates_by_ref[clause_ref] for clause_ref in special_refs
+    ]
+    all_candidates = main_candidates + special_candidates
+    if any(
+        candidate.review_required
+        or candidate.clarity_candidate is not ClarityCandidate.CLEAR
+        for candidate in all_candidates
+    ):
+        return RuleStatus.CHECK_NEEDED
+
+    main_conditions = _candidate_conditions(main_candidates)
+    special_conditions = _candidate_conditions(special_candidates)
+    for clause_type in main_conditions.keys() & special_conditions.keys():
+        left = main_conditions[clause_type]
+        right = special_conditions[clause_type]
+        if not left or not right:
+            return RuleStatus.CHECK_NEEDED
+        if left != right:
+            return RuleStatus.POSSIBLE_CONFLICT
+    return RuleStatus.CLEAR
 
 
 _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {

@@ -4,8 +4,9 @@
 
 2026-07-18 ADR에 따라 extraction과 별도 실행 계층으로 분리한다.
 canonical v1.9.0은 ClassificationInput·ClassificationResult를 제공하고 v1.8.0 payload 읽기를
-허용한다. 현재 구현된 실행 코드는 확인 완료 InputSnapshot을 ClassificationInput으로 변환하는
-순수 builder이며, provider·fallback·규칙 adapter 연결은 후속 작업이다.
+허용한다. 현재 확인 완료 InputSnapshot을 ClassificationInput으로 변환하는 순수 builder,
+ClassificationProvider·Gemini adapter·결정적 Fake provider, 후보를 추측하지 않는 safe fallback
+service가 구현됐으며 규칙 adapter 연결은 후속 작업이다.
 
 결정과 전환 순서:
 [`2026-07-18-classification-boundary.md`](../../../../docs/decisions/2026-07-18-classification-boundary.md)
@@ -87,6 +88,14 @@ ExtractedField는 변경하지 않는다.
 | J11 | repair_responsibility_clause | 수리 유형·명확성·책임 주체 | Python 규칙 |
 | J12 | main_clauses·special_clauses | 조항별 유형·조건 | Python 규칙의 본문-특약 비교 |
 
+## 실행 실패 경계
+
+`ClassificationService.classify(snapshot)`은 입력 생성 → provider 호출 → 입력·결과 교차 검증
+순서로 실행한다. 설정 부재·provider 오류·응답 검증 실패·입력 검증 실패 시 원문을 추측하지
+않고 `candidates=[]`, `classification_method=safe_fallback`인 결과를 반환한다. 실패 provenance는
+`provider_unavailable`·`provider_error`·`response_validation_failed`·`input_validation_failed`
+네 내부 코드로만 기록하며 provider·SDK 원문 오류는 결과에 포함하지 않는다.
+
 ## 불변조건
 
 - classification은 DocumentExtraction과 InputSnapshot을 수정하지 않는다.
@@ -98,8 +107,6 @@ ExtractedField는 변경하지 않는다.
 
 ## 후속 구현
 
-1. Gemini classification prompt와 provider adapter를 분리한다.
-2. provider 실패·응답 검증 실패용 safe fallback을 구현한다.
-3. Backend에 snapshot 이후 classification 실행·저장 단계를 추가한다.
-4. J10~J12 adapter·fixture·평가를 새 계약으로 전환한다.
-5. 공동 전환 완료 후 기존 extraction 명확성 후보 필드를 deprecated/null 정책으로 전환한다.
+1. Backend에 snapshot 이후 classification 실행·저장 단계를 추가한다.
+2. J10~J12 adapter·fixture·평가를 새 계약으로 전환한다.
+3. 공동 전환 완료 후 기존 extraction 명확성 후보 필드를 deprecated/null 정책으로 전환한다.

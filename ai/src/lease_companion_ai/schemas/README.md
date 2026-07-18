@@ -35,4 +35,4 @@ AI 입출력의 정형 구조를 정의한다. 문서별 필드, 판정 결과, 
 - `InputSnapshot`은 불변 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증한다. 중첩 필드·목록·매핑까지 불변이며 명시적으로 확인된 필드만 허용한다. `AnalysisRunResult.results`는 R01~R10을 순서대로 정확히 10개 요구한다. `judgments`는 1단계 R-only 실행의 빈 목록 또는 2단계 J01~J12 전체 순서만 허용한다.
 - `RuleResult.result_type`은 `judgment|fact_flag`로 R01~R10별 고정되며, `triggers_actions`는 현재 status가 후속 질문·체크리스트·행동을 활성화하는지 나타낸다. 모델이 두 값의 조합을 검증한다.
 - `JudgmentResult`는 J01~J12 식별자·판정별 허용 상태·행동 트리거·`확인 불가→분석 불가`를 검증한다.
-- `JudgmentInput`은 판정별 필수 필드만 확인 완료 snapshot에서 복사하며, null 입력에는 `issue_code`를 요구한다. `rules/judgments.py`가 J01~J12를 실행한다.
+- `JudgmentInput`은 판정별 필수 필드만 확인 완료 snapshot에서 복사하며, null 입력에는 `issue_code`를 요구한다. J10~J12는 원문 필드와 별도 불변 `classification_candidates`를 함께 받고, 후보가 R01~R10 입력을 변경하지 못한다. `rules/judgments.py`가 J01~J12를 실행한다.

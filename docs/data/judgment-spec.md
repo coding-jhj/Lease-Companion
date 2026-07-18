@@ -59,11 +59,13 @@
 | J07 | 위 금액 4개와 각 `*_korean_amount` | — | `contract_type` |
 | J08 | `contract_payment_date`, `balance_payment_date`, `move_in_date`, `start_date`, `end_date` | — | `move_in_date`, `balance_payment_date` |
 | J09 | `management_fee_present`, `management_fee`, `management_fee_items` | — | — |
-| J10 | `deposit_return_condition`, `deposit_return_clause` | — | — |
-| J11 | `repair_responsibility`, `repair_responsibility_clause` | — | — |
+| J10 | `deposit_return_clause` | — | — |
+| J11 | `repair_responsibility_clause` | — | — |
 | J12 | `main_clauses`, `special_clauses_present`, `special_clauses` | — | — |
 
 null 입력은 의미를 잃지 않도록 `issue_code`를 반드시 갖는다: `not_stated`·`unreadable`·`ambiguous`·`parse_failed`·`not_applicable`. 자유문 `failure_reason`은 사용자 설명용이며 판정 분기 키로 사용하지 않는다.
+
+J10~J12는 위 원문 필드와 별도 `ClassificationResult.candidates`를 함께 사용한다. J10은 반환 유형·명확성·조건, J11은 수리 유형·명확성·책임 주체, J12는 본문·특약 후보의 조항 유형·조건을 비교한다. 후보가 없거나 검증되지 않으면 추측하지 않고 `확인 필요` 등 판정별 허용 안전 상태를 반환한다. 구 `deposit_return_condition`·`repair_responsibility`는 v1.8·legacy 읽기 호환 adapter에서만 처리하며 canonical J 입력 키가 아니다.
 
 ---
 
