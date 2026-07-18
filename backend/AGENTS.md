@@ -39,7 +39,7 @@
 | 서비스 | `app/services/` | 계약 건·분석 실행 흐름 오케스트레이션, `ai/` 호출 |
 | 저장소 | `app/repositories/` | 목표 저장소 경계. 현재 로컬 MVP는 라우트·워커가 SQLAlchemy 세션을 직접 사용하며 별도 저장소 구현은 후속 |
 | 스키마 | `app/schemas/` | 요청·응답 wrapper (도메인 타입은 AI Pydantic 공통 타입 재사용, 중복 정의 금지) |
-| 모델 | `app/models/` | 구현된 SQLAlchemy 영속 모델. Alembic 마이그레이션 체계는 후속 |
+| 모델 | `app/models/` | 구현된 SQLAlchemy 영속 모델. 스키마 변경은 Alembic revision(`backend/alembic/`)으로 적용 |
 | 워커 | `app/workers/` | 분석 실행 등 비동기·백그라운드 작업 |
 | 코어 | `app/core/` | 설정·공통 오류·보안 유틸 |
 

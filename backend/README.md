@@ -89,16 +89,16 @@ docker compose up -d db           # 저장소 루트에서 — 이것만 실행
 
 ### "DB 구조가 바뀌었어요" 공지가 왔을 때 (그때만)
 
-테이블·컬럼이 추가되면 기존 로컬 DB와 구조가 안 맞아 서버가 오류를 낸다. 아래로 초기화한다 (로컬 DB는 테스트 데이터뿐이라 날려도 됨):
+Alembic 도입 완료(2026-07-18). 초기화 없이 명령 한 줄로 구조를 반영한다:
 
 ```bash
-docker compose down -v            # DB 완전 초기화 (저장소 루트에서)
-docker compose up -d db           # 새로 시작
 cd backend
-python scripts/seed_dev.py        # admin / 1234 다시 생성
+alembic upgrade head              # 스키마 변경 적용
 ```
 
-> TODO: Alembic(마이그레이션 도구) 도입 후에는 초기화 없이 명령 한 줄로 구조만 반영되게 바꿀 예정.
+- **기존에 쓰던 로컬 DB**(Alembic 도입 전부터 있던 DB)는 최초 1회만 `alembic stamp head`로 현재 상태를 기록한 뒤 위 명령을 쓴다.
+- 스키마를 바꾸는 사람은 `app/models/` 수정 후 `alembic revision --autogenerate -m "설명"`으로 revision을 만들어 커밋한다. **revision은 동시에 여러 명이 만들면 head가 갈라진다** — 만들기 전에 팀에 공유.
+- DB URL은 `alembic/env.py`가 `.env`의 `DATABASE_URL`에서 읽는다. 완전 초기화가 필요하면 기존 방식(`docker compose down -v` → `up` → seed)도 여전히 동작한다.
 
 - 호스트 포트는 **5433**이다(로컬 설치 PostgreSQL의 5432와 충돌 방지). 접속 문자열은 `.env`의 `DATABASE_URL` 참조.
 - 연결 확인이 필요하면 backend/에서 `python -m app.core.db` — "DB 연결 OK: ..."가 나오면 성공.
@@ -142,7 +142,7 @@ python scripts/seed_dev.py        # admin / 1234 다시 생성
 - **체크리스트·계약 직후 행동 상태 API 구현 완료**: `GET /api/contracts/{id}/checklist-items`(?kind 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert). 항목 문구는 분석 결과가 원본 — 상태만 계약 건 단위 저장·재조회. 생성 항목 원본과 item_key 존재 검증은 후속 TODO.
 - 백그라운드 실행은 FastAPI BackgroundTasks(`app/workers/analysis.py`) — 별도 워커 프로세스 분리는 LLM 파이프라인 장시간화 시. **기동 시 stale 실행 복구**(2026-07-17): 서버 재시작으로 pending/running에 멈춘 추출·분석·생성 실행을 failed로 정리해 클라이언트 무한 폴링을 방지한다(`fail_stale_runs`). 규칙 결과가 이미 저장된 행의 `result`·`status=completed`는 건드리지 않는다.
 - **CASE-001 통합 시나리오 테스트**: `tests/api/test_case001_e2e.py` — 회원가입→로그인→계약 건→상황 입력→업로드+registry-link→추출→수정→확인→분석 폴링→체크리스트→**재로그인 후 재조회**까지 8단계 흐름 1건 (4단계 통합 검증의 백엔드 몫).
-- **주의(Alembic 도입 전)**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 모델에 컬럼이 추가되면 기존 dev DB에는 수동 `ALTER TABLE … ADD COLUMN` 필요 (예: 2026-07-16 `contract_projects`에 deposit_paid·signed·move_in_date·balance_payment_date·is_proxy_contract 추가 / 2026-07-17 `analysis_runs`에 `generation_result` JSONB·`generation_status` VARCHAR(20)·`generation_error` TEXT 추가). 마이그레이션 도구 도입은 TODO.
+- **주의**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 기존 테이블 변경은 Alembic revision으로 적용한다(위 "DB 구조가 바뀌었어요" 절 참조).
 - **피드백 API 구현 완료**(2026-07-17): `POST/GET /api/contracts/{id}/feedback` — 자유 텍스트(1~2000자) + 선택 평점(1~5), 계약 건 단위 이력(수정·삭제 없음), 본인 소유만. 신규 테이블 `user_feedbacks`는 기동 시 `create_all`이 자동 생성.
-- **Alembic 도입 제안**(2026-07-17): [`../docs/decisions/2026-07-17-alembic-migration.md`](../docs/decisions/2026-07-17-alembic-migration.md) — 팀 합의 대기. 합의 전까지 수동 ALTER 방식 유지.
+- **Alembic 도입 완료**(2026-07-18): [`../docs/decisions/2026-07-17-alembic-migration.md`](../docs/decisions/2026-07-17-alembic-migration.md) 합의에 따라 `backend/alembic/` 구성. baseline revision `7adac2280b55`(현행 9개 테이블 전체), 기존 dev DB는 `stamp head`로 기록. 이후 스키마 변경은 revision으로만.
 - **canonical v1.8.0 연결(2026-07-18)**: ① confirm이 계약 상황을 `ContractContext`로 스냅샷에 불변 포함 ② 분석 시작 시 현재 계약 상황과 다르면 422 `contract_context_changed` ③ 워커가 R01~R10과 J01~J12 전체 결과를 저장 ④ 같은 snapshot의 ContractContext를 GenerationService에 전달해 `StageGuidance`와 `prompt_version`을 생성·검증·분리 저장 ⑤ `GenerationResult`가 R `items`와 J `judgment_items`를 분리하고 안정 `item_key`를 저장 ⑥ 생성 실패 시 규칙 결과를 유지한다.
