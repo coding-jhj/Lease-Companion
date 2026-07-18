@@ -30,6 +30,8 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .contract-card, .field-card, .result-card, .check-item { display: grid; gap: 6px; padding: 16px; border: 1px solid #dce5dd; border-radius: 14px; text-decoration: none; }
 .contract-card span, small { color: #667269; font-weight: 400; }
 .field-card input { margin-top: 4px; }
+.clause-list-editor { display: grid; gap: 10px; }
+.clause-list-editor__item { display: grid; gap: 4px; padding: 10px; border: 1px solid #edf1ed; border-radius: 10px; }
 .result-card p { margin: 0; line-height: 1.5; }
 .check-item { grid-template-columns: auto 1fr; align-items: center; }
 .check-item input { width: 20px; height: 20px; }
