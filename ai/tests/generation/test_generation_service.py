@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from tempfile import TemporaryDirectory
-
 import pytest
 
 from lease_companion_ai.generation.models import (
@@ -235,21 +233,21 @@ def test_prompts_are_loaded_from_versioned_files():
     assert all("버전:" in prompt for prompt in provider.calls[0].prompts.values())
 
 
-def test_prompt_loader_rejects_header_that_does_not_match_prompt_set():
-    with TemporaryDirectory(dir=Path("C:/tmp")) as directory_path:
-        prompt_root = Path(directory_path)
-        for name in ("questions", "checklists", "summaries"):
-            directory = prompt_root / name
-            directory.mkdir()
-            (directory / "v1.txt").write_text(
-                f"버전: {name}-v1\n역할: 테스트", encoding="utf-8"
-            )
-        (prompt_root / "questions" / "v1.txt").write_text(
-            "버전: questions-v2\n역할: 잘못된 버전", encoding="utf-8"
+def test_prompt_loader_rejects_header_that_does_not_match_prompt_set(
+    tmp_path: Path,
+):
+    for name in ("questions", "checklists", "summaries"):
+        directory = tmp_path / name
+        directory.mkdir()
+        (directory / "v1.txt").write_text(
+            f"버전: {name}-v1\n역할: 테스트", encoding="utf-8"
         )
+    (tmp_path / "questions" / "v1.txt").write_text(
+        "버전: questions-v2\n역할: 잘못된 버전", encoding="utf-8"
+    )
 
-        with pytest.raises(ValueError, match="questions-v1"):
-            load_generation_prompts(prompt_root)
+    with pytest.raises(ValueError, match="questions-v1"):
+        load_generation_prompts(tmp_path)
 
 
 def test_case001_fixture_can_use_template_fallback_with_contract_context():
