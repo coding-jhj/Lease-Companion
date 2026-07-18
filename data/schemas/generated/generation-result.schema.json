@@ -58,8 +58,8 @@
           "title": "Move In Date"
         },
         "schema_version": {
-          "const": "1.7.0",
-          "default": "1.7.0",
+          "const": "1.8.0",
+          "default": "1.8.0",
           "title": "Schema Version",
           "type": "string"
         },
@@ -105,6 +105,29 @@
       "title": "GenerationMethod",
       "type": "string"
     },
+    "GuidanceActionItem": {
+      "additionalProperties": false,
+      "description": "R/J 생성 체크리스트·계약 직후 행동의 안정 저장 식별자.",
+      "properties": {
+        "item_key": {
+          "maxLength": 100,
+          "pattern": "^(?:R\\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+          "title": "Item Key",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_key",
+        "text"
+      ],
+      "title": "GuidanceActionItem",
+      "type": "object"
+    },
     "JudgmentGuidance": {
       "additionalProperties": false,
       "description": "검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내.",
@@ -133,6 +156,14 @@
           "pattern": "^J(?:0[1-9]|1[0-2])$",
           "title": "Judgment Id",
           "type": "string"
+        },
+        "post_contract_action_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GuidanceActionItem"
+          },
+          "title": "Post Contract Action Items",
+          "type": "array"
         },
         "post_contract_actions": {
           "default": [],
@@ -168,6 +199,14 @@
             "type": "string"
           },
           "title": "Signing Checklist",
+          "type": "array"
+        },
+        "signing_checklist_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GuidanceActionItem"
+          },
+          "title": "Signing Checklist Items",
           "type": "array"
         },
         "source_ids": {
@@ -211,6 +250,14 @@
         "generation_method": {
           "$ref": "#/$defs/GenerationMethod"
         },
+        "post_contract_action_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GuidanceActionItem"
+          },
+          "title": "Post Contract Action Items",
+          "type": "array"
+        },
         "post_contract_actions": {
           "default": [],
           "items": {
@@ -250,6 +297,14 @@
             "type": "string"
           },
           "title": "Signing Checklist",
+          "type": "array"
+        },
+        "signing_checklist_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GuidanceActionItem"
+          },
+          "title": "Signing Checklist Items",
           "type": "array"
         },
         "source_ids": {
@@ -316,7 +371,7 @@
       "type": "object"
     }
   },
-  "$id": "lease-companion/generation-result-v1.7.0.schema.json",
+  "$id": "lease-companion/generation-result-v1.8.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과.",
@@ -352,8 +407,8 @@
       "type": "string"
     },
     "schema_version": {
-      "const": "1.7.0",
-      "default": "1.7.0",
+      "const": "1.8.0",
+      "default": "1.8.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -370,5 +425,5 @@
   ],
   "title": "GenerationResult",
   "type": "object",
-  "x-schema-version": "1.7.0"
+  "x-schema-version": "1.8.0"
 }

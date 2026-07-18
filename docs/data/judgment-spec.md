@@ -98,7 +98,7 @@ null 입력은 의미를 잃지 않도록 `issue_code`를 반드시 갖는다: `
 
 D영역은 J01–J12 결과를 **사용자 행동으로 변환**한다. 자체 결과 상태를 갖지 않으며, 시급도와 계약 단계에 따라 묶는다.
 
-런타임 구현은 canonical v1.7.0 `StageGuidance`다. `GenerationService`가 분석에 사용한 동일 `ContractContext`를 받아 아래 규칙으로 결정론적으로 구성하며, LLM은 판정·그룹을 변경하지 않는다. 판정별 생성 안내는 별도 `JudgmentGuidance` 계약을 사용한다.
+런타임 구현은 canonical v1.8.0 `StageGuidance`다. `GenerationService`가 분석에 사용한 동일 `ContractContext`를 받아 아래 규칙으로 결정론적으로 구성하며, LLM은 판정·그룹을 변경하지 않는다. 판정별 생성 안내는 별도 `JudgmentGuidance` 계약을 사용한다.
 
 - `deposit_paid=false`이고 계약 직후가 아니면 J01·J04·J05·J07의 활성 질문을 `before_deposit_questions`로 묶는다.
 - 계약 직후가 아니면 J02·J06·J08·J09·J10·J11·J12의 활성 행동을 `signing_checklist`로 묶는다.

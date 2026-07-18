@@ -87,3 +87,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .logout-button { width: auto; padding: 8px 10px; border: 1px solid #aebbb1; background: #fff; color: #31523a; font-size: 13px; }
 .logout-button:hover { background: #edf3ee; }
+textarea { width: 100%; min-height: 120px; padding: 13px 14px; border: 1px solid #bdc9bf; border-radius: 12px; resize: vertical; font: inherit; }
+textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
+.guidance-list, .history-section { display: grid; gap: 12px; }
+.guidance-card, .feedback-card, .history-section { padding: 16px; border: 1px solid #dce5dd; border-radius: 14px; background: #fff; }
+.guidance-card__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.guidance-card p { line-height: 1.6; }
+.guidance-section h4 { margin: 12px 0 6px; }
+.guidance-section ul, .history-section ul, .feedback-history { margin: 0; padding-left: 20px; }
+.fallback-badge { padding: 5px 8px; border-radius: 999px; background: #fff3cd; color: #6b4f00; font-size: 12px; font-weight: 800; }
+.feedback-card { display: grid; gap: 14px; }
+.feedback-card h2, .history-section h2 { margin-top: 0; }
+.feedback-history { display: grid; gap: 8px; margin-top: 10px; }
+.notice { margin: 0; padding: 12px; border-radius: 10px; background: #edf5ef; color: #245236; }

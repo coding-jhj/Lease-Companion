@@ -30,7 +30,7 @@
 - 생성 입력 전후 `AnalysisRunResult` 동일성을 검사하며 규칙 판정 필드를 변경하지 않음
 - `StageGuidance`는 `contract_stage`·`deposit_paid`·`signed`·입주일·잔금일과 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 생성
 - 실제 provider는 Responses API `gpt-5.6-sol`의 Pydantic Structured Outputs를 사용하며 호출 제한은 provider 내부에 둠
-- 공개 생성 타입은 canonical v1.7.0의 `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`StageGuidance`다. R 안내 `items`와 J 안내 `judgment_items`는 별도 축이다. 두 축 모두 provider·PII tokenization·grounding·금지 단정·안전 fallback을 통과한다. `GenerationResult.prompt_version`은 실행에 사용한 prompt set 버전을 기록하고 provider 요청에도 같은 값을 전달한다. Backend worker는 규칙 결과와 생성 결과를 분리 저장한다.
+- 공개 생성 타입은 canonical v1.8.0의 `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`GuidanceActionItem`·`StageGuidance`다. R 안내 `items`와 J 안내 `judgment_items`는 별도 축이다. 두 축 모두 provider·PII tokenization·grounding·금지 단정·안전 fallback을 통과하며 체크리스트·행동에는 안정 `item_key`를 부여한다. `GenerationResult.prompt_version`은 실행에 사용한 prompt set 버전을 기록하고 provider 요청에도 같은 값을 전달한다. Backend worker는 규칙 결과와 생성 결과를 분리 저장한다.
 
 ## 확정 / TODO
 

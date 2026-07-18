@@ -27,6 +27,8 @@ dist/
 build/
 .turbo/
 *.tsbuildinfo
+test-results/
+playwright-report/
 
 # === 실제 데이터 / 개인정보 (커밋 금지) ===
 # data/raw 내부 실제 데이터는 전부 제외, README는 예외

@@ -4,7 +4,7 @@
 여기서는 항목 식별자(item_key)별 done 상태만 관리한다.
 """
 
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ from app.api.routes.contracts import _get_owned_contract
 from app.core.db import get_db
 from app.models.checklist import ChecklistItemState
 from app.models.user import User
-from app.schemas.checklist import ItemKind, ItemStateRequest, ItemStateResponse
+from app.schemas.checklist import ITEM_KEY_PATTERN, ItemKind, ItemStateRequest, ItemStateResponse
 
 router = APIRouter(prefix="/api/contracts/{contract_id}/checklist-items", tags=["checklists"])
 
@@ -38,12 +38,20 @@ def put_item_state(
     contract_id: int,
     kind: ItemKind,
     body: ItemStateRequest,
-    item_key: str = Path(max_length=100),
+    item_key: str = Path(max_length=100, pattern=ITEM_KEY_PATTERN),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ChecklistItemState:
     """항목 상태 저장 (upsert — 없으면 생성, 있으면 갱신)."""
     contract = _get_owned_contract(contract_id, user, db)
+    if item_key.split(":", maxsplit=2)[1] != kind:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "item_kind_mismatch",
+                "message": "item_key의 항목 종류가 URL kind와 일치하지 않습니다.",
+            },
+        )
     state = db.scalar(
         select(ChecklistItemState).where(
             ChecklistItemState.contract_id == contract.id,

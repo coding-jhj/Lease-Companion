@@ -12,7 +12,7 @@
 
 ## Canonical 키·타입
 
-schema v1.7.0의 `JudgmentInput`이 사용하는 타입을 고정한다. 모든 값은 `ExtractedField` 안에 있으며 아래는 `effective_value` 타입이다. `null`은 허용하되 J 입력에서는 `issue_code`가 필요하다.
+schema v1.8.0의 `JudgmentInput`이 사용하는 타입을 고정한다. 모든 값은 `ExtractedField` 안에 있으며 아래는 `effective_value` 타입이다. `null`은 허용하되 J 입력에서는 `issue_code`가 필요하다.
 
 | 문서 | 키 | 타입 |
 |---|---|---|

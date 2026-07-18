@@ -1,0 +1,49 @@
+import { expect, test } from "@playwright/test";
+
+test("signup through saved checklist follows the complete MVP flow", async ({ page }) => {
+  await page.goto("/signup");
+  await page.getByLabel("아이디").fill("e2e-user");
+  await page.getByLabel("이메일").fill("e2e@example.com");
+  await page.getByLabel("비밀번호").fill("password1!");
+  await page.getByRole("button", { name: "회원가입" }).click();
+
+  await page.getByLabel("아이디").fill("e2e-user");
+  await page.getByLabel("비밀번호").fill("password1!");
+  await page.getByRole("button", { name: "로그인하고 시작" }).click();
+  await expect(page.getByRole("heading", { name: "내 계약" })).toBeVisible();
+
+  await page.getByRole("link", { name: "새 계약 만들기" }).click();
+  await page.getByLabel("계약 이름").fill("E2E 전세 계약");
+  await page.getByRole("button", { name: "계약 상황 입력하기" }).click();
+  await page.getByLabel("대리 계약 여부").selectOption("no");
+  await page.getByRole("button", { name: "문서 업로드하기" }).click();
+
+  await page.getByLabel("계약서 PDF").setInputFiles({
+    name: "contract.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("synthetic lease contract"),
+  });
+  await page.getByRole("button", { name: "추출 시작하기" }).click();
+
+  await expect(page.getByRole("heading", { name: "추출값 확인·수정" })).toBeVisible();
+  await page.getByRole("button", { name: "읽힌 값 모두 확인" }).click();
+  await page.getByLabel("입금 계좌 예금주 값").fill("이정훈");
+  await page.getByRole("button", { name: "확인 완료하고 분석하기" }).click();
+
+  await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible();
+  await page.getByRole("button", { name: "리포트 보기" }).click();
+  await expect(page.getByRole("heading", { name: "확인 질문과 다음 행동" })).toBeVisible();
+  await expect(page.getByText("안전한 기본 안내").first()).toBeVisible();
+
+  await page.getByLabel("평점").selectOption("5");
+  await page.getByRole("textbox", { name: "의견", exact: true }).fill("전체 흐름 확인 완료");
+  await page.getByRole("button", { name: "의견 저장" }).click();
+  await expect(page.getByRole("status")).toContainText("의견이 저장되었습니다.");
+
+  await page.getByRole("button", { name: "체크리스트로 이동" }).click();
+  const action = page.getByLabel("서명 또는 입금 전에 계약 권한과 관련 서류를 확인하세요.");
+  await expect(action).toBeVisible();
+  if (!await action.isChecked()) await action.click();
+  await expect(action).toBeChecked();
+  await expect(page.getByText("계약서 · contract.txt")).toBeVisible();
+});

@@ -1,6 +1,6 @@
 # 데이터 계약 v1 인수인계 (A → B·C)
 
-> schema_version **1.7.0** · 작성 2026-07-16 · 최근 갱신 2026-07-18 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)
+> schema_version **1.8.0** · 작성 2026-07-16 · 최근 갱신 2026-07-18 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)
 
 ## 1. 목적과 현재 상태
 
@@ -15,11 +15,12 @@
 
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
-- **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend의 schema version·wire DTO는 v1.7.0에 맞췄으며 J·생성 결과 화면 소비는 후속 범위다.
+- **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend의 schema version·wire DTO와 R/J 생성 결과 화면은 v1.8.0에 맞췄다.
 - **v1.4.0 판정 계약**: 기존 R/J 출력 분리를 유지하고, 확인 완료 snapshot에서 판정별 필수 `ExtractedField`를 복사하는 `JudgmentInput`을 추가했다. null J 입력은 구조화 `issue_code`를 요구한다.
 - **v1.5.0 ContractContext 활용 계약**: `GenerationResult.stage_guidance`가 immutable `ContractContext`와 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 기록한다.
 - **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.
 - **v1.7.0 J 생성 계약**: `JudgmentGuidance`와 `GenerationResult.judgment_items`를 추가했다. 기존 R `items`와 J `judgment_items`는 별도 ID 축이며, 각 source ID는 해당 분석 항목의 `evidence_sources`만 참조한다.
+- **v1.8.0 안정 action item 계약**: R/J `signing_checklist_items`·`post_contract_action_items`에 `{item_key, text}`를 추가했다. `item_key`는 Python이 `result_id|kind|text`에서 생성하며 Backend가 형식·kind 일치를 검증한다.
 - **생성 계약 유지**: `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`StageGuidance`는 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`contract_id`·`rule_id`·`judgment_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
 
 ## 2. 설치·검증 명령
@@ -107,7 +108,7 @@ CorrectionRequest.corrected_value
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - `AnalysisRunResult`를 먼저 저장하고, `GenerationResult`는 `validate_generation_result_for_analysis()` 통과 후 별도 `generation_result`에 저장한다. 생성 실패는 규칙 `result`를 실패로 바꾸지 않는다.
 
-**B 인계 확인 체크리스트** (R/J 저장과 canonical v1.7.0 JudgmentGuidance·StageGuidance·prompt version 소비 확인):
+**B 인계 확인 체크리스트** (R/J 저장과 canonical v1.8.0 JudgmentGuidance·GuidanceActionItem·StageGuidance·prompt version 소비 확인):
 
 - [x] `lease_companion_ai.schemas.unified` import 성공 (GenerationResult·validate_generation_result_for_analysis 포함)
 - [x] fixture 7개 `model_validate_json` 검증 성공
@@ -148,9 +149,9 @@ CorrectionRequest.corrected_value
 
 | 단계 | 상태 |
 |---|---|
-| 1. A 패키지 준비 | **완료** — canonical v1.7.0, JudgmentInput·JudgmentResult·JudgmentGuidance·StageGuidance·prompt version, Schema 8개, fixture 7개, J gold 47건 |
+| 1. A 패키지 준비 | **완료** — canonical v1.8.0, JudgmentInput·JudgmentResult·JudgmentGuidance·GuidanceActionItem·StageGuidance·prompt version, Schema 8개, fixture 7개, J gold 47건 |
 | 2. B 소비 확인 | **완료** — confirm ContractContext 복사·변경 차단, worker 단계별 안내 생성/검증/분리 저장 완료 |
-| 3. Frontend 소비 확인 | **부분 완료** — v1.7.0 버전·JudgmentResult·JudgmentGuidance·GenerationResult·StageGuidance·prompt version DTO와 기본 추출·수정 타입 연결. J01~J12·generation 화면 소비는 후속 |
+| 3. Frontend 소비 확인 | **완료** — v1.8.0 버전·JudgmentResult·JudgmentGuidance·GenerationResult·GuidanceActionItem·StageGuidance·prompt version DTO, J01~J12·R/J generation 화면, 체크리스트 상태 결합 연결 |
 
 최종 소비 완료는 위 체크리스트와 OpenAPI 소비자 테스트에서 **필드명 변경이 없음**을 확인한 시점이다.
 

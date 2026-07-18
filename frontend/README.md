@@ -54,7 +54,11 @@ tests/                  components/ features/ pages/
 cd frontend
 npm install
 npm run dev
+npm test
+npm run test:e2e
 ```
+
+`npm run test:e2e`는 Playwright Chromium 모바일 viewport에서 MSW 기반 8단계 사용자 흐름을 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
 
 기본 개발 실행은 실제 API를 사용한다. MSW 기반 test/Story 개발이 필요할 때만 `VITE_ENABLE_MSW=true`를 설정한다.
 
@@ -80,6 +84,11 @@ npm run dev
 - React + Vite + TypeScript SPA 초기화와 사용자 흐름 8단계 화면 구현 완료.
 - JWT Bearer 로그인, 계약·문서·추출·분석·체크리스트 실제 API 연결 완료. refresh token과 운영 토큰 정책은 Backend TODO를 따른다.
 - 추출과 분석은 `pending`·`running`·`completed`·`failed` 상태를 실제 API 폴링으로 처리한다.
-- `src/types`는 추출·수정 기본 필드(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)를 canonical 계약에 맞췄다.
-- canonical snapshot 전체와 generation 상태·결과, J01~J12 전체 판정 화면 소비 및 실제 브라우저 E2E는 후속 범위다.
+- 추출과 분석은 공통 `pollUntilTerminal()`을 사용한다. 로컬 MVP 임시 최대 대기시간은 60초이며, timeout은 Backend `failed`와 구분해 기존 실행 상태를 다시 확인한다. 화면 이탈 시 폴링을 중단한다.
+- 분석 규칙 결과와 안내 생성 상태는 분리한다. 안내 생성만 실패하면 규칙 결과를 유지하고 사용자에게 별도 안내를 표시한다.
+- 리포트는 canonical v1.8.0 `GenerationResult`의 R/J 설명·질문·서명 전 체크리스트·계약 직후 행동과 안전한 fallback 표시를 제공한다.
+- 체크리스트·계약 직후 행동은 안정 `item_key`로 실제 문구와 저장 상태를 결합한다.
+- 피드백 등록·이력, 분석 이력, 문서 이력 API를 화면에 연결했다.
+- MSW는 실제 API 경로·DTO와 같은 계약을 사용하며, Playwright E2E로 8단계 흐름을 검증한다.
+- `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

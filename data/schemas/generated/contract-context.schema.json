@@ -19,7 +19,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/contract-context-v1.7.0.schema.json",
+  "$id": "lease-companion/contract-context-v1.8.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "계약 상황 입력 — 스냅샷에 포함되는 불변 분석 입력.",
@@ -78,8 +78,8 @@
       "title": "Move In Date"
     },
     "schema_version": {
-      "const": "1.7.0",
-      "default": "1.7.0",
+      "const": "1.8.0",
+      "default": "1.8.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -97,5 +97,5 @@
   ],
   "title": "ContractContext",
   "type": "object",
-  "x-schema-version": "1.7.0"
+  "x-schema-version": "1.8.0"
 }

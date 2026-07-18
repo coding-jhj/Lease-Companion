@@ -68,8 +68,8 @@
           "title": "Move In Date"
         },
         "schema_version": {
-          "const": "1.7.0",
-          "default": "1.7.0",
+          "const": "1.8.0",
+          "default": "1.8.0",
           "title": "Schema Version",
           "type": "string"
         },
@@ -301,7 +301,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/judgment-input-v1.7.0.schema.json",
+  "$id": "lease-companion/judgment-input-v1.8.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "사용자 확인 완료 snapshot에서 만든 J 판정 전용 불변 effective input.",
@@ -355,8 +355,8 @@
       "type": "object"
     },
     "schema_version": {
-      "const": "1.7.0",
-      "default": "1.7.0",
+      "const": "1.8.0",
+      "default": "1.8.0",
       "title": "Schema Version",
       "type": "string"
     }
@@ -371,5 +371,5 @@
   ],
   "title": "JudgmentInput",
   "type": "object",
-  "x-schema-version": "1.7.0"
+  "x-schema-version": "1.8.0"
 }

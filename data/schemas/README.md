@@ -15,7 +15,7 @@
 
 ## 현재 상태 / TODO
 
-- **`generated/` — 현재 canonical JSON Schema v1.7.0 생성본(2026-07-18).** `ai/src/lease_companion_ai/schemas/unified.py`의 Pydantic 모델에서 자동 생성한 8개(contract-context·document-extraction·input-snapshot·judgment-input·correction-request·analysis-run-result·judgment-result·generation-result). **손으로 수정하지 않는다.** 재생성 명령:
+- **`generated/` — 현재 canonical JSON Schema v1.8.0 생성본(2026-07-18).** `ai/src/lease_companion_ai/schemas/unified.py`의 Pydantic 모델에서 자동 생성한 8개(contract-context·document-extraction·input-snapshot·judgment-input·correction-request·analysis-run-result·judgment-result·generation-result). **손으로 수정하지 않는다.** 재생성 명령:
   `conda run -n lease-py310 python scripts/generate_unified_schemas.py`
   사용법·필드 규약: [`../../docs/api/data-contract-v1.md`](../../docs/api/data-contract-v1.md)
 - **`legacy/` — 과거 수동 설계 보존.** `contract_schema.json`·`registry_schema.json`의 numeric confidence·`user_verified`, `minimum-mvp-extraction-v1.schema.json`은 현행 계약과 혼동하지 않는다. 소비 경계는 [`legacy/README.md`](legacy/README.md)를 따른다.

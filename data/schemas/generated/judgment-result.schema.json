@@ -79,7 +79,7 @@
       "type": "string"
     }
   },
-  "$id": "lease-companion/judgment-result-v1.7.0.schema.json",
+  "$id": "lease-companion/judgment-result-v1.8.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
@@ -152,5 +152,5 @@
   ],
   "title": "JudgmentResult",
   "type": "object",
-  "x-schema-version": "1.7.0"
+  "x-schema-version": "1.8.0"
 }

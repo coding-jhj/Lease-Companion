@@ -27,11 +27,13 @@ class GuardrailBlocked(ValueError):
 
 class GuardrailService:
     def enforce(self, rule: RuleResult, guidance: RuleGuidance) -> RuleGuidance:
+        signing_texts = tuple(item.text for item in guidance.signing_checklist_items)
+        post_action_texts = tuple(item.text for item in guidance.post_contract_action_items)
         texts = (
             guidance.explanation,
             *guidance.questions,
-            *guidance.signing_checklist,
-            *guidance.post_contract_actions,
+            *(signing_texts or guidance.signing_checklist),
+            *(post_action_texts or guidance.post_contract_actions),
         )
         reasons = list(grounding_violations(rule, guidance))
         if has_prohibited_claim(texts):
@@ -48,11 +50,13 @@ class GuardrailService:
     def enforce_judgment(
         self, judgment: JudgmentResult, guidance: JudgmentGuidance
     ) -> JudgmentGuidance:
+        signing_texts = tuple(item.text for item in guidance.signing_checklist_items)
+        post_action_texts = tuple(item.text for item in guidance.post_contract_action_items)
         texts = (
             guidance.explanation,
             *guidance.questions,
-            *guidance.signing_checklist,
-            *guidance.post_contract_actions,
+            *(signing_texts or guidance.signing_checklist),
+            *(post_action_texts or guidance.post_contract_actions),
         )
         reasons = list(judgment_grounding_violations(judgment, guidance))
         if has_prohibited_claim(texts):

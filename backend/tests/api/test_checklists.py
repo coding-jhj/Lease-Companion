@@ -43,23 +43,23 @@ def contract_id(client, alice):
 
 def test_upsert_and_requery(client, alice, contract_id):
     res = client.put(
-        f"/api/contracts/{contract_id}/checklist-items/checklist/R01",
+        f"/api/contracts/{contract_id}/checklist-items/checklist/R01:checklist:0123456789ab",
         json={"done": True},
         headers=alice,
     )
     assert res.status_code == 200
-    assert res.json() == {**res.json(), "kind": "checklist", "item_key": "R01", "done": True}
+    assert res.json() == {**res.json(), "kind": "checklist", "item_key": "R01:checklist:0123456789ab", "done": True}
 
     # 같은 항목 갱신 — 새 행이 아니라 덮어씀
     res = client.put(
-        f"/api/contracts/{contract_id}/checklist-items/checklist/R01",
+        f"/api/contracts/{contract_id}/checklist-items/checklist/R01:checklist:0123456789ab",
         json={"done": False},
         headers=alice,
     )
     assert res.json()["done"] is False
 
     client.put(
-        f"/api/contracts/{contract_id}/checklist-items/post_action/confirmed-date",
+        f"/api/contracts/{contract_id}/checklist-items/post_action/R01:post_action:abcdef012345",
         json={"done": True},
         headers=alice,
     )
@@ -71,12 +71,32 @@ def test_upsert_and_requery(client, alice, contract_id):
     post = client.get(
         f"/api/contracts/{contract_id}/checklist-items", params={"kind": "post_action"}, headers=alice
     ).json()
-    assert [i["item_key"] for i in post] == ["confirmed-date"]
+    assert [i["item_key"] for i in post] == ["R01:post_action:abcdef012345"]
+
+
+def test_item_key_kind_mismatch_rejected(client, alice, contract_id):
+    res = client.put(
+        f"/api/contracts/{contract_id}/checklist-items/checklist/R01:post_action:abcdef012345",
+        json={"done": True},
+        headers=alice,
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "item_kind_mismatch"
+
+
+def test_judgment_item_key_is_accepted(client, alice, contract_id):
+    res = client.put(
+        f"/api/contracts/{contract_id}/checklist-items/checklist/J01:checklist:0123456789ab",
+        json={"done": True},
+        headers=alice,
+    )
+    assert res.status_code == 200
+    assert res.json()["item_key"] == "J01:checklist:0123456789ab"
 
 
 def test_invalid_kind_rejected(client, alice, contract_id):
     res = client.put(
-        f"/api/contracts/{contract_id}/checklist-items/bogus/R01",
+        f"/api/contracts/{contract_id}/checklist-items/bogus/R01:checklist:0123456789ab",
         json={"done": True},
         headers=alice,
     )
@@ -87,7 +107,7 @@ def test_other_user_cannot_access(client, contract_id):
     bob = _token(client, "bob")
     assert client.get(f"/api/contracts/{contract_id}/checklist-items", headers=bob).status_code == 404
     res = client.put(
-        f"/api/contracts/{contract_id}/checklist-items/checklist/R01",
+        f"/api/contracts/{contract_id}/checklist-items/checklist/R01:checklist:0123456789ab",
         json={"done": True},
         headers=bob,
     )

@@ -159,6 +159,10 @@ def test_provider_output_is_grounded_and_rule_results_are_immutable():
     assert generated.items[0].generation_method is GenerationMethod.PROVIDER
     assert generated.items[0].provider_model == "fake-generation-v1"
     assert generated.items[0].source_ids == ("SRC-HTA-LAW",)
+    action = generated.items[0].signing_checklist_items[0]
+    assert action.text == "등기사항증명서의 소유자를 확인하십시오."
+    assert action.item_key.startswith("R01:checklist:")
+    assert len(action.item_key.rsplit(":", 1)[1]) == 12
     assert [call.rule_id for call in provider.calls] == ["R01"]
 
 
@@ -189,6 +193,8 @@ def test_provider_failure_returns_structured_fallback():
     assert failed.fallback_reason == "provider_error"
     assert failed.source_ids == ("SRC-HTA-LAW",)
     assert failed.signing_checklist == ("R01 자료를 확인하십시오.",)
+    assert failed.signing_checklist_items[0].text == "R01 자료를 확인하십시오."
+    assert failed.signing_checklist_items[0].item_key.startswith("R01:checklist:")
 
 
 def test_unknown_provider_source_id_uses_fallback():
@@ -207,6 +213,7 @@ def test_unknown_provider_source_id_uses_fallback():
     assert generated.items[0].generation_method is GenerationMethod.TEMPLATE_FALLBACK
     assert generated.items[0].fallback_reason == "invalid_source_id"
     assert generated.items[0].source_ids == ("SRC-HTA-LAW",)
+    assert generated.items[0].signing_checklist_items[0].text == "R01 자료를 확인하십시오."
 
 
 def test_prompts_are_loaded_from_versioned_files():
@@ -397,6 +404,10 @@ def test_judgment_provider_output_is_grounded_and_analysis_is_immutable():
     assert [item.judgment_id for item in generated.judgment_items] == ["J01"]
     assert generated.judgment_items[0].generation_method is GenerationMethod.PROVIDER
     assert generated.judgment_items[0].source_ids == ("SRC-J01",)
+    action = generated.judgment_items[0].signing_checklist_items[0]
+    assert action.text == "소유자 자료를 대조하십시오."
+    assert action.item_key.startswith("J01:checklist:")
+    assert len(action.item_key.rsplit(":", 1)[1]) == 12
     assert [call.rule_id for call in provider.calls] == ["R01", "J01"]
 
 

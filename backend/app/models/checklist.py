@@ -15,8 +15,8 @@ class ChecklistItemState(Base):
 
     항목 내용(문구·근거)은 분석 결과·생성 산출물이 원본이므로 저장하지 않는다 —
     여기는 (contract_id, kind, item_key)별 done 상태만 남긴다.
-    item_key는 클라이언트가 보내는 안정 식별자(예: rule_id)다. 생성 항목 원본과의 존재
-    검증은 후속 작업이다.
+    item_key는 canonical 생성 결과의 `R/J ID:kind:text_hash` 안정 식별자를 사용한다.
+    문구는 생성 결과가 원본이며 이 테이블에는 완료 상태만 저장한다.
     """
 
     __tablename__ = "checklist_item_states"

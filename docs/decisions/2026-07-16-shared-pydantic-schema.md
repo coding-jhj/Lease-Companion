@@ -51,7 +51,7 @@ ai/src/lease_companion_ai/schemas/
 
 ### 2026-07-17 구현 부록
 
-- 현재 canonical 버전은 **1.7.0**이다. v1.4.0에서 `JudgmentInput`·`JudgmentResult`·`FieldIssueCode`, v1.5.0에서 immutable `ContractContext`와 J 결과를 결합한 `StageGuidance`, v1.6.0에서 생성 prompt set 추적용 `GenerationResult.prompt_version`, v1.7.0에서 R/J 생성 축을 분리한 `JudgmentGuidance`·`GenerationResult.judgment_items`를 추가했다.
+- 현재 canonical 버전은 **1.8.0**이다. v1.4.0에서 `JudgmentInput`·`JudgmentResult`·`FieldIssueCode`, v1.5.0에서 immutable `ContractContext`와 J 결과를 결합한 `StageGuidance`, v1.6.0에서 생성 prompt set 추적용 `GenerationResult.prompt_version`, v1.7.0에서 R/J 생성 축을 분리한 `JudgmentGuidance`·`GenerationResult.judgment_items`, v1.8.0에서 R/J 체크리스트·행동용 `GuidanceActionItem.item_key`를 추가했다.
 - `InputSnapshot.contract_context`와 공개 `GenerationResult`·`RuleGuidance`를 추가했다.
 - 기존 스냅샷은 덮어쓰지 않으며 계약 상황 변경 후 재확인으로 새 스냅샷을 생성한다.
 - 생성 결과는 `AnalysisRunResult`와 분리하고 `analysis_run_id`·`rule_id`·공식 `source_ids` 연결을 저장 전에 검증한다.

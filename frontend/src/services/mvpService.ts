@@ -1,7 +1,6 @@
 import { apiClient } from "./apiClient";
 import type {
   AnalysisRunDetailDto,
-  AnalysisRunResultDto,
   AnalysisRunSummaryDto,
   AuthResponse,
   ChecklistItemKind,
@@ -10,6 +9,8 @@ import type {
   CorrectionRequestDto,
   DocumentDto,
   ExtractionStateDto,
+  FeedbackCreateRequestDto,
+  FeedbackDto,
   SituationRequestDto,
   SnapshotResponseDto,
   UploadDocumentType,
@@ -44,6 +45,8 @@ export const mvpService = {
       headers: jsonHeaders,
       body: JSON.stringify(situation),
     }),
+  getDocuments: (contractId: number) =>
+    apiClient<DocumentDto[]>(`/api/contracts/${contractId}/documents`),
   uploadDocument: (contractId: number, file: File, docType: UploadDocumentType) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -61,8 +64,8 @@ export const mvpService = {
     }),
   startExtraction: (contractId: number) =>
     apiClient<ExtractionStateDto>(`/api/contracts/${contractId}/extractions`, { method: "POST" }),
-  getLatestExtraction: (contractId: number) =>
-    apiClient<ExtractionStateDto>(`/api/contracts/${contractId}/extractions/latest`),
+  getLatestExtraction: (contractId: number, signal?: AbortSignal) =>
+    apiClient<ExtractionStateDto>(`/api/contracts/${contractId}/extractions/latest`, { signal }),
   submitCorrections: (request: CorrectionRequestDto) =>
     apiClient<ExtractionStateDto>(`/api/contracts/${request.contract_id}/corrections`, {
       method: "POST",
@@ -77,11 +80,14 @@ export const mvpService = {
     apiClient<AnalysisRunDetailDto>(`/api/contracts/${contractId}/analysis-runs`, {
       method: "POST",
     }),
-  getAnalysisRun: (contractId: number, analysisRunId: string) =>
-    apiClient<AnalysisRunDetailDto>(`/api/contracts/${contractId}/analysis-runs/${analysisRunId}`),
+  getAnalysisRun: (contractId: number, analysisRunId: string, signal?: AbortSignal) =>
+    apiClient<AnalysisRunDetailDto>(
+      `/api/contracts/${contractId}/analysis-runs/${analysisRunId}`,
+      { signal },
+    ),
   getAnalysisRuns: (contractId: number) =>
     apiClient<AnalysisRunSummaryDto[]>(`/api/contracts/${contractId}/analysis-runs`),
-  getAnalysisResult: async (contractId: number, analysisRunId?: string): Promise<AnalysisRunResultDto> => {
+  getAnalysisDetail: async (contractId: number, analysisRunId?: string): Promise<AnalysisRunDetailDto> => {
     const summaries = analysisRunId ? [] : await apiClient<AnalysisRunSummaryDto[]>(
       `/api/contracts/${contractId}/analysis-runs`,
     );
@@ -91,8 +97,16 @@ export const mvpService = {
       `/api/contracts/${contractId}/analysis-runs/${runId}`,
     );
     if (!run.result) throw new Error("분석 결과가 아직 준비되지 않았습니다.");
-    return run.result;
+    return run;
   },
+  getFeedback: (contractId: number) =>
+    apiClient<FeedbackDto[]>(`/api/contracts/${contractId}/feedback`),
+  createFeedback: (contractId: number, request: FeedbackCreateRequestDto) =>
+    apiClient<FeedbackDto>(`/api/contracts/${contractId}/feedback`, {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify(request),
+    }),
   getChecklist: (contractId: number) =>
     apiClient<ChecklistItemStateDto[]>(`/api/contracts/${contractId}/checklist-items`),
   updateChecklistItem: (

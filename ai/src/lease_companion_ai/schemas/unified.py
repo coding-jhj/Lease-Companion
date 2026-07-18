@@ -21,8 +21,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-SchemaVersion = Literal["1.7.0"]
-SCHEMA_VERSION: SchemaVersion = "1.7.0"
+SchemaVersion = Literal["1.8.0"]
+SCHEMA_VERSION: SchemaVersion = "1.8.0"
 GenerationPromptVersion = Literal["v1"]
 GENERATION_PROMPT_VERSION: GenerationPromptVersion = "v1"
 
@@ -875,6 +875,17 @@ class GenerationMethod(str, Enum):
     PROVIDER = "provider"
     TEMPLATE_FALLBACK = "template_fallback"
 
+class GuidanceActionItem(BaseModel):
+    """R/J 생성 체크리스트·계약 직후 행동의 안정 저장 식별자."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    item_key: str = Field(
+        pattern=r"^(?:R\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+        max_length=100,
+    )
+    text: str = Field(min_length=1)
+
 
 def _validate_unique_non_empty(values: tuple[str, ...], *, label: str) -> tuple[str, ...]:
     if any(not value.strip() for value in values):
@@ -894,6 +905,8 @@ class RuleGuidance(BaseModel):
     questions: tuple[str, ...] = ()
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
+    signing_checklist_items: tuple[GuidanceActionItem, ...] = ()
+    post_contract_action_items: tuple[GuidanceActionItem, ...] = ()
     source_ids: tuple[str, ...] = ()
     generation_method: GenerationMethod
     provider_model: str | None = None
@@ -914,6 +927,18 @@ class RuleGuidance(BaseModel):
         elif self.fallback_reason is None or self.provider_model is not None:
             raise ValueError("template fallback에는 fallback_reason만 필요합니다.")
         return self
+    @model_validator(mode="after")
+    def _action_items_match_legacy_text(self) -> "RuleGuidance":
+        pairs = (
+            (self.signing_checklist, self.signing_checklist_items, "checklist"),
+            (self.post_contract_actions, self.post_contract_action_items, "post_action"),
+        )
+        for legacy, items, kind in pairs:
+            if items and tuple(item.text for item in items) != legacy:
+                raise ValueError(f"{kind} 안정 항목은 기존 문자열 목록과 일치해야 합니다.")
+            if len({item.item_key for item in items}) != len(items):
+                raise ValueError(f"{kind} item_key는 중복될 수 없습니다.")
+        return self
 
 
 class JudgmentGuidance(BaseModel):
@@ -926,6 +951,8 @@ class JudgmentGuidance(BaseModel):
     questions: tuple[str, ...] = ()
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
+    signing_checklist_items: tuple[GuidanceActionItem, ...] = ()
+    post_contract_action_items: tuple[GuidanceActionItem, ...] = ()
     source_ids: tuple[str, ...] = ()
     generation_method: GenerationMethod
     provider_model: str | None = None
@@ -945,6 +972,19 @@ class JudgmentGuidance(BaseModel):
                 raise ValueError("provider 생성에는 provider_model만 필요합니다.")
         elif self.fallback_reason is None or self.provider_model is not None:
             raise ValueError("template fallback에는 fallback_reason만 필요합니다.")
+        return self
+
+    @model_validator(mode="after")
+    def _action_items_match_legacy_text(self) -> "JudgmentGuidance":
+        pairs = (
+            (self.signing_checklist, self.signing_checklist_items, "checklist"),
+            (self.post_contract_actions, self.post_contract_action_items, "post_action"),
+        )
+        for legacy, items, kind in pairs:
+            if items and tuple(item.text for item in items) != legacy:
+                raise ValueError(f"{kind} 안정 항목은 기존 문자열 목록과 일치해야 합니다.")
+            if len({item.item_key for item in items}) != len(items):
+                raise ValueError(f"{kind} item_key는 중복될 수 없습니다.")
         return self
 
 

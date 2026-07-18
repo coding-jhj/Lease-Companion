@@ -11,14 +11,13 @@ import type {
   VerificationStatus,
 } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
+import { PollTimeoutError, pollUntilTerminal } from "../../utils/pollUntilTerminal";
 
 const verificationLabels: Record<VerificationStatus, string> = {
   unverified: "미확인",
   confirmed: "확인됨",
   corrected: "수정됨",
 };
-
-const POLL_INTERVAL_MS = 1000;
 
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
@@ -34,22 +33,28 @@ export function ExtractionReviewPage() {
   const [correctionError, setCorrectionError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const pollGeneration = useRef(0);
+  const activePoll = useRef<AbortController | null>(null);
   const fields = fieldViewModels(documents);
 
   async function loadExtraction() {
-    const generation = ++pollGeneration.current;
+    activePoll.current?.abort();
+    const controller = new AbortController();
+    activePoll.current = controller;
     setStatus("loading");
     try {
-      let response = await mvpService.getLatestExtraction(contractId);
-      while (response.status === "pending" || response.status === "running") {
-        if (generation !== pollGeneration.current) return;
-        setRunStatus(response.status);
-        setStatus("processing");
-        await new Promise((resolve) => window.setTimeout(resolve, POLL_INTERVAL_MS));
-        response = await mvpService.getLatestExtraction(contractId);
-      }
-      if (generation !== pollGeneration.current) return;
+      const initialResponse = await mvpService.getLatestExtraction(contractId, controller.signal);
+      if (controller.signal.aborted) return;
+      const response = await pollUntilTerminal({
+        initialValue: initialResponse,
+        poll: () => mvpService.getLatestExtraction(contractId, controller.signal),
+        signal: controller.signal,
+        onUpdate: (current) => {
+          if (current.status === "pending" || current.status === "running") {
+            setRunStatus(current.status);
+            setStatus("processing");
+          }
+        },
+      });
       if (response.status === "failed") throw new Error(response.error ?? "문서 추출에 실패했습니다.");
       const extractedDocuments = [response.contract_doc, response.registry_doc].filter(
         (document): document is DocumentExtractionDto => document !== null,
@@ -62,14 +67,17 @@ export function ExtractionReviewPage() {
       ));
       setStatus("success");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "추출값을 불러오지 못했습니다.");
+      if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
+      setErrorMessage(error instanceof PollTimeoutError
+        ? error.message
+        : error instanceof Error ? error.message : "추출값을 불러오지 못했습니다.");
       setStatus("error");
     }
   }
 
   useEffect(() => {
     void loadExtraction();
-    return () => { pollGeneration.current += 1; };
+    return () => activePoll.current?.abort();
   }, [contractId]);
 
   function updateField(view: FieldViewModel, value: string) {
@@ -123,7 +131,7 @@ export function ExtractionReviewPage() {
         };
       });
       const request: CorrectionRequestDto = {
-        schema_version: "1.7.0",
+        schema_version: "1.8.0",
         contract_id: contractId,
         corrections,
       };
