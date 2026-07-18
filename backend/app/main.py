@@ -15,7 +15,8 @@ from app.workers.analysis import fail_stale_runs
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Alembic 도입 전 로컬 MVP 임시 처리. 기존 테이블 변경은 적용하지 못한다.
+    # 스키마 변경의 단일 기준은 Alembic(backend/alembic). create_all은 로컬 MVP 편의용
+    # 신규 테이블 생성만 담당하며 기존 테이블 변경은 적용하지 못한다 — 변경은 revision으로.
     Base.metadata.create_all(engine)
     # 재시작으로 중단된 추출·분석·생성 실행을 failed로 정리 — 클라이언트 무한 폴링 방지
     fail_stale_runs()
