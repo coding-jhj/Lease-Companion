@@ -970,6 +970,7 @@
             "schema": {
               "type": "string",
               "maxLength": 100,
+              "pattern": "^(?:R\\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
               "title": "Item Key"
             }
           }
