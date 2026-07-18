@@ -20,7 +20,7 @@ AI 컴포넌트별·end-to-end 평가를 실행한다. 추출·정규화·로컬
 
 ## 구현 상태
 
-- `retrieval.py`: retrieval dev/test goldset 로더와 top-k·source recall·citation 지표.
+- `retrieval.py`: retrieval dev/test goldset 로더와 top-k·전체 source recall·로컬 가용 source recall·citation 지표. 기대 source 누락은 원문 부재, R allowlist 제외, BM25 후보 누락, Top-k 밖으로 분해한다. 원문 부재는 중복 제거 source ID 목록으로, 검색 개선 가능한 실패는 사례·규칙·source 단위로 기록한다.
 - `offline.py`: 외부 호출 없는 추출·R01~R10·J01~J12·BM25 RAG·template 생성·Guardrail·end-to-end test 기준선.
 - `scripts/evaluate_ai_pipeline.py`: 전체 로컬 평가를 실행해 `data/evaluation/results/offline_test_metrics.json`에 기록.
 - `scripts/evaluate_retrieval.py`: retrieval만 dev/test로 분리해 재측정.

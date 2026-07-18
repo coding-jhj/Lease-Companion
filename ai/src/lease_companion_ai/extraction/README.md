@@ -4,11 +4,11 @@
 
 인식된 문서에서 핵심 필드를 **추출**한다. 상용 LLM(Gemini 3.5 Flash) 멀티모달 추출로 텍스트·표·서식 영역을 처리하고(시각 보조는 OCR과 동일한 Gemini VLM에 통합 — 별도 VLM 단계 없음), 추출 결과를 판정 스키마의 필드에 매핑한다. **판정·정규화는 하지 않는다.**
 
-## 하위 구조
+## 구현 파일
 
-- `commercial_llm/` — 상용 LLM 멀티모달 추출 (Gemini 3.5 Flash)
-- `vlm/` — (VLM은 OCR과 동일한 Gemini 3.5 Flash에 통합 — 별도 VLM 추출 단계 없음. 이 하위 모듈은 미사용)
-- `field_mapper/` — 추출 결과를 문서별 필드 스키마(`schemas/`)에 매핑
+- `gemini_extractor.py` — Gemini 3.5 Flash 멀티모달·텍스트 구조화와 typed response 검증
+- `minimum_mvp.py` — 외부 키가 없는 합성 TXT 입력의 결정론적 로컬 fallback
+- `../schemas/adapters.py` — 추출 결과를 canonical 판정 입력으로 변환
 
 ## 입력
 
@@ -23,5 +23,6 @@
 ## 확정 / TODO
 
 - 확정(2026-07-14): 추출·구조화=상용 LLM Gemini 3.5 Flash(멀티모달). VLM은 OCR과 동일한 Gemini에 통합 — 별도 VLM 모델 없음.
-- Canonical 추출 스키마와 J01~J12 필드 매핑은 구현됐다. 독립 `field_mapper/` 계층 분리는 후속 대상이다.
+- Canonical 추출 스키마와 J01~J12 필드 매핑은 구현됐다.
+- v1.8의 조항·명확성 후보 필드는 호환을 위해 추출 응답에 유지한다. 독립 `classification` 계약 전환은 다음 canonical schema 변경에서 진행한다.
 - 외부 키가 없는 합성 TXT 경로는 `minimum_mvp.py`의 결정론적 fallback으로 금액·한글 금액·날짜·공동소유 지분·대리 권한·관리비·본문/특약을 추출한다. 실제 비정형 문서 일반화 성능으로 해석하지 않는다.

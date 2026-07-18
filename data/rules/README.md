@@ -23,4 +23,5 @@
 
 - 1차 규칙 R01~R10 작성 완료(`rule_spec.csv`). 리포트 문구·근거·시급도 포함.
 - 2차 판정 J01~J12 작성·실행 완료(`judgment_spec.csv`, `judgments.py`). J goldset 47건 회귀검증 연결.
-- TODO: J 결과에 대한 공식 근거 검색 연결, 미검증 4개 자료의 공식 원문·적용 범위 재확인.
+- J01~J12 공식 근거 검색 연결 완료. 판정별 allowlist 원문이 로컬에 없으면 판정은 유지하고 `evidence_sources=[]`를 반환한다.
+- TODO: metadata-only 공식자료 7개의 원문 재배포 가능 여부·적용 범위를 확인하고 R/J 검색을 재평가.

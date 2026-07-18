@@ -24,6 +24,12 @@ from lease_companion_ai.schemas.adapters import (
     document_to_legacy,
 )
 from lease_companion_ai.schemas.minimum_mvp import DocumentExtraction as LegacyDocumentExtraction
+from lease_companion_ai.routing.models import (
+    ProcessingStage,
+    RouteTarget,
+    RoutingDecision,
+)
+from lease_companion_ai.routing.service import RoutingService
 from lease_companion_ai.schemas.unified import (
     ContractContext,
     DocumentExtraction as UnifiedDocumentExtraction,
@@ -45,29 +51,55 @@ def _detect_doc_kind(text: str) -> str | None:
 
 
 def _structure_unified(
-    text: str, doc_type: str, *, document_id: str
+    text: str,
+    doc_type: str,
+    *,
+    document_id: str,
+    routing_decisions: list[RoutingDecision] | None = None,
 ) -> UnifiedDocumentExtraction:
     """문서 텍스트 → canonical 통합 추출 결과.
 
     폴백은 shim이 아니라 graceful degradation: 키 없음·API 실패 시에도 합성 .txt 데모가 동작.
     """
     label = "contract" if doc_type == "contract" else "registry_record"
-    try:
-        fields = extract_contract_fields(text) if doc_type == "contract" else extract_registry_fields(text)
+    def provider_extraction() -> LegacyDocumentExtraction:
+        fields = (
+            extract_contract_fields(text)
+            if doc_type == "contract"
+            else extract_registry_fields(text)
+        )
         unconfirmed = [key for key, value in fields.items() if value is None]
-        legacy = LegacyDocumentExtraction(label, fields, unconfirmed).to_dict()
-    except GeminiExtractError:
+        return LegacyDocumentExtraction(label, fields, unconfirmed)
+
+    def local_extraction() -> LegacyDocumentExtraction:
         parser = parse_contract if doc_type == "contract" else parse_registry
-        legacy = parser(text).to_dict()
-    return document_from_legacy(legacy, document_id=document_id)
+        return parser(text)
+
+    routed = RoutingService().execute(
+        stage=ProcessingStage.EXTRACTION,
+        primary_target=RouteTarget.GEMINI_EXTRACTION,
+        fallback_target=RouteTarget.LOCAL_EXTRACTION,
+        primary=provider_extraction,
+        fallback=local_extraction,
+        handled_errors=(GeminiExtractError,),
+    )
+    if routing_decisions is not None:
+        routing_decisions.append(routed.decision)
+    return document_from_legacy(routed.value.to_dict(), document_id=document_id)
 
 
-def _structure(text: str, doc_type: str) -> dict[str, Any]:
+def _structure(
+    text: str,
+    doc_type: str,
+    *,
+    routing_decisions: list[RoutingDecision] | None = None,
+) -> dict[str, Any]:
     """기존 minimum MVP 응답 호환 wrapper. 내부에서는 canonical 모델을 검증한다."""
     unified = _structure_unified(
         text,
         doc_type,
         document_id=f"minimum-mvp-{doc_type}",
+        routing_decisions=routing_decisions,
     )
     return document_to_legacy(unified)
 
@@ -123,9 +155,13 @@ def _read_and_structure(
             "error": f"{_KIND_LABELS[expected]} 자리에 {_KIND_LABELS[kind]}로 보이는 문서가 올라왔습니다. "
             "계약서와 등기사항증명서를 맞게 선택했는지 확인해주세요.",
         }
-    doc = _structure(text, doc_type)
+    routing_decisions: list[RoutingDecision] = []
+    doc = _structure(text, doc_type, routing_decisions=routing_decisions)
     doc["read_method"] = method  # 디지털 추출 vs OCR — UI 배지·투명성
     doc["read_ok"] = True
+    doc["routing_decisions"] = [
+        decision.to_dict() for decision in routing_decisions
+    ]
     return doc
 
 

@@ -1,24 +1,100 @@
 # classification/
 
+## 결정 상태
+
+2026-07-18 ADR에 따라 extraction과 별도 실행 계층으로 분리한다.
+현재 v1.8.0 런타임은 기존 공개 schema 호환을 위해 Gemini extraction 통합 출력을 유지하며,
+이 디렉터리의 Python 실행 코드는 다음 canonical schema 버전에서 구현한다.
+
+결정과 전환 순서:
+[`2026-07-18-classification-boundary.md`](../../../../docs/decisions/2026-07-18-classification-boundary.md)
+
 ## 책임
 
-조항 유형·명확성 후보 출력을 후속 규칙 엔진·생성이 쓸 수 있게 **구조화**한다. 원시 분류 결과를 조항 유형 체계와 명확성 상태로 정리한다. MVP 입력은 상용 LLM(Gemini 3.5 Flash) 구조화 결과이며, (선택) `local_model/` 로컬 7B 성능비교 실험 출력도 동일 인터페이스로 받는다. **최종 판정을 내리지 않는다.**
+사용자가 확인한 조항 원문을 조항 유형·명확성·책임 주체·조건 후보로 구조화한다.
+후보는 Python 규칙 엔진의 참고 입력이며 최종 판정이 아니다.
 
-## 하위 구조
+### 소유하는 값
 
-- `clause_type/` — 조항 유형 분류 결과 구조화 (보증금 반환, 수리·원상복구, 관리비, 특약 등)
-- `clarity/` — 명확 / 불명확 / 확인 필요 후보 구조화 (판정 상태 9개 중 후보 단계)
+- clause_type
+- clarity_candidate
+- responsible_party_candidate
+- condition_candidates
+- review_required
+- provider_model·prompt_version
+
+### 소유하지 않는 값
+
+- 문서에서 읽은 사실·조항 원문·원문 위치: extraction 책임
+- 사용자 수정값과 확인 상태: canonical snapshot 책임
+- RuleStatus·urgency·판정 이유: rules 책임
+- 공식 근거: rag 책임
+- 설명·질문·행동: generation 책임
 
 ## 입력
 
-- 상용 LLM(Gemini 3.5 Flash) 또는 (선택) `local_model/` 출력: 조항별 `clause_type`·`clarity`·후보 + 신뢰도
+확인 완료 InputSnapshot에서 J10~J12 대상 조항만 복사한 ClassificationInput.
+
+- schema_version
+- input_snapshot_id
+- contract_id
+- case_id
+- clauses
+  - clause_ref
+  - source_field
+  - ordinal
+  - text
+  - source_evidence
+
+허용 source_field:
+
+- deposit_return_clause
+- repair_responsibility_clause
+- main_clauses
+- special_clauses
+
+이름·주소·연락처·계좌번호, 기존 판정 상태, RAG·생성 결과는 입력하지 않는다.
 
 ## 출력
 
-- 판정 대상 조항별 유형·명확성 후보 구조체 (`rules/`·`generation/` 입력용)
-- 상태 9개(`명확`·`불명확`·`상충 가능` 등) 중 후보 단계 표시, 확정은 `rules/`
+입력 snapshot에 종속된 ClassificationResult.
 
-## TODO
+- schema_version
+- input_snapshot_id
+- contract_id
+- provider_model
+- prompt_version
+- candidates
+  - clause_ref
+  - clause_type: deposit_return / repair_restoration / management_fee / rights_change / other
+  - clarity_candidate: 명확 / 불명확 / 확인 필요
+  - responsible_party_candidate: 임대인 / 임차인 / 공동 / 미지정
+  - condition_candidates
+  - review_required
 
-- 조항 유형 분류 체계 확정 필요(판정 J10~J12 매핑)
-- 명확성 후보 → 규칙 최종 판정 인터페이스 정의 필요
+문구가 없으면 후보를 만들지 않는다. 미기재는 extraction의 null 상태를 Python 규칙이 판단한다.
+
+## J10~J12 연결
+
+| 판정 | 원문 입력 | 후보 | 최종 판정 |
+|------|-----------|------|-----------|
+| J10 | deposit_return_clause | 반환 유형·명확성·조건 | Python 규칙 |
+| J11 | repair_responsibility_clause | 수리 유형·명확성·책임 주체 | Python 규칙 |
+| J12 | main_clauses·special_clauses | 조항별 유형·조건 | Python 규칙의 본문-특약 비교 |
+
+## 불변조건
+
+- classification은 DocumentExtraction과 InputSnapshot을 수정하지 않는다.
+- classification은 RuleStatus·urgency를 생성하거나 변경하지 않는다.
+- 입력 clause_ref마다 후보는 최대 1개다.
+- 출력은 input_snapshot_id와 prompt_version으로 재현 가능해야 한다.
+- provider 실패·응답 검증 실패는 routing에 기록하고, 규칙은 확인 필요 또는 확인 불가로 처리한다.
+- 로컬 7B 출력은 선택적 비교 실험에서만 같은 계약을 사용할 수 있다.
+
+## 후속 구현
+
+1. 다음 canonical schema 버전에 ClassificationInput·ClassificationResult를 추가한다.
+2. Gemini classification prompt와 provider adapter를 분리한다.
+3. Backend에 snapshot 이후 classification 실행·저장 단계를 추가한다.
+4. J10~J12 adapter·fixture·평가를 새 계약으로 전환한다.
+5. 공동 전환 완료 후 기존 extraction 명확성 후보 필드 제거 여부를 별도 결정한다.

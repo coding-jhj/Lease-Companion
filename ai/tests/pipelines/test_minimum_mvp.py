@@ -211,9 +211,12 @@ def test_structure_falls_back_to_regex(monkeypatch):
 
     monkeypatch.setattr(pipe, "extract_contract_fields", _raise)
     text = (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
-    result = pipe._structure(text, "contract")
+    decisions = []
+    result = pipe._structure(text, "contract", routing_decisions=decisions)
     assert result["document_type"] == "contract"
     assert result["fields"]["landlord_name"] == "이정훈"  # 정규식 파서 폴백 동작
+    assert decisions[0].selected.value == "local_regex"
+    assert decisions[0].failure_reason.value == "provider_error"
 
 
 def test_actual_structure_path_builds_canonical_document(monkeypatch):
@@ -239,11 +242,19 @@ def test_gemini_success_shape_also_builds_canonical_document(monkeypatch):
     ).fields
     monkeypatch.setattr(pipe, "extract_contract_fields", lambda _text: expected)
 
-    result = _structure_unified("주택임대차계약서", "contract", document_id="DOC-GEMINI")
+    decisions = []
+    result = _structure_unified(
+        "주택임대차계약서",
+        "contract",
+        document_id="DOC-GEMINI",
+        routing_decisions=decisions,
+    )
 
     assert isinstance(result, DocumentExtraction)
     assert result.document_id == "DOC-GEMINI"
     assert result.fields["landlord_name"].extracted_value == "이정훈"
+    assert decisions[0].selected.value == "gemini_3_5_flash"
+    assert decisions[0].fallback_used is False
 
 
 def test_verified_legacy_analysis_uses_canonical_result_contract():

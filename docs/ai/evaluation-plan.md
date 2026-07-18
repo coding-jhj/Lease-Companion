@@ -29,14 +29,14 @@
 - 사용자 수정: CASE-001 correction의 최초 추출값 보존·수정값 effective 반영·`corrected` 상태 3개 검사를 모두 통과했다.
 - R01~R10 상태: 100/100, 100%. 시급도 라벨이 있는 27건도 27/27, 100%.
 - J01~J12: 상태·시급도 47/47, 100%. 이 값은 고정 경계 goldset 회귀 결과다.
-- BM25 검색: top-5 정답 근거 포함 4/27, 14.81%; 기대 source recall 4/39, 10.26%; 비공식 source 노출 0건.
+- BM25 검색: top-5 정답 근거 포함 4/27, 14.81%; 전체 기대 source recall 4/39, 10.26%; 로컬 가용 기대 source recall 4/5, 80%; 비공식 source 노출 0건. 누락 35개는 원문 부재 34개와 BM25 Top-20 후보 누락 1개(`TEST-005`·`R09`·`SRC-HTA-LAW`)이며, R allowlist 제외와 Top-5 밖 누락은 0개다.
 - J 검색 계약: 행동 발동 gold 32건·기대 source 41개 중 로컬 원문으로 사용 가능한 기대 source가 0개라 회수 0개, recall 0%. 비공식 source 노출은 0건이다. 이는 검색 알고리즘보다 metadata-only·미수집 공식 원문 격차를 나타낸다.
 - template 생성: schema 10/10, R trigger coverage 27/27, J trigger coverage 50/50, R/J grounding 위반 0건, 금지 단정 0건, 분석 결과 불변 10/10. 주관적 쉬운 설명 품질은 미측정.
 - Guardrail adversarial: 동일 3개 fixture를 R/J 양쪽에 적용해 기대 차단 사유 6/6 일치, false negative 0건.
 - PII: 합성 5개 유형의 외부 전송 전 raw PII 제거와 로컬 exact 복원 5/5 통과.
 - 로컬 end-to-end: 10/10 완주. 실제 provider latency·비용은 미측정.
 
-추출·R 수치는 고정 합성 TEST-001~010의 정형 문서 기준이며 실제 문서 일반화 성능을 뜻하지 않는다. 낮은 BM25 검색 수치는 현재 외부 provider 없는 fallback 기준선의 확인된 품질 격차다. 목표치·배포 gate는 합의 전 임의로 설정하지 않는다.
+추출·R 수치는 고정 합성 TEST-001~010의 정형 문서 기준이며 실제 문서 일반화 성능을 뜻하지 않는다. 검색 개선은 로컬 가용 원문인데 누락된 사례만 BM25·query 구성 대상으로 삼고, 원문 부재는 자료 확보 작업으로 분리한다. 목표치·배포 gate는 합의 전 임의로 설정하지 않는다.
 
 ## 미정 (TODO)
 

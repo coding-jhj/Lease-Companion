@@ -17,6 +17,7 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel
 
+from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.ingestion.limits import (
     MAX_CONCURRENT_VLM_CALLS,
     MAX_EXTERNAL_CALLS_PER_REQUEST,
@@ -76,7 +77,7 @@ class RegistryFields(BaseModel):
     owner_shares: Optional[dict[str, str]] = None
 
 
-class GeminiExtractError(RuntimeError):
+class GeminiExtractError(ProviderError):
     """구조화 추출 불가(키 미설정·SDK 미설치·API 실패)."""
 
 

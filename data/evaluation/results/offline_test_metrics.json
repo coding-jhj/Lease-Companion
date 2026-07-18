@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.03561,
+    "elapsed_seconds": 0.035319,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.003561
+    "mean_seconds_per_case": 0.003532
   },
   "extraction": {
     "accuracy": 1.0,
@@ -322,6 +322,15 @@
     "tokenized_without_raw_count": 5
   },
   "retrieval": {
+    "actionable_failure_diagnostics": [
+      {
+        "case_id": "TEST-005",
+        "expected_source_id": "SRC-HTA-LAW",
+        "reason": "bm25_candidate_miss",
+        "rule_id": "R09"
+      }
+    ],
+    "candidate_k": 20,
     "case_count": 10,
     "citation_count": 57,
     "complete_citation_count": 57,
@@ -329,8 +338,22 @@
     "expected_source_count": 39,
     "expected_source_hit_count": 4,
     "expected_source_recall": 0.10256410256410256,
+    "failure_reason_counts": {
+      "allowlist_filtered": 0,
+      "bm25_candidate_miss": 1,
+      "expected_source_not_locally_available": 34,
+      "outside_top_k": 0
+    },
+    "locally_available_expected_source_count": 5,
+    "locally_available_expected_source_hit_count": 4,
+    "locally_available_expected_source_recall": 0.8,
+    "locally_unavailable_expected_source_ids": [
+      "SRC-CONFIRM-FORM",
+      "SRC-MOLIT-CHECKLIST",
+      "SRC-STD-LEASE"
+    ],
     "measured_at": "2026-07-18",
-    "provider_fallback_count": 19,
+    "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {
       "SRC-HTA-DECREE": 9,

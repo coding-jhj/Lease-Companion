@@ -27,6 +27,19 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
     assert report.judgments.status.accuracy == 1.0
     assert report.judgments.urgency.accuracy == 1.0
     assert report.retrieval.case_count == 10
+    assert report.retrieval.locally_available_expected_source_count == 5
+    assert report.retrieval.locally_available_expected_source_hit_count == 4
+    assert report.retrieval.locally_available_expected_source_recall == 0.8
+    assert report.retrieval.failure_reason_counts == {
+        "expected_source_not_locally_available": 34,
+        "allowlist_filtered": 0,
+        "bm25_candidate_miss": 1,
+        "outside_top_k": 0,
+    }
+    assert sum(report.retrieval.failure_reason_counts.values()) == (
+        report.retrieval.expected_source_count
+        - report.retrieval.expected_source_hit_count
+    )
     assert report.judgment_retrieval.query_count > 0
     assert report.judgment_retrieval.locally_available_expected_source_count == 0
     assert report.judgment_retrieval.expected_source_recall == 0.0

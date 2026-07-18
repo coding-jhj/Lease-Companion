@@ -20,11 +20,11 @@
 | 디지털 PDF 추출 | 로컬 | PyMuPDF · PDF.js | 텍스트 레이어 없음 → OCR |
 | 스캔·사진 OCR | **API** ⚠️ | Gemini 3.5 Flash (VLM 통합) | 503 백오프 재시도 → 실패 시 사용자 재촬영·수동 입력 |
 | PII 탐지·치환 | 로컬 | privacy-filter-korean + 정규식 → 결정론 토큰화·매핑표 | 형식형은 정규식이 항상 커버 |
-| 필드 구조화 | **API** | Gemini 3.5 Flash | 할당량·장애 시 대체 CLI 모델 |
+| 필드 구조화 | **API** | Gemini 3.5 Flash | 설정 부재·오류·할당량·응답 검증 실패 시 로컬 정규식 추출 |
 | 추출값 확인·수정 | 로컬 웹 | 사용자 UI (필수) | 없음 |
 | 위험 판정 (최종) | 로컬 | Python 규칙 엔진 (결정론) | 없음 (항상 수행) |
-| 공식 근거 검색 | API+로컬 | gemini-embedding-001 + BM25 (Top-20) | 근거 없음 → `확인 불가`/`확인 필요` |
-| 공식 근거 재정렬 | **API** | Cohere rerank-v4.0-pro (Top-20→Top-5) | 실패 시 임베딩 점수 순 사용 |
+| 공식 근거 검색 | API+로컬 | gemini-embedding-001 + BM25 (Top-20) | embedding·Chroma 실패 시 BM25 |
+| 공식 근거 재정렬 | **API** | Cohere rerank-v4.0-pro (Top-20→Top-5) | 실패 시 hybrid 순위 유지 |
 | 설명·질문·행동 생성 | **API** | GPT-5.6 Sol (`gpt-5.6-sol`) | provider 제한 재시도 후 안전 템플릿 |
 | 복원·표시·삭제 | 로컬 | 매핑표 복원 → 세션 종료 시 전량 삭제 | 없음 |
 
@@ -37,11 +37,13 @@
 3. 결과는 로컬 매핑표로 복원, 실제값은 필요한 화면에서만 표시.
 4. 세션 종료 시 원문·OCR 임시파일·토큰 매핑표를 전량 삭제.
 
-## fallback (다중 모델)
+## 최소 routing 실행 계층 (2026-07-18)
 
-- 상용 API 할당량 소진·장애·타임아웃 → **Claude CLI · Codex CLI 등 대체 모델로 분기**(PDF §2.3 1안).
-- 라우팅 계층이 단계별로 1순위 상용 API → 대체 CLI → 저하 모드를 선택한다.
-- 대체 경로도 동일한 비식별 게이트를 통과한다(개인정보는 어느 경로로도 원문 전송 금지).
+- `routing/models.py`가 단계·primary·선택 대상·사용 가능 여부·fallback 여부·실패 사유를 고정한다.
+- `routing/service.py`가 provider를 한 번 실행하고 정해진 로컬 저하 경로를 선택한다.
+- 실패 사유는 provider 미사용 가능·일반 오류·할당량 초과·응답 검증 실패로 구분한다.
+- 결정은 `ai_routing_decision` 구조화 로그와 추출·검색 실행 결과에 남긴다. 민감 입력과 provider 원문 예외는 기록하지 않는다.
+- 미구현 CLI 모델이나 로컬 7B를 fallback으로 호출하지 않는다.
 
 ## 로컬 모델 경계
 
@@ -55,6 +57,6 @@
 
 ## 미정 (TODO)
 
-- 대체 CLI 모델 우선순위·전환 임계(할당량/타임아웃) 정책, 비용 상한.
+- 재시도·타임아웃·저신뢰 전환 임계와 비용 상한.
 - 3단계 문맥형 PII 탐지(privacy-filter-korean)의 "조건부 확정" 조건 명시.
 - 문서 정렬 완료(2026-07-14): 로컬 7B "MVP 크리티컬 패스 제외 · 선택적 성능비교 실험" 프레이밍을 저장소 전 문서(루트·`ai/`·`backend/`·`data/` AGENTS·README, `docs/planning`·`architecture`·`ai`·`data`)에 반영.

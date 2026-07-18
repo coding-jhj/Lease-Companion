@@ -9,7 +9,8 @@
 - `indexing/` — 공식 자료 청크·임베딩 인덱스 구축 (자료·메타데이터는 `data/rag/`)
 - `retrieval/` — 판정·조항 문맥으로 관련 근거 검색
 - `reranking/` — 검색 결과 재정렬로 근거 정확도 향상
-- `citations/` — 근거에 기관명·문서명·URL·발행/확인일 출처 부착
+- `models.py` — 청크·출처 메타데이터·R/J 검색 입출력 계약
+- `service.py` — allowlist 적용, R/J 근거 조립과 기관명·문서명·URL 인용 생성
 
 ## 입력
 

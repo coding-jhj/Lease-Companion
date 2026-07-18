@@ -43,7 +43,12 @@ def test_reranking_returns_provider_order(source_metadata):
 
 def test_reranking_failure_preserves_hybrid_order(source_metadata):
     original = _hits(source_metadata)
-    hits = RerankingService(FailingRerankProvider()).rerank(_query(), original, top_n=1)
+    routed = RerankingService(FailingRerankProvider()).rerank_routed(
+        _query(), original, top_n=1
+    )
+    hits = routed.value
 
     assert hits == original[:1]
     assert hits[0].retrieval_method == "hybrid"
+    assert routed.decision.selected.value == "hybrid_rank"
+    assert routed.decision.failure_reason.value == "provider_error"

@@ -128,6 +128,13 @@ def test_runtime_factory_falls_back_to_bm25_when_indexing_fails(source_metadata)
     assert result.hits
     assert all(hit.retrieval_method == "bm25" for hit in result.hits)
     assert result.provider_fallback_used is True
+    embedding_decision = next(
+        decision
+        for decision in result.routing_decisions
+        if decision.stage.value == "embedding"
+    )
+    assert embedding_decision.selected.value == "bm25"
+    assert embedding_decision.failure_reason.value == "provider_error"
 
 
 def test_default_factory_selects_configured_hybrid_providers(monkeypatch, source_metadata):

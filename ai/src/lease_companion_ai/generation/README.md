@@ -4,12 +4,12 @@
 
 규칙 판정과 RAG 근거를 바탕으로 사용자용 산출물을 **생성**한다. 쉬운 설명·확인 질문·서명 전 체크리스트·계약 직후 행동을 만든다. **규칙 판정을 바꾸지 않고, 근거 없는 내용을 만들지 않는다.** 상용 LLM(GPT-5.6 Sol)으로 생성하며 guardrail을 거친다.
 
-## 하위 구조
+## 구현 파일
 
-- `explanations/` — 판정·근거를 임차인이 이해할 쉬운 설명으로 변환
-- `questions/` — 임대인·공인중개사 확인 질문, 계약금 입금 전 질문 생성
-- `checklists/` — 서명 전 우선 확인·체크리스트 생성
-- `actions/` — 계약 직후 권리 확보 행동, 보관 대상(계약서·이체내역·대화 기록) 안내 생성
+- `models.py` — provider 내부 생성 요청 타입
+- `service.py` — R/J 안내 생성, 결정적 fallback, stage guidance 조합과 guardrail 적용
+- `../providers/openai_generation.py` — GPT-5.6 Sol Structured Outputs 어댑터
+- `../../../prompts/` — 설명·질문·체크리스트·행동 프롬프트 원본과 버전
 
 ## 입력
 

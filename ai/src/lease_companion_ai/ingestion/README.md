@@ -11,8 +11,6 @@
 - `limits.py` — 업로드 형식·크기·PDF 페이지·가로세로·총 픽셀·동시성·요청당 호출 제한의 단일 원본
 - `pdf_text.py` — 디지털 PDF·TXT 직접 추출, 스캔 PDF·이미지를 `vlm` 경로로 분류
 - `../extraction/gemini_extractor.py` — 스캔 원본에서 `ContractFields` 또는 `RegistryFields`를 1회 호출로 직접 생성
-- `document_classifier/` — 계약서 / 등기사항증명서 / 건축물대장 등 문서 종류 판별
-- `quality_check/` — 해상도·잘림·판독 가능성 점검, 저품질 시 재업로드 신호
 
 ## 입력
 
@@ -21,7 +19,7 @@
 ## 출력
 
 - 검증된 문서 형식 + 디지털 텍스트 또는 VLM 처리 표시
-- 판독 불가 시 `분석 불가` 시급도로 반환
+- 형식·자원·판독 실패 시 `DocumentReadError`. 시급도는 ingestion이 정하지 않는다.
 
 ## 확정 / TODO
 

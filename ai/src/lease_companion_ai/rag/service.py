@@ -36,6 +36,13 @@ from lease_companion_ai.rag.models import (
 from lease_companion_ai.rag.reranking.service import RerankingService
 from lease_companion_ai.rag.retrieval.bm25 import BM25Index
 from lease_companion_ai.rag.retrieval.hybrid import HybridRetriever
+from lease_companion_ai.routing.models import (
+    ProcessingStage,
+    RouteTarget,
+    RoutingDecision,
+    RoutingFailureReason,
+)
+from lease_companion_ai.routing.service import RoutingService
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
     JudgmentResult,
@@ -54,6 +61,7 @@ class Retriever(Protocol):
 class EvidenceSearchResult:
     hits: tuple[RetrievalHit, ...]
     provider_fallback_used: bool = False
+    routing_decisions: tuple[RoutingDecision, ...] = ()
 
 
 class EvidenceRetrievalService:
@@ -63,6 +71,7 @@ class EvidenceRetrievalService:
         reranker: RerankingService | None = None,
         *,
         judgment_source_ids: Mapping[str, tuple[str, ...]] | None = None,
+        initial_routing_decisions: Sequence[RoutingDecision] = (),
     ) -> None:
         self._retriever = retriever
         self._reranker = reranker
@@ -71,6 +80,7 @@ class EvidenceRetrievalService:
             if judgment_source_ids is not None
             else load_judgment_source_ids()
         )
+        self._initial_routing_decisions = tuple(initial_routing_decisions)
 
     def search(
         self,
@@ -79,10 +89,20 @@ class EvidenceRetrievalService:
         top_k: int = 20,
         top_n: int = 5,
     ) -> EvidenceSearchResult:
+        routing_decisions = list(self._initial_routing_decisions)
         try:
-            hits = self._retriever.search(query, top_k=top_k)
+            if isinstance(self._retriever, HybridRetriever):
+                routed_search = self._retriever.search_routed(query, top_k=top_k)
+                hits = routed_search.value
+                routing_decisions.append(routed_search.decision)
+            else:
+                hits = self._retriever.search(query, top_k=top_k)
         except ProviderError:
-            return EvidenceSearchResult((), provider_fallback_used=True)
+            return EvidenceSearchResult(
+                (),
+                provider_fallback_used=True,
+                routing_decisions=tuple(routing_decisions),
+            )
         if isinstance(query, JudgmentRetrievalQuery):
             allowed = set(query.allowed_source_ids)
             hits = [
@@ -92,15 +112,26 @@ class EvidenceRetrievalService:
                 hit.model_copy(update={"rank": rank})
                 for rank, hit in enumerate(hits, start=1)
             ]
-        fallback = bool(hits) and all(hit.retrieval_method == "bm25" for hit in hits)
+        fallback = any(decision.fallback_used for decision in routing_decisions) or (
+            bool(hits) and all(hit.retrieval_method == "bm25" for hit in hits)
+        )
         if self._reranker is None:
             return EvidenceSearchResult(
-                tuple(hits[:top_n]), provider_fallback_used=fallback
+                tuple(hits[:top_n]),
+                provider_fallback_used=fallback,
+                routing_decisions=tuple(routing_decisions),
             )
-        reranked = self._reranker.rerank(query, hits, top_n=top_n)
+        routed_rerank = self._reranker.rerank_routed(query, hits, top_n=top_n)
+        reranked = routed_rerank.value
+        routing_decisions.append(routed_rerank.decision)
+        fallback = fallback or routed_rerank.decision.fallback_used
         if reranked and any(hit.retrieval_method != "rerank" for hit in reranked):
             fallback = True
-        return EvidenceSearchResult(tuple(reranked), provider_fallback_used=fallback)
+        return EvidenceSearchResult(
+            tuple(reranked),
+            provider_fallback_used=fallback,
+            routing_decisions=tuple(routing_decisions),
+        )
 
     def enrich(self, analysis: AnalysisRunResult) -> AnalysisRunResult:
         enriched: list[RuleResult] = []
@@ -244,8 +275,9 @@ def build_evidence_service(
     """Hybrid runtime을 만들고 외부 provider·인덱스 실패 시 BM25로 축소한다."""
     bm25 = BM25Index(chunks)
     retriever: Retriever = bm25
+    routing_decisions: list[RoutingDecision] = []
     if embedding_provider is not None:
-        try:
+        def build_hybrid() -> Retriever:
             vector = ChromaVectorIndex(
                 embedding_provider,
                 persist_path=persist_path,
@@ -259,14 +291,46 @@ def build_evidence_service(
                 if not rebuild_stale:
                     raise
                 vector.index_chunks(chunks, rebuild=True)
-            retriever = HybridRetriever(bm25, vector)
-        except Exception:
-            # RAG 부품 장애가 규칙 분석을 실패시키지 않도록 lexical 경로를 보존한다.
-            retriever = bm25
+            return HybridRetriever(bm25, vector)
+
+        routed_build = RoutingService().execute(
+            stage=ProcessingStage.EMBEDDING,
+            primary_target=RouteTarget.GEMINI_EMBEDDING,
+            fallback_target=RouteTarget.BM25,
+            primary=build_hybrid,
+            fallback=lambda: bm25,
+            handled_errors=(Exception,),
+        )
+        retriever = routed_build.value
+        routing_decisions.append(routed_build.decision)
+    else:
+        routing_decisions.append(
+            RoutingService.fallback_decision(
+                stage=ProcessingStage.EMBEDDING,
+                primary_target=RouteTarget.GEMINI_EMBEDDING,
+                fallback_target=RouteTarget.BM25,
+                reason=RoutingFailureReason.PROVIDER_UNAVAILABLE,
+                primary_available=False,
+            )
+        )
     reranker = (
         RerankingService(rerank_provider) if rerank_provider is not None else None
     )
-    return EvidenceRetrievalService(retriever, reranker)
+    if reranker is None:
+        routing_decisions.append(
+            RoutingService.fallback_decision(
+                stage=ProcessingStage.RERANK,
+                primary_target=RouteTarget.COHERE_RERANK,
+                fallback_target=RouteTarget.HYBRID_RANK,
+                reason=RoutingFailureReason.PROVIDER_UNAVAILABLE,
+                primary_available=False,
+            )
+        )
+    return EvidenceRetrievalService(
+        retriever,
+        reranker,
+        initial_routing_decisions=routing_decisions,
+    )
 
 
 def _embedding_key_available() -> bool:

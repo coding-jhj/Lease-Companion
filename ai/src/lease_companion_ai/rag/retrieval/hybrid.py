@@ -8,6 +8,8 @@ from typing import Protocol
 from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.rag.models import EvidenceQuery, RetrievalHit
 from lease_companion_ai.rag.retrieval.bm25 import BM25Index
+from lease_companion_ai.routing.models import ProcessingStage, RouteTarget
+from lease_companion_ai.routing.service import RoutedExecution, RoutingService
 
 
 class VectorSearcher(Protocol):
@@ -61,9 +63,25 @@ class HybridRetriever:
         *,
         top_k: int = 20,
     ) -> list[RetrievalHit]:
+        return self.search_routed(query, top_k=top_k).value
+
+    def search_routed(
+        self,
+        query: EvidenceQuery | str,
+        *,
+        top_k: int = 20,
+    ) -> RoutedExecution[list[RetrievalHit]]:
         bm25_hits = self._bm25.search(query, top_k=top_k)
-        try:
+
+        def hybrid_search() -> list[RetrievalHit]:
             vector_hits = self._vector.search(query, top_k=top_k)
-        except ProviderError:
-            return bm25_hits
-        return reciprocal_rank_fusion([bm25_hits, vector_hits], top_k=top_k)
+            return reciprocal_rank_fusion([bm25_hits, vector_hits], top_k=top_k)
+
+        return RoutingService().execute(
+            stage=ProcessingStage.EMBEDDING,
+            primary_target=RouteTarget.GEMINI_EMBEDDING,
+            fallback_target=RouteTarget.BM25,
+            primary=hybrid_search,
+            fallback=lambda: bm25_hits,
+            handled_errors=(ProviderError,),
+        )

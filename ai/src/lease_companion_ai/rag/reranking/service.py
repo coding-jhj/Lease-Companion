@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from lease_companion_ai.providers.errors import ProviderError
+from lease_companion_ai.providers.errors import (
+    ProviderError,
+    ProviderResponseValidationError,
+)
 from lease_companion_ai.providers.rerank import RerankProvider, validate_rerank_results
 from lease_companion_ai.rag.models import EvidenceQuery, RetrievalHit
+from lease_companion_ai.routing.models import ProcessingStage, RouteTarget
+from lease_companion_ai.routing.service import RoutedExecution, RoutingService
 
 
 class RerankingService:
@@ -20,6 +25,15 @@ class RerankingService:
         *,
         top_n: int = 5,
     ) -> list[RetrievalHit]:
+        return self.rerank_routed(query, hits, top_n=top_n).value
+
+    def rerank_routed(
+        self,
+        query: EvidenceQuery,
+        hits: Sequence[RetrievalHit],
+        *,
+        top_n: int = 5,
+    ) -> RoutedExecution[list[RetrievalHit]]:
         if top_n <= 0:
             raise ValueError("top_n은 양수여야 합니다.")
         official_hits = [
@@ -30,9 +44,16 @@ class RerankingService:
             and bool(hit.chunk.metadata.institution.strip())
         ]
         if not official_hits:
-            return []
+            return RoutingService().execute(
+                stage=ProcessingStage.RERANK,
+                primary_target=RouteTarget.COHERE_RERANK,
+                fallback_target=RouteTarget.HYBRID_RANK,
+                primary=lambda: [],
+                fallback=lambda: [],
+            )
         result_count = min(top_n, len(official_hits))
-        try:
+
+        def provider_rerank() -> list[RetrievalHit]:
             results = self._provider.rerank(
                 query.to_search_text(),
                 [hit.chunk.text for hit in official_hits],
@@ -43,16 +64,25 @@ class RerankingService:
                 document_count=len(official_hits),
                 top_n=result_count,
             )
-        except ProviderError:
-            return list(official_hits[:result_count])
-        if not validated:
-            return list(official_hits[:result_count])
-        return [
-            RetrievalHit(
-                chunk=official_hits[result.index].chunk,
-                score=result.score,
-                rank=rank,
-                retrieval_method="rerank",
-            )
-            for rank, result in enumerate(validated, start=1)
-        ]
+            if not validated:
+                raise ProviderResponseValidationError(
+                    "rerank 응답이 비어 있습니다."
+                )
+            return [
+                RetrievalHit(
+                    chunk=official_hits[result.index].chunk,
+                    score=result.score,
+                    rank=rank,
+                    retrieval_method="rerank",
+                )
+                for rank, result in enumerate(validated, start=1)
+            ]
+
+        return RoutingService().execute(
+            stage=ProcessingStage.RERANK,
+            primary_target=RouteTarget.COHERE_RERANK,
+            fallback_target=RouteTarget.HYBRID_RANK,
+            primary=provider_rerank,
+            fallback=lambda: list(official_hits[:result_count]),
+            handled_errors=(ProviderError,),
+        )

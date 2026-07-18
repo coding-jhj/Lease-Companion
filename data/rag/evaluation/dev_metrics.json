@@ -1,4 +1,67 @@
 {
+  "actionable_failure_diagnostics": [
+    {
+      "case_id": "CASE-005",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-007",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-008",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-010",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-013",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-016",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-019",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-022",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-025",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    },
+    {
+      "case_id": "CASE-028",
+      "expected_source_id": "SRC-HTA-LAW",
+      "reason": "bm25_candidate_miss",
+      "rule_id": "R09"
+    }
+  ],
+  "candidate_k": 20,
   "case_count": 34,
   "citation_count": 276,
   "complete_citation_count": 276,
@@ -6,8 +69,22 @@
   "expected_source_count": 194,
   "expected_source_hit_count": 20,
   "expected_source_recall": 0.10309278350515463,
+  "failure_reason_counts": {
+    "allowlist_filtered": 0,
+    "bm25_candidate_miss": 10,
+    "expected_source_not_locally_available": 164,
+    "outside_top_k": 0
+  },
+  "locally_available_expected_source_count": 30,
+  "locally_available_expected_source_hit_count": 20,
+  "locally_available_expected_source_recall": 0.6666666666666666,
+  "locally_unavailable_expected_source_ids": [
+    "SRC-CONFIRM-FORM",
+    "SRC-MOLIT-CHECKLIST",
+    "SRC-STD-LEASE"
+  ],
   "measured_at": "2026-07-18",
-  "provider_fallback_count": 83,
+  "provider_fallback_count": 124,
   "query_count": 124,
   "source_retrieval_frequency": {
     "SRC-HTA-DECREE": 60,

@@ -48,8 +48,9 @@
 ## 배치 3 구현 상태 (2026-07-17)
 
 - R01~R10 행동 발동 결과에 로컬 공식 원문 검색 결과만 연결한다. `RuleStatus`·`urgency`·`reason` 등 판정 필드는 검색 전후 동일하게 유지한다.
-- dev 34건과 최종 test 10건을 분리해 Top-5 포함률·expected source recall·인용 메타데이터·비공식 출처 노출을 측정했다. 결과는 `data/rag/evaluation/`에 있다.
+- dev 34건과 최종 test 10건을 분리해 Top-5 포함률·전체 및 로컬 가용 expected source recall·인용 메타데이터·비공식 출처 노출을 측정했다. 기대 source 누락은 원문 부재, R allowlist 제외, BM25 Top-20 후보 누락, Top-5 밖으로 분류한다. 원문 부재는 중복 제거 source ID 목록으로, 나머지는 검색 개선을 위해 사례 ID·규칙 ID·source ID를 남긴다. 결과는 `data/rag/evaluation/`에 있다.
 - 검색 가능한 로컬 원문이 법령 2개뿐이고 나머지 정답 출처는 metadata-only라 현재 포함률은 낮다. 목표값으로 보정하지 않고 실측값과 제한을 함께 기록한다.
+- 최종 test 기준 전체 기대 source recall은 4/39(10.26%)이고, 로컬 가용 기대 source recall은 4/5(80%)다. 누락은 원문 부재 34개와 BM25 후보 누락 1개이며, 검색 알고리즘·질의 개선 대상은 후자다.
 
 ## 배치 4 구현 상태 (2026-07-18)
 

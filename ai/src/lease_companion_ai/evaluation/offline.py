@@ -845,7 +845,11 @@ def evaluate_offline_pipeline(
 
     started = perf_counter()
     predictions = _offline_extractions(root, extraction_records)
-    service = build_evidence_service(load_local_official_chunks(root))
+    local_chunks = load_local_official_chunks(root)
+    service = build_evidence_service(local_chunks)
+    locally_available_source_ids = {
+        chunk.metadata.source_id for chunk in local_chunks
+    }
     analyses = _analyses(rule_records, predictions, service)
     generation = _evaluate_generation(analyses)
     elapsed = perf_counter() - started
@@ -862,6 +866,7 @@ def evaluate_offline_pipeline(
         / "end-to-end"
         / "final_testset_rule.jsonl",
         root / "data" / "rules" / "rule_spec.csv",
+        root / "data" / "rules" / "rule_evidence_map.csv",
     )
     retrieval = evaluate_retrieval(
         rag_cases,
@@ -869,6 +874,7 @@ def evaluate_offline_pipeline(
         split="test",
         measured_at=measured_at,
         config_version=config_version,
+        locally_available_source_ids=locally_available_source_ids,
         top_k=5,
     )
     case_count = len(extraction_records)
