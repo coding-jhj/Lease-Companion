@@ -21,6 +21,8 @@ sys.path.insert(0, str(ROOT / "ai" / "src"))
 from lease_companion_ai.schemas.unified import (  # noqa: E402
     SCHEMA_VERSION,
     AnalysisRunResult,
+    ClassificationInput,
+    ClassificationResult,
     ContractContext,
     CorrectionRequest,
     DocumentExtraction,
@@ -38,6 +40,8 @@ MODELS = {
     "input-snapshot": InputSnapshot,
     "correction-request": CorrectionRequest,
     "analysis-run-result": AnalysisRunResult,
+    "classification-input": ClassificationInput,
+    "classification-result": ClassificationResult,
     "judgment-input": JudgmentInput,
     "judgment-result": JudgmentResult,
     "generation-result": GenerationResult,

@@ -1,0 +1,150 @@
+{
+  "$defs": {
+    "ClarityCandidate": {
+      "enum": [
+        "명확",
+        "불명확",
+        "확인 필요"
+      ],
+      "title": "ClarityCandidate",
+      "type": "string"
+    },
+    "ClassificationMethod": {
+      "enum": [
+        "provider",
+        "safe_fallback"
+      ],
+      "title": "ClassificationMethod",
+      "type": "string"
+    },
+    "ClauseCandidate": {
+      "additionalProperties": false,
+      "description": "조항 유형·명확성·책임 주체 후보. 규칙 판정 상태를 포함하지 않는다.",
+      "properties": {
+        "clarity_candidate": {
+          "$ref": "#/$defs/ClarityCandidate"
+        },
+        "clause_ref": {
+          "minLength": 1,
+          "title": "Clause Ref",
+          "type": "string"
+        },
+        "clause_type": {
+          "$ref": "#/$defs/ClauseType"
+        },
+        "condition_candidates": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Condition Candidates",
+          "type": "array"
+        },
+        "responsible_party_candidate": {
+          "$ref": "#/$defs/ResponsiblePartyCandidate"
+        },
+        "review_required": {
+          "title": "Review Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "clause_ref",
+        "clause_type",
+        "clarity_candidate",
+        "responsible_party_candidate",
+        "review_required"
+      ],
+      "title": "ClauseCandidate",
+      "type": "object"
+    },
+    "ClauseType": {
+      "description": "LLM이 제안하는 조항 유형 후보. 최종 판정이 아니다.",
+      "enum": [
+        "deposit_return",
+        "repair_restoration",
+        "management_fee",
+        "rights_change",
+        "other"
+      ],
+      "title": "ClauseType",
+      "type": "string"
+    },
+    "ResponsiblePartyCandidate": {
+      "enum": [
+        "임대인",
+        "임차인",
+        "공동",
+        "미지정"
+      ],
+      "title": "ResponsiblePartyCandidate",
+      "type": "string"
+    }
+  },
+  "$id": "lease-companion/classification-result-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "입력 snapshot에 종속된 후보와 provider/fallback provenance.",
+  "properties": {
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/ClauseCandidate"
+      },
+      "title": "Candidates",
+      "type": "array"
+    },
+    "classification_method": {
+      "$ref": "#/$defs/ClassificationMethod"
+    },
+    "contract_id": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Id",
+      "type": "integer"
+    },
+    "fallback_reason_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fallback Reason Code"
+    },
+    "input_snapshot_id": {
+      "minLength": 1,
+      "title": "Input Snapshot Id",
+      "type": "string"
+    },
+    "prompt_version": {
+      "minLength": 1,
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "provider_model": {
+      "minLength": 1,
+      "title": "Provider Model",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "input_snapshot_id",
+    "contract_id",
+    "provider_model",
+    "prompt_version",
+    "classification_method"
+  ],
+  "title": "ClassificationResult",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}

@@ -8,7 +8,7 @@
 |---|---|
 | Pydantic 단일 원본 | `ai/src/lease_companion_ai/schemas/unified.py` |
 | R01–R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
-| 생성 JSON Schema 8개 | `data/schemas/generated/` (손으로 수정 금지) |
+| 생성 JSON Schema 10개 | `data/schemas/generated/` (v1.9 classification input/result 포함, 손으로 수정 금지) |
 | CASE-001 fixture 7개 | `data/sample/fixtures/case-001/` |
 
 **현재 상태를 정확히 구분한다:**
@@ -16,6 +16,7 @@
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
 - **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend의 schema version·wire DTO와 R/J 생성 결과 화면은 v1.8.0에 맞췄다.
+- **v1.9.0 전환 준비(A)**: `ClassificationInput`·`ClassificationResult`와 provider/safe_fallback provenance를 canonical 타입에 추가했다. v1.8.0 payload 읽기는 유지하며 Backend runtime·Frontend는 공동 전환 전까지 v1.8.0 계약을 사용한다.
 - **v1.4.0 판정 계약**: 기존 R/J 출력 분리를 유지하고, 확인 완료 snapshot에서 판정별 필수 `ExtractedField`를 복사하는 `JudgmentInput`을 추가했다. null J 입력은 구조화 `issue_code`를 요구한다.
 - **v1.5.0 ContractContext 활용 계약**: `GenerationResult.stage_guidance`가 immutable `ContractContext`와 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 기록한다.
 - **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.

@@ -1,0 +1,133 @@
+{
+  "$defs": {
+    "ClauseInput": {
+      "additionalProperties": false,
+      "description": "사용자가 확인한 조항 원문 1개. 개인정보 필드는 구조적으로 허용하지 않는다.",
+      "properties": {
+        "clause_ref": {
+          "minLength": 1,
+          "title": "Clause Ref",
+          "type": "string"
+        },
+        "ordinal": {
+          "minimum": 0,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "source_evidence": {
+          "$ref": "#/$defs/SourceEvidence"
+        },
+        "source_field": {
+          "$ref": "#/$defs/ClauseSourceField"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "clause_ref",
+        "source_field",
+        "ordinal",
+        "text"
+      ],
+      "title": "ClauseInput",
+      "type": "object"
+    },
+    "ClauseSourceField": {
+      "description": "Classification에 전달할 사용자 확인 완료 조항 원문 필드.",
+      "enum": [
+        "deposit_return_clause",
+        "repair_responsibility_clause",
+        "main_clauses",
+        "special_clauses"
+      ],
+      "title": "ClauseSourceField",
+      "type": "string"
+    },
+    "SourceEvidence": {
+      "additionalProperties": false,
+      "description": "원문 증거. page/text 키는 항상 존재하고 값은 둘 다 null 허용(ADR 확정).",
+      "properties": {
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "title": "SourceEvidence",
+      "type": "object"
+    }
+  },
+  "$id": "lease-companion/classification-input-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "확인 완료 InputSnapshot에서 만든 읽기 전용 classification 입력.",
+  "properties": {
+    "case_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Case Id"
+    },
+    "clauses": {
+      "items": {
+        "$ref": "#/$defs/ClauseInput"
+      },
+      "title": "Clauses",
+      "type": "array"
+    },
+    "contract_id": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Id",
+      "type": "integer"
+    },
+    "input_snapshot_id": {
+      "minLength": 1,
+      "title": "Input Snapshot Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "input_snapshot_id",
+    "contract_id"
+  ],
+  "title": "ClassificationInput",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}

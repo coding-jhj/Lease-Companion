@@ -56,7 +56,7 @@
       "type": "object"
     }
   },
-  "$id": "lease-companion/correction-request-v1.8.0.schema.json",
+  "$id": "lease-companion/correction-request-v1.9.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "추출값 확인·수정 화면 → Backend 수정 요청.",
@@ -75,8 +75,11 @@
       "type": "array"
     },
     "schema_version": {
-      "const": "1.8.0",
-      "default": "1.8.0",
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
       "title": "Schema Version",
       "type": "string"
     }
@@ -87,5 +90,5 @@
   ],
   "title": "CorrectionRequest",
   "type": "object",
-  "x-schema-version": "1.8.0"
+  "x-schema-version": "1.9.0"
 }

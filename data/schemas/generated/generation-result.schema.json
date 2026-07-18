@@ -58,8 +58,11 @@
           "title": "Move In Date"
         },
         "schema_version": {
-          "const": "1.8.0",
-          "default": "1.8.0",
+          "default": "1.9.0",
+          "enum": [
+            "1.8.0",
+            "1.9.0"
+          ],
           "title": "Schema Version",
           "type": "string"
         },
@@ -371,7 +374,7 @@
       "type": "object"
     }
   },
-  "$id": "lease-companion/generation-result-v1.8.0.schema.json",
+  "$id": "lease-companion/generation-result-v1.9.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과.",
@@ -407,8 +410,11 @@
       "type": "string"
     },
     "schema_version": {
-      "const": "1.8.0",
-      "default": "1.8.0",
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
       "title": "Schema Version",
       "type": "string"
     },
@@ -425,5 +431,5 @@
   ],
   "title": "GenerationResult",
   "type": "object",
-  "x-schema-version": "1.8.0"
+  "x-schema-version": "1.9.0"
 }

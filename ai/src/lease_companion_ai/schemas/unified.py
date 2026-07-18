@@ -21,8 +21,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-SchemaVersion = Literal["1.8.0"]
-SCHEMA_VERSION: SchemaVersion = "1.8.0"
+SchemaVersion = Literal["1.8.0", "1.9.0"]
+SCHEMA_VERSION: SchemaVersion = "1.9.0"
 GenerationPromptVersion = Literal["v1"]
 GENERATION_PROMPT_VERSION: GenerationPromptVersion = "v1"
 
@@ -424,6 +424,171 @@ class SourceEvidence(BaseModel):
 
     page: int | None = None
     text: str | None = None
+
+
+class ClauseSourceField(str, Enum):
+    """Classification에 전달할 사용자 확인 완료 조항 원문 필드."""
+
+    DEPOSIT_RETURN = "deposit_return_clause"
+    REPAIR_RESPONSIBILITY = "repair_responsibility_clause"
+    MAIN_CLAUSES = "main_clauses"
+    SPECIAL_CLAUSES = "special_clauses"
+
+
+class ClauseType(str, Enum):
+    """LLM이 제안하는 조항 유형 후보. 최종 판정이 아니다."""
+
+    DEPOSIT_RETURN = "deposit_return"
+    REPAIR_RESTORATION = "repair_restoration"
+    MANAGEMENT_FEE = "management_fee"
+    RIGHTS_CHANGE = "rights_change"
+    OTHER = "other"
+
+
+class ClarityCandidate(str, Enum):
+    CLEAR = "명확"
+    UNCLEAR = "불명확"
+    CHECK_NEEDED = "확인 필요"
+
+
+class ResponsiblePartyCandidate(str, Enum):
+    LANDLORD = "임대인"
+    TENANT = "임차인"
+    JOINT = "공동"
+    UNSPECIFIED = "미지정"
+
+
+class ClassificationMethod(str, Enum):
+    PROVIDER = "provider"
+    SAFE_FALLBACK = "safe_fallback"
+
+
+class ClauseInput(BaseModel):
+    """사용자가 확인한 조항 원문 1개. 개인정보 필드는 구조적으로 허용하지 않는다."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    clause_ref: str = Field(min_length=1)
+    source_field: ClauseSourceField
+    ordinal: int = Field(ge=0, strict=True)
+    text: str = Field(min_length=1)
+    source_evidence: SourceEvidence = Field(default_factory=SourceEvidence)
+
+    @field_validator("text")
+    @classmethod
+    def _reject_blank_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("조항 원문은 공백일 수 없습니다.")
+        return value
+
+    @model_validator(mode="after")
+    def _check_clause_ref(self) -> "ClauseInput":
+        expected = f"{self.source_field.value}:{self.ordinal}"
+        if self.clause_ref != expected:
+            raise ValueError(f"clause_ref는 source_field:ordinal 형식이어야 합니다: {expected}")
+        return self
+
+
+class ClassificationInput(BaseModel):
+    """확인 완료 InputSnapshot에서 만든 읽기 전용 classification 입력."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    input_snapshot_id: str = Field(min_length=1)
+    contract_id: ContractId
+    case_id: str | None = None
+    clauses: Annotated[list[ClauseInput], AfterValidator(FrozenList)] = Field(
+        default_factory=list
+    )
+
+    @model_validator(mode="after")
+    def _reject_duplicate_clause_refs(self) -> "ClassificationInput":
+        clause_refs = [clause.clause_ref for clause in self.clauses]
+        if len(clause_refs) != len(set(clause_refs)):
+            raise ValueError("ClassificationInput에 중복 clause_ref가 있습니다.")
+        return self
+
+
+class ClauseCandidate(BaseModel):
+    """조항 유형·명확성·책임 주체 후보. 규칙 판정 상태를 포함하지 않는다."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    clause_ref: str = Field(min_length=1)
+    clause_type: ClauseType
+    clarity_candidate: ClarityCandidate
+    responsible_party_candidate: ResponsiblePartyCandidate
+    condition_candidates: Annotated[list[str], AfterValidator(FrozenList)] = Field(
+        default_factory=list
+    )
+    review_required: bool
+
+    @field_validator("condition_candidates")
+    @classmethod
+    def _reject_blank_conditions(cls, values: list[str]) -> list[str]:
+        if any(not value.strip() for value in values):
+            raise ValueError("condition_candidates에는 빈 문자열을 넣을 수 없습니다.")
+        return values
+
+
+class ClassificationResult(BaseModel):
+    """입력 snapshot에 종속된 후보와 provider/fallback provenance."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    input_snapshot_id: str = Field(min_length=1)
+    contract_id: ContractId
+    provider_model: str = Field(min_length=1)
+    prompt_version: str = Field(min_length=1)
+    classification_method: ClassificationMethod
+    fallback_reason_code: str | None = None
+    candidates: Annotated[list[ClauseCandidate], AfterValidator(FrozenList)] = Field(
+        default_factory=list
+    )
+
+    @field_validator("provider_model", "prompt_version")
+    @classmethod
+    def _reject_blank_provenance(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("classification provenance는 공백일 수 없습니다.")
+        return value
+
+    @model_validator(mode="after")
+    def _check(self) -> "ClassificationResult":
+        clause_refs = [candidate.clause_ref for candidate in self.candidates]
+        if len(clause_refs) != len(set(clause_refs)):
+            raise ValueError("ClassificationResult에 중복 clause_ref 후보가 있습니다.")
+        if self.classification_method is ClassificationMethod.PROVIDER:
+            if self.fallback_reason_code is not None:
+                raise ValueError("provider 결과에는 fallback_reason_code를 기록할 수 없습니다.")
+        elif self.fallback_reason_code is None or not self.fallback_reason_code.strip():
+            raise ValueError("safe_fallback 결과에는 fallback_reason_code가 필요합니다.")
+        return self
+
+
+def validate_classification_result_for_input(
+    classification_input: ClassificationInput,
+    result: ClassificationResult,
+) -> ClassificationResult:
+    """저장·규칙 전달 전 입력 식별자와 clause 참조를 교차 검증한다."""
+
+    if result.schema_version != classification_input.schema_version:
+        raise ValueError("ClassificationInput과 ClassificationResult의 schema_version이 다릅니다.")
+    if result.input_snapshot_id != classification_input.input_snapshot_id:
+        raise ValueError("ClassificationInput과 ClassificationResult의 input_snapshot_id가 다릅니다.")
+    if result.contract_id != classification_input.contract_id:
+        raise ValueError("ClassificationInput과 ClassificationResult의 contract_id가 다릅니다.")
+    input_refs = {clause.clause_ref for clause in classification_input.clauses}
+    unknown_refs = [
+        candidate.clause_ref
+        for candidate in result.candidates
+        if candidate.clause_ref not in input_refs
+    ]
+    if unknown_refs:
+        raise ValueError(f"ClassificationResult에 알 수 없는 clause_ref가 있습니다: {unknown_refs}")
+    return result
 
 
 class ExtractedField(BaseModel):

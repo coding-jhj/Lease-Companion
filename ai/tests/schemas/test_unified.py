@@ -205,7 +205,7 @@ def test_correction_request_enforces_rule_field_type():
 
 
 def test_models_reject_unknown_schema_version():
-    assert SCHEMA_VERSION == "1.8.0"
+    assert SCHEMA_VERSION == "1.9.0"
     with pytest.raises(ValidationError):
         ContractContext(
             schema_version="1.0.0",

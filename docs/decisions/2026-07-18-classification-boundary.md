@@ -2,7 +2,7 @@
 
 - 상태: 확정
 - 날짜: 2026-07-18
-- 대상: AI·Backend 구현자
+- 대상: AI·Backend·Frontend 구현자
 
 ## 배경
 
@@ -40,6 +40,19 @@ Extraction은 문서에서 읽은 사실과 조항 원문만 반환한다. Class
 - J10~J12 최종 판정은 Python 규칙 엔진만 수행한다.
 - 로컬 7B는 선택적 비교 실험에서 동일 입출력 계약을 구현할 수 있지만 MVP 경로에는 넣지 않는다.
 
+## v1.9 전환 계약
+
+- 다음 canonical schema version은 `1.9.0`으로 확정한다.
+- 전환 기간에는 `SchemaVersion`이 `1.8.0`과 `1.9.0`을 모두 읽을 수 있어야 한다.
+- 새 canonical 출력의 기본 version은 `1.9.0`이다.
+- `DocumentExtraction`의 `deposit_return_condition`·`repair_responsibility`는 v1.9에서
+  optional/deprecated 읽기 호환 필드로 한 버전 유지한다.
+- 기존 v1.8 payload의 두 구 필드 값은 변환하거나 덮어쓰지 않고 그대로 읽는다.
+- 신규 v1.9 extraction은 두 구 필드를 해석·생성하지 않고 `null`로 반환한다.
+- Backend·Frontend가 v1.9 계약으로 전환되기 전에는 현재 v1.8 runtime/API를 v1.9로
+  활성화하지 않는다.
+- 구 필드 제거 시점과 제거 버전은 공동 전환 완료 후 별도 ADR로 확정한다.
+
 ## Classification 입력 계약
 
 입력은 사용자 확인이 끝난 InputSnapshot에서 만든 읽기 전용 내부 계약이다.
@@ -76,7 +89,14 @@ ClauseInput:
 | contract_id | 정수 | 입력과 동일 |
 | provider_model | 문자열 | 실제 실행 provider/model 식별자 |
 | prompt_version | 문자열 | 버전 관리된 classification prompt |
+| classification_method | enum | provider 또는 safe_fallback |
+| fallback_reason_code | 문자열 또는 null | provider 실행은 null, safe_fallback은 내부 분류용 안전 코드 |
 | candidates | ClauseCandidate 목록 | 입력 clause_ref당 1개 |
+
+`provider_model`은 요청에 사용했거나 사용을 시도한 provider/model 식별자를 기록한다.
+`classification_method`와 `fallback_reason_code`는 routing·fallback provenance이며,
+provider 원문 오류·PII를 포함하지 않는다. 이 provenance는 후보의 출처를 설명할 뿐
+RuleStatus·urgency·최종 판정 이유를 만들거나 변경하지 않는다.
 
 ClauseCandidate:
 
@@ -105,14 +125,17 @@ Classification 후보가 없거나 검증에 실패하면 규칙은 추측하지
 
 ## 전환 계획
 
-이번 결정에서는 공개 schema와 실행 코드를 변경하지 않는다.
+이 ADR 갱신은 전환 계약만 확정한다. Backend runtime과 Frontend는 공동 전환 전까지
+현재 v1.8 계약을 유지한다.
 
-1. 다음 canonical schema 버전에 ClassificationInput·ClassificationResult를 추가한다.
+1. canonical schema v1.9.0에 ClassificationInput·ClassificationResult를 추가하고,
+   v1.8.0 읽기 호환을 유지한다.
 2. Backend가 확인 완료 snapshot 뒤 classification 실행·저장 단계를 추가한다.
 3. J10~J12 adapter가 raw clause와 classification 후보를 함께 받도록 변경한다.
-4. Backend·Frontend·fixture·OpenAPI가 새 계약으로 이동한 뒤
-   DocumentExtraction의 deposit_return_condition·repair_responsibility를 제거한다.
-5. 이전 필드를 제거하는 schema 버전에서는 하위 호환 여부와 데이터 마이그레이션을 별도 ADR로 결정한다.
+4. 신규 v1.9 extraction은 deposit_return_condition·repair_responsibility를 null로 반환하고,
+   기존 v1.8 payload는 값을 보존한 채 읽는다.
+5. Backend·Frontend·fixture·OpenAPI가 v1.9 계약으로 이동한 뒤 새 runtime/API를 활성화한다.
+6. 이전 필드를 제거하는 schema 버전에서는 하위 호환 여부와 데이터 마이그레이션을 별도 ADR로 결정한다.
 
 ## 영향
 
@@ -120,4 +143,4 @@ Classification 후보가 없거나 검증에 실패하면 규칙은 추측하지
 - ai/classification: 별도 실행 코드·prompt·평가 책임을 갖는다.
 - ai/rules: J10~J12에서 raw clause와 후보를 함께 검증한다.
 - ai/schemas·backend·frontend: 다음 schema 버전 작업에서 공동 변경이 필요하다.
-- 현재 v1.8.0 런타임과 API는 그대로 유지한다.
+- 공동 전환 완료 전까지 현재 v1.8.0 런타임과 API는 그대로 유지한다.
