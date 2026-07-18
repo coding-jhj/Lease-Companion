@@ -6,6 +6,7 @@
       "explanation": "임대인=등기 소유자 이름 일치: 계약서의 임대인과 등기상 소유자 정보가 다르면 계약 권한 확인이 필요합니다. 공식 근거와 함께 확인하십시오.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
+      "post_contract_action_items": [],
       "post_contract_actions": [],
       "provider_model": null,
       "questions": [
@@ -14,6 +15,12 @@
       "rule_id": "R01",
       "signing_checklist": [
         "서명 또는 입금 전에 계약 권한과 관련 서류를 확인하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R01:checklist:1eff33c2aa58",
+          "text": "서명 또는 입금 전에 계약 권한과 관련 서류를 확인하세요."
+        }
       ],
       "source_ids": [
         "SRC-HTA-DECREE",
@@ -24,6 +31,7 @@
       "explanation": "근저당권 존재 탐지: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
       "fallback_reason": "missing_evidence",
       "generation_method": "template_fallback",
+      "post_contract_action_items": [],
       "post_contract_actions": [],
       "provider_model": null,
       "questions": [
@@ -31,12 +39,14 @@
       ],
       "rule_id": "R03",
       "signing_checklist": [],
+      "signing_checklist_items": [],
       "source_ids": []
     },
     {
       "explanation": "등기 발급일 확인: 등기 발급일이 오래되었으면 최신 등기로 권리관계를 다시 확인해야 합니다. 공식 근거와 함께 확인하십시오.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
+      "post_contract_action_items": [],
       "post_contract_actions": [],
       "provider_model": null,
       "questions": [
@@ -45,6 +55,12 @@
       "rule_id": "R07",
       "signing_checklist": [
         "계약·잔금 시점에 최신 등기를 다시 발급받아 확인하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R07:checklist:85db631f67ab",
+          "text": "계약·잔금 시점에 최신 등기를 다시 발급받아 확인하세요."
+        }
       ],
       "source_ids": [
         "SRC-HTA-LAW"

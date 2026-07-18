@@ -5,11 +5,13 @@
 """
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 ItemKind = Literal["checklist", "post_action"]
+ITEM_KEY_PATTERN = r"^R\d{2}:(checklist|post_action):[0-9a-f]{12}$"
+ItemKey = Annotated[str, StringConstraints(pattern=ITEM_KEY_PATTERN, max_length=100)]
 
 
 class ItemStateRequest(BaseModel):
@@ -18,7 +20,7 @@ class ItemStateRequest(BaseModel):
 
 class ItemStateResponse(BaseModel):
     kind: ItemKind
-    item_key: str
+    item_key: ItemKey
     done: bool
     updated_at: datetime
 

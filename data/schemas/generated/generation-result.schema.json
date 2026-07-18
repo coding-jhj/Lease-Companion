@@ -9,6 +9,29 @@
       "title": "GenerationMethod",
       "type": "string"
     },
+    "GuidanceActionItem": {
+      "additionalProperties": false,
+      "description": "Public checklist or post-contract action with a stable persistence key.",
+      "properties": {
+        "item_key": {
+          "maxLength": 100,
+          "pattern": "^R\\d{2}:(checklist|post_action):[0-9a-f]{12}$",
+          "title": "Item Key",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_key",
+        "text"
+      ],
+      "title": "GuidanceActionItem",
+      "type": "object"
+    },
     "RuleGuidance": {
       "additionalProperties": false,
       "description": "검증 또는 fallback을 마친 규칙 1개의 공개 사용자 안내.",
@@ -32,6 +55,14 @@
         },
         "generation_method": {
           "$ref": "#/$defs/GenerationMethod"
+        },
+        "post_contract_action_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GuidanceActionItem"
+          },
+          "title": "Post Contract Action Items",
+          "type": "array"
         },
         "post_contract_actions": {
           "default": [],
@@ -72,6 +103,14 @@
             "type": "string"
           },
           "title": "Signing Checklist",
+          "type": "array"
+        },
+        "signing_checklist_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GuidanceActionItem"
+          },
+          "title": "Signing Checklist Items",
           "type": "array"
         },
         "source_ids": {

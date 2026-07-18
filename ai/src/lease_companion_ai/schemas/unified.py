@@ -449,6 +449,17 @@ class GenerationMethod(str, Enum):
     PROVIDER = "provider"
     TEMPLATE_FALLBACK = "template_fallback"
 
+class GuidanceActionItem(BaseModel):
+    """Public checklist or post-contract action with a stable persistence key."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    item_key: str = Field(
+        pattern=r"^R\d{2}:(checklist|post_action):[0-9a-f]{12}$",
+        max_length=100,
+    )
+    text: str = Field(min_length=1)
+
 
 def _validate_unique_non_empty(values: tuple[str, ...], *, label: str) -> tuple[str, ...]:
     if any(not value.strip() for value in values):
@@ -468,6 +479,8 @@ class RuleGuidance(BaseModel):
     questions: tuple[str, ...] = ()
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
+    signing_checklist_items: tuple[GuidanceActionItem, ...] = ()
+    post_contract_action_items: tuple[GuidanceActionItem, ...] = ()
     source_ids: tuple[str, ...] = ()
     generation_method: GenerationMethod
     provider_model: str | None = None
@@ -487,6 +500,18 @@ class RuleGuidance(BaseModel):
                 raise ValueError("provider 생성에는 provider_model만 필요합니다.")
         elif self.fallback_reason is None or self.provider_model is not None:
             raise ValueError("template fallback에는 fallback_reason만 필요합니다.")
+        return self
+    @model_validator(mode="after")
+    def _action_items_match_legacy_text(self) -> "RuleGuidance":
+        pairs = (
+            (self.signing_checklist, self.signing_checklist_items, "checklist"),
+            (self.post_contract_actions, self.post_contract_action_items, "post_action"),
+        )
+        for legacy, items, kind in pairs:
+            if items and tuple(item.text for item in items) != legacy:
+                raise ValueError(f"{kind} stable items must match the legacy text list.")
+            if len({item.item_key for item in items}) != len(items):
+                raise ValueError(f"{kind} item_key values must be unique.")
         return self
 
 

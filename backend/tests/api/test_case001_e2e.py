@@ -107,8 +107,14 @@ def test_case001_full_flow(client):
     assert "안전합니다" not in json.dumps(detail["result"], ensure_ascii=False)
 
     # 8. 체크리스트 상태 저장
+    checklist_item = next(
+        item
+        for guidance in detail["generation_result"]["items"]
+        for item in guidance["signing_checklist_items"]
+    )
+    checklist_item_key = checklist_item["item_key"]
     res = client.put(
-        f"/api/contracts/{cid}/checklist-items/checklist/R06",
+        f"/api/contracts/{cid}/checklist-items/checklist/{checklist_item_key}",
         json={"done": True},
         headers=auth,
     )
@@ -121,4 +127,4 @@ def test_case001_full_flow(client):
     detail2 = client.get(f"/api/contracts/{cid}/analysis-runs/{run_id}", headers=auth2).json()
     assert detail2["result"] == detail["result"]
     items = client.get(f"/api/contracts/{cid}/checklist-items", headers=auth2).json()
-    assert [(i["kind"], i["item_key"], i["done"]) for i in items] == [("checklist", "R06", True)]
+    assert [(i["kind"], i["item_key"], i["done"]) for i in items] == [("checklist", checklist_item_key, True)]

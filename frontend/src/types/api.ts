@@ -156,6 +156,34 @@ export interface AnalysisRunResultDto {
   results: RuleResultDto[];
 }
 
+export type GenerationMethod = "provider" | "template_fallback";
+
+export interface GuidanceActionItemDto {
+  item_key: string;
+  text: string;
+}
+
+export interface RuleGuidanceDto {
+  rule_id: string;
+  explanation: string;
+  questions: string[];
+  signing_checklist: string[];
+  post_contract_actions: string[];
+  signing_checklist_items: GuidanceActionItemDto[];
+  post_contract_action_items: GuidanceActionItemDto[];
+  source_ids: string[];
+  generation_method: GenerationMethod;
+  provider_model: string | null;
+  fallback_reason: string | null;
+}
+
+export interface GenerationResultDto {
+  schema_version: SchemaVersion;
+  analysis_run_id: string;
+  items: RuleGuidanceDto[];
+  guardrail_passed: true;
+}
+
 export type AsyncRunStatus = "pending" | "running" | "completed" | "failed";
 
 export interface ExtractionStateDto {
@@ -182,6 +210,9 @@ export interface AnalysisRunSummaryDto {
 export interface AnalysisRunDetailDto extends AnalysisRunSummaryDto {
   error: string | null;
   result: AnalysisRunResultDto | null;
+  generation_result: GenerationResultDto | null;
+  generation_status: AsyncRunStatus | null;
+  generation_error: string | null;
 }
 
 /** DTO와 분리된 화면 전용 타입. */
@@ -200,4 +231,17 @@ export interface ChecklistItemStateDto {
   item_key: string;
   done: boolean;
   updated_at: string;
+}
+
+export interface FeedbackCreateRequestDto {
+  content: string;
+  rating: number | null;
+}
+
+export interface FeedbackDto {
+  id: number;
+  contract_id: number;
+  content: string;
+  rating: number | null;
+  created_at: string;
 }

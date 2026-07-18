@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 from types import MappingProxyType
@@ -10,6 +11,7 @@ from lease_companion_ai.generation.models import (
     GeneratedGuidanceDraft,
     GenerationMethod,
     GenerationResult,
+    GuidanceActionItem,
     RuleGuidance,
 )
 from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
@@ -119,6 +121,12 @@ class GenerationService:
             questions=restored.questions,
             signing_checklist=restored.signing_checklist,
             post_contract_actions=restored.post_contract_actions,
+            signing_checklist_items=self._action_items(
+                result.rule_id, "checklist", restored.signing_checklist
+            ),
+            post_contract_action_items=self._action_items(
+                result.rule_id, "post_action", restored.post_contract_actions
+            ),
             source_ids=restored.source_ids,
             generation_method=GenerationMethod.PROVIDER,
             provider_model=self._provider.model_name,
@@ -161,6 +169,7 @@ class GenerationService:
         has_evidence = bool(result.evidence_sources)
         source_ids = tuple(source.source_id for source in result.evidence_sources)
         questions = (result.question,) if result.question else ()
+        signing_checklist = tuple(result.recommended_actions) if has_evidence else ()
         return RuleGuidance(
             rule_id=result.rule_id,
             explanation=(
@@ -169,11 +178,31 @@ class GenerationService:
                 else f"{result.rule_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오."
             ),
             questions=questions,
-            signing_checklist=(tuple(result.recommended_actions) if has_evidence else ()),
+            signing_checklist=signing_checklist,
             post_contract_actions=(),
+            signing_checklist_items=GenerationService._action_items(
+                result.rule_id, "checklist", signing_checklist
+            ),
             source_ids=source_ids,
             generation_method=GenerationMethod.TEMPLATE_FALLBACK,
             fallback_reason=reason,
+        )
+
+    @staticmethod
+    def _action_items(
+        rule_id: str, kind: str, texts: tuple[str, ...]
+    ) -> tuple[GuidanceActionItem, ...]:
+        return tuple(
+            GuidanceActionItem(
+                item_key=(
+                    f"{rule_id}:{kind}:"
+                    + hashlib.sha256(
+                        f"{rule_id}|{kind}|{text}".encode("utf-8")
+                    ).hexdigest()[:12]
+                ),
+                text=text,
+            )
+            for text in texts
         )
 
     @staticmethod

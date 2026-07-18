@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from lease_companion_ai.schemas.unified import (
     GenerationMethod,
+    GuidanceActionItem,
     GenerationResult,
     RuleGuidance,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "GeneratedGuidanceDraft",
     "GenerationMethod",
     "GenerationResult",
+    "GuidanceActionItem",
     "RuleGuidance",
 ]
 
