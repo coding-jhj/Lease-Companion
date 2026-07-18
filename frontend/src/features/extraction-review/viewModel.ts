@@ -48,7 +48,7 @@ const clauseByLegacyCandidate = Object.fromEntries(
 );
 
 function effectiveValue(field: ExtractedFieldDto): FieldValue {
-  return field.user_corrected_value ?? field.extracted_value ?? field.normalized_value;
+  return field.user_corrected_value ?? field.normalized_value ?? field.extracted_value;
 }
 
 function hasDisplayValue(field: ExtractedFieldDto | undefined): boolean {
@@ -130,7 +130,7 @@ export function correctionValue(
   }
 
   const scalarValue = Array.isArray(rawValue) ? rawValue.join(", ") : rawValue;
-  const original = field.extracted_value ?? field.normalized_value;
+  const original = field.normalized_value ?? field.extracted_value;
   if (typeof original === "number") return Number(scalarValue.replaceAll(",", ""));
   if (typeof original === "boolean") return scalarValue === "있음" || scalarValue === "true";
   if (Array.isArray(original)) {

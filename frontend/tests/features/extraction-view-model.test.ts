@@ -37,6 +37,20 @@ const ownerSharesField: ExtractedFieldDto = {
 };
 
 describe("J structured field values", () => {
+  it("uses the canonical corrected, normalized, extracted value priority", () => {
+    const field = extractedField("deposit", "10000000");
+    field.normalized_value = 10_000_000;
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-1",
+      document_type: "contract",
+      warnings: [],
+      fields: { deposit: field },
+    };
+
+    expect(fieldViewModels([document])[0].formattedValue).toBe("10,000,000");
+  });
+
   it("formats owner share mappings for review", () => {
     expect(formatFieldValue(ownerSharesField.extracted_value)).toBe(
       "김하늘:1/2, 이다온:1/2",
