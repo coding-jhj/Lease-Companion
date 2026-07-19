@@ -181,12 +181,18 @@ def test_rerun_appends_history(client, alice, contract_id):
     assert all(run["status"] == "completed" for run in history)
 
 
-def test_classification_persisted_internally_and_not_exposed(client, alice, contract_id):
+def test_classification_persisted_internally_and_not_exposed(
+    client, alice, contract_id, monkeypatch
+):
     """분석 실행이 classification을 저장하되 API 응답에는 노출하지 않는다 (BC §B-4).
 
-    provider 키가 없는 테스트 환경에서는 safe_fallback(후보 없음)으로 흡수되고,
+    provider 없음 경계에서는 safe_fallback(후보 없음)으로 흡수되고,
     분석 전체는 정상 completed가 된다. classification_result·error는 내부 저장 전용.
     """
+    import app.workers.analysis as worker
+
+    monkeypatch.setattr(worker, "_classification_provider", lambda: None)
+
     res = client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice)
     assert res.status_code == 202
     run_id = res.json()["analysis_run_id"]
