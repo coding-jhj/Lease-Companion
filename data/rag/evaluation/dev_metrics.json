@@ -1,94 +1,32 @@
 {
-  "actionable_failure_diagnostics": [
-    {
-      "case_id": "CASE-005",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-007",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-008",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-010",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-013",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-016",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-019",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-022",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-025",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    },
-    {
-      "case_id": "CASE-028",
-      "expected_source_id": "SRC-HTA-LAW",
-      "reason": "bm25_candidate_miss",
-      "rule_id": "R09"
-    }
-  ],
+  "actionable_failure_diagnostics": [],
   "candidate_k": 20,
   "case_count": 34,
-  "citation_count": 434,
-  "complete_citation_count": 434,
+  "citation_count": 270,
+  "complete_citation_count": 270,
   "config_version": "local-bm25-chunk-v1",
   "expected_source_count": 194,
-  "expected_source_hit_count": 80,
-  "expected_source_recall": 0.41237113402061853,
+  "expected_source_hit_count": 90,
+  "expected_source_recall": 0.4639175257731959,
   "failure_reason_counts": {
     "allowlist_filtered": 0,
-    "bm25_candidate_miss": 10,
+    "bm25_candidate_miss": 0,
     "expected_source_not_locally_available": 104,
     "outside_top_k": 0
   },
   "locally_available_expected_source_count": 90,
-  "locally_available_expected_source_hit_count": 80,
-  "locally_available_expected_source_recall": 0.8888888888888888,
+  "locally_available_expected_source_hit_count": 90,
+  "locally_available_expected_source_recall": 1.0,
   "locally_unavailable_expected_source_ids": [
     "SRC-CONFIRM-FORM",
     "SRC-MOLIT-CHECKLIST"
   ],
-  "measured_at": "2026-07-19",
+  "measured_at": "2026-07-20",
   "provider_fallback_count": 124,
   "query_count": 124,
   "source_retrieval_frequency": {
-    "SRC-HTA-DECREE": 50,
-    "SRC-HTA-LAW": 156,
-    "SRC-STD-LEASE": 228
+    "SRC-HTA-LAW": 70,
+    "SRC-STD-LEASE": 200
   },
   "split": "dev",
   "top_k": 5,

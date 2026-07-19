@@ -71,6 +71,8 @@ class EvidenceRetrievalService:
         reranker: RerankingService | None = None,
         *,
         judgment_source_ids: Mapping[str, tuple[str, ...]] | None = None,
+        rule_source_ids: Mapping[str, tuple[str, ...]] | None = None,
+        rule_search_contexts: Mapping[str, str] | None = None,
         initial_routing_decisions: Sequence[RoutingDecision] = (),
     ) -> None:
         self._retriever = retriever
@@ -79,6 +81,16 @@ class EvidenceRetrievalService:
             judgment_source_ids
             if judgment_source_ids is not None
             else load_judgment_source_ids()
+        )
+        self._rule_search_contexts = dict(
+            rule_search_contexts
+            if rule_search_contexts is not None
+            else load_rule_search_contexts()
+        )
+        self._rule_source_ids = dict(
+            rule_source_ids
+            if rule_source_ids is not None
+            else load_rule_source_ids()
         )
         self._initial_routing_decisions = tuple(initial_routing_decisions)
 
@@ -103,7 +115,7 @@ class EvidenceRetrievalService:
                 provider_fallback_used=True,
                 routing_decisions=tuple(routing_decisions),
             )
-        if isinstance(query, JudgmentRetrievalQuery):
+        if query.allowed_source_ids:
             allowed = set(query.allowed_source_ids)
             hits = [
                 hit for hit in hits if hit.chunk.metadata.source_id in allowed
@@ -142,6 +154,10 @@ class EvidenceRetrievalService:
                     rule_id=result.rule_id,
                     rule_name=result.rule_name,
                     status=result.status,
+                    allowed_source_ids=self._rule_source_ids.get(result.rule_id, ()),
+                    evidence_search_context=self._rule_search_contexts.get(
+                        result.rule_id
+                    ),
                 )
                 search_result = self.search(query)
                 seen: set[str] = set()
@@ -201,6 +217,49 @@ class EvidenceRetrievalService:
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
+
+
+def load_rule_search_contexts(path: Path | None = None) -> dict[str, str]:
+    """규칙별 공식 근거 설명을 개인정보 없는 검색 확장 문맥으로 읽는다."""
+    source_path = path or _repo_root() / "data" / "rules" / "rule_evidence_map.csv"
+    with source_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    contexts: dict[str, list[str]] = {}
+    for row in rows:
+        rule_id = row["rule_id"].strip()
+        relevance_note = row["relevance_note"].strip()
+        if re.fullmatch(r"R(?:0[1-9]|10)", rule_id) is None or not relevance_note:
+            raise ValueError("R 공식 근거 검색 문맥이 잘못되었습니다.")
+        notes = contexts.setdefault(rule_id, [])
+        if relevance_note not in notes:
+            notes.append(relevance_note)
+    expected_ids = [f"R{index:02d}" for index in range(1, 11)]
+    if list(contexts) != expected_ids:
+        raise ValueError("rule_evidence_map에는 R01~R10이 순서대로 있어야 합니다.")
+    return {rule_id: " ".join(notes) for rule_id, notes in contexts.items()}
+
+
+def load_rule_source_ids(path: Path | None = None) -> dict[str, tuple[str, ...]]:
+    """R01~R10의 공식자료 allowlist를 순서까지 보존해 읽는다."""
+    source_path = path or _repo_root() / "data" / "rules" / "rule_evidence_map.csv"
+    with source_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    mapping: dict[str, list[str]] = {}
+    for row in rows:
+        rule_id = row["rule_id"].strip()
+        source_id = row["source_id"].strip()
+        if re.fullmatch(r"R(?:0[1-9]|10)", rule_id) is None or re.fullmatch(
+            r"SRC-[A-Z0-9-]+", source_id
+        ) is None:
+            raise ValueError("R 공식자료 allowlist가 잘못되었습니다.")
+        source_ids = mapping.setdefault(rule_id, [])
+        if source_id in source_ids:
+            raise ValueError("R 공식자료 allowlist에는 중복 source ID를 둘 수 없습니다.")
+        source_ids.append(source_id)
+    expected_ids = [f"R{index:02d}" for index in range(1, 11)]
+    if list(mapping) != expected_ids:
+        raise ValueError("rule_evidence_map에는 R01~R10이 순서대로 있어야 합니다.")
+    return {rule_id: tuple(source_ids) for rule_id, source_ids in mapping.items()}
 
 
 def load_judgment_source_ids(root: Path | None = None) -> dict[str, tuple[str, ...]]:

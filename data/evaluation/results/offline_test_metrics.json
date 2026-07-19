@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.037307,
+    "elapsed_seconds": 0.04225,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.003731
+    "mean_seconds_per_case": 0.004225
   },
   "extraction": {
     "accuracy": 1.0,
@@ -160,7 +160,7 @@
     "judgment_grounding_violation_count": 0,
     "judgment_guidance_item_count": 50,
     "judgment_trigger_coverage_rate": 1.0,
-    "missing_evidence_fallback_count": 1,
+    "missing_evidence_fallback_count": 18,
     "prohibited_claim_count": 0,
     "prompt_version_match_count": 10,
     "provider_call_count": 0,
@@ -313,7 +313,7 @@
     "쉬운 설명의 주관 품질은 사람 또는 독립 judge 라벨이 없어 측정하지 않았습니다.",
     "실제 provider latency와 비용은 외부 호출 승인이 없어 측정하지 않았습니다."
   ],
-  "measured_at": "2026-07-19",
+  "measured_at": "2026-07-20",
   "pii": {
     "case_count": 5,
     "restoration_pass_rate": 1.0,
@@ -322,42 +322,34 @@
     "tokenized_without_raw_count": 5
   },
   "retrieval": {
-    "actionable_failure_diagnostics": [
-      {
-        "case_id": "TEST-005",
-        "expected_source_id": "SRC-HTA-LAW",
-        "reason": "bm25_candidate_miss",
-        "rule_id": "R09"
-      }
-    ],
+    "actionable_failure_diagnostics": [],
     "candidate_k": 20,
     "case_count": 10,
-    "citation_count": 96,
-    "complete_citation_count": 96,
+    "citation_count": 45,
+    "complete_citation_count": 45,
     "config_version": "offline-regex-bm25-template-v2",
     "expected_source_count": 39,
-    "expected_source_hit_count": 14,
-    "expected_source_recall": 0.358974358974359,
+    "expected_source_hit_count": 15,
+    "expected_source_recall": 0.38461538461538464,
     "failure_reason_counts": {
       "allowlist_filtered": 0,
-      "bm25_candidate_miss": 1,
+      "bm25_candidate_miss": 0,
       "expected_source_not_locally_available": 24,
       "outside_top_k": 0
     },
     "locally_available_expected_source_count": 15,
-    "locally_available_expected_source_hit_count": 14,
-    "locally_available_expected_source_recall": 0.9333333333333333,
+    "locally_available_expected_source_hit_count": 15,
+    "locally_available_expected_source_recall": 1.0,
     "locally_unavailable_expected_source_ids": [
       "SRC-CONFIRM-FORM",
       "SRC-MOLIT-CHECKLIST"
     ],
-    "measured_at": "2026-07-19",
+    "measured_at": "2026-07-20",
     "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {
-      "SRC-HTA-DECREE": 8,
-      "SRC-HTA-LAW": 36,
-      "SRC-STD-LEASE": 52
+      "SRC-HTA-LAW": 11,
+      "SRC-STD-LEASE": 34
     },
     "split": "test",
     "top_k": 5,

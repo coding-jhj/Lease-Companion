@@ -14,5 +14,5 @@
 - `generate_case001_fixture.py` — CASE-001 canonical fixture 생성.
 - `prepare_rag_sources.py` — 공식 검증 source inventory에서 결정적 RAG manifest 생성. 원문 재배포 허용을 추정하지 않는다.
 - `collect_verified_law_sources.py` — 자유이용이 확인된 국가법령정보센터 법령 2개의 공식 본문을 정규화해 수집.
-- `evaluate_retrieval.py` — 로컬 BM25 retrieval을 dev/test로 분리 평가.
+- `evaluate_retrieval.py` — `--split dev|test|all`로 로컬 BM25 retrieval을 분리 평가.
 - `evaluate_ai_pipeline.py` — 외부 provider 호출 없이 A 파이프라인 test 기준선을 생성.

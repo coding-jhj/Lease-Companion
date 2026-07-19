@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from datetime import date
 from pathlib import Path
@@ -15,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "data" / "rag" / "evaluation"
 
 
-def main() -> None:
+def main(split: Literal["dev", "test", "all"] = "all") -> None:
     chunks = load_local_official_chunks(ROOT)
     service = build_evidence_service(chunks)
     locally_available_source_ids = {
@@ -34,26 +35,30 @@ def main() -> None:
         ),
     }
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    for split, (rag_goldset, rule_goldset) in inputs.items():
+    selected = inputs.items() if split == "all" else ((split, inputs[split]),)
+    for selected_split, (rag_goldset, rule_goldset) in selected:
         cases = load_gold_cases(
             rag_goldset, rule_goldset, rule_spec, rule_evidence_map
         )
         metrics = evaluate_retrieval(
             cases,
             service,
-            split=split,
+            split=selected_split,
             measured_at=date.today(),
             config_version="local-bm25-chunk-v1",
             locally_available_source_ids=locally_available_source_ids,
             top_k=5,
         )
-        path = OUTPUT / f"{split}_metrics.json"
+        path = OUTPUT / f"{selected_split}_metrics.json"
         path.write_text(
             json.dumps(metrics.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        print(f"{split}: queries={metrics.query_count} output={path}")
+        print(f"{selected_split}: queries={metrics.query_count} output={path}")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--split", choices=("dev", "test", "all"), default="all")
+    args = parser.parse_args()
+    main(args.split)

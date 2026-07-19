@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import Literal
 
 from lease_companion_ai.rag.models import RetrievalQuery
-from lease_companion_ai.rag.service import EvidenceRetrievalService
+from lease_companion_ai.rag.service import (
+    EvidenceRetrievalService,
+    load_rule_search_contexts,
+)
 from lease_companion_ai.schemas.unified import RuleStatus
 
 
@@ -208,6 +211,7 @@ def load_gold_cases(
     rule_spec: Path,
     rule_evidence_map: Path,
 ) -> list[RetrievalEvaluationCase]:
+    rule_search_contexts = load_rule_search_contexts(rule_evidence_map)
     with rule_spec.open(encoding="utf-8", newline="") as handle:
         rule_names = {row["rule_id"]: row["rule_name"] for row in csv.DictReader(handle)}
     rule_records = [
@@ -238,6 +242,8 @@ def load_gold_cases(
                         rule_id=rule_id,
                         rule_name=rule_names[rule_id],
                         status=statuses[(record["case_id"], rule_id)],
+                        allowed_source_ids=tuple(allowed_source_ids[rule_id]),
+                        evidence_search_context=rule_search_contexts[rule_id],
                     ),
                     expected_source_ids=tuple(expected["expected_source_ids"]),
                     allowed_source_ids=tuple(allowed_source_ids[rule_id]),

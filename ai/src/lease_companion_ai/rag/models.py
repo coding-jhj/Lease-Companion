@@ -71,10 +71,21 @@ class RetrievalQuery(BaseModel):
     rule_id: str = Field(pattern=r"^R\d{2}$")
     rule_name: str = Field(min_length=1)
     status: RuleStatus
+    allowed_source_ids: tuple[SourceId, ...] = ()
+    evidence_search_context: str | None = Field(default=None, max_length=2000)
     deidentified_clause_context: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("allowed_source_ids")
+    @classmethod
+    def _unique_sources(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        if len(values) != len(set(values)):
+            raise ValueError("R 검색 허용 source ID는 중복될 수 없습니다.")
+        return values
 
     def to_search_text(self) -> str:
         parts = [self.rule_id, self.rule_name, self.status.value]
+        if self.evidence_search_context:
+            parts.append(self.evidence_search_context)
         if self.deidentified_clause_context:
             parts.append(self.deidentified_clause_context)
         return " ".join(parts)
