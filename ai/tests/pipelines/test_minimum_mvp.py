@@ -201,6 +201,38 @@ def test_gemini_field_shape_feeds_run_rules():
     assert by_id["R08"].status == "명확"         # enum 값 그대로 status
 
 
+def test_v19_null_condition_fields_degrade_r08_r09_to_check_needed():
+    # §8-Q1 (가) 확정: v1.9 extraction은 deposit_return_condition·repair_responsibility를
+    # null로 반환한다. 그러면 legacy R08·R09는 단정하지 않고 "확인 필요"로 내려가고,
+    # 실제 clarity 판정은 J10·J11(classification 후보 경유)이 소유한다. 구 필드를 다시
+    # legacy에 섞지 않는다(ADR 2026-07-18, BC_JOINT_REPLY §5·§8-Q1).
+    contract = {
+        "landlord_name": "이정훈",
+        "property_address": "서울특별시 가온구 나래로 12, 305동 1201호",
+        "account_holder": "이정훈",
+        "deposit_return_condition": None,   # v1.9: 해석 후보 미생성
+        "repair_responsibility": None,      # v1.9: 해석 후보 미생성
+        "deposit_return_clause": "보증금은 계약 종료 시 반환한다.",
+        "repair_responsibility_clause": "수리는 협의하여 정한다.",
+        "rights_change_clause_present": True,
+    }
+    registry = {
+        "owner_names": ["이정훈"],
+        "property_address": "서울특별시 가온구 나래로 12, 305동 1201호",
+        "issue_date": "2026-07-01",
+        "mortgage_present": False,
+        "seizure_present": False,
+        "provisional_seizure_present": False,
+        "trust_present": False,
+    }
+    by_id = {r.rule_id: r for r in run_rules(contract, registry)}
+    assert by_id["R08"].status == "확인 필요"
+    assert by_id["R09"].status == "확인 필요"
+    # 단정 금지 — 명확/불명확으로 넘겨짚지 않는다.
+    assert by_id["R08"].status not in {"명확", "불명확"}
+    assert by_id["R09"].status not in {"명확", "불명확"}
+
+
 def test_structure_falls_back_to_regex(monkeypatch):
     # 키 없음·API 실패(GeminiExtractError) 시 정규식 파서로 폴백. (API 미호출)
     from lease_companion_ai.extraction.gemini_extractor import GeminiExtractError

@@ -43,7 +43,7 @@
 **현재 구현 / TODO**
 
 - SQLAlchemy 영속 모델과 PostgreSQL 테이블 구조는 구현됐다.
-- Alembic 마이그레이션 체계와 별도 repository 계층은 아직 구현하지 않았다.
+- Alembic 마이그레이션 체계는 도입됐다(baseline + `analysis_runs` classification 컬럼 리비전, → [`../decisions/2026-07-17-alembic-migration.md`](../decisions/2026-07-17-alembic-migration.md)). 별도 repository 계층은 아직 구현하지 않았다(라우트·워커가 SQLAlchemy 세션을 직접 사용).
 - 업로드 원본 파일의 보존 기간·암호화·삭제 정책은 TODO다.
 
 ### 도메인 엔터티
@@ -75,7 +75,7 @@
 - `User` 1 — N `ContractProject`
 - `ContractProject` 1 — N `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback`
 - 원본 추출 JSON은 `ExtractionRun`, 수정은 append-only `CorrectionRecord`, 확인 입력은 불변 `InputSnapshotRecord`에 저장한다.
-- 규칙 판정·원문 증거·공식 근거는 `AnalysisRun.result`, 생성 설명·질문·행동은 `AnalysisRun.generation_result` JSON에 분리 저장한다.
+- 규칙 판정·원문 증거·공식 근거는 `AnalysisRun.result`, 생성 설명·질문·행동은 `AnalysisRun.generation_result`, 조항 분류 결과는 `AnalysisRun.classification_result`(내부 실패 사유는 `classification_error`, 사용자·일반 로그 비노출) JSON에 분리 저장한다.
 
 ## 관련 계층
 
