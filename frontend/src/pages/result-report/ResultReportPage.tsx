@@ -6,7 +6,12 @@ import { PriorityGroups } from "../../features/judgment-results/PriorityGroups";
 import { GenerationGuidance } from "../../features/question-cards/GenerationGuidance";
 import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
 import { mvpService } from "../../services/mvpService";
-import type { JudgmentGuidanceDto, RuleGuidanceDto, RuleResultDto } from "../../types/api";
+import type {
+  JudgmentGuidanceDto,
+  JudgmentResultDto,
+  RuleGuidanceDto,
+  RuleResultDto,
+} from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
 
 export function ResultReportPage() {
@@ -16,6 +21,7 @@ export function ResultReportPage() {
   const [searchParams] = useSearchParams();
   const analysisRunId = searchParams.get("analysisRunId") ?? undefined;
   const [items, setItems] = useState<RuleResultDto[]>([]);
+  const [clauseJudgments, setClauseJudgments] = useState<JudgmentResultDto[]>([]);
   const [guidance, setGuidance] = useState<Array<RuleGuidanceDto | JudgmentGuidanceDto>>([]);
   const [generationFailed, setGenerationFailed] = useState(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -26,6 +32,9 @@ export function ResultReportPage() {
     try {
       const run = await mvpService.getAnalysisDetail(contractId, analysisRunId);
       setItems(run.result?.results ?? []);
+      setClauseJudgments(
+        run.result?.judgments.filter((item) => ["J10", "J11", "J12"].includes(item.judgment_id)) ?? [],
+      );
       setGuidance(run.generation_result
         ? [...run.generation_result.items, ...run.generation_result.judgment_items]
         : []);
@@ -48,7 +57,18 @@ export function ResultReportPage() {
           <p className="notice" role="alert">규칙 판정은 정상이며 안내 생성에 실패했습니다.</p>
         )}
         {status === "success" && items.length === 0 && <EmptyState title="아직 생성된 리포트가 없습니다" description="추출값 확인과 분석을 완료하면 결과가 표시됩니다." />}
-        {status === "success" && items.length > 0 && <PriorityGroups items={items} />}
+        {status === "success" && items.length > 0 && (
+          <section aria-labelledby="rule-results-title">
+            <h2 id="rule-results-title">핵심 규칙 판정</h2>
+            <PriorityGroups items={items} />
+          </section>
+        )}
+        {status === "success" && clauseJudgments.length > 0 && (
+          <section aria-labelledby="clause-judgments-title">
+            <h2 id="clause-judgments-title">조항 명확성 판정</h2>
+            <PriorityGroups items={clauseJudgments} />
+          </section>
+        )}
         {status === "success" && <GenerationGuidance items={guidance} />}
         {status === "success" && <ResultFeedback contractId={contractId} />}
         <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>체크리스트로 이동</button>

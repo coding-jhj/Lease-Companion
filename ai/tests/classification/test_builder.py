@@ -20,8 +20,27 @@ def _snapshot(
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     payload["schema_version"] = schema_version
     payload["contract_context"]["schema_version"] = schema_version
+    # 공용 CASE-001 fixture는 v1.9 classification 원문을 포함한다. 각 builder
+    # 테스트가 선언한 필드만 입력되도록 classification 대상 필드를 비운다.
+    contract_fields = payload["confirmed_fields"]["contract"]
+    for field_name in (
+        "deposit_return_clause",
+        "repair_responsibility_clause",
+        "main_clauses",
+        "special_clauses",
+    ):
+        contract_fields[field_name].update(
+            {
+                "extracted_value": None,
+                "normalized_value": None,
+                "user_corrected_value": None,
+                "confidence": "실패",
+                "issue_code": "unreadable",
+                "failure_reason": "builder 테스트 기본값",
+            }
+        )
     for field_name, updates in (field_values or {}).items():
-        payload["confirmed_fields"]["contract"][field_name].update(updates)
+        contract_fields[field_name].update(updates)
     return InputSnapshot.model_validate(payload)
 
 

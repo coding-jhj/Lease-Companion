@@ -1,5 +1,6 @@
 """Canonical classification v1.9 입력·결과 계약 테스트."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -59,11 +60,14 @@ def _result(**overrides) -> ClassificationResult:
     return ClassificationResult(**payload)
 
 
-def test_v18_input_snapshot_fixture_remains_readable():
-    snapshot = InputSnapshot.model_validate_json(
-        (FIXTURE_DIR / "input_snapshot.json").read_text(encoding="utf-8")
-    )
-    assert snapshot.schema_version == "1.8.0"
+def test_v19_input_snapshot_fixture_and_v18_read_compatibility():
+    payload = json.loads((FIXTURE_DIR / "input_snapshot.json").read_text(encoding="utf-8"))
+    snapshot = InputSnapshot.model_validate(payload)
+    assert snapshot.schema_version == "1.9.0"
+
+    payload["schema_version"] = "1.8.0"
+    payload["contract_context"]["schema_version"] = "1.8.0"
+    assert InputSnapshot.model_validate(payload).schema_version == "1.8.0"
 
 
 def test_v19_classification_round_trip_and_public_exports():

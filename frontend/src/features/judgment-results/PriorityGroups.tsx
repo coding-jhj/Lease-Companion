@@ -1,4 +1,4 @@
-import type { RuleResultDto, Urgency } from "../../types/api";
+import type { JudgmentResultDto, RuleResultDto, Urgency } from "../../types/api";
 
 export type DisplayPriority = "반드시 확인" | "확인 권장" | "일반 확인";
 
@@ -16,7 +16,22 @@ export function displayPriorityForUrgency(urgency: Urgency): DisplayPriority {
   return "일반 확인";
 }
 
-export function PriorityGroups({ items }: { items: RuleResultDto[] }) {
+type ReportResultDto = RuleResultDto | JudgmentResultDto;
+
+function resultId(item: ReportResultDto) {
+  return "rule_id" in item ? item.rule_id : item.judgment_id;
+}
+
+function resultName(item: ReportResultDto) {
+  return "rule_name" in item ? item.rule_name : item.judgment_name;
+}
+
+function resultScope(item: ReportResultDto) {
+  if ("rule_id" in item) return item.judgment_id ?? "사실 플래그";
+  return "조항 분류 판정";
+}
+
+export function PriorityGroups({ items }: { items: ReportResultDto[] }) {
   return (
     <div className="priority-groups">
       {priorityOrder.map((priority) => {
@@ -38,15 +53,15 @@ export function PriorityGroups({ items }: { items: RuleResultDto[] }) {
               {groupItems.length === 0 ? (
                 <p className="group-empty">해당하는 확인 항목이 없습니다.</p>
               ) : groupItems.map((item) => (
-                <article className="result-card" key={item.rule_id}>
+                <article className="result-card" key={resultId(item)}>
                   <p className="result-meta">
-                    <strong>{item.rule_id}</strong>
+                    <strong>{resultId(item)}</strong>
                     {" · "}
-                    {item.judgment_id ?? "사실 플래그"}
+                    {resultScope(item)}
                     {" · 상태: "}{item.status}
                     {" · 시급도: "}{item.urgency}
                   </p>
-                  <h3>{item.rule_name}</h3>
+                  <h3>{resultName(item)}</h3>
                   <p>{item.reason}</p>
                   <dl className="result-details">
                     <div>
