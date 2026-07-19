@@ -78,14 +78,14 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 ## 현재 상태 / TODO
 
-- 구현됨(최소 MVP 범위): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 1회 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `rules`(R01~R10·J01~J12), `pipelines`, canonical `schemas` v1.8.0 실행 경로와 v1.9.0 classification 타입 + 관련 테스트.
-- 구현됨(RAG 배치 1~5): 공식 출처 manifest·법령 원문 2개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R01~R10 및 J01~J12 공식 근거 enrichment, dev/test retrieval 평가와 실패 원인 진단. 기본 런타임은 Gemini 키가 있으면 영속 Chroma+BM25 Hybrid/RRF를 사용하고 Cohere 키가 있으면 rerank를 추가한다. 키·provider·인덱스 실패 시 BM25로 축소한다. 외부 실호출 smoke test는 별도 승인 전 미수행이다.
+- 구현됨(최소 MVP 범위): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 1회 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `classification`(Gemini provider·safe fallback·pipeline helper), `rules`(R01~R10·J01~J12), `pipelines`, canonical `schemas` v1.8.0 읽기 호환·v1.9.0 신규 출력 경로와 관련 테스트. Backend worker의 classification 실행·저장 연결은 미완료다.
+- 구현됨(RAG 배치 1~6): 공식 출처 manifest·로컬 원문 3개(법령 2개·표준 주택임대차계약서 1개), 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R01~R10 및 J01~J12 공식 근거 enrichment, dev/test retrieval 평가와 실패 원인 진단. 기본 런타임은 Gemini 키가 있으면 영속 Chroma+BM25 Hybrid/RRF를 사용하고 Cohere 키가 있으면 rerank를 추가한다. 키·provider·인덱스 실패 시 BM25로 축소한다. 외부 실호출 smoke test는 별도 승인 전 미수행이다.
 - 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, OpenAI Responses API `gpt-5.6-sol` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
 - 구현됨(평가·routing): 추출·사용자 수정·R/J 규칙·RAG·생성·guardrail·PII·end-to-end offline 평가와 단계별 provider 오류·할당량·응답 검증 실패 기록, Gemini→로컬·embedding→BM25·Cohere→hybrid fallback 실행 계층.
-- 미구현·후속: canonical schema 변경이 필요한 `classification` 독립 계층, GPT 저신뢰 재검토 경로, 선택 실험 `local_model`, 실제 provider smoke test, routing 전용 데이터셋·품질 평가.
+- 미구현·후속: Backend worker의 classification 실행·저장 연결, GPT 저신뢰 재검토 경로, 선택 실험 `local_model`, 실제 provider smoke test, routing 전용 데이터셋·품질 평가.
 - 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토). 공식 API model ID는 `gpt-5.6-sol`; 실제 유료 호출은 키·비용 승인 후 수행.
 - 확정(2026-07-14 변경): 스캔 PDF·이미지는 Gemini 3.5 Flash가 원본에서 고정 Pydantic 필드를 1회 호출로 직접 추출한다. 디지털 PDF는 PyMuPDF 텍스트 경로다. PaddleOCR-VL은 선택 비교실험이다 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`).
 - 확정·구현(offline 경계): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro·Chroma 로컬 모드. 실제 유료 호출 smoke test는 별도 승인 필요 (`../docs/decisions/2026-07-16-mvp-platform-stack.md`).
-- 구현 완료(2026-07-18): `schemas/`의 Pydantic 모델이 런타임 통합 스키마 단일 원본이다. v1.9.0은 v1.8.0 읽기 호환과 `ClassificationInput`·`ClassificationResult`·fallback provenance 계약을 추가했으며, Backend runtime·Frontend 활성화는 공동 전환 후 진행한다 (`../docs/decisions/2026-07-18-classification-boundary.md`).
+- 구현 완료(2026-07-19): `schemas/`의 Pydantic 모델이 런타임 통합 스키마 단일 원본이다. v1.9.0은 v1.8.0 읽기 호환과 `ClassificationInput`·`ClassificationResult`·fallback provenance 계약을 추가했다. Frontend는 두 버전을 지원하며, Backend는 저장 컬럼까지 준비됐지만 worker 실행 연결이 남았다 (`../docs/decisions/2026-07-18-classification-boundary.md`).
 - 구현 완료(2026-07-18): R01~R10 기반 분석을 유지하면서 J01~J12 결정론적 판정과 Backend 저장·조회 세로 슬라이스를 연결했다.
 - TODO: 로컬 7B 베이스 모델(선택 성능비교 실험 — MVP 크리티컬 패스 아님) → `local_model`/`training` 구현 (`../docs/ai/fine-tuning-plan.md`)

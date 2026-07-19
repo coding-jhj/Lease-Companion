@@ -1,6 +1,6 @@
 # 데이터 계약 v1 인수인계 (A → B·C)
 
-> schema_version **1.8.0** · 작성 2026-07-16 · 최근 갱신 2026-07-18 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)
+> schema_version **1.8.0 읽기 호환 / 1.9.0 신규 출력** · 작성 2026-07-16 · 최근 갱신 2026-07-19 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md), [`../decisions/2026-07-18-classification-boundary.md`](../decisions/2026-07-18-classification-boundary.md)
 
 ## 1. 목적과 현재 상태
 
@@ -9,14 +9,14 @@
 | Pydantic 단일 원본 | `ai/src/lease_companion_ai/schemas/unified.py` |
 | R01–R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
 | 생성 JSON Schema 10개 | `data/schemas/generated/` (v1.9 classification input/result 포함, 손으로 수정 금지) |
-| CASE-001 fixture 7개 | `data/sample/fixtures/case-001/` |
+| CASE-001 fixture 9개 | `data/sample/fixtures/case-001/` |
 
 **현재 상태를 정확히 구분한다:**
 
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
-- **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend의 schema version·wire DTO와 R/J 생성 결과 화면은 v1.8.0에 맞췄다.
-- **v1.9.0 전환 준비(A)**: `ClassificationInput`·`ClassificationResult`와 provider/safe_fallback provenance를 canonical 타입에 추가했다. v1.8.0 payload 읽기는 유지하며 Backend runtime·Frontend는 공동 전환 전까지 v1.8.0 계약을 사용한다.
+- **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend는 v1.8.0·v1.9.0 wire DTO와 v1.9 fixture, R/J 생성 결과 화면을 지원한다.
+- **v1.9.0 구현 상태(A)**: `ClassificationInput`·`ClassificationResult`, Gemini provider, provider/safe_fallback provenance, classification→규칙 분석 pipeline helper와 CASE-001 fixture를 구현했다. v1.8.0 payload 읽기는 유지한다. Backend에는 classification 저장 컬럼이 있지만 worker는 아직 `analyze_snapshot()`을 직접 호출하므로 classification 실행·저장 연결은 미완료다.
 - **v1.4.0 판정 계약**: 기존 R/J 출력 분리를 유지하고, 확인 완료 snapshot에서 판정별 필수 `ExtractedField`를 복사하는 `JudgmentInput`을 추가했다. null J 입력은 구조화 `issue_code`를 요구한다.
 - **v1.5.0 ContractContext 활용 계약**: `GenerationResult.stage_guidance`가 immutable `ContractContext`와 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 기록한다.
 - **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.
@@ -59,6 +59,8 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case00
 | `CorrectionRequest` | 사용자 수정 요청 | `contract_id` · `corrections[]` (`document_type` · `field_name` · `corrected_value`) | `correction_request.json` |
 | `InputSnapshot` | 확인 완료 입력의 **불변** 사본 | input_snapshot_id·contract_id·case_id·**contract_context**·confirmed_fields·confirmed_at | `input_snapshot.json` |
 | `JudgmentInput` | J 판정 실행 전용 불변 입력 | input_snapshot_id·contract_id·case_id·judgment_ids·contract_context·contract_fields·registry_fields | (독립 JSON Schema 제공) |
+| `ClassificationInput` | 확인 완료 조항 원문 분류 입력 | schema_version·input_snapshot_id·contract_id·clauses | `classification_input.json` |
+| `ClassificationResult` | 조항 유형·명확성 후보와 실행 provenance | schema_version·input_snapshot_id·contract_id·provider_model·prompt_version·classification_method·fallback_reason_code·candidates | `classification_result.json` |
 | `RuleResult` | 규칙 결과 1개 | **rule_id·rule_name·judgment_id·result_type·triggers_actions·status·urgency·reason·question·recommended_actions·evidence_sources·limitations·completed** | (아래 파일 내부) |
 | `JudgmentResult` | J 판정 1개 | judgment_id·judgment_name·status·urgency·triggers_actions·reason·question·recommended_actions·evidence_sources·limitations | (AnalysisRunResult 내부, 독립 JSON Schema 제공) |
 | `AnalysisRunResult` | 분석 실행 1회 묶음 | analysis_run_id·input_snapshot_id·contract_id·case_id·results[RuleResult]·judgments[JudgmentResult] | `analysis_run_result.json` |
@@ -100,7 +102,7 @@ CorrectionRequest.corrected_value
   doc = DocumentExtraction.model_validate_json(raw_json)   # 검증
   raw = doc.model_dump_json()                              # 저장용 직렬화
   ```
-- CASE-001 fixture 7개를 API·저장 테스트 입력으로 사용한다.
+- CASE-001 fixture 9개를 API·저장 테스트 입력으로 사용한다.
 - 최초 `DocumentExtraction`(수정 전 원본)을 보존하고, `CorrectionRequest`를 수정 이력으로 보존한다.
 - `InputSnapshot`을 불변 입력 사본으로, `AnalysisRunResult`를 실행별로 저장한다.
 - `RuleResult.result_type`은 문자열, `triggers_actions`는 불리언으로 원형 그대로 저장한다.
@@ -109,15 +111,17 @@ CorrectionRequest.corrected_value
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - `AnalysisRunResult`를 먼저 저장하고, `GenerationResult`는 `validate_generation_result_for_analysis()` 통과 후 별도 `generation_result`에 저장한다. 생성 실패는 규칙 `result`를 실패로 바꾸지 않는다.
 
-**B 인계 확인 체크리스트** (R/J 저장과 canonical v1.8.0 JudgmentGuidance·GuidanceActionItem·StageGuidance·prompt version 소비 확인):
+**B 인계 확인 체크리스트** (v1.8.0·v1.9.0 공통 R/J 저장과 생성 계약 소비 확인):
 
 - [x] `lease_companion_ai.schemas.unified` import 성공 (GenerationResult·validate_generation_result_for_analysis 포함)
-- [x] fixture 7개 `model_validate_json` 검증 성공
+- [x] fixture 9개 `model_validate_json` 검증 성공
 - [x] 저장 → 조회 → 재검증 왕복 성공 (sqlite + `AnalysisRun`·`InputSnapshotRecord` 실모델, `model_validate` 재검증 통과)
 - [x] 최초 추출값(`extracted_value`)과 수정값(`user_corrected_value`) 분리 저장 확인 (`account_holder`: extracted=null 보존, corrected 별도)
-- [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 7개 모두 직렬화 키 = 원본 키)
+- [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 9개 모두 직렬화 키 = 원본 키)
 - [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
 - [x] `ContractContext` 변경에 따라 단계별 질문·체크리스트·계약 직후 행동·보관 대상이 달라지고 저장 → 조회 왕복 확인
+- [ ] worker에서 `analyze_with_classification()` 실행
+- [ ] `classification_result` 저장과 내부 provider 오류 미노출 검증
 
 추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장).
 
@@ -135,24 +139,24 @@ CorrectionRequest.corrected_value
 - `result_type`으로 판정(`judgment`)과 사실 플래그(`fact_flag`)를 구분하고, `triggers_actions=true`인 결과만 질문·체크리스트·행동 활성화 대상으로 처리한다.
 - B가 OpenAPI에 공개한 `generation_result`를 canonical `GenerationResult` 구조로 소비한다. `null`·생성 실패·`template_fallback`을 처리하고 규칙 `status`·`urgency`·`reason`은 변경하지 않는다.
 
-**Frontend 공식 소비자 검증 체크리스트** (아래 항목의 일괄 검증은 대기, 기본 DTO 연결은 부분 완료):
+**Frontend 공식 소비자 검증 체크리스트** (v1.8.0·v1.9.0 DTO와 v1.9 fixture 기준):
 
-- [ ] fixture를 별도 변환 없이 로드
-- [ ] `추출됨`·`불확실`·`실패` 3등급 구분 표시
-- [ ] `unverified`·`confirmed`·`corrected` 상태 처리
-- [ ] `correction_request.json` 구조로 수정 요청 JSON 생성
-- [ ] R01–R10 결과(`RuleResult` 13개 필드) 렌더링
-- [ ] J01–J12 결과(`JudgmentResult` 10개 필드) 렌더링 및 부분 목록 거부
-- [ ] `judgment`·`fact_flag` 구분 및 `triggers_actions` 처리
-- [ ] null 원문 증거 처리("원문 위치 미확인")
+- [x] fixture를 별도 변환 없이 로드
+- [x] `추출됨`·`불확실`·`실패` 3등급 구분 표시
+- [x] `unverified`·`confirmed`·`corrected` 상태 처리
+- [x] `correction_request.json` 구조로 수정 요청 JSON 생성
+- [x] R01–R10 결과(`RuleResult` 13개 필드) 렌더링
+- [x] J01–J12 결과(`JudgmentResult` 10개 필드) 렌더링
+- [ ] `result_type`·`triggers_actions` 전용 소비자 동작 검증
+- [x] null 원문 증거 처리("원문 위치 미확인")
 
 ## 7. 인수인계 완료 조건
 
 | 단계 | 상태 |
 |---|---|
-| 1. A 패키지 준비 | **완료** — canonical v1.8.0, JudgmentInput·JudgmentResult·JudgmentGuidance·GuidanceActionItem·StageGuidance·prompt version, Schema 8개, fixture 7개, J gold 47건 |
-| 2. B 소비 확인 | **완료** — confirm ContractContext 복사·변경 차단, worker 단계별 안내 생성/검증/분리 저장 완료 |
-| 3. Frontend 소비 확인 | **완료** — v1.8.0 버전·JudgmentResult·JudgmentGuidance·GenerationResult·GuidanceActionItem·StageGuidance·prompt version DTO, J01~J12·R/J generation 화면, 체크리스트 상태 결합 연결 |
+| 1. A 패키지 준비 | **완료** — canonical v1.8.0 읽기 호환·v1.9.0 신규 출력, ClassificationInput·ClassificationResult·pipeline helper 포함 Schema 10개, fixture 9개, J gold 47건 |
+| 2. B 소비 확인 | **부분 완료** — confirm·R/J 분석·생성 분리 저장과 classification 저장 컬럼은 완료. worker의 classification 실행·`classification_result` 저장 연결은 미완료 |
+| 3. Frontend 소비 확인 | **완료** — v1.8.0·v1.9.0 DTO, v1.9 fixture, J10~J12 조항 명확성 화면, classification fallback·내부 오류 미노출, 모바일 E2E 연결 |
 
 최종 소비 완료는 위 체크리스트와 OpenAPI 소비자 테스트에서 **필드명 변경이 없음**을 확인한 시점이다.
 
