@@ -181,6 +181,144 @@ def test_rerun_appends_history(client, alice, contract_id):
     assert all(run["status"] == "completed" for run in history)
 
 
+def test_classification_persisted_internally_and_not_exposed(client, alice, contract_id):
+    """분석 실행이 classification을 저장하되 API 응답에는 노출하지 않는다 (BC §B-4).
+
+    provider 키가 없는 테스트 환경에서는 safe_fallback(후보 없음)으로 흡수되고,
+    분석 전체는 정상 completed가 된다. classification_result·error는 내부 저장 전용.
+    """
+    res = client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice)
+    assert res.status_code == 202
+    run_id = res.json()["analysis_run_id"]
+
+    detail = client.get(
+        f"/api/contracts/{contract_id}/analysis-runs/{run_id}", headers=alice
+    ).json()
+    assert detail["status"] == "completed", detail.get("error")
+    # 내부 분류 결과는 사용자 응답에 노출하지 않는다.
+    assert "classification_result" not in detail
+    assert "classification_error" not in detail
+
+    # DB에는 provenance가 저장돼 있어야 한다 — provider 없음 → safe_fallback, 후보 없음.
+    from app.core.db import SessionLocal
+    from app.models.analysis import AnalysisRun
+    from sqlalchemy import select
+
+    with SessionLocal() as db:
+        row = db.scalar(
+            select(AnalysisRun).where(AnalysisRun.analysis_run_id == run_id)
+        )
+        assert row.classification_result is not None
+        assert row.classification_result["classification_method"] == "safe_fallback"
+        assert row.classification_result["fallback_reason_code"] == "provider_unavailable"
+        assert row.classification_result["candidates"] == []
+
+
+class _StubClassificationProvider:
+    """입력에 맞춘 유효한 provider 결과를 돌려주는 테스트용 stub (외부 호출 없음)."""
+
+    model_name = "stub-classification"
+
+    def classify(self, classification_input):
+        from lease_companion_ai.schemas.unified import (
+            ClassificationMethod,
+            ClassificationResult,
+            ClauseCandidate,
+        )
+
+        candidates = []
+        if classification_input.clauses:
+            ref = classification_input.clauses[0].clause_ref
+            candidates = [
+                ClauseCandidate(
+                    clause_ref=ref,
+                    clause_type="other",
+                    clarity_candidate="명확",
+                    responsible_party_candidate="미지정",
+                    condition_candidates=[],
+                    review_required=False,
+                )
+            ]
+        return ClassificationResult(
+            schema_version=classification_input.schema_version,
+            input_snapshot_id=classification_input.input_snapshot_id,
+            contract_id=classification_input.contract_id,
+            provider_model="stub-classification",
+            prompt_version="classification-v1",
+            classification_method=ClassificationMethod.PROVIDER,
+            candidates=candidates,
+        )
+
+
+class _FailingClassificationProvider:
+    """classify가 항상 ProviderError를 던지는 stub — 실패 경계 검증용."""
+
+    model_name = "failing-classification"
+
+    def classify(self, classification_input):
+        from lease_companion_ai.providers.errors import ProviderError
+
+        raise ProviderError("stub provider failure")
+
+
+def _latest_classification_result(run_id):
+    from app.core.db import SessionLocal
+    from app.models.analysis import AnalysisRun
+    from sqlalchemy import select
+
+    with SessionLocal() as db:
+        row = db.scalar(select(AnalysisRun).where(AnalysisRun.analysis_run_id == run_id))
+        return row.classification_result, row.status
+
+
+def test_provider_success_persists_provider_result_not_exposed(
+    client, alice, contract_id, monkeypatch
+):
+    """provider 성공 시 method=provider 결과가 저장되고 API에는 노출되지 않는다."""
+    import app.workers.analysis as worker
+
+    monkeypatch.setattr(worker, "_classification_provider", lambda: _StubClassificationProvider())
+
+    run_id = client.post(
+        f"/api/contracts/{contract_id}/analysis-runs", headers=alice
+    ).json()["analysis_run_id"]
+    detail = client.get(
+        f"/api/contracts/{contract_id}/analysis-runs/{run_id}", headers=alice
+    ).json()
+
+    assert detail["status"] == "completed", detail.get("error")
+    assert "classification_result" not in detail  # 미노출
+    result, status = _latest_classification_result(run_id)
+    assert status == "completed"
+    assert result["classification_method"] == "provider"
+    assert result["fallback_reason_code"] is None
+    assert len(result["candidates"]) == 1
+
+
+def test_provider_failure_falls_back_and_analysis_completes(
+    client, alice, contract_id, monkeypatch
+):
+    """provider 실패는 safe_fallback으로 흡수되고 규칙 분석은 정상 completed가 된다."""
+    import app.workers.analysis as worker
+
+    monkeypatch.setattr(worker, "_classification_provider", lambda: _FailingClassificationProvider())
+
+    run_id = client.post(
+        f"/api/contracts/{contract_id}/analysis-runs", headers=alice
+    ).json()["analysis_run_id"]
+    detail = client.get(
+        f"/api/contracts/{contract_id}/analysis-runs/{run_id}", headers=alice
+    ).json()
+
+    assert detail["status"] == "completed", detail.get("error")
+    assert len(detail["result"]["results"]) == 10  # 규칙 분석 정상
+    result, status = _latest_classification_result(run_id)
+    assert status == "completed"
+    assert result["classification_method"] == "safe_fallback"
+    assert result["fallback_reason_code"] == "provider_error"
+    assert result["candidates"] == []
+
+
 def test_analysis_requires_confirmed_snapshot(client, alice):
     cid = client.post("/api/contracts", json={"title": "스냅샷 없음"}, headers=alice).json()["id"]
     res = client.post(f"/api/contracts/{cid}/analysis-runs", headers=alice)

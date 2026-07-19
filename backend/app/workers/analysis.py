@@ -10,10 +10,13 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from lease_companion_ai.classification.service import ClassificationService
 from lease_companion_ai.generation.service import GenerationService
+from lease_companion_ai.pipelines.classified_analysis import analyze_with_classification
 from lease_companion_ai.pipelines.minimum_mvp import extract_documents
+from lease_companion_ai.providers.gemini_classification import GeminiClassificationProvider
 from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvider
-from lease_companion_ai.schemas.adapters import analyze_snapshot, document_from_legacy
+from lease_companion_ai.schemas.adapters import document_from_legacy
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
     ContractContext,
@@ -110,7 +113,18 @@ def run_analysis(analysis_run_pk: int) -> None:
         db.commit()
         try:
             snapshot = InputSnapshot.model_validate(run.input_snapshot)
-            analysis = analyze_snapshot(snapshot, analysis_run_id=run.analysis_run_id)
+            classification_service = ClassificationService(
+                provider=_classification_provider()
+            )
+            classification, analysis = analyze_with_classification(
+                snapshot,
+                analysis_run_id=run.analysis_run_id,
+                classification_service=classification_service,
+            )
+            # classification 실패는 safe_fallback(후보 없음)으로 흡수되어 규칙이 명세대로
+            # 확인 필요/확인 불가를 낸다. provenance(fallback 사유)는 결과 JSON에 담긴다.
+            # classification_result는 내부 저장 전용 — API 응답에 노출하지 않는다(BC §B-4).
+            run.classification_result = classification.model_dump(mode="json")
             run.result = analysis.model_dump(mode="json")
             run.status = STATUS_COMPLETED
         except Exception as exc:
@@ -124,6 +138,17 @@ def run_analysis(analysis_run_pk: int) -> None:
         db.commit()
         _run_generation(db, run, analysis, snapshot.contract_context)
         db.commit()
+
+
+def _classification_provider():
+    """분류 provider 키가 있으면 Gemini provider, 없으면 None.
+
+    None이면 ClassificationService가 safe_fallback(후보 없음)을 반환하므로 키 없이도
+    분석은 완료된다. 생성 provider와 동일한 키-게이팅 패턴.
+    """
+    if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
+        return GeminiClassificationProvider()
+    return None
 
 
 def _run_generation(
