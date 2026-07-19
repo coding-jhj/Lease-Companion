@@ -63,36 +63,36 @@
   ],
   "candidate_k": 20,
   "case_count": 34,
-  "citation_count": 276,
-  "complete_citation_count": 276,
+  "citation_count": 434,
+  "complete_citation_count": 434,
   "config_version": "local-bm25-chunk-v1",
   "expected_source_count": 194,
-  "expected_source_hit_count": 20,
-  "expected_source_recall": 0.10309278350515463,
+  "expected_source_hit_count": 80,
+  "expected_source_recall": 0.41237113402061853,
   "failure_reason_counts": {
     "allowlist_filtered": 0,
     "bm25_candidate_miss": 10,
-    "expected_source_not_locally_available": 164,
+    "expected_source_not_locally_available": 104,
     "outside_top_k": 0
   },
-  "locally_available_expected_source_count": 30,
-  "locally_available_expected_source_hit_count": 20,
-  "locally_available_expected_source_recall": 0.6666666666666666,
+  "locally_available_expected_source_count": 90,
+  "locally_available_expected_source_hit_count": 80,
+  "locally_available_expected_source_recall": 0.8888888888888888,
   "locally_unavailable_expected_source_ids": [
     "SRC-CONFIRM-FORM",
-    "SRC-MOLIT-CHECKLIST",
-    "SRC-STD-LEASE"
+    "SRC-MOLIT-CHECKLIST"
   ],
-  "measured_at": "2026-07-18",
+  "measured_at": "2026-07-19",
   "provider_fallback_count": 124,
   "query_count": 124,
   "source_retrieval_frequency": {
-    "SRC-HTA-DECREE": 60,
-    "SRC-HTA-LAW": 216
+    "SRC-HTA-DECREE": 50,
+    "SRC-HTA-LAW": 156,
+    "SRC-STD-LEASE": 228
   },
   "split": "dev",
   "top_k": 5,
-  "top_k_answer_inclusion_count": 20,
-  "top_k_answer_inclusion_rate": 0.16129032258064516,
+  "top_k_answer_inclusion_count": 60,
+  "top_k_answer_inclusion_rate": 0.4838709677419355,
   "unofficial_source_exposure_count": 0
 }
