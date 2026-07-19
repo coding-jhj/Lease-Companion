@@ -157,29 +157,29 @@
       "verification_status": "unverified"
     },
     "deposit_return_clause": {
-      "confidence": "실패",
-      "extracted_value": null,
-      "failure_reason": "대표 fixture 문서에서 값을 읽지 못했습니다.",
-      "field_name": "deposit_return_clause",
-      "issue_code": "unreadable",
-      "normalized_value": null,
-      "source_evidence": {
-        "page": null,
-        "text": null
-      },
-      "user_corrected_value": null,
-      "verification_status": "unverified"
-    },
-    "deposit_return_condition": {
       "confidence": "추출됨",
-      "extracted_value": "명확",
+      "extracted_value": "임대인은 계약 종료일에 보증금 전액을 반환한다.",
       "failure_reason": null,
-      "field_name": "deposit_return_condition",
+      "field_name": "deposit_return_clause",
       "issue_code": null,
       "normalized_value": null,
       "source_evidence": {
         "page": 2,
         "text": "임대인은 계약 종료일에 보증금 전액을 반환한다."
+      },
+      "user_corrected_value": null,
+      "verification_status": "unverified"
+    },
+    "deposit_return_condition": {
+      "confidence": "실패",
+      "extracted_value": null,
+      "failure_reason": "v1.9 deprecated field",
+      "field_name": "deposit_return_condition",
+      "issue_code": "not_stated",
+      "normalized_value": null,
+      "source_evidence": {
+        "page": null,
+        "text": null
       },
       "user_corrected_value": null,
       "verification_status": "unverified"
@@ -213,15 +213,18 @@
       "verification_status": "unverified"
     },
     "main_clauses": {
-      "confidence": "실패",
-      "extracted_value": null,
-      "failure_reason": "대표 fixture 문서에서 값을 읽지 못했습니다.",
+      "confidence": "추출됨",
+      "extracted_value": [
+        "임대인은 계약 종료일에 보증금 전액을 반환한다.",
+        "주요 설비 하자 수선은 임대인이 부담한다."
+      ],
+      "failure_reason": null,
       "field_name": "main_clauses",
-      "issue_code": "unreadable",
+      "issue_code": null,
       "normalized_value": null,
       "source_evidence": {
-        "page": null,
-        "text": null
+        "page": 2,
+        "text": "계약서 본문 주요 조항"
       },
       "user_corrected_value": null,
       "verification_status": "unverified"
@@ -339,29 +342,29 @@
       "verification_status": "unverified"
     },
     "repair_responsibility": {
-      "confidence": "추출됨",
-      "extracted_value": "명확",
-      "failure_reason": null,
+      "confidence": "실패",
+      "extracted_value": null,
+      "failure_reason": "v1.9 deprecated field",
       "field_name": "repair_responsibility",
-      "issue_code": null,
+      "issue_code": "not_stated",
       "normalized_value": null,
       "source_evidence": {
-        "page": 2,
-        "text": "주요 설비 하자 수선은 임대인이 부담한다."
+        "page": null,
+        "text": null
       },
       "user_corrected_value": null,
       "verification_status": "unverified"
     },
     "repair_responsibility_clause": {
-      "confidence": "실패",
-      "extracted_value": null,
-      "failure_reason": "대표 fixture 문서에서 값을 읽지 못했습니다.",
+      "confidence": "추출됨",
+      "extracted_value": "주요 설비 하자 수선은 임대인이 부담한다.",
+      "failure_reason": null,
       "field_name": "repair_responsibility_clause",
-      "issue_code": "unreadable",
+      "issue_code": null,
       "normalized_value": null,
       "source_evidence": {
-        "page": null,
-        "text": null
+        "page": 2,
+        "text": "주요 설비 하자 수선은 임대인이 부담한다."
       },
       "user_corrected_value": null,
       "verification_status": "unverified"
@@ -381,29 +384,31 @@
       "verification_status": "unverified"
     },
     "special_clauses": {
-      "confidence": "실패",
-      "extracted_value": null,
-      "failure_reason": "대표 fixture 문서에서 값을 읽지 못했습니다.",
+      "confidence": "추출됨",
+      "extracted_value": [
+        "임대인은 잔금 지급 전까지 새로운 권리변동을 발생시키지 않는다."
+      ],
+      "failure_reason": null,
       "field_name": "special_clauses",
-      "issue_code": "unreadable",
+      "issue_code": null,
       "normalized_value": null,
       "source_evidence": {
-        "page": null,
-        "text": null
+        "page": 2,
+        "text": "특약 제3항"
       },
       "user_corrected_value": null,
       "verification_status": "unverified"
     },
     "special_clauses_present": {
-      "confidence": "실패",
-      "extracted_value": null,
-      "failure_reason": "대표 fixture 문서에서 값을 읽지 못했습니다.",
+      "confidence": "추출됨",
+      "extracted_value": true,
+      "failure_reason": null,
       "field_name": "special_clauses_present",
-      "issue_code": "unreadable",
+      "issue_code": null,
       "normalized_value": null,
       "source_evidence": {
-        "page": null,
-        "text": null
+        "page": 2,
+        "text": "특약사항 있음"
       },
       "user_corrected_value": null,
       "verification_status": "unverified"
@@ -437,6 +442,6 @@
       "verification_status": "unverified"
     }
   },
-  "schema_version": "1.8.0",
+  "schema_version": "1.9.0",
   "warnings": []
 }

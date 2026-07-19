@@ -1,0 +1,57 @@
+{
+  "candidates": [
+    {
+      "clarity_candidate": "명확",
+      "clause_ref": "deposit_return_clause:0",
+      "clause_type": "deposit_return",
+      "condition_candidates": [
+        "계약 종료일"
+      ],
+      "responsible_party_candidate": "임대인",
+      "review_required": false
+    },
+    {
+      "clarity_candidate": "명확",
+      "clause_ref": "repair_responsibility_clause:0",
+      "clause_type": "repair_restoration",
+      "condition_candidates": [],
+      "responsible_party_candidate": "임대인",
+      "review_required": false
+    },
+    {
+      "clarity_candidate": "명확",
+      "clause_ref": "main_clauses:0",
+      "clause_type": "deposit_return",
+      "condition_candidates": [
+        "계약 종료일"
+      ],
+      "responsible_party_candidate": "임대인",
+      "review_required": false
+    },
+    {
+      "clarity_candidate": "명확",
+      "clause_ref": "main_clauses:1",
+      "clause_type": "repair_restoration",
+      "condition_candidates": [],
+      "responsible_party_candidate": "임대인",
+      "review_required": false
+    },
+    {
+      "clarity_candidate": "명확",
+      "clause_ref": "special_clauses:0",
+      "clause_type": "rights_change",
+      "condition_candidates": [
+        "잔금 지급 전"
+      ],
+      "responsible_party_candidate": "임대인",
+      "review_required": false
+    }
+  ],
+  "classification_method": "provider",
+  "contract_id": 1001,
+  "fallback_reason_code": null,
+  "input_snapshot_id": "SNAP-1001-001",
+  "prompt_version": "classification-v1",
+  "provider_model": "fixture-classification-v1",
+  "schema_version": "1.9.0"
+}

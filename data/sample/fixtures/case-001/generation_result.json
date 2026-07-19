@@ -65,6 +65,46 @@
       "source_ids": [
         "SRC-HTA-LAW"
       ]
+    },
+    {
+      "explanation": "보증금 반환 시점·조건 명확성: 보증금 반환 시점·조건이 불명확하면 반환 분쟁 위험이 있습니다. 공식 근거와 함께 확인하십시오.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "보증금 반환 시점과 조건을 계약서에 구체적으로 명시할 수 있나요?"
+      ],
+      "rule_id": "R08",
+      "signing_checklist": [
+        "반환 시점·조건을 계약서·특약에 명확히 기재하도록 요청하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R08:checklist:1b00dd50eda6",
+          "text": "반환 시점·조건을 계약서·특약에 명확히 기재하도록 요청하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-HTA-DECREE",
+        "SRC-HTA-LAW"
+      ]
+    },
+    {
+      "explanation": "수리·원상복구 책임 명확성: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "보일러·누수·전기설비 등 수리 주체와 비용 부담을 계약서에 명시할 수 있나요?"
+      ],
+      "rule_id": "R09",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": []
     }
   ],
   "judgment_items": [
@@ -172,25 +212,10 @@
       "signing_checklist": [],
       "signing_checklist_items": [],
       "source_ids": []
-    },
-    {
-      "explanation": "본문·특약 상충 가능성: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
-      "fallback_reason": "missing_evidence",
-      "generation_method": "template_fallback",
-      "judgment_id": "J12",
-      "post_contract_action_items": [],
-      "post_contract_actions": [],
-      "provider_model": null,
-      "questions": [
-        "어떤 조항이 우선하는지 확인하셨습니까?"
-      ],
-      "signing_checklist": [],
-      "signing_checklist_items": [],
-      "source_ids": []
     }
   ],
   "prompt_version": "v1",
-  "schema_version": "1.8.0",
+  "schema_version": "1.9.0",
   "stage_guidance": {
     "before_deposit_questions": [
       "계약 상대의 권한 근거를 확인하셨습니까?",
@@ -205,7 +230,7 @@
       "deposit_paid": false,
       "is_proxy_contract": false,
       "move_in_date": null,
-      "schema_version": "1.8.0",
+      "schema_version": "1.9.0",
       "signed": false
     },
     "post_contract_actions": [],
@@ -215,8 +240,7 @@
     "signing_checklist": [
       "누락·모호한 금액을 계약서에 구체적으로 기재하세요.",
       "모순되거나 누락된 날짜를 계약서에서 정리하세요.",
-      "관리비 금액·포함·별도 부과 항목을 문서로 확인하세요.",
-      "상충 가능 문구를 하나의 명확한 조건으로 정리하세요."
+      "관리비 금액·포함·별도 부과 항목을 문서로 확인하세요."
     ]
   }
 }

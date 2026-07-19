@@ -1,0 +1,58 @@
+{
+  "case_id": "CASE-001",
+  "clauses": [
+    {
+      "clause_ref": "deposit_return_clause:0",
+      "ordinal": 0,
+      "source_evidence": {
+        "page": 2,
+        "text": "임대인은 계약 종료일에 보증금 전액을 반환한다."
+      },
+      "source_field": "deposit_return_clause",
+      "text": "임대인은 계약 종료일에 보증금 전액을 반환한다."
+    },
+    {
+      "clause_ref": "repair_responsibility_clause:0",
+      "ordinal": 0,
+      "source_evidence": {
+        "page": 2,
+        "text": "주요 설비 하자 수선은 임대인이 부담한다."
+      },
+      "source_field": "repair_responsibility_clause",
+      "text": "주요 설비 하자 수선은 임대인이 부담한다."
+    },
+    {
+      "clause_ref": "main_clauses:0",
+      "ordinal": 0,
+      "source_evidence": {
+        "page": 2,
+        "text": "계약서 본문 주요 조항"
+      },
+      "source_field": "main_clauses",
+      "text": "임대인은 계약 종료일에 보증금 전액을 반환한다."
+    },
+    {
+      "clause_ref": "main_clauses:1",
+      "ordinal": 1,
+      "source_evidence": {
+        "page": 2,
+        "text": "계약서 본문 주요 조항"
+      },
+      "source_field": "main_clauses",
+      "text": "주요 설비 하자 수선은 임대인이 부담한다."
+    },
+    {
+      "clause_ref": "special_clauses:0",
+      "ordinal": 0,
+      "source_evidence": {
+        "page": 2,
+        "text": "특약 제3항"
+      },
+      "source_field": "special_clauses",
+      "text": "임대인은 잔금 지급 전까지 새로운 권리변동을 발생시키지 않는다."
+    }
+  ],
+  "contract_id": 1001,
+  "input_snapshot_id": "SNAP-1001-001",
+  "schema_version": "1.9.0"
+}

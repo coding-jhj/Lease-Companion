@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("signup through saved checklist follows the complete MVP flow", async ({ page }) => {
+test("v1.9 signup through saved checklist follows the complete MVP flow", async ({ page }) => {
   await page.goto("/signup");
   await page.getByLabel("아이디").fill("e2e-user");
   await page.getByLabel("이메일").fill("e2e@example.com");
@@ -26,13 +26,23 @@ test("signup through saved checklist follows the complete MVP flow", async ({ pa
   await page.getByRole("button", { name: "추출 시작하기" }).click();
 
   await expect(page.getByRole("heading", { name: "추출값 확인·수정" })).toBeVisible();
+  await expect(page.getByLabel("보증금 반환 조항 원문 값")).toBeVisible();
+  await expect(page.getByLabel("수리·원상복구 조항 원문 값")).toBeVisible();
+  await expect(page.getByLabel("보증금 반환 조건 값")).toHaveCount(0);
+  await expect(page.getByLabel("수리·원상복구 책임 값")).toHaveCount(0);
   await page.getByRole("button", { name: "읽힌 값 모두 확인" }).click();
   await page.getByLabel("입금 계좌 예금주 값").fill("이정훈");
+  await page.getByLabel("계약서 본문 주요 조항 2 값").fill(
+    "주요 설비 하자 수선은 임대인이 부담하고, 임차인에게 알린다.",
+  );
   await page.getByRole("button", { name: "확인 완료하고 분석하기" }).click();
 
   await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible();
   await page.getByRole("button", { name: "리포트 보기" }).click();
   await expect(page.getByRole("heading", { name: "확인 질문과 다음 행동" })).toBeVisible();
+  const clauseJudgments = page.locator('section[aria-labelledby="clause-judgments-title"]');
+  await expect(clauseJudgments).toContainText("J10");
+  await expect(clauseJudgments).toContainText("상태: 명확");
   await expect(page.getByText("안전한 기본 안내").first()).toBeVisible();
 
   await page.getByLabel("평점").selectOption("5");
