@@ -111,6 +111,109 @@ CorrectionRequest.corrected_value
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - `AnalysisRunResult`를 먼저 저장하고, `GenerationResult`는 `validate_generation_result_for_analysis()` 통과 후 별도 `generation_result`에 저장한다. 생성 실패는 규칙 `result`를 실패로 바꾸지 않는다.
 
+### v1.9 classification worker 연결 계약
+
+A가 제공하는 AI 실행 경계는 아래 순서로 고정한다. Backend는 저장·상태 전이·재시도를 담당하며 AI 내부 후보 생성이나 판정 로직을 다시 구현하지 않는다.
+
+```text
+InputSnapshot
+  → GeminiClassificationProvider 또는 provider 없음
+  → ClassificationService
+  → analyze_with_classification
+  → ClassificationResult + AnalysisRunResult
+```
+
+Backend worker 연결 예시:
+
+```python
+import os
+
+from lease_companion_ai.classification.service import ClassificationService
+from lease_companion_ai.pipelines.classified_analysis import (
+    analyze_with_classification,
+)
+from lease_companion_ai.providers.gemini_classification import (
+    GeminiClassificationProvider,
+)
+
+provider = (
+    GeminiClassificationProvider()
+    if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    else None
+)
+classification, analysis = analyze_with_classification(
+    snapshot,
+    analysis_run_id=run.analysis_run_id,
+    classification_service=ClassificationService(provider),
+)
+
+run.classification_result = classification.model_dump(mode="json")
+run.classification_error = None
+run.result = analysis.model_dump(mode="json")
+```
+
+저장 규칙:
+
+| 항목 | 규칙 |
+|---|---|
+| `classification_result` | `ClassificationResult.model_dump(mode="json")` 전체를 provenance 포함 그대로 저장 |
+| provider 성공 | `classification_method="provider"`, `fallback_reason_code=null`, 입력 `clause_ref`마다 검증된 후보 1개 |
+| safe fallback | `classification_method="safe_fallback"`, 안전한 `fallback_reason_code`, `candidates=[]` |
+| `classification_error` | provider 성공과 safe fallback 모두 `null`. fallback 사유를 중복 저장하지 않음 |
+| 오류 정보 | provider 원문 예외·응답 원문·PII를 DB·사용자 응답·일반 로그에 저장하거나 노출하지 않음 |
+| 분석 지속 | provider 미설정·호출 실패·응답 검증 실패는 `ClassificationService`가 safe fallback으로 흡수하며 R01~R10과 J01~J12 분석을 계속함 |
+| 판정 책임 | classification 후보는 J10~J12만 소비. Python 규칙이 `RuleStatus`·`urgency`·최종 이유를 결정하며 classification은 이를 변경하지 않음 |
+| R08·R09 | v1.9 deprecated 후보 필드가 `null`이면 `확인 필요` 유지. classification 후보를 구 필드에 다시 주입하지 않음 |
+
+provider 성공 저장 예시:
+
+```json
+{
+  "schema_version": "1.9.0",
+  "input_snapshot_id": "SNAP-1001-001",
+  "contract_id": 1001,
+  "provider_model": "gemini/gemini-3.5-flash",
+  "prompt_version": "classification-v1",
+  "classification_method": "provider",
+  "fallback_reason_code": null,
+  "candidates": [
+    {
+      "clause_ref": "deposit_return_clause:0",
+      "clause_type": "deposit_return",
+      "clarity_candidate": "명확",
+      "responsible_party_candidate": "임대인",
+      "condition_candidates": ["계약 종료일"],
+      "review_required": false
+    }
+  ]
+}
+```
+
+provider 미설정 safe fallback 저장 예시:
+
+```json
+{
+  "schema_version": "1.9.0",
+  "input_snapshot_id": "SNAP-1001-001",
+  "contract_id": 1001,
+  "provider_model": "unconfigured",
+  "prompt_version": "classification-v1",
+  "classification_method": "safe_fallback",
+  "fallback_reason_code": "provider_unavailable",
+  "candidates": []
+}
+```
+
+두 결과 모두 정상적인 `ClassificationResult`다. safe fallback은 분석 실행 실패가 아니며, 후보가 없으므로 J10~J12는 원문과 규칙별 입력 경계에 따라 `확인 필요` 또는 `확인 불가`를 반환한다. 내부 classification 결과와 오류는 현재 API에 노출하지 않는다.
+
+Backend 연결 테스트는 최소 다음 경계를 고정한다.
+
+- provider 성공 결과 저장 후 `ClassificationResult.model_validate()` 왕복 성공
+- provider 없음·provider 오류·응답 검증 실패에서 safe fallback 저장 후 분석 `completed`
+- safe fallback에서도 R01~R10 결과 순서와 기존 판정 불변
+- J10~J12만 classification 후보를 소비하고 R08·R09는 `확인 필요` 유지
+- 분석 상세 API 응답에 `classification_result`·`classification_error`·provider 원문 오류가 노출되지 않음
+
 **B 인계 확인 체크리스트** (v1.8.0·v1.9.0 공통 R/J 저장과 생성 계약 소비 확인):
 
 - [x] `lease_companion_ai.schemas.unified` import 성공 (GenerationResult·validate_generation_result_for_analysis 포함)
