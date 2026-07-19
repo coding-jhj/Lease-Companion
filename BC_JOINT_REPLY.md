@@ -133,9 +133,17 @@ C DTO·화면·MSW·E2E 전환 → A·B·C 공동 회귀 검증
 
 ## 8. A에게 남은 확인 질문
 
-1. **미해결:** `unified.py`의 `REQUIRED_CONTRACT_FIELDS`와 현행 R08·R09가 아직
-   `deposit_return_condition`·`repair_responsibility`에 의존한다. 신규 v1.9에서 두
-   필드를 `null`로 반환하면 R08·R09가 기본 `확인 필요`로만 내려가므로, raw clause와
-   classification 후보를 받는 adapter 및 필수 필드/타입 목록을 어느 변경에서 함께
-   전환할지 A가 확정해야 한다.
+1. **해결(2026-07-19, A 확정 — 안 (가)):** R08·R09를 classification 후보에 연결하는
+   adapter는 **만들지 않는다.** ADR 2026-07-18과 §5 경계에 따라 clarity 후보 소비는
+   J10·J11만 담당하며, legacy R에 canonical classification 책임을 다시 섞지 않는다.
+   - v1.9 extraction이 `deposit_return_condition`·`repair_responsibility`를 `null`로
+     반환하면 R08·R09는 단정하지 않고 `확인 필요`로 내려간다. 같은 조항의 실제 clarity는
+     사용자에게 노출되는 J10·J11이 후보 경유로 판정하므로 정보 손실이 없다.
+   - 전제 정정: `REQUIRED_CONTRACT_FIELDS`에는 두 구 필드가 **이미 포함되지 않으며**,
+     canonical 검증기는 `null` 값을 통과시킨다(`type` 검사 전 `None` skip). 따라서
+     필수 필드/타입 목록 전환은 필요 없고, 구 필드 제거는 공동 전환 후 별도 ADR로 미룬다.
+   - 회귀 잠금: `ai/tests/pipelines/test_minimum_mvp.py::test_v19_null_condition_fields_degrade_r08_r09_to_check_needed`.
+   - v1.9 offline(무 classification provider)에서는 J10·J11도 `확인 필요`/`확인 불가`로
+     정직하게 내려가며, 실제 clarity는 Gemini classification provider 연결 시 복원된다
+     (키·예산 승인 필요, 별도 작업).
 2. **해결:** deprecated 기간 신규 v1.9 구 필드 값 정책은 ADR에서 `null` 고정으로 확정됐다.
