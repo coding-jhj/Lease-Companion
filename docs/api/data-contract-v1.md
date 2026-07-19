@@ -16,7 +16,7 @@
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
 - **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J12 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend는 v1.8.0·v1.9.0 wire DTO와 v1.9 fixture, R/J 생성 결과 화면을 지원한다.
-- **v1.9.0 구현 상태(A)**: `ClassificationInput`·`ClassificationResult`, Gemini provider, provider/safe_fallback provenance, classification→규칙 분석 pipeline helper와 CASE-001 fixture를 구현했다. v1.8.0 payload 읽기는 유지한다. Backend에는 classification 저장 컬럼이 있지만 worker는 아직 `analyze_snapshot()`을 직접 호출하므로 classification 실행·저장 연결은 미완료다.
+- **v1.9.0 구현 상태(A·B)**: `ClassificationInput`·`ClassificationResult`, Gemini provider, provider/safe_fallback provenance, classification→규칙 분석 pipeline helper와 CASE-001 fixture를 구현했다. v1.8.0 payload 읽기는 유지한다. Backend worker는 `analyze_with_classification()`을 호출하고 결과를 내부 저장하며 API에는 노출하지 않는다.
 - **v1.4.0 판정 계약**: 기존 R/J 출력 분리를 유지하고, 확인 완료 snapshot에서 판정별 필수 `ExtractedField`를 복사하는 `JudgmentInput`을 추가했다. null J 입력은 구조화 `issue_code`를 요구한다.
 - **v1.5.0 ContractContext 활용 계약**: `GenerationResult.stage_guidance`가 immutable `ContractContext`와 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 기록한다.
 - **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.
@@ -223,8 +223,8 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 - [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 9개 모두 직렬화 키 = 원본 키)
 - [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
 - [x] `ContractContext` 변경에 따라 단계별 질문·체크리스트·계약 직후 행동·보관 대상이 달라지고 저장 → 조회 왕복 확인
-- [ ] worker에서 `analyze_with_classification()` 실행
-- [ ] `classification_result` 저장과 내부 provider 오류 미노출 검증
+- [x] worker에서 `analyze_with_classification()` 실행
+- [x] `classification_result` 저장과 내부 provider 오류 미노출 검증
 
 추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장).
 
@@ -258,7 +258,7 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 | 단계 | 상태 |
 |---|---|
 | 1. A 패키지 준비 | **완료** — canonical v1.8.0 읽기 호환·v1.9.0 신규 출력, ClassificationInput·ClassificationResult·pipeline helper 포함 Schema 10개, fixture 9개, J gold 47건 |
-| 2. B 소비 확인 | **부분 완료** — confirm·R/J 분석·생성 분리 저장과 classification 저장 컬럼은 완료. worker의 classification 실행·`classification_result` 저장 연결은 미완료 |
+| 2. B 소비 확인 | **완료** — confirm·R/J 분석·생성 분리 저장, classification worker 실행·내부 저장, provider 성공·실패·safe fallback·API 미노출 검증 완료 |
 | 3. Frontend 소비 확인 | **완료** — v1.8.0·v1.9.0 DTO, v1.9 fixture, J10~J12 조항 명확성 화면, classification fallback·내부 오류 미노출, 모바일 E2E 연결 |
 
 최종 소비 완료는 위 체크리스트와 OpenAPI 소비자 테스트에서 **필드명 변경이 없음**을 확인한 시점이다.
