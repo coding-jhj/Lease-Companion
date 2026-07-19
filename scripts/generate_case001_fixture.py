@@ -46,8 +46,10 @@ from lease_companion_ai.schemas.unified import (  # noqa: E402
     ClassificationInput,
     ClassificationMethod,
     ClassificationResult,
+    ClarityCandidate,
     ClauseCandidate,
     ClauseSourceField,
+    ClauseType,
     ContractContext,
     ContractStage,
     ContractType,
@@ -57,6 +59,7 @@ from lease_companion_ai.schemas.unified import (  # noqa: E402
     ExtractedField,
     FieldCorrection,
     FieldIssueCode,
+    ResponsiblePartyCandidate,
     SourceEvidence,
 )
 
@@ -225,45 +228,45 @@ def classification_result(classification_input: ClassificationInput) -> Classifi
         if clause.source_field is ClauseSourceField.DEPOSIT_RETURN:
             candidate = ClauseCandidate(
                 clause_ref=clause.clause_ref,
-                clause_type="deposit_return",
-                clarity_candidate="명확",
-                responsible_party_candidate="임대인",
+                clause_type=ClauseType.DEPOSIT_RETURN,
+                clarity_candidate=ClarityCandidate.CLEAR,
+                responsible_party_candidate=ResponsiblePartyCandidate.LANDLORD,
                 condition_candidates=["계약 종료일"],
                 review_required=False,
             )
         elif clause.source_field is ClauseSourceField.REPAIR_RESPONSIBILITY:
             candidate = ClauseCandidate(
                 clause_ref=clause.clause_ref,
-                clause_type="repair_restoration",
-                clarity_candidate="명확",
-                responsible_party_candidate="임대인",
+                clause_type=ClauseType.REPAIR_RESTORATION,
+                clarity_candidate=ClarityCandidate.CLEAR,
+                responsible_party_candidate=ResponsiblePartyCandidate.LANDLORD,
                 condition_candidates=[],
                 review_required=False,
             )
         elif clause.source_field is ClauseSourceField.MAIN_CLAUSES and clause.ordinal == 0:
             candidate = ClauseCandidate(
                 clause_ref=clause.clause_ref,
-                clause_type="deposit_return",
-                clarity_candidate="명확",
-                responsible_party_candidate="임대인",
+                clause_type=ClauseType.DEPOSIT_RETURN,
+                clarity_candidate=ClarityCandidate.CLEAR,
+                responsible_party_candidate=ResponsiblePartyCandidate.LANDLORD,
                 condition_candidates=["계약 종료일"],
                 review_required=False,
             )
         elif clause.source_field is ClauseSourceField.MAIN_CLAUSES:
             candidate = ClauseCandidate(
                 clause_ref=clause.clause_ref,
-                clause_type="repair_restoration",
-                clarity_candidate="명확",
-                responsible_party_candidate="임대인",
+                clause_type=ClauseType.REPAIR_RESTORATION,
+                clarity_candidate=ClarityCandidate.CLEAR,
+                responsible_party_candidate=ResponsiblePartyCandidate.LANDLORD,
                 condition_candidates=[],
                 review_required=False,
             )
         else:
             candidate = ClauseCandidate(
                 clause_ref=clause.clause_ref,
-                clause_type="rights_change",
-                clarity_candidate="명확",
-                responsible_party_candidate="임대인",
+                clause_type=ClauseType.RIGHTS_CHANGE,
+                clarity_candidate=ClarityCandidate.CLEAR,
+                responsible_party_candidate=ResponsiblePartyCandidate.LANDLORD,
                 condition_candidates=["잔금 지급 전"],
                 review_required=False,
             )
