@@ -6,7 +6,8 @@
 canonical v1.9.0은 ClassificationInput·ClassificationResult를 제공하고 v1.8.0 payload 읽기를
 허용한다. 현재 확인 완료 InputSnapshot을 ClassificationInput으로 변환하는 순수 builder,
 ClassificationProvider·Gemini adapter·결정적 Fake provider, 후보를 추측하지 않는 safe fallback
-service가 구현됐으며 규칙 adapter 연결은 후속 작업이다.
+service가 구현됐다. J10~J12 adapter와 Backend worker도 이 계약으로 연결됐으며,
+classification 결과는 내부 저장하고 API에는 노출하지 않는다.
 
 결정과 전환 순서:
 [`2026-07-18-classification-boundary.md`](../../../../docs/decisions/2026-07-18-classification-boundary.md)
@@ -105,8 +106,8 @@ ExtractedField는 변경하지 않는다.
 - provider 실패·응답 검증 실패는 routing에 기록하고, 규칙은 확인 필요 또는 확인 불가로 처리한다.
 - 로컬 7B 출력은 선택적 비교 실험에서만 같은 계약을 사용할 수 있다.
 
-## 후속 구현
+## 현재 통합 상태
 
-1. Backend에 snapshot 이후 classification 실행·저장 단계를 추가한다.
-2. J10~J12 adapter·fixture·평가를 새 계약으로 전환한다.
-3. 공동 전환 완료 후 기존 extraction 명확성 후보 필드를 deprecated/null 정책으로 전환한다.
+1. Backend worker가 snapshot 이후 `analyze_with_classification()`을 실행하고 결과를 내부 저장한다.
+2. J10~J12 adapter·fixture·평가는 canonical classification 후보 계약을 사용한다.
+3. v1.9 신규 extraction은 기존 명확성 후보 필드를 `null`로 반환하고 v1.8 읽기 호환은 유지한다.
