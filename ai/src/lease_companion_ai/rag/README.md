@@ -29,7 +29,8 @@
 - 구현 완료(배치 3): R01~R10 행동 발동 결과 뒤에서 실제 로컬 검색 근거만 연결하며 규칙 판정 필드를 보존. 분리된 dev/test retrieval 평가와 실측 결과를 `data/rag/evaluation/`에 기록.
 - 구현 완료(배치 4): 기본 runtime factory가 Gemini 키 존재 시 영속 Chroma+BM25 RRF Top-20을 구성하고, Cohere 키 존재 시 Top-5 rerank를 연결한다. 동일 fingerprint는 재임베딩하지 않고 stale index는 자동 재구축한다. 키·embedding·vector·rerank·인덱스 실패는 BM25 또는 hybrid 순서로 fallback한다.
 - 구현 완료(배치 5): J01~J12는 별도 `JudgmentRetrievalQuery`를 사용하고 `judgment_spec.csv`의 판정별 source allowlist에 포함된 공식 청크만 근거로 연결한다. allowlist 원문이 없으면 J 판정과 시급도를 유지한 채 `evidence_sources=[]`로 남긴다.
-- 구현 완료(배치 6): 법무부 표준 주택임대차계약서 `SRC-STD-LEASE`를 공공누리 제1유형 조건에 따라 로컬 원문으로 승격하고 R/J retrieval 평가를 갱신했다. 현재 로컬 원문은 법령 2개와 표준계약서 1개다.
+- 구현 완료(배치 6): 법무부 표준 주택임대차계약서 `SRC-STD-LEASE`를 공공누리 제1유형 조건에 따라 로컬 원문으로 승격하고 R/J retrieval 평가를 갱신했다.
+- 구현 완료(배치 8, 2026-07-20): `SRC-MOLIT-CHECKLIST`(안심 전세계약 체크리스트)를 팀 예외 규정으로 로컬 원문 적재. 현재 로컬 원문은 법령 2개·표준계약서 1개·체크리스트 1개다. test R 전체 recall 15/39→38/39, J recall 30/41→33/41.
 - 구현 완료(배치 7): R01~R10 검색 질의에 `rule_evidence_map.csv`의 공식 근거 설명을 개인정보 없는 검색 문맥으로 추가하고, 같은 파일의 source allowlist를 실제 검색 결과에 적용했다. locked goldset 변경 없이 로컬 가용 recall은 dev/test 모두 100%다.
 - 실제 Gemini·Cohere 호출은 키·비용 승인 전까지 실행하지 않는다. 현재 어댑터 검증은 주입한 fake SDK client만 사용한다.
-- TODO: metadata-only 공식자료 6개 중 재배포가 허용되는 원문을 추가하고 R/J retrieval을 재평가. 별도 키·비용 승인 후 Gemini·Cohere smoke test.
+- TODO: metadata-only 공식자료 5개 중 재배포가 허용되는 원문을 추가하고 R/J retrieval을 재평가. 별도 키·비용 승인 후 Gemini·Cohere smoke test.

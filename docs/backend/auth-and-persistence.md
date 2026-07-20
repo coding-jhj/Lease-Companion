@@ -75,7 +75,7 @@
 - `User` 1 — N `ContractProject`
 - `ContractProject` 1 — N `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback`
 - 원본 추출 JSON은 `ExtractionRun`, 수정은 append-only `CorrectionRecord`, 확인 입력은 불변 `InputSnapshotRecord`에 저장한다.
-- 규칙 판정·원문 증거·공식 근거는 `AnalysisRun.result`, 생성 설명·질문·행동은 `AnalysisRun.generation_result`, 조항 분류 결과는 `AnalysisRun.classification_result`(내부 실패 사유는 `classification_error`, 사용자·일반 로그 비노출) JSON에 분리 저장한다.
+- 규칙 판정·원문 증거·공식 근거는 `AnalysisRun.result`, 생성 설명·질문·행동은 `AnalysisRun.generation_result`, 조항 분류 결과는 `AnalysisRun.classification_result` JSON에 분리 저장한다. 분류 실패 사유의 단일 원본은 `classification_result.fallback_reason_code`이며, `classification_error`는 성공·safe fallback 모두 항상 `None`으로 두고 중복 저장하지 않는다(provider 원문·PII 저장 금지, data-contract-v1 기준).
 
 ## 관련 계층
 

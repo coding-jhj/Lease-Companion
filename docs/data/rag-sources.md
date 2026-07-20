@@ -47,9 +47,9 @@
 
 - 공식 검증 9개를 `data/rag/metadata/official_sources.jsonl`에 기록했다. `scripts/prepare_rag_sources.py`가 inventory에서 결정적으로 재생성한다.
 - 국가법령정보센터는 저작권법 제7조 대상 법령정보와 법제처 보유 저작물의 자유이용 정책을 안내한다. 다만 서식·첨부물의 제3자 권리 가능성 때문에 개별 이용조건 확인 전 원문은 커밋하지 않는다.
-- 법무부는 공공누리 표시가 있는 자료만 표시 조건에 따라 자유 이용하고, 표시가 없으면 사전 협의를 요구한다. 표준계약서 첨부물의 개별 표시를 확정하지 못해 원문을 저장하지 않는다.
-- 국토교통부 체크리스트와 HUG 수시 갱신 상품 페이지도 링크·메타데이터만 사용한다.
-- 따라서 현재 법령 2개는 `distribution_mode=local_source`와 `content_sha256`을 기록하고, 나머지 7개는 `metadata_only`, `content_sha256=null`이다. `metadata_sha256`을 원문 해시로 가장하지 않는다.
+- 법무부 표준 주택임대차계약서(`SRC-STD-LEASE`)는 공공누리 제1유형 표시를 확인해 정규화 원문을 저장한다.
+- 국토교통부 체크리스트(`SRC-MOLIT-CHECKLIST`)는 파일에 공공누리 유형 표시가 확인되지 않으나, 2026-07-20 팀 예외 규정으로 이 1건에 한해 정규화 원문을 로컬 적재한다. HUG 수시 갱신 상품 페이지는 링크·메타데이터만 사용한다.
+- 따라서 현재 로컬 원문 4개(법령 2개·표준계약서 1개·체크리스트 1개)는 `distribution_mode=local_source`와 `content_sha256`을 기록하고, 나머지 5개는 `metadata_only`, `content_sha256=null`이다. `metadata_sha256`을 원문 해시로 가장하지 않는다.
 
 ## 미정 (TODO)
 
