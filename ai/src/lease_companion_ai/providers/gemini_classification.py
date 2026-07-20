@@ -36,9 +36,18 @@ class _ClassificationCandidateBatch(BaseModel):
 class GeminiClassificationProvider:
     model_name = "gemini-3.5-flash"
 
-    def __init__(self, *, client: Any | None = None, prompt: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        client: Any | None = None,
+        prompt: str | None = None,
+        timeout_seconds: float = 30.0,
+    ) -> None:
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds는 양수여야 합니다.")
         self._client = client
         self._prompt = prompt or load_classification_prompt()
+        self._timeout_seconds = timeout_seconds
 
     def _get_client(self) -> Any:
         if self._client is not None:
@@ -48,8 +57,14 @@ class GeminiClassificationProvider:
             raise ProviderError("Gemini classification provider 설정이 없습니다.")
         try:
             from google import genai
+            from google.genai import types
 
-            self._client = genai.Client(api_key=api_key)
+            self._client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(
+                    timeout=int(self._timeout_seconds * 1_000)
+                ),
+            )
         except Exception:
             raise ProviderError(
                 "Gemini classification provider 초기화에 실패했습니다."

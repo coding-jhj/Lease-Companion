@@ -128,6 +128,95 @@ def main():
             assert row["source_id"] in sources, f"evidence_map 미확인 근거 {row['source_id']}"
             assert row["source_id"] in official_sources, f"evidence_map 비공식 근거 {row['source_id']}"
 
+    # 4-1) 계약 연습 합성 fixture 구조·교차참조·결정성
+    practice_dir = os.path.join(
+        SAMPLE,
+        "practice-scenarios",
+        "PRACTICE-BROKER-PRESSURE-001",
+    )
+    with open(os.path.join(practice_dir, "scenario.json"), encoding="utf-8") as f:
+        practice_scenario = json.load(f)
+    with open(os.path.join(practice_dir, "answer-key.json"), encoding="utf-8") as f:
+        practice_answers = json.load(f)
+
+    assert practice_scenario["fixture_type"] == "synthetic_practice_scenario"
+    assert practice_scenario["data_classification"] == "synthetic"
+    assert practice_scenario["scenario_id"] == practice_answers["scenario_id"]
+    assert practice_scenario["scenario_version"] == practice_answers["scenario_version"]
+    assert practice_scenario["review_status"] in {"user_review_pending", "approved"}
+    assert practice_answers["review_status"] in {"user_review_pending", "approved"}
+
+    action_ids = [row["action_id"] for row in practice_scenario["target_actions"]]
+    assert action_ids == ["PA01", "PA02", "PA03", "PA04"]
+    assert [row["action_id"] for row in practice_answers["action_rubrics"]] == action_ids
+
+    signal_ids = [row["signal_id"] for row in practice_scenario["hidden_confirmation_signals"]]
+    assert len(signal_ids) == len(set(signal_ids)), "연습 signal_id 중복"
+    for action in practice_scenario["target_actions"]:
+        assert set(action["linked_signal_ids"]) <= set(signal_ids)
+    for signal in practice_scenario["hidden_confirmation_signals"]:
+        assert set(signal["linked_rule_ids"]) <= set(RULE_IDS)
+        assert set(signal["linked_judgment_ids"]) <= set(JUDGMENT_IDS)
+        assert set(signal["official_source_ids"]) <= official_sources
+
+    turn_ids = [row["turn_id"] for row in practice_scenario["dialogue_turns"]]
+    assert turn_ids == ["TURN-01", "TURN-02", "TURN-03", "TURN-04"]
+    answer_statuses = [row["status_id"] for row in practice_answers["answer_statuses"]]
+    expected_answer_statuses = [
+        "appropriate_check",
+        "partial_check",
+        "ambiguous_answer",
+        "avoidance",
+        "no_response",
+        "needs_review",
+    ]
+    assert answer_statuses == expected_answer_statuses
+    for turn in practice_scenario["dialogue_turns"]:
+        assert turn["goal_action_id"] in action_ids
+        assert list(turn["responses"]) == expected_answer_statuses
+        assert turn["next_turn_id"] in set(turn_ids) | {"ACTION-SELECTION"}
+
+    example_ids = set()
+    deterministic_outputs = {}
+    represented_statuses = set()
+    valid_next_turn_ids = set(turn_ids) | {"ACTION-SELECTION"}
+    for example in practice_answers["evaluation_examples"]:
+        assert example["example_id"] not in example_ids, "연습 example_id 중복"
+        example_ids.add(example["example_id"])
+        assert example["turn_id"] in turn_ids
+        assert example["expected_status_id"] in answer_statuses
+        represented_statuses.add(example["expected_status_id"])
+        assert set(example["expected_confirmed_action_ids"]) <= set(action_ids)
+        assert example["expected_next_turn_id"] in valid_next_turn_ids
+        input_key = json.dumps(
+            [example["turn_id"], example["user_input"], example["input_context"]],
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        output_value = (
+            example["expected_status_id"],
+            tuple(example["expected_confirmed_action_ids"]),
+            example["expected_next_turn_id"],
+        )
+        if input_key in deterministic_outputs:
+            assert deterministic_outputs[input_key] == output_value, "동일 연습 입력의 기대 출력 충돌"
+        deterministic_outputs[input_key] = output_value
+    assert represented_statuses == set(answer_statuses), "연습 답변 상태 예시 누락"
+    assert set(practice_answers["debrief"]["official_source_ids"]) <= official_sources
+
+    def assert_no_runtime_contract_ids(value):
+        if isinstance(value, dict):
+            forbidden_keys = {"contract_id", "analysis_run_id", "practice_session_id"}
+            assert not (set(value) & forbidden_keys), "연습 fixture에 실제 runtime 식별자 포함"
+            for child in value.values():
+                assert_no_runtime_contract_ids(child)
+        elif isinstance(value, list):
+            for child in value:
+                assert_no_runtime_contract_ids(child)
+
+    assert_no_runtime_contract_ids(practice_scenario)
+    assert_no_runtime_contract_ids(practice_answers)
+
     # 5) dev R goldset 3종 + J 입력·상태 goldset
     er = os.path.join(SAMPLE, "expected-results")
     rule_g = read_jsonl(os.path.join(er, "rule_goldset.jsonl"))
@@ -219,7 +308,7 @@ def main():
 
     print(
         f"\nOK: dev {len(ids)}쌍 + test {len(tids)}쌍, 규칙 24(기존 gold 쿼터 10), "
-        f"J gold {len(judgment_case_ids)}건, 누수 0, 개인정보 0"
+        f"J gold {len(judgment_case_ids)}건, 연습 fixture 1건, 누수 0, 개인정보 0"
     )
 
 
