@@ -1,0 +1,75 @@
+{
+  "$id": "lease-companion/practice-turn-input-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "사용자 답변 또는 행동 선택 1회.",
+  "properties": {
+    "response_time_seconds": {
+      "minimum": 0,
+      "title": "Response Time Seconds",
+      "type": "number"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "selected_action": {
+      "anyOf": [
+        {
+          "enum": [
+            "진행",
+            "추가 확인",
+            "보류",
+            "중단"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Action"
+    },
+    "session_id": {
+      "minLength": 1,
+      "title": "Session Id",
+      "type": "string"
+    },
+    "timed_out": {
+      "default": false,
+      "title": "Timed Out",
+      "type": "boolean"
+    },
+    "turn_id": {
+      "pattern": "^(?:TURN-\\d{2}|ACTION-SELECTION)$",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "user_answer": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "User Answer"
+    }
+  },
+  "required": [
+    "session_id",
+    "turn_id",
+    "response_time_seconds"
+  ],
+  "title": "PracticeTurnInput",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}

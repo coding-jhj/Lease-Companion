@@ -12,6 +12,14 @@ from .unified import (
     ResponsiblePartyCandidate,
     validate_classification_result_for_input,
 )
+from .simulation import (
+    PracticeResult,
+    PracticeSessionState,
+    PracticeTurnEvaluation,
+    PracticeTurnInput,
+    ScenarioDefinition,
+    ScenarioMediaManifest,
+)
 
 __all__ = [
     "ClarityCandidate",
@@ -23,5 +31,11 @@ __all__ = [
     "ClauseSourceField",
     "ClauseType",
     "ResponsiblePartyCandidate",
+    "PracticeResult",
+    "PracticeSessionState",
+    "PracticeTurnEvaluation",
+    "PracticeTurnInput",
+    "ScenarioDefinition",
+    "ScenarioMediaManifest",
     "validate_classification_result_for_input",
 ]

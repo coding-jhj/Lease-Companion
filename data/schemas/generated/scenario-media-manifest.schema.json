@@ -1,0 +1,116 @@
+{
+  "$defs": {
+    "ScenarioMediaClip": {
+      "additionalProperties": false,
+      "properties": {
+        "desktop_video_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Desktop Video Url"
+        },
+        "loop": {
+          "title": "Loop",
+          "type": "boolean"
+        },
+        "mobile_video_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mobile Video Url"
+        },
+        "poster_url": {
+          "minLength": 1,
+          "title": "Poster Url",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "intro",
+            "waiting_soft",
+            "waiting_pressure",
+            "reprompt",
+            "reaction_positive",
+            "reaction_retry",
+            "next_turn",
+            "result"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "subtitle": {
+          "minLength": 1,
+          "title": "Subtitle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "poster_url",
+        "subtitle",
+        "loop"
+      ],
+      "title": "ScenarioMediaClip",
+      "type": "object"
+    }
+  },
+  "$id": "lease-companion/scenario-media-manifest-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "시나리오 버전에 고정된 상태별 사전 생성 미디어.",
+  "properties": {
+    "clips": {
+      "items": {
+        "$ref": "#/$defs/ScenarioMediaClip"
+      },
+      "minItems": 1,
+      "title": "Clips",
+      "type": "array"
+    },
+    "media_version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Media Version",
+      "type": "string"
+    },
+    "scenario_id": {
+      "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "scenario_version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "scenario_version",
+    "media_version",
+    "clips"
+  ],
+  "title": "ScenarioMediaManifest",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}

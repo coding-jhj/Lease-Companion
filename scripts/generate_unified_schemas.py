@@ -31,6 +31,14 @@ from lease_companion_ai.schemas.unified import (  # noqa: E402
     JudgmentInput,
     JudgmentResult,
 )
+from lease_companion_ai.schemas.simulation import (  # noqa: E402
+    PracticeResult,
+    PracticeSessionState,
+    PracticeTurnEvaluation,
+    PracticeTurnInput,
+    ScenarioDefinition,
+    ScenarioMediaManifest,
+)
 
 OUTPUT_DIR = ROOT / "data" / "schemas" / "generated"
 
@@ -45,6 +53,12 @@ MODELS = {
     "judgment-input": JudgmentInput,
     "judgment-result": JudgmentResult,
     "generation-result": GenerationResult,
+    "scenario-definition": ScenarioDefinition,
+    "scenario-media-manifest": ScenarioMediaManifest,
+    "practice-session-state": PracticeSessionState,
+    "practice-turn-input": PracticeTurnInput,
+    "practice-turn-evaluation": PracticeTurnEvaluation,
+    "practice-result": PracticeResult,
 }
 
 

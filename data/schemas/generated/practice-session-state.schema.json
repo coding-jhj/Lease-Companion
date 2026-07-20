@@ -1,0 +1,81 @@
+{
+  "$id": "lease-companion/practice-session-state-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "연습 세션의 복원 가능한 현재 상태.",
+  "properties": {
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completed At"
+    },
+    "current_state": {
+      "minLength": 1,
+      "title": "Current State",
+      "type": "string"
+    },
+    "scenario_id": {
+      "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "scenario_version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "session_id": {
+      "minLength": 1,
+      "title": "Session Id",
+      "type": "string"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "completed",
+        "abandoned"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "user_id": {
+      "exclusiveMinimum": 0,
+      "title": "User Id",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "session_id",
+    "user_id",
+    "scenario_id",
+    "scenario_version",
+    "current_state",
+    "started_at",
+    "status"
+  ],
+  "title": "PracticeSessionState",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}
