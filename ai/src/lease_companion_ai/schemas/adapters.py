@@ -70,7 +70,9 @@ def document_from_legacy(
     fields: dict[str, ExtractedField] = {}
     for name in sorted(field_names):
         value = raw_fields.get(name)
-        if isinstance(value, list) and not value:
+        # 빈 컬렉션(리스트·매핑)은 ExtractedField가 금지 — "없음"은 null로 표현한다.
+        # (예: Gemini가 owner_shares를 빈 객체 {}로 반환하는 경우)
+        if isinstance(value, (list, dict)) and not value:
             value = None
         if value is None:
             fields[name] = ExtractedField(

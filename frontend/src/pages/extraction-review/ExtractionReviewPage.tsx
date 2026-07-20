@@ -206,7 +206,7 @@ export function ExtractionReviewPage() {
       <div className="stack">
         {status === "loading" && <LoadingState title="추출 상태를 확인하는 중" description="서버의 최신 추출 실행을 찾고 있습니다." />}
         {status === "processing" && <LoadingState title={runStatus === "pending" ? "추출 대기 중" : "문서에서 값을 추출하는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
-        {status === "error" && <ErrorState title="추출값을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadExtraction()} />}
+        {status === "error" && <ErrorState title="추출값을 불러오지 못했습니다" description={errorMessage} retryLabel="문서 다시 올리기" onRetry={() => navigate(`/contracts/${contractId}/upload`)} />}
         {status === "success" && fields.length === 0 && <EmptyState title="확인할 추출값이 없습니다" description="문서를 다시 업로드하거나 처리 상태를 확인해 주세요." />}
         {status === "success" && fields.length > 0 && (
           <button className="secondary" type="button" onClick={confirmReadableFields}>읽힌 값 모두 확인</button>

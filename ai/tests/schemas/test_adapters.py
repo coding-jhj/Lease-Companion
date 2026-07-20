@@ -115,6 +115,16 @@ def test_document_from_legacy_normalizes_empty_list_to_null():
     assert doc.fields["owner_names"].confidence is Confidence.FAILED
 
 
+def test_document_from_legacy_normalizes_empty_dict_to_null():
+    # Gemini가 owner_shares를 빈 객체 {}로 반환하면 ExtractedField가 거부하므로 null로 강등한다.
+    doc = document_from_legacy(
+        {"document_type": "registry_record", "fields": {"owner_shares": {}}, "warnings": []},
+        document_id="DOC-1",
+    )
+    assert doc.fields["owner_shares"].extracted_value is None
+    assert doc.fields["owner_shares"].confidence is Confidence.FAILED
+
+
 def test_apply_correction_preserves_extracted_value_and_original():
     doc = document_from_legacy(
         {"document_type": "contract", "fields": {"landlord_name": "이정문"}, "warnings": []},

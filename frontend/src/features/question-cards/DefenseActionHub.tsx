@@ -5,6 +5,7 @@ import type {
   RuleGuidanceDto,
   RuleResultDto,
   StageGuidanceDto,
+  Urgency,
 } from "../../types/api";
 
 type ResultItem = RuleResultDto | JudgmentResultDto;
@@ -12,6 +13,42 @@ type GuidanceItem = RuleGuidanceDto | JudgmentGuidanceDto;
 
 function unique(items: Array<string | null | undefined>) {
   return [...new Set(items.filter((item): item is string => Boolean(item?.trim())))];
+}
+
+// 상단에 보여줄 3개가 "번호가 빠른 것"이 아니라 "가장 급한 것"이 되도록
+// 시급도로 정렬한다. 낮을수록 위. stageGuidance 항목처럼 시급도가 없는 값은
+// 성격에 맞는 기본 시급도를 매긴다.
+const URGENCY_RANK: Record<Urgency, number> = {
+  "즉시 확인": 0,
+  "분석 불가": 1,
+  "계약 전 확인": 2,
+  "계약 직후 조치": 3,
+  "참고": 4,
+};
+
+function rankOf(urgency: Urgency | undefined): number {
+  return urgency !== undefined ? URGENCY_RANK[urgency] : URGENCY_RANK["참고"];
+}
+
+function idOf(item: GuidanceItem): string {
+  return "rule_id" in item ? item.rule_id : item.judgment_id;
+}
+
+interface Ranked {
+  text: string | null | undefined;
+  rank: number;
+}
+
+// 시급도순 정렬 + 중복 제거(같은 문구는 더 급한 쪽 rank 유지). 같은 rank는 등장 순서 유지.
+function prioritized(entries: Ranked[]): string[] {
+  const best = new Map<string, number>();
+  for (const { text, rank } of entries) {
+    const trimmed = text?.trim();
+    if (!trimmed) continue;
+    const previous = best.get(trimmed);
+    if (previous === undefined || rank < previous) best.set(trimmed, rank);
+  }
+  return [...best.entries()].sort((a, b) => a[1] - b[1]).map(([text]) => text);
 }
 
 const INITIAL_ACTION_COUNT = 3;
@@ -58,19 +95,25 @@ export function DefenseActionHub({
   guidance: GuidanceItem[];
   stageGuidance: StageGuidanceDto | null;
 }) {
-  const questions = unique([
-    ...results.map((item) => item.question),
-    ...guidance.flatMap((item) => item.questions),
-    ...(stageGuidance?.before_deposit_questions ?? []),
+  const urgencyById = new Map<string, Urgency>();
+  for (const item of results) {
+    urgencyById.set("rule_id" in item ? item.rule_id : item.judgment_id, item.urgency);
+  }
+  const guidanceRank = (item: GuidanceItem) => rankOf(urgencyById.get(idOf(item)));
+
+  const questions = prioritized([
+    ...results.map((item) => ({ text: item.question, rank: rankOf(item.urgency) })),
+    ...guidance.flatMap((item) => item.questions.map((text) => ({ text, rank: guidanceRank(item) }))),
+    ...(stageGuidance?.before_deposit_questions ?? []).map((text) => ({ text, rank: rankOf("계약 전 확인") })),
   ]);
-  const signingActions = unique([
-    ...results.flatMap((item) => item.recommended_actions),
-    ...guidance.flatMap((item) => item.signing_checklist_items.map((entry) => entry.text)),
-    ...(stageGuidance?.signing_checklist ?? []),
+  const signingActions = prioritized([
+    ...results.flatMap((item) => item.recommended_actions.map((text) => ({ text, rank: rankOf(item.urgency) }))),
+    ...guidance.flatMap((item) => item.signing_checklist_items.map((entry) => ({ text: entry.text, rank: guidanceRank(item) }))),
+    ...(stageGuidance?.signing_checklist ?? []).map((text) => ({ text, rank: rankOf("계약 전 확인") })),
   ]);
-  const postActions = unique([
-    ...guidance.flatMap((item) => item.post_contract_action_items.map((entry) => entry.text)),
-    ...(stageGuidance?.post_contract_actions ?? []),
+  const postActions = prioritized([
+    ...guidance.flatMap((item) => item.post_contract_action_items.map((entry) => ({ text: entry.text, rank: guidanceRank(item) }))),
+    ...(stageGuidance?.post_contract_actions ?? []).map((text) => ({ text, rank: rankOf("계약 직후 조치") })),
   ]);
   const records = unique(stageGuidance?.record_retention ?? []);
 
