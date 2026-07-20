@@ -51,10 +51,10 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
         <span>{source.institution}</span>
       </div>
       <h4>{source.title}</h4>
-      {source.summary ? (
+      {(source.source_text ?? source.summary) ? (
         <details className="evidence-summary">
           <summary>공식자료 내용 전체 보기</summary>
-          <EvidenceSummary summary={source.summary} />
+          <EvidenceSummary summary={source.source_text ?? source.summary ?? ""} />
         </details>
       ) : (
         <p className="evidence-summary-empty">제공된 요약이 없습니다. 공식 원문에서 내용을 확인해 주세요.</p>

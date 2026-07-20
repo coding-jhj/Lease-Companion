@@ -41,6 +41,31 @@ describe("EvidenceDisclosure", () => {
     expect(screen.getByText("이 결과만으로 법률적 결론을 내릴 수 없습니다.")).toBeInTheDocument();
   });
 
+  it("shows the full source_text instead of the retrieval excerpt when present", () => {
+    render(
+      <EvidenceDisclosure
+        idPrefix="R01"
+        explanation="설명"
+        financialImpact="영향"
+        limitations="한계"
+        sources={[{
+          source_id: "SRC-1",
+          title: "주택임대차 표준계약서",
+          institution: "법무부",
+          summary: "검색 발췌 문장입니다.",
+          source_text: "전체 원문 첫 문장입니다.\n[수선비용 부담의 해석 기준]\n전체 원문 마지막 문장입니다.",
+          source_url: "https://example.com/source",
+        }]}
+      />,
+    );
+
+    // 전체 원문이 있으면 그걸 보여주고, 검색 발췌(summary)는 쓰지 않는다.
+    expect(screen.getByText("전체 원문 첫 문장입니다.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "[수선비용 부담의 해석 기준]" })).toBeInTheDocument();
+    expect(screen.getByText("전체 원문 마지막 문장입니다.")).toBeInTheDocument();
+    expect(screen.queryByText("검색 발췌 문장입니다.")).not.toBeInTheDocument();
+  });
+
   it("shows a clear next step when no official source is connected", () => {
     render(
       <EvidenceDisclosure

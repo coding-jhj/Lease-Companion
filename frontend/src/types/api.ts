@@ -138,6 +138,8 @@ export interface OfficialSourceDto {
   title: string;
   institution: string;
   summary: string | null;
+  // "전체 보기"용 공식자료 전체 원문. 없으면 null(summary 발췌로 폴백).
+  source_text?: string | null;
   source_url: string | null;
   // 이 근거를 회수한 검색 방식(관찰용). 정적 카탈로그 항목은 null.
   retrieval_method?: "bm25" | "vector" | "hybrid" | "rerank" | null;

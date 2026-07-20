@@ -31,6 +31,18 @@
           "title": "Source Id",
           "type": "string"
         },
+        "source_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Text"
+        },
         "source_url": {
           "anyOf": [
             {

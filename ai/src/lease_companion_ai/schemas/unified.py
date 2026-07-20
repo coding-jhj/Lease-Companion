@@ -1089,6 +1089,9 @@ class OfficialSource(BaseModel):
     institution: str
     # 현행 source_inventory.csv에 요약이 비어 있는 항목이 있어 null 허용.
     summary: str | None = None
+    # 화면 "전체 보기"용 공식자료 전체 원문. 검색 청크(summary)와 별개 — 로컬 원문이 있는
+    # 근거만 채워지고 없으면 null(화면은 summary로 폴백). RuleStatus·urgency와 무관.
+    source_text: str | None = None
     source_url: str | None = None
     # 이 근거를 회수한 검색 방식(관찰용). RAG enrich에서 실제 사용된 방식을 기록한다.
     # 정적 카탈로그 항목·평가용 정답에는 None. RuleStatus·urgency를 바꾸지 않는다.
