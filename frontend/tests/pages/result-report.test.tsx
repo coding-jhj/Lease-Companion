@@ -92,10 +92,11 @@ describe("ResultReportPage", () => {
     renderPage();
 
     expect(screen.getByText("리포트를 불러오는 중")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "임대인=등기 소유자 이름 일치" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "계약서 임대인=등기 소유자" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "서두르지 않아도 괜찮아요." })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toHaveAttribute("href", "#first-priority-group");
-    expect(screen.getByRole("heading", { name: "전체 확인 결과" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "12가지 계약 확인 결과" })).toBeInTheDocument();
+    expect(screen.getByText("내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
     expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
     expect(document.querySelectorAll(".result-card").length).toBeLessThan(36);
@@ -103,7 +104,7 @@ describe("ResultReportPage", () => {
     expect(screen.getByRole("button", { name: /^일반 확인/ })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: /^지금 판단할 수 없는 항목/ })).toHaveAttribute("aria-expanded", "false");
     expandAllResultGroups();
-    expect(document.querySelectorAll(".result-card")).toHaveLength(36);
+    expect(document.querySelectorAll(".result-card")).toHaveLength(12);
     for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
       expect(screen.getByText(judgmentId)).toBeInTheDocument();
     }
@@ -117,10 +118,11 @@ describe("ResultReportPage", () => {
     expect(within(questionGroup).getByRole("button", { name: "접기" })).toBeInTheDocument();
     expect(screen.getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(1);
 
-    const r01 = screen.getAllByText("R01")[0].closest("article");
-    expect(r01).toHaveTextContent("상태: 불일치");
-    expect(r01).toHaveTextContent("시급도: 즉시 확인");
-    expect(r01).toHaveTextContent("이 결과만으로 사기·위법 여부를 판단할 수 없습니다.");
+    expect(screen.queryByText("R01")).not.toBeInTheDocument();
+
+    const j01 = screen.getByText("J01").closest("article");
+    expect(j01).toHaveTextContent("상태: 불일치");
+    expect(j01).toHaveTextContent("시급도: 즉시 확인");
 
     const j10 = screen.getByText("J10").closest("article");
     expect(j10).toHaveTextContent("상태: 명확");
@@ -132,7 +134,7 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "전체 확인 결과" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "12가지 계약 확인 결과" })).toBeInTheDocument();
     expandAllResultGroups();
     for (const judgmentId of ["J10", "J11", "J12"]) {
       const card = screen.getByText(judgmentId).closest("article");
@@ -150,8 +152,9 @@ describe("ResultReportPage", () => {
 
     expect(await screen.findByText(/규칙 판정은 정상이며 안내 생성에 실패했습니다/)).toBeInTheDocument();
     expandAllResultGroups();
-    expect(document.querySelectorAll(".result-card")).toHaveLength(36);
-    expect(screen.getByText("R01")).toBeInTheDocument();
+    expect(document.querySelectorAll(".result-card")).toHaveLength(12);
+    expect(screen.getByText("J01")).toBeInTheDocument();
+    expect(screen.queryByText("R01")).not.toBeInTheDocument();
   });
 
   it("shows an empty report state when a completed response has no rule results", async () => {

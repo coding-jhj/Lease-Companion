@@ -80,12 +80,10 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   }
   const allResults = page.locator('section[aria-labelledby="all-results-title"]');
   await expandAllResultGroups(page);
-  for (const ruleId of Array.from({ length: 10 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`)) {
-    await expect(allResults).toContainText(ruleId);
-  }
   for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
     await expect(allResults).toContainText(judgmentId);
   }
+  await expect(allResults).not.toContainText("R01");
   await expect(allResults).toContainText("상태:");
   for (const title of ["먼저 물어볼 질문", "서명 전 확인 행동", "계약 직후 행동", "보관할 자료"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
@@ -95,10 +93,9 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.reload();
   await expect(page.getByRole("heading", { name: "방어 행동 허브" })).toBeVisible();
   await expandAllResultGroups(page);
-  await expect(allResults).toContainText("R01");
-  await expect(allResults).toContainText("R24");
   await expect(allResults).toContainText("J01");
   await expect(allResults).toContainText("J12");
+  await expect(allResults).not.toContainText("R01");
 
   if (!isRealApi) {
     await page.getByLabel("평점").selectOption("5");

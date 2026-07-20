@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { JudgmentResultDto, RuleResultDto, Urgency } from "../../types/api";
+import { EvidenceDisclosure } from "../evidence-sources/EvidenceDisclosure";
 
 export type DisplayPriority = "반드시 확인" | "확인 권장" | "일반 확인";
 
@@ -40,7 +41,7 @@ function cannotJudgeNow(item: ReportResultDto) {
     || ("rule_id" in item && externalDataRuleIds.has(item.rule_id));
 }
 
-function ResultCard({ item }: { item: ReportResultDto }) {
+function ResultCard({ item, idPrefix }: { item: ReportResultDto; idPrefix: string }) {
   return (
     <article className="result-card">
       <p className="result-meta">
@@ -54,21 +55,11 @@ function ResultCard({ item }: { item: ReportResultDto }) {
       <p>{item.reason}</p>
       <details className="result-support">
         <summary>근거와 판정 한계 확인</summary>
-        <div className="result-support__content">
-          <div>
-            <strong>공식 근거</strong>
-            {item.evidence_sources.length > 0 ? item.evidence_sources.map((source) => (
-              <p key={source.source_id}>
-                {source.source_url ? <a href={source.source_url}>{source.title}</a> : source.title}
-                {" · "}{source.institution}{source.summary ? " · " + source.summary : ""}
-              </p>
-            )) : <p className="evidence-empty">연결된 공식 근거가 없습니다. 이 항목은 직접 확인이 필요합니다.</p>}
-          </div>
-          <div>
-            <strong>판정 한계</strong>
-            <p>{item.limitations}</p>
-          </div>
-        </div>
+        <EvidenceDisclosure
+          idPrefix={idPrefix}
+          sources={item.evidence_sources}
+          limitations={item.limitations}
+        />
       </details>
     </article>
   );
@@ -128,7 +119,13 @@ export function PriorityGroups({
             {expanded && <div className="priority-group__items" id={`${headingId}-items`}>
               {groupItems.length === 0 ? (
                 <p className="group-empty">해당하는 확인 항목이 없습니다.</p>
-              ) : groupItems.map((item) => <ResultCard item={item} key={resultId(item)} />)}
+              ) : groupItems.map((item) => (
+                <ResultCard
+                  item={item}
+                  idPrefix={`${idPrefix}-${resultId(item)}`}
+                  key={resultId(item)}
+                />
+              ))}
             </div>}
           </section>
         );
@@ -147,7 +144,13 @@ export function PriorityGroups({
           </button>
           {showUnavailable && (
             <div className="priority-group__items" id={`${idPrefix}-unavailable-items`}>
-              {unavailableItems.map((item) => <ResultCard item={item} key={resultId(item)} />)}
+              {unavailableItems.map((item) => (
+                <ResultCard
+                  item={item}
+                  idPrefix={`${idPrefix}-${resultId(item)}`}
+                  key={resultId(item)}
+                />
+              ))}
             </div>
           )}
         </section>
