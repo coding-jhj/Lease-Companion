@@ -15,7 +15,7 @@
 
 ## 최신 MVP
 
-회원 기반 모바일 웹앱에서 사용자가 계약 건과 계약 문서를 관리하고, 상용 LLM(Gemini 3.5 Flash)이 임대차 조항 유형과 불명확성 후보를 구조화한다. Python 규칙 엔진은 계약서와 관련 문서의 값을 교차검증하고, 공식자료 RAG와 상용 LLM(GPT-5.6 Sol)은 판정 근거·쉬운 설명·확인 질문·사용자 행동을 생성한다. 파인튜닝한 로컬 7B는 상용 대비 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
+회원 기반 모바일 웹앱에서 사용자가 계약 건과 계약 문서를 관리하고, 상용 LLM(Gemini 3.5 Flash)이 임대차 조항 유형과 불명확성 후보를 구조화한다. Python 규칙 엔진은 계약서와 관련 문서의 값을 교차검증하고, 공식자료 RAG와 상용 LLM(Gemini 3.5 Flash)은 판정 근거·쉬운 설명·확인 질문·사용자 행동을 생성한다. 파인튜닝한 로컬 7B는 상용 대비 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
 
 ## 핵심 기능
 
@@ -90,7 +90,7 @@ ai 파이프라인
 - 조항 유형·명확성 후보 구조화: 상용 LLM(Gemini 3.5 Flash). 파인튜닝한 로컬 7B(QLoRA)는 상용 대비 선택적 성능비교 실험 — MVP 크리티컬 패스 제외
 - 문서 내부 판정·교차검증: Python 규칙 엔진 (최종 판정)
 - 근거 검색: 공식 자료 기반 RAG (gemini-embedding-001 + BM25, Cohere rerank-v4.0-pro)
-- 설명·질문·행동 생성 및 저신뢰 재검토: 상용 LLM(GPT-5.6 Sol)
+- 설명·질문·행동 생성 및 저신뢰 재검토: 상용 LLM(Gemini 3.5 Flash)
 - 회원 기반 서비스 + 계약 건 단위 영속 저장
 
 **확정 (2026-07-16 플랫폼 스택 — [docs/decisions/2026-07-16-mvp-platform-stack.md](docs/decisions/2026-07-16-mvp-platform-stack.md))**
@@ -155,4 +155,4 @@ http://127.0.0.1:8000
 
 구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
 
-RAG 배치 1~3으로 공식 출처 manifest, 이용조건이 확인된 법령 원문 2개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid 검색·규칙 근거 enrichment·retrieval 평가가 구현됐다. 외부 Gemini·Cohere 실호출은 수행하지 않았으며 현재 로컬 공식 원문이 2개라 retrieval 실측치는 낮다. 생성 배치 4~5와 A10 offline 작업으로 내부 생성 계약·fake provider·안전 fallback·PII 토큰화·Guardrail, OpenAI Responses API `gpt-5.6-sol` provider와 opt-in CASE-001 smoke 경계가 구현됐다. 실제 유료 GPT smoke는 미수행이다. 회원·계약·문서·추출 스냅샷·분석 결과·체크리스트 상태 저장 API와 정식 프론트엔드 연결은 구현됐으며, J01~J12 전체 판정 확장은 후속 대상이다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
+RAG 배치 1~3으로 공식 출처 manifest, 이용조건이 확인된 법령 원문 2개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid 검색·규칙 근거 enrichment·retrieval 평가가 구현됐다. 외부 Gemini·Cohere 실호출은 수행하지 않았으며 현재 로컬 공식 원문이 2개라 retrieval 실측치는 낮다. 생성 배치 4~5와 A10 offline 작업으로 내부 생성 계약·fake provider·안전 fallback·PII 토큰화·Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계가 구현됐다. 실제 유료 Gemini smoke는 미수행이다. 회원·계약·문서·추출 스냅샷·분석 결과·체크리스트 상태 저장 API와 정식 프론트엔드 연결은 구현됐으며, J01~J12 전체 판정 확장은 후속 대상이다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.

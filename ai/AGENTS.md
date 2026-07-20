@@ -14,8 +14,8 @@
      ※ (선택) 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외 (local_model)
   → Python 규칙 엔진 문서 내부 판정·교차검증 (rules)  ← 최종 판정
   → 공식자료 RAG 근거 (rag, gemini-embedding-001+BM25 · Cohere rerank-v4.0-pro)
-  → 저신뢰 결과 상용 LLM 재검토 (routing → providers, GPT-5.6 Sol)
-  → 쉬운 설명·질문·체크리스트·행동 생성 (generation, GPT-5.6 Sol)
+  → 저신뢰 결과 상용 LLM 재검토 (routing → providers, Gemini 3.5 Flash)
+  → 쉬운 설명·질문·체크리스트·행동 생성 (generation, Gemini 3.5 Flash)
   → guardrail (guardrails)
   → 저장                        ← backend
 ```
@@ -28,7 +28,7 @@
 - **로컬 7B 모델 (`local_model`)**: **(선택) 상용 vs 로컬 성능비교 실험용 — MVP 크리티컬 패스 제외.** 파인튜닝(B/C안)으로 조항 유형·명확성 후보 분류, 책임 주체·조건 구조화를 검증한다. **최종 판정을 내리지 않고, 규칙 엔진 결과를 변경하지 않으며, 근거 없이 사용자 행동을 확정하지 않는다.**
 - **Python 규칙 엔진 (`rules`)**: 문서 내부 판정과 문서 교차검증의 **명시적 최종 판정**. 결정론적 규칙으로 동작한다. 로컬 모델·상용 LLM이 규칙 결과를 임의로 변경하지 않는다.
 - **RAG (`rag`)**: 검증된 공식 자료 기반 **근거 검색**만 담당한다. `RuleStatus`·`urgency`를 변경하지 않는다. 근거가 없으면 `evidence_sources=[]`로 반환하고 생성 설명에서만 공식 근거 확인 필요를 알린다.
-- **상용 LLM (`providers`)**: 조항 구조화·필드 추출은 Gemini 3.5 Flash, 저신뢰 결과 재검토·근거 기반 쉬운 설명·질문·행동 생성은 GPT-5.6 Sol. 규칙 판정을 바꾸지 않는다.
+- **상용 LLM (`providers`)**: 조항 구조화·필드 추출과 저신뢰 결과 재검토·근거 기반 쉬운 설명·질문·행동 생성은 Gemini 3.5 Flash. 규칙 판정을 바꾸지 않는다.
 - **생성 (`generation`)**: 쉬운 설명·확인 질문·서명 전 체크리스트·계약 직후 행동 생성. 상용 LLM을 `routing` 경유로 호출한다.
 - **guardrails**: 단정 표현(가능·안전·사기·합법 판정)과 근거 없는 출력을 차단한다.
 - **routing**: 단계별 처리 모델·fallback 선택. 상용 LLM 우선, 할당량·장애 시 fallback. (`docs/ai/model-routing.md`)
@@ -92,7 +92,7 @@
 
 확정(2026-07-14 팀 선정):
 - 조항 구조화·필드 추출: 상용 LLM Gemini 3.5 Flash
-- 쉬운 설명·질문·행동 생성·재검토: 상용 LLM GPT-5.6 Sol
+- 쉬운 설명·질문·행동 생성·재검토: 상용 LLM Gemini 3.5 Flash
 - OCR: 상용 LLM(Gemini 3.5 Flash) VLM 통합 (2026-07-14 변경, → ../docs/decisions/2026-07-14-ocr-gemini-integration.md). 디지털 PDF는 PyMuPDF·PDF.js. PaddleOCR-VL은 (선택) 비교실험
 - 임베딩·검색: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro
 

@@ -14,7 +14,7 @@
 
 ## 확정된 결정
 
-- LLM 제공자·모델: 구조화·OCR Gemini 3.5 Flash / 생성 GPT-5.6 Sol (2026-07-14 선정표)
+- LLM 제공자·모델: 구조화·OCR·생성 Gemini 3.5 Flash. 생성 provider 통합 → [`2026-07-20-gemini-generation-provider.md`](2026-07-20-gemini-generation-provider.md)
 - 임베딩·검색: gemini-embedding-001 + BM25 → Cohere rerank-v4.0-pro (2026-07-14 선정표)
 - OCR: Gemini VLM 통합 → [`2026-07-14-ocr-gemini-integration.md`](2026-07-14-ocr-gemini-integration.md)
 - 플랫폼 스택: PostgreSQL / JWT Bearer + bcrypt 계열 / React + Vite + TypeScript / Chroma 로컬 모드 / 현재 로컬 실행 → [`2026-07-16-mvp-platform-stack.md`](2026-07-16-mvp-platform-stack.md)
