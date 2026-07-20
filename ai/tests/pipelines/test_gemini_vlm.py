@@ -76,6 +76,66 @@ def test_transient_server_error_is_retried_then_succeeds(monkeypatch):
     assert len(attempts) == 3  # 503 두 번 후 세 번째 성공
 
 
+def test_client_timeout_is_retried_then_succeeds(monkeypatch):
+    # 응답 지연으로 클라이언트가 끊기면(서버 499) httpx.TimeoutException이 나는데,
+    # 이는 일시 장애이므로 503과 동일하게 재시도해야 한다.
+    import httpx
+
+    attempts = []
+
+    class Models:
+        def generate_content(self, **kwargs):
+            attempts.append(1)
+            if len(attempts) < 3:
+                raise httpx.ReadTimeout("read timed out")
+            return SimpleNamespace(parsed=_contract_fields(), text=None)
+
+    monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
+    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
+
+    result = gemini._generate(["prompt"], gemini.ContractFields)
+
+    assert result["landlord_name"] == "임대인"
+    assert len(attempts) == 3
+
+
+def test_falls_back_to_secondary_model_when_primary_overloaded(monkeypatch):
+    # 주 모델이 과부하(503)로 재시도 소진되면 대체 모델로 폴백해 성공해야 한다.
+    from google.genai import errors
+
+    models_seen = []
+
+    class Models:
+        def generate_content(self, **kwargs):
+            models_seen.append(kwargs["model"])
+            if kwargs["model"] == gemini._MODEL:
+                raise errors.ServerError(503, {"error": {"message": "high demand"}})
+            return SimpleNamespace(parsed=_contract_fields(), text=None)
+
+    monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
+    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
+
+    result = gemini._generate(["prompt"], gemini.ContractFields)
+
+    assert result["landlord_name"] == "임대인"
+    assert models_seen.count(gemini._MODEL) == gemini._MAX_STRUCTURE_ATTEMPTS  # 주모델 소진
+    assert gemini._FALLBACK_MODEL in models_seen  # 대체 모델로 폴백
+
+
+def test_raises_when_both_primary_and_fallback_overloaded(monkeypatch):
+    from google.genai import errors
+
+    class Models:
+        def generate_content(self, **kwargs):
+            raise errors.ServerError(503, {"error": {"message": "high demand"}})
+
+    monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
+    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
+
+    with pytest.raises(gemini.GeminiExtractError):
+        gemini._generate(["prompt"], gemini.ContractFields)
+
+
 def test_client_api_error_is_not_retried(monkeypatch):
     # 4xx·쿼터(APIError)는 재시도 의미가 없으므로 한 번에 실패해야 한다.
     from google.genai import errors

@@ -14,6 +14,8 @@ import logging
 import os
 import time
 from pathlib import Path
+
+import httpx  # google-genai 전송 계층 — 타임아웃 예외 재시도용
 from threading import BoundedSemaphore, Lock
 from typing import Any, Literal, Optional
 
@@ -29,7 +31,13 @@ from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
 logger = logging.getLogger(__name__)
 
 _MODEL = "gemini-3.5-flash"
+# 주 모델이 과부하(503/504·타임아웃)로 재시도가 소진되면 이 대체 모델로 폴백한다.
+# (플레인 gemini-3.1-flash는 API에 없음 — 실재하는 flash 계층 3.1은 flash-lite다.)
+_FALLBACK_MODEL = "gemini-3.1-flash-lite"
 _MAX_STRUCTURE_ATTEMPTS = 4  # 일시 503 백오프 재시도 횟수 (스캔 VLM 구조화용)
+# 스캔 VLM 구조화는 26~40초 걸린다. 타임아웃을 명시하지 않으면 SDK 기본값에 걸려
+# 응답 전에 클라이언트가 끊고(서버 로그 499 Client Closed Request) 추출이 실패한다.
+_HTTP_TIMEOUT_MS = 60_000
 _PROMPTS = Path(__file__).resolve().parents[3] / "prompts" / "extraction"
 
 ClarityStatus = Literal["명확", "불명확", "미기재", "확인 필요"]
@@ -86,6 +94,10 @@ class GeminiExtractError(ProviderError):
     """구조화 추출 불가(키 미설정·SDK 미설치·API 실패)."""
 
 
+class _TransientExtractError(GeminiExtractError):
+    """일시 장애(503/504·타임아웃)로 재시도가 소진됨 — 대체 모델 폴백 대상."""
+
+
 class ExternalCallBudget:
     """한 사용자 요청에서 실행할 수 있는 외부 호출 수를 제한한다."""
 
@@ -117,9 +129,13 @@ def _client():
         raise GeminiExtractError("구조화 추출용 GEMINI_API_KEY가 설정되지 않았습니다.")
     try:
         from google import genai
+        from google.genai import types
     except ImportError as exc:
         raise GeminiExtractError("구조화 추출에 google-genai가 필요합니다.") from exc
-    return genai.Client(api_key=key)
+    return genai.Client(
+        api_key=key,
+        http_options=types.HttpOptions(timeout=_HTTP_TIMEOUT_MS),
+    )
 
 
 def _clean_response_schema(node: Any) -> Any:
@@ -153,34 +169,45 @@ def _generation_config(schema: type[BaseModel]):
 
 def _generate(contents: list, schema: type[BaseModel], budget: ExternalCallBudget | None = None) -> dict:
     client = _client()
-    from google.genai import errors
     if budget is not None:
         budget.consume()
     config = _generation_config(schema)
-    # 스캔 PDF·이미지 VLM 구조화는 한 번에 26~40초 걸려 일시 503(ServerError)이 흔하다.
-    # 재시도 없이 바로 실패로 떨어지면 정상 문서도 "구조화 API 오류"가 된다 —
-    # 일시 장애는 백오프 재시도하고, 4xx·쿼터(APIError)만 즉시 실패시킨다.
+    # 주 모델이 과부하로 재시도까지 소진되면 대체 모델로 폴백한다. 4xx·스키마 오류 등
+    # 비일시 실패는 폴백해도 같으므로 그대로 던진다.
+    models = (_MODEL, _FALLBACK_MODEL)
+    for index, model in enumerate(models):
+        try:
+            return _parse_response(_call_with_retries(client, model, contents, config), schema)
+        except _TransientExtractError:
+            if index == len(models) - 1:
+                raise
+            logger.warning("주 모델(%s) 과부하 — 대체 모델(%s)로 폴백", model, models[index + 1])
+    raise _TransientExtractError("구조화 추출 API 오류가 발생했습니다.")  # 도달 불가
+
+
+def _call_with_retries(client: Any, model: str, contents: list, config: Any):
+    """한 모델로 일시 장애(503/504·타임아웃)를 백오프 재시도한다.
+
+    재시도 소진 시 _TransientExtractError(폴백 대상), 4xx·기타는 GeminiExtractError.
+    스캔 VLM 구조화는 26~40초 걸려 일시 장애가 흔하므로 재시도가 먼저다.
+    """
+    from google.genai import errors
+
     for attempt in range(_MAX_STRUCTURE_ATTEMPTS):
         try:
             with _VLM_SEMAPHORE:
-                resp = client.models.generate_content(
-                    model=_MODEL,
-                    contents=contents,
-                    config=config,
-                )
-            break
-        except errors.ServerError as exc:
-            # 로그는 원인 특정용 — 예외 종류·상태코드만(문서 내용 아님).
+                return client.models.generate_content(model=model, contents=contents, config=config)
+        except (errors.ServerError, httpx.TimeoutException) as exc:
+            # 로그는 원인 특정용 — 예외 종류·모델만(문서 내용 아님).
             logger.warning(
-                "구조화 추출 일시 오류(재시도 %d/%d): %s code=%s",
-                attempt + 1, _MAX_STRUCTURE_ATTEMPTS, type(exc).__name__,
+                "구조화 추출 일시 오류(%s 재시도 %d/%d): %s code=%s",
+                model, attempt + 1, _MAX_STRUCTURE_ATTEMPTS, type(exc).__name__,
                 getattr(exc, "code", None),
             )
             if attempt == _MAX_STRUCTURE_ATTEMPTS - 1:
-                raise GeminiExtractError("구조화 추출 API 오류가 발생했습니다.") from exc
+                raise _TransientExtractError("구조화 추출 API 오류가 발생했습니다.") from exc
             time.sleep(5 * (attempt + 1))
-        except errors.APIError as exc:  # 4xx·쿼터 등 비재시도
-            # message는 원인 특정에 필요한 API 메타데이터(문서 내용 아님) — 앞부분만 남긴다.
+        except errors.APIError as exc:  # 4xx·쿼터 등 비재시도(폴백해도 동일)
             detail = (getattr(exc, "message", None) or str(exc))[:300]
             logger.error(
                 "구조화 추출 API 오류(비재시도): %s code=%s status=%s detail=%s",
@@ -191,7 +218,10 @@ def _generate(contents: list, schema: type[BaseModel], budget: ExternalCallBudge
         except Exception as exc:
             logger.exception("구조화 추출 호출 실패: %s", type(exc).__name__)
             raise GeminiExtractError("구조화 추출 호출에 실패했습니다.") from exc
+    raise _TransientExtractError("구조화 추출 API 오류가 발생했습니다.")  # 도달 불가
 
+
+def _parse_response(resp: Any, schema: type[BaseModel]) -> dict:
     parsed = resp.parsed
     if isinstance(parsed, schema):
         return parsed.model_dump()
