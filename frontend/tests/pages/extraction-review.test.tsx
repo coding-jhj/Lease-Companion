@@ -70,6 +70,8 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText("입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "읽힌 값 모두 확인" }));
+    const confirmedSummary = screen.getByText(/확인된 항목 \d+개/);
+    expect(confirmedSummary.closest("details")).not.toHaveAttribute("open");
     fireEvent.change(screen.getByLabelText("입금 계좌 예금주 값"), {
       target: { value: "이정훈" },
     });

@@ -143,6 +143,25 @@ export function ExtractionReviewPage() {
     (view) => view.field.confidence !== "실패"
       && (verificationByKey[view.key] ?? view.field.verification_status) === "unverified",
   );
+  const confirmedHighConfidenceFields = fields.filter((view) => (
+    view.field.confidence === "추출됨"
+    && (verificationByKey[view.key] ?? view.field.verification_status) !== "unverified"
+  ));
+  const attentionFields = fields.filter((view) => !confirmedHighConfidenceFields.includes(view));
+
+  function renderFieldCard(view: FieldViewModel) {
+    return (
+      <ExtractionFieldCard
+        key={view.key}
+        view={view}
+        draft={drafts[view.key]}
+        verification={verificationByKey[view.key] ?? view.field.verification_status}
+        onValueChange={(value) => updateField(view, value)}
+        onClauseChange={(values) => updateClauseDraft(view, values)}
+        onConfirm={() => confirmField(view)}
+      />
+    );
+  }
 
   async function confirm() {
     setCorrectionError("");
@@ -196,35 +215,34 @@ export function ExtractionReviewPage() {
           <div className="extraction-workspace-grid">
             <section className="document-review-panel" aria-labelledby="contract-fields-title">
               <h2 id="contract-fields-title">계약서 추출값</h2>
-              <p className="section-description">계약서에서 읽은 값과 원문 근거를 함께 확인하세요.</p>
-              <div className="stack">{fields.filter((view) => view.document_type === "contract").map((view) => (
-                <ExtractionFieldCard
-                  key={view.key}
-                  view={view}
-                  draft={drafts[view.key]}
-                  verification={verificationByKey[view.key] ?? view.field.verification_status}
-                  onValueChange={(value) => updateField(view, value)}
-                  onClauseChange={(values) => updateClauseDraft(view, values)}
-                  onConfirm={() => confirmField(view)}
-                />
-              ))}</div>
+              <p className="section-description">불확실하거나 아직 확인하지 않은 값을 먼저 보여드립니다.</p>
+              <div className="stack">
+                {attentionFields.some((view) => view.document_type === "contract")
+                  ? attentionFields.filter((view) => view.document_type === "contract").map(renderFieldCard)
+                  : <p className="group-empty">지금 확인할 계약서 항목이 없습니다.</p>}
+              </div>
             </section>
             <section className="document-review-panel" aria-labelledby="registry-fields-title">
               <h2 id="registry-fields-title">등기사항증명서 추출값</h2>
-              <p className="section-description">등기에서 읽은 소유자·주소·권리 정보를 확인하세요.</p>
-              <div className="stack">{fields.filter((view) => view.document_type === "registry").map((view) => (
-                <ExtractionFieldCard
-                  key={view.key}
-                  view={view}
-                  draft={drafts[view.key]}
-                  verification={verificationByKey[view.key] ?? view.field.verification_status}
-                  onValueChange={(value) => updateField(view, value)}
-                  onClauseChange={(values) => updateClauseDraft(view, values)}
-                  onConfirm={() => confirmField(view)}
-                />
-              ))}</div>
+              <p className="section-description">불확실하거나 아직 확인하지 않은 값을 먼저 보여드립니다.</p>
+              <div className="stack">
+                {attentionFields.some((view) => view.document_type === "registry")
+                  ? attentionFields.filter((view) => view.document_type === "registry").map(renderFieldCard)
+                  : <p className="group-empty">지금 확인할 등기 항목이 없습니다.</p>}
+              </div>
             </section>
           </div>
+        )}
+        {status === "success" && confirmedHighConfidenceFields.length > 0 && (
+          <details className="confirmed-fields">
+            <summary>
+              <span>확인된 항목 {confirmedHighConfidenceFields.length}개</span>
+              <span className="collapse-arrow" aria-hidden="true">▸</span>
+            </summary>
+            <div className="confirmed-fields__items">
+              {confirmedHighConfidenceFields.map(renderFieldCard)}
+            </div>
+          </details>
         )}
         {pendingCorrectionKeys.length > 0 && <p className="unsaved" role="status">저장되지 않은 수정 {pendingCorrectionKeys.length}건</p>}
         {correctionError && <p className="error" role="alert">수정 요청 실패: {correctionError}</p>}
