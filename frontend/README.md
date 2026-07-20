@@ -59,7 +59,7 @@ npm run test:e2e
 npm run test:e2e:real
 ```
 
-`npm run test:e2e`는 Playwright Chromium 320px·360px 모바일과 1440×900 PC viewport에서 MSW 기반 8단계 사용자 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
+`npm run test:e2e`는 Playwright Chromium 320px·360px 모바일과 1440×900 PC viewport에서 MSW 기반 8단계 사용자 흐름과 핵심 키보드 탐색 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
 
 기본 개발 실행은 실제 API를 사용한다. MSW 기반 test/Story 개발이 필요할 때만 `VITE_ENABLE_MSW=true`를 설정한다.
 
@@ -84,14 +84,16 @@ npm run test:e2e:real
 
 - React + Vite + TypeScript SPA 초기화와 사용자 흐름 8단계 화면 구현 완료.
 - 하나의 SPA를 모바일·PC 반응형으로 제공한다. 인증·기본 흐름은 520px 중앙 카드, 대시보드·계약 상세·추출 검토는 최대 1200px workspace, 결과 리포트는 최대 1320px 2열 레이아웃을 사용하며 767px 이하에서는 모두 1열로 축소한다.
+- 문서 업로드는 계약서 필수, 등기사항증명서·중개대상물 확인설명서 선택 카드로 제공한다. 파일명·형식·용량과 문서별 대기/진행/완료/실패 상태를 표시하며, 실패한 문서는 개별 재시도할 수 있다. 등기 미제공 시 관련 판정은 `확인 불가`로 유지한다.
 - 추출값 검토 화면은 API의 canonical 영문 필드명을 변경하지 않고 한글 표시명으로 변환한다. 긴 본문·특약 조항은 기본적으로 접어 두며 필요할 때 펼쳐 항목별로 확인·수정한다.
 - JWT Bearer 로그인, 계약·문서·추출·분석·체크리스트 실제 API 연결 완료. refresh token과 운영 토큰 정책은 Backend TODO를 따른다.
 - 추출과 분석은 `pending`·`running`·`completed`·`failed` 상태를 실제 API 폴링으로 처리한다.
 - 추출과 분석은 공통 `pollUntilTerminal()`을 사용한다. 분석은 규칙 결과뿐 아니라 안내 생성이 완료 또는 실패 상태가 될 때까지 기다린다. 로컬 MVP 임시 최대 대기시간은 60초이며, timeout은 Backend `failed`와 구분해 기존 실행 상태를 다시 확인한다. 화면 이탈 시 폴링을 중단한다.
+- 분석 화면은 실제 API 상태만 사용해 `분석 요청 접수 → 규칙 판정·공식 근거 정리 → 질문·행동 안내 생성 → 리포트 준비 완료` 4단계 타임라인을 표시한다.
 - 분석 규칙 결과와 안내 생성 상태는 분리한다. 안내 생성만 실패하면 규칙 결과를 유지하고 사용자에게 별도 안내를 표시한다.
-- 리포트는 R01~R24 규칙 결과와 J01~J12 전체 판정을 분리해 상태·시급도·질문·근거·행동을 표시한다. R 규칙은 기존 R01~R10, 1차 MVP 확장, 질문·체크리스트 우선, 외부 데이터 연결 대기 영역으로 구분한다. canonical `GenerationResult`의 R/J 생성 안내와 `stage_guidance` 4영역(계약금 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 자료)도 제공한다.
+- 리포트는 R01~R24와 J01~J12를 화면 우선순위 3단계의 단일 결과 목록으로 묶고, 전체 개수와 첫 확인 그룹 이동을 제공한다. 근거·한계는 접어 두고 공식 근거가 없으면 빈 상태를 명시한다. 중복 질문·권장 행동·단계별 안내는 하나의 방어 행동 허브에서 중복을 제거해 질문·서명 전 행동·계약 직후 행동·보관 자료로 제공한다.
 - 체크리스트·계약 직후 행동은 안정 `item_key`로 실제 문구와 저장 상태를 결합한다.
 - 피드백 등록·이력, 과거 완료 리포트 링크, 문서 이력, 계약 삭제 API를 화면에 연결했다.
-- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-20 기준 단위·컴포넌트 44개와 MSW E2E 3개(320px·360px·1440×900)가 통과했다. 실제 PostgreSQL/API E2E는 기존 2개(320px·360px)가 통과했으며 1440×900 프로젝트는 구성만 추가되어 실제 API 재검증이 남아 있다.
+- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-20 기준 단위·컴포넌트 53개와 MSW E2E 6개(전체 흐름 3개+키보드 흐름 3개, 각각 320px·360px·1440×900)가 통과했다. 실제 PostgreSQL/API E2E는 기존 2개(320px·360px)가 통과했으며 이번 등기 선택 처리·분석 타임라인·키보드 흐름과 1440×900 프로젝트의 실제 API 재검증이 남아 있다.
 - `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

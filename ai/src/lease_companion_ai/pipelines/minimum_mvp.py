@@ -165,8 +165,16 @@ def _read_and_structure(
     return doc
 
 
-def extract_documents(contract_content: bytes, contract_filename: str, registry_content: bytes, registry_filename: str, force_ocr: bool = False) -> dict[str, Any]:
+def extract_documents(
+    contract_content: bytes,
+    contract_filename: str,
+    registry_content: bytes | None = None,
+    registry_filename: str | None = None,
+    force_ocr: bool = False,
+) -> dict[str, Any]:
     for content in (contract_content, registry_content):
+        if content is None:
+            continue
         if len(content) > MAX_FILE_SIZE:
             raise ValueError("파일당 최대 크기는 최소 MVP에서 10MB입니다.")
     # 두 문서는 독립이지만 공유 호출 예산과 전역 동시성 제한을 지킨다.
@@ -177,6 +185,17 @@ def extract_documents(contract_content: bytes, contract_filename: str, registry_
         contract_job = pool.submit(
             _read_and_structure, contract_content, contract_filename, "contract", force_ocr, budget
         )
+        if registry_content is None or registry_filename is None:
+            return {
+                "contract": contract_job.result(),
+                "registry": {
+                    "document_type": "registry_record",
+                    "fields": {},
+                    "warnings": ["등기사항증명서가 없어 관련 항목은 확인 불가로 처리합니다."],
+                    "read_method": None,
+                    "read_ok": True,
+                },
+            }
         registry_job = pool.submit(
             _read_and_structure, registry_content, registry_filename, "registry", force_ocr, budget
         )

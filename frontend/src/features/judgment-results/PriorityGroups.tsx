@@ -31,7 +31,15 @@ function resultScope(item: ReportResultDto) {
   return "조항 분류 판정";
 }
 
-export function PriorityGroups({ items, idPrefix = "priority" }: { items: ReportResultDto[]; idPrefix?: string }) {
+export function PriorityGroups({
+  items,
+  idPrefix = "priority",
+  focusPriority,
+}: {
+  items: ReportResultDto[];
+  idPrefix?: string;
+  focusPriority?: DisplayPriority;
+}) {
   return (
     <div className="priority-groups">
       {priorityOrder.map((priority) => {
@@ -40,7 +48,13 @@ export function PriorityGroups({ items, idPrefix = "priority" }: { items: Report
         const headingId = `${idPrefix}-${priority.replaceAll(" ", "-")}`;
 
         return (
-          <section className="priority-group" data-priority={priority} aria-labelledby={headingId} key={priority}>
+          <section
+            id={priority === focusPriority ? "first-priority-group" : undefined}
+            className="priority-group"
+            data-priority={priority}
+            aria-labelledby={headingId}
+            key={priority}
+          >
             <header className="priority-group__header">
               <span className="signal-icon" aria-hidden="true">{meta.icon}</span>
               <div>
@@ -63,29 +77,24 @@ export function PriorityGroups({ items, idPrefix = "priority" }: { items: Report
                   </p>
                   <h3>{resultName(item)}</h3>
                   <p>{item.reason}</p>
-                  <dl className="result-details">
-                    <div>
-                      <dt>확인 질문</dt>
-                      <dd>{item.question ?? "추가 질문 없음"}</dd>
+                  <details className="result-support">
+                    <summary>근거와 판정 한계 확인</summary>
+                    <div className="result-support__content">
+                      <div>
+                        <strong>공식 근거</strong>
+                        {item.evidence_sources.length > 0 ? item.evidence_sources.map((source) => (
+                          <p key={source.source_id}>
+                            {source.source_url ? <a href={source.source_url}>{source.title}</a> : source.title}
+                            {" · "}{source.institution}{source.summary ? " · " + source.summary : ""}
+                          </p>
+                        )) : <p className="evidence-empty">연결된 공식 근거가 없습니다. 이 항목은 직접 확인이 필요합니다.</p>}
+                      </div>
+                      <div>
+                        <strong>판정 한계</strong>
+                        <p>{item.limitations}</p>
+                      </div>
                     </div>
-                    <div>
-                      <dt>권장 행동</dt>
-                      <dd>{item.recommended_actions.length > 0 ? item.recommended_actions.join(" · ") : "추가 행동 없음"}</dd>
-                    </div>
-                    <div>
-                      <dt>한계</dt>
-                      <dd>{item.limitations}</dd>
-                    </div>
-                  </dl>
-                  <div className="evidence-list">
-                    <strong>근거 자료</strong>
-                    {item.evidence_sources.map((source) => (
-                      <p key={source.source_id}>
-                        {source.source_url ? <a href={source.source_url}>{source.title}</a> : source.title}
-                        {" · "}{source.institution}{source.summary ? " · " + source.summary : ""}
-                      </p>
-                    ))}
-                  </div>
+                  </details>
                 </article>
               ))}
             </div>

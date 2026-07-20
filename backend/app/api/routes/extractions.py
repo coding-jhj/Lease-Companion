@@ -90,7 +90,7 @@ def start_extraction(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ExtractionRun:
-    """업로드된 계약서(+등기 문서 또는 모의 등기 연결)로 추출을 시작한다.
+    """업로드된 계약서와 선택 등기 문서 또는 모의 등기 연결로 추출을 시작한다.
 
     즉시 202를 반환하고, 완료 여부는 GET …/extractions/latest 폴링으로 확인한다.
     """
@@ -108,15 +108,8 @@ def start_extraction(
         registry_path, registry_name = registry_doc.stored_path, registry_doc.filename
     else:
         fixture = _registry_file(contract.registry_case_id) if contract.registry_case_id else None
-        if fixture is None:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "missing_registry_source",
-                    "message": "등기사항증명서 업로드 또는 모의 등기 연결(registry-link)이 필요합니다.",
-                },
-            )
-        registry_path, registry_name = str(fixture), fixture.name
+        registry_path = str(fixture) if fixture else None
+        registry_name = fixture.name if fixture else None
 
     run = ExtractionRun(contract_id=contract.id)
     db.add(run)

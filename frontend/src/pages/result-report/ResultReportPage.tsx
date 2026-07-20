@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
-import { PriorityGroups } from "../../features/judgment-results/PriorityGroups";
-import { GenerationGuidance } from "../../features/question-cards/GenerationGuidance";
-import { StageGuidance } from "../../features/question-cards/StageGuidance";
+import {
+  PriorityGroups,
+  displayPriorityForUrgency,
+  type DisplayPriority,
+} from "../../features/judgment-results/PriorityGroups";
+import { DefenseActionHub } from "../../features/question-cards/DefenseActionHub";
 import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
 import { mvpService } from "../../services/mvpService";
 import type {
@@ -15,6 +18,8 @@ import type {
   StageGuidanceDto,
 } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
+
+const priorities: DisplayPriority[] = ["반드시 확인", "확인 권장", "일반 확인"];
 
 export function ResultReportPage() {
   const { contractId: routeContractId } = useParams();
@@ -50,71 +55,57 @@ export function ResultReportPage() {
 
   useEffect(() => { void loadReport(); }, [contractId, analysisRunId]);
 
-  const coreRules = items.filter((item) => Number(item.rule_id.slice(1)) <= 10);
-  const automatedExpansion = items.filter((item) => [11, 12, 13, 14, 15, 17, 18, 19].includes(Number(item.rule_id.slice(1))));
-  const checklistFirst = items.filter((item) => [16, 23, 24].includes(Number(item.rule_id.slice(1))));
-  const externalPending = items.filter((item) => [20, 21, 22].includes(Number(item.rule_id.slice(1))));
+  const allResults = [...items, ...judgments];
+  const allGuidance = [...ruleGuidance, ...judgmentGuidance];
+  const counts = Object.fromEntries(priorities.map((priority) => [
+    priority,
+    allResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
+  ])) as Record<DisplayPriority, number>;
+  const firstPriority = priorities.find((priority) => counts[priority] > 0);
 
   return (
-    <PageShell layout="report" step="7 / 8" title="계약 확인 리포트" description="항목별 확인 필요성과 다음 질문을 살펴보세요.">
+    <PageShell layout="report" step="7 / 8" title="임차인 방어 리포트" description="판정 자체보다 무엇을 확인하고 어떻게 행동할지 차근차근 살펴보세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="리포트를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
         {status === "error" && <ErrorState title="리포트를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}
         {status === "success" && generationFailed && (
-          <p className="notice" role="alert">규칙 판정은 정상이며 안내 생성에 실패했습니다.</p>
+          <p className="notice" role="alert">규칙 판정은 정상이며 안내 생성에 실패했습니다. 확인 결과는 그대로 볼 수 있습니다.</p>
         )}
-        {status === "success" && items.length === 0 && <EmptyState title="아직 생성된 리포트가 없습니다" description="추출값 확인과 분석을 완료하면 결과가 표시됩니다." />}
-        {status === "success" && items.length > 0 && (
-          <div className="report-grid">
-            <div className="report-results-column stack">
-        {status === "success" && coreRules.length > 0 && (
-          <section aria-labelledby="rule-results-title">
-            <h2 id="rule-results-title">기존 핵심 규칙 R01~R10</h2>
-            <PriorityGroups idPrefix="rule-priority" items={coreRules} />
-          </section>
-        )}
-        {status === "success" && automatedExpansion.length > 0 && (
-          <section aria-labelledby="expanded-rule-results-title">
-            <h2 id="expanded-rule-results-title">1차 MVP 확장 판정</h2>
-            <p className="section-description">확인된 문서·사용자 입력값으로 계산하거나 판정합니다. 값이 없으면 확인 불가로 표시합니다.</p>
-            <PriorityGroups idPrefix="expanded-rule-priority" items={automatedExpansion} />
-          </section>
-        )}
-        {status === "success" && checklistFirst.length > 0 && (
-          <section aria-labelledby="checklist-rule-results-title">
-            <h2 id="checklist-rule-results-title">질문·체크리스트 우선 확인</h2>
-            <p className="section-description">현재 문서만으로 단정하지 않고 당사자와 공식 자료에 확인할 질문으로 제공합니다.</p>
-            <PriorityGroups idPrefix="checklist-rule-priority" items={checklistFirst} />
-          </section>
-        )}
-        {status === "success" && externalPending.length > 0 && (
-          <section aria-labelledby="external-rule-results-title">
-            <h2 id="external-rule-results-title">외부 데이터 연결 후 자동화</h2>
-            <p className="section-description">외부 데이터가 아직 연결되지 않은 항목이며 현재는 확인 불가와 직접 확인 행동을 제공합니다.</p>
-            <PriorityGroups idPrefix="external-rule-priority" items={externalPending} />
-          </section>
-        )}
-        {status === "success" && judgments.length > 0 && (
-          <section aria-labelledby="judgment-results-title">
-            <h2 id="judgment-results-title">J01~J12 계약 판정</h2>
-            <p className="section-description">핵심 규칙 결과와 별도로, 계약서와 관련 문서를 12개 판정 항목으로 확인한 결과입니다.</p>
-            <PriorityGroups idPrefix="judgment-priority" items={judgments} />
-          </section>
-        )}
+        {status === "success" && allResults.length === 0 && <EmptyState title="아직 생성된 리포트가 없습니다" description="추출값 확인과 분석을 완료하면 결과가 표시됩니다." />}
+        {status === "success" && allResults.length > 0 && (
+          <>
+            <section className="report-hero" aria-labelledby="report-guide-title">
+              <div>
+                <p>천천히 하나씩 확인하면 됩니다</p>
+                <h2 id="report-guide-title">서두르지 않아도 괜찮아요.</h2>
+                <span>이 리포트는 안전 여부를 단정하지 않고, 먼저 확인할 순서를 알려드립니다.</span>
+              </div>
+              {firstPriority && <a className="report-hero__link" href="#first-priority-group">가장 먼저 확인할 항목으로 이동</a>}
+            </section>
+            <section className="priority-summary" aria-label="확인 우선순위 전체 개수">
+              {priorities.map((priority) => (
+                <div data-priority={priority} key={priority}>
+                  <span>{priority}</span>
+                  <strong>{counts[priority]}개</strong>
+                </div>
+              ))}
+            </section>
+            <div className="report-grid">
+              <section className="report-results-column stack" aria-labelledby="all-results-title">
+                <div className="section-heading">
+                  <p>문서와 입력값을 바탕으로 정리한 결과</p>
+                  <h2 id="all-results-title">전체 확인 결과</h2>
+                </div>
+                <PriorityGroups items={allResults} idPrefix="all-results-priority" focusPriority={firstPriority} />
+              </section>
+              <aside className="report-guidance-column stack" aria-label="질문과 행동 안내">
+                <DefenseActionHub results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
+                <ResultFeedback contractId={contractId} />
+              </aside>
             </div>
-            <aside className="report-guidance-column stack" aria-label="질문과 행동 안내">
-              {ruleGuidance.length > 0 && (
-                <GenerationGuidance headingId="rule-guidance-title" title="R01~R24 규칙 기반 질문과 행동" items={ruleGuidance} />
-              )}
-              {judgmentGuidance.length > 0 && (
-                <GenerationGuidance headingId="judgment-guidance-title" title="J01~J12 판정 기반 질문과 행동" items={judgmentGuidance} />
-              )}
-              {stageGuidance && <StageGuidance guidance={stageGuidance} />}
-              <ResultFeedback contractId={contractId} />
-            </aside>
-          </div>
+          </>
         )}
-        <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>체크리스트로 이동</button>
+        <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>저장된 체크리스트로 이동</button>
       </div>
     </PageShell>
   );

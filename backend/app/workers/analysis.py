@@ -67,7 +67,7 @@ def fail_stale_runs() -> None:
 
 
 def run_extraction(extraction_run_id: int, contract_path: str, contract_filename: str,
-                   registry_path: str, registry_filename: str) -> None:
+                   registry_path: str | None, registry_filename: str | None) -> None:
     with SessionLocal() as db:
         run = db.get(ExtractionRun, extraction_run_id)
         if run is None:
@@ -78,7 +78,7 @@ def run_extraction(extraction_run_id: int, contract_path: str, contract_filename
         try:
             extracted = extract_documents(
                 Path(contract_path).read_bytes(), contract_filename,
-                Path(registry_path).read_bytes(), registry_filename,
+                Path(registry_path).read_bytes() if registry_path else None, registry_filename,
             )
             failures = [
                 f"{label}: {doc['error']}"

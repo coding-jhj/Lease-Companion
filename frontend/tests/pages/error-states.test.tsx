@@ -53,13 +53,14 @@ describe("primary page API errors", () => {
         <Routes><Route path="/contracts/:contractId/upload" element={<DocumentUploadPage />} /></Routes>
       </MemoryRouter>,
     );
-    fireEvent.change(screen.getByLabelText("계약서 PDF"), {
+    fireEvent.change(screen.getByLabelText("계약서"), {
       target: { files: [new File(["synthetic"], "contract.txt", { type: "text/plain" })] },
     });
-    fireEvent.click(screen.getByRole("button", { name: "추출 시작하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "업로드하고 추출 시작하기" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("계약 건을 찾을 수 없습니다.");
-    expect(screen.getByRole("button", { name: "추출 시작하기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "업로드하고 추출 시작하기" })).toBeEnabled();
+    expect(screen.getByText("이 문서 다시 업로드")).toBeInTheDocument();
   });
 
   it("rejects unsupported files before an API request", async () => {
@@ -69,7 +70,7 @@ describe("primary page API errors", () => {
         <Routes><Route path="/contracts/:contractId/upload" element={<DocumentUploadPage />} /></Routes>
       </MemoryRouter>,
     );
-    fireEvent.change(screen.getByLabelText("계약서 PDF"), {
+    fireEvent.change(screen.getByLabelText("계약서"), {
       target: { files: [new File(["unsafe"], "contract.exe", { type: "application/octet-stream" })] },
     });
 

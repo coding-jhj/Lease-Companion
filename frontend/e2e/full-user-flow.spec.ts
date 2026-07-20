@@ -26,12 +26,13 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.getByLabel("대리 계약 여부").selectOption("no");
   await page.getByRole("button", { name: "문서 업로드하기" }).click();
 
-  await page.getByLabel("계약서 PDF").setInputFiles({
+  await page.getByLabel("계약서", { exact: true }).setInputFiles({
     name: "contract.txt",
     mimeType: "text/plain",
     buffer: Buffer.from("synthetic lease contract"),
   });
-  await page.getByRole("button", { name: "추출 시작하기" }).click();
+  await expect(page.getByText("contract.txt")).toBeVisible();
+  await page.getByRole("button", { name: "업로드하고 추출 시작하기" }).click();
 
   await expect(page.getByRole("heading", { name: "추출값 확인·수정" })).toBeVisible();
   await expect(page.getByRole("button", { name: "읽힌 값 모두 확인" })).toBeVisible({ timeout: 60_000 });
@@ -55,7 +56,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
 
   await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "리포트 보기" }).click();
-  await expect(page.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "방어 행동 허브" })).toBeVisible();
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--report/);
     const resultsBox = await page.locator(".report-results-column").boundingBox();
@@ -64,32 +65,25 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     expect(guidanceBox).not.toBeNull();
     expect((guidanceBox?.x ?? 0) > (resultsBox?.x ?? 0)).toBeTruthy();
   }
-  const ruleResults = page.locator('section[aria-labelledby="rule-results-title"]');
-  const judgmentResults = page.locator('section[aria-labelledby="judgment-results-title"]');
+  const allResults = page.locator('section[aria-labelledby="all-results-title"]');
   for (const ruleId of Array.from({ length: 10 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`)) {
-    await expect(ruleResults).toContainText(ruleId);
+    await expect(allResults).toContainText(ruleId);
   }
   for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
-    await expect(judgmentResults).toContainText(judgmentId);
+    await expect(allResults).toContainText(judgmentId);
   }
-  await expect(judgmentResults).toContainText("상태:");
-  await expect(page.getByRole("heading", { name: "계약 단계별 안내" })).toBeVisible();
-  for (const title of ["계약금 입금 전 질문", "서명 전 체크리스트", "계약 직후 행동", "보관해야 할 자료"]) {
-    await expect(page.getByRole("heading", { name: title }).last()).toBeVisible();
+  await expect(allResults).toContainText("상태:");
+  for (const title of ["먼저 물어볼 질문", "서명 전 확인 행동", "계약 직후 행동", "보관할 자료"]) {
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
-  await expect(page.getByText("안전한 기본 안내").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeVisible();
-  await expect(ruleResults).toContainText("R01");
-  await expect(ruleResults).toContainText("R10");
-  await expect(page.getByRole("heading", { name: "1차 MVP 확장 판정" })).toBeVisible();
-  const checklistRuleResults = page.getByRole("heading", { name: "질문·체크리스트 우선 확인" }).locator("..");
-  await expect(checklistRuleResults).toBeVisible();
-  await expect(page.getByRole("heading", { name: "외부 데이터 연결 후 자동화" })).toBeVisible();
-  await expect(checklistRuleResults.getByText("R24", { exact: true })).toBeVisible();
-  await expect(judgmentResults).toContainText("J01");
-  await expect(judgmentResults).toContainText("J12");
+  await expect(page.getByRole("heading", { name: "방어 행동 허브" })).toBeVisible();
+  await expect(allResults).toContainText("R01");
+  await expect(allResults).toContainText("R24");
+  await expect(allResults).toContainText("J01");
+  await expect(allResults).toContainText("J12");
 
   if (!isRealApi) {
     await page.getByLabel("평점").selectOption("5");
@@ -98,7 +92,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(page.getByRole("status")).toContainText("의견이 저장되었습니다.");
   }
 
-  await page.getByRole("button", { name: "체크리스트로 이동" }).click();
+  await page.getByRole("button", { name: "저장된 체크리스트로 이동" }).click();
   const checklistSection = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "서명 전 체크리스트" }),
   });

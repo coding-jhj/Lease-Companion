@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
+import { AnalysisTimeline, type AnalysisStage } from "../../features/analysis-progress/AnalysisTimeline";
 import { mvpService } from "../../services/mvpService";
 import type { AnalysisRunDetailDto, AsyncRunStatus } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
@@ -15,6 +16,7 @@ export function AnalysisProgressPage() {
   const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
   const [status, setStatus] = useState<PageStatus>("pending");
+  const [activeStage, setActiveStage] = useState<AnalysisStage>("request");
   const [analysisRunId, setAnalysisRunId] = useState("");
   const [error, setError] = useState("");
   const activePoll = useRef<AbortController | null>(null);
@@ -31,11 +33,13 @@ export function AnalysisProgressPage() {
       onUpdate: (current) => {
         if (current.status === "pending" || current.status === "running") {
           setStatus(current.status);
+          setActiveStage(current.status === "pending" ? "request" : "analysis");
         } else if (current.status === "completed"
           && (current.generation_status === null
             || current.generation_status === "pending"
             || current.generation_status === "running")) {
           setStatus("running");
+          setActiveStage("generation");
         }
       },
       isTerminal: (current) => current.status === "failed"
@@ -47,11 +51,13 @@ export function AnalysisProgressPage() {
       startPromise.current = null;
       retryMode.current = "new";
       setStatus("failed");
+      setActiveStage("analysis");
       setError(run.error ?? "계약 분석에 실패했습니다.");
       return;
     }
     retryMode.current = "resume";
     setStatus("completed");
+    setActiveStage("complete");
   }
 
   async function startNewAnalysis(forceNew = false) {
@@ -66,6 +72,7 @@ export function AnalysisProgressPage() {
     if (forceNew) startPromise.current = null;
     setError("");
     setStatus("pending");
+    setActiveStage("request");
 
     try {
       startPromise.current ??= mvpService.startAnalysis(contractId);
@@ -83,6 +90,7 @@ export function AnalysisProgressPage() {
       }
       startPromise.current = null;
       setStatus("failed");
+      setActiveStage("request");
       setError(caught instanceof Error ? caught.message : "계약 분석에 실패했습니다.");
     }
   }
@@ -131,6 +139,11 @@ export function AnalysisProgressPage() {
   return (
     <PageShell step="6 / 8" title={title} description="규칙 판정과 공식 근거를 정리합니다. 종합 안전 점수는 제공하지 않습니다.">
       <div className="stack">
+        <AnalysisTimeline
+          activeStage={activeStage}
+          hasError={status === "failed"}
+          delayed={status === "timeout"}
+        />
         {status === "pending" && <LoadingState title="분석 대기 중" description="서버에서 분석 작업을 준비하고 있습니다." />}
         {status === "running" && <LoadingState title="분석 실행 중" description="완료될 때까지 실제 분석 상태를 확인하고 있습니다." />}
         {status === "failed" && <ErrorState title="분석을 완료하지 못했습니다" description={error} onRetry={() => void retry()} />}
