@@ -405,7 +405,10 @@
       "type": "array"
     },
     "prompt_version": {
-      "const": "v1",
+      "enum": [
+        "v1",
+        "v2"
+      ],
       "title": "Prompt Version",
       "type": "string"
     },

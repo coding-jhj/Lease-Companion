@@ -1,0 +1,584 @@
+{
+  "$defs": {
+    "ActionSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_actions": {
+          "items": {
+            "enum": [
+              "진행",
+              "추가 확인",
+              "보류",
+              "중단"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Allowed Actions",
+          "type": "array"
+        },
+        "next_state_id": {
+          "minLength": 1,
+          "title": "Next State Id",
+          "type": "string"
+        },
+        "state_id": {
+          "minLength": 1,
+          "title": "State Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state_id",
+        "allowed_actions",
+        "next_state_id"
+      ],
+      "title": "ActionSelection",
+      "type": "object"
+    },
+    "ConfirmationSignal": {
+      "additionalProperties": false,
+      "properties": {
+        "fact": {
+          "minLength": 1,
+          "title": "Fact",
+          "type": "string"
+        },
+        "linked_judgment_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Linked Judgment Ids",
+          "type": "array"
+        },
+        "linked_rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Linked Rule Ids",
+          "type": "array"
+        },
+        "official_source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Official Source Ids",
+          "type": "array"
+        },
+        "signal_id": {
+          "pattern": "^SIG-[A-Z0-9-]+$",
+          "title": "Signal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "signal_id",
+        "fact",
+        "official_source_ids"
+      ],
+      "title": "ConfirmationSignal",
+      "type": "object"
+    },
+    "ContractType": {
+      "enum": [
+        "전세",
+        "보증부 월세",
+        "일반 월세"
+      ],
+      "title": "ContractType",
+      "type": "string"
+    },
+    "DialogueResponses": {
+      "additionalProperties": false,
+      "properties": {
+        "ambiguous_answer": {
+          "minLength": 1,
+          "title": "Ambiguous Answer",
+          "type": "string"
+        },
+        "appropriate_check": {
+          "minLength": 1,
+          "title": "Appropriate Check",
+          "type": "string"
+        },
+        "avoidance": {
+          "minLength": 1,
+          "title": "Avoidance",
+          "type": "string"
+        },
+        "needs_review": {
+          "minLength": 1,
+          "title": "Needs Review",
+          "type": "string"
+        },
+        "no_response": {
+          "minLength": 1,
+          "title": "No Response",
+          "type": "string"
+        },
+        "partial_check": {
+          "minLength": 1,
+          "title": "Partial Check",
+          "type": "string"
+        }
+      },
+      "required": [
+        "appropriate_check",
+        "partial_check",
+        "ambiguous_answer",
+        "avoidance",
+        "no_response",
+        "needs_review"
+      ],
+      "title": "DialogueResponses",
+      "type": "object"
+    },
+    "DialogueTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "goal_action_id": {
+          "pattern": "^PA\\d{2}$",
+          "title": "Goal Action Id",
+          "type": "string"
+        },
+        "next_turn_id": {
+          "minLength": 1,
+          "title": "Next Turn Id",
+          "type": "string"
+        },
+        "prompt": {
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "responses": {
+          "$ref": "#/$defs/DialogueResponses"
+        },
+        "turn_id": {
+          "pattern": "^TURN-\\d{2}$",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "wait_sequence": {
+          "items": {
+            "$ref": "#/$defs/WaitStep"
+          },
+          "title": "Wait Sequence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "turn_id",
+        "goal_action_id",
+        "prompt",
+        "responses",
+        "next_turn_id"
+      ],
+      "title": "DialogueTurn",
+      "type": "object"
+    },
+    "SyntheticContractInput": {
+      "additionalProperties": false,
+      "description": "승인 fixture의 합성 계약 사실. 실제 계약 건과 연결하지 않는다.",
+      "properties": {
+        "account_holder": {
+          "minLength": 1,
+          "title": "Account Holder",
+          "type": "string"
+        },
+        "account_number_stored": {
+          "title": "Account Number Stored",
+          "type": "boolean"
+        },
+        "balance_payment": {
+          "minimum": 0,
+          "title": "Balance Payment",
+          "type": "integer"
+        },
+        "balance_payment_date": {
+          "format": "date",
+          "title": "Balance Payment Date",
+          "type": "string"
+        },
+        "broker_name": {
+          "minLength": 1,
+          "title": "Broker Name",
+          "type": "string"
+        },
+        "contract_payment": {
+          "minimum": 0,
+          "title": "Contract Payment",
+          "type": "integer"
+        },
+        "contract_payment_date": {
+          "format": "date",
+          "title": "Contract Payment Date",
+          "type": "string"
+        },
+        "contract_type": {
+          "$ref": "#/$defs/ContractType"
+        },
+        "deposit": {
+          "minimum": 0,
+          "title": "Deposit",
+          "type": "integer"
+        },
+        "deposit_paid": {
+          "title": "Deposit Paid",
+          "type": "boolean"
+        },
+        "deposit_return_clause": {
+          "minLength": 1,
+          "title": "Deposit Return Clause",
+          "type": "string"
+        },
+        "end_date": {
+          "format": "date",
+          "title": "End Date",
+          "type": "string"
+        },
+        "is_joint_ownership": {
+          "title": "Is Joint Ownership",
+          "type": "boolean"
+        },
+        "landlord_name": {
+          "minLength": 1,
+          "title": "Landlord Name",
+          "type": "string"
+        },
+        "monthly_rent": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Monthly Rent"
+        },
+        "mortgage_maximum_claim": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mortgage Maximum Claim"
+        },
+        "mortgage_present": {
+          "title": "Mortgage Present",
+          "type": "boolean"
+        },
+        "move_in_date": {
+          "format": "date",
+          "title": "Move In Date",
+          "type": "string"
+        },
+        "owner_names": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Owner Names",
+          "type": "array"
+        },
+        "owner_shares": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Owner Shares",
+          "type": "object"
+        },
+        "property_address": {
+          "minLength": 1,
+          "title": "Property Address",
+          "type": "string"
+        },
+        "registry_issue_date": {
+          "format": "date",
+          "title": "Registry Issue Date",
+          "type": "string"
+        },
+        "registry_property_address": {
+          "minLength": 1,
+          "title": "Registry Property Address",
+          "type": "string"
+        },
+        "requested_provisional_payment": {
+          "minimum": 0,
+          "title": "Requested Provisional Payment",
+          "type": "integer"
+        },
+        "rights_change_clause_present": {
+          "title": "Rights Change Clause Present",
+          "type": "boolean"
+        },
+        "signed": {
+          "title": "Signed",
+          "type": "boolean"
+        },
+        "special_clauses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Special Clauses",
+          "type": "array"
+        },
+        "start_date": {
+          "format": "date",
+          "title": "Start Date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract_type",
+        "signed",
+        "deposit_paid",
+        "property_address",
+        "deposit",
+        "contract_payment",
+        "balance_payment",
+        "requested_provisional_payment",
+        "contract_payment_date",
+        "balance_payment_date",
+        "move_in_date",
+        "start_date",
+        "end_date",
+        "landlord_name",
+        "broker_name",
+        "account_holder",
+        "account_number_stored",
+        "registry_issue_date",
+        "registry_property_address",
+        "owner_names",
+        "is_joint_ownership",
+        "owner_shares",
+        "mortgage_present",
+        "deposit_return_clause",
+        "rights_change_clause_present"
+      ],
+      "title": "SyntheticContractInput",
+      "type": "object"
+    },
+    "TargetAction": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "pattern": "^PA\\d{2}$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "linked_signal_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Linked Signal Ids",
+          "type": "array"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_id",
+        "name"
+      ],
+      "title": "TargetAction",
+      "type": "object"
+    },
+    "WaitStep": {
+      "additionalProperties": false,
+      "properties": {
+        "from_second": {
+          "minimum": 0,
+          "title": "From Second",
+          "type": "integer"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "state": {
+          "enum": [
+            "WAIT_BASIC",
+            "WAIT_PRESSURE",
+            "PRESSURE_REMINDER"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "to_second": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Second"
+        }
+      },
+      "required": [
+        "state",
+        "from_second"
+      ],
+      "title": "WaitStep",
+      "type": "object"
+    }
+  },
+  "$id": "lease-companion/scenario-definition-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "버전 고정된 승인 합성 시나리오.",
+  "properties": {
+    "action_selection": {
+      "$ref": "#/$defs/ActionSelection"
+    },
+    "always_show_labels": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Always Show Labels",
+      "type": "array"
+    },
+    "contract_stage": {
+      "minLength": 1,
+      "title": "Contract Stage",
+      "type": "string"
+    },
+    "data_classification": {
+      "const": "synthetic",
+      "title": "Data Classification",
+      "type": "string"
+    },
+    "dialogue_turns": {
+      "items": {
+        "$ref": "#/$defs/DialogueTurn"
+      },
+      "minItems": 1,
+      "title": "Dialogue Turns",
+      "type": "array"
+    },
+    "difficulty": {
+      "enum": [
+        "기본",
+        "중급",
+        "고급"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "fixture_type": {
+      "const": "synthetic_practice_scenario",
+      "title": "Fixture Type",
+      "type": "string"
+    },
+    "hidden_confirmation_signals": {
+      "items": {
+        "$ref": "#/$defs/ConfirmationSignal"
+      },
+      "minItems": 1,
+      "title": "Hidden Confirmation Signals",
+      "type": "array"
+    },
+    "review_status": {
+      "enum": [
+        "draft",
+        "approved"
+      ],
+      "title": "Review Status",
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "공인중개사",
+        "임대인"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "scenario_id": {
+      "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "scenario_version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "synthetic_contract": {
+      "$ref": "#/$defs/SyntheticContractInput"
+    },
+    "target_actions": {
+      "items": {
+        "$ref": "#/$defs/TargetAction"
+      },
+      "minItems": 1,
+      "title": "Target Actions",
+      "type": "array"
+    },
+    "terminal_state_id": {
+      "minLength": 1,
+      "title": "Terminal State Id",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fixture_type",
+    "data_classification",
+    "scenario_id",
+    "scenario_version",
+    "review_status",
+    "title",
+    "role",
+    "difficulty",
+    "contract_stage",
+    "always_show_labels",
+    "synthetic_contract",
+    "target_actions",
+    "hidden_confirmation_signals",
+    "dialogue_turns",
+    "action_selection",
+    "terminal_state_id"
+  ],
+  "title": "ScenarioDefinition",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}
