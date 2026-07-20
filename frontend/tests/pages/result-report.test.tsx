@@ -99,6 +99,12 @@ describe("ResultReportPage", () => {
     expect(screen.getByText("내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
     expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
+    // 상단 요약 개수는 하단 그룹 개수와 같아야 한다("지금 판단할 수 없는 항목"은 양쪽 모두 제외).
+    for (const priority of ["반드시 확인", "확인 권장", "일반 확인"]) {
+      const top = document.querySelector(`[aria-label="확인 우선순위 전체 개수"] [data-priority="${priority}"] strong`);
+      const bottom = document.querySelector(`.priority-group[data-priority="${priority}"] .priority-count`);
+      expect(top?.textContent).toBe(`${bottom?.textContent}개`);
+    }
     expect(document.querySelectorAll(".result-card").length).toBeLessThan(36);
     expect(screen.getByRole("button", { name: /^확인 권장/ })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: /^일반 확인/ })).toHaveAttribute("aria-expanded", "false");

@@ -4,6 +4,7 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/
 import { PageShell } from "../../components/layout/PageShell";
 import {
   PriorityGroups,
+  cannotJudgeNow,
   displayPriorityForUrgency,
   type DisplayPriority,
 } from "../../features/judgment-results/PriorityGroups";
@@ -59,9 +60,12 @@ export function ResultReportPage() {
   const userFacingResults = judgments.length > 0 ? judgments : items;
   const usesJudgmentSummary = judgments.length > 0;
   const allGuidance = [...ruleGuidance, ...judgmentGuidance];
+  // 상단 요약 개수는 하단 그룹과 같은 기준으로 센다: "지금 판단할 수 없는 항목"
+  // (확인 불가·적용 제외·외부데이터 미연결)은 우선순위 그룹에서 빠지므로 카운트에서도 제외한다.
+  const actionableResults = userFacingResults.filter((item) => !cannotJudgeNow(item));
   const counts = Object.fromEntries(priorities.map((priority) => [
     priority,
-    userFacingResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
+    actionableResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
   ])) as Record<DisplayPriority, number>;
   const firstPriority = priorities.find((priority) => counts[priority] > 0);
 

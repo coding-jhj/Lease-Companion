@@ -24,7 +24,7 @@ from lease_companion_ai.rag.indexing.chroma_index import (
     ChromaVectorIndex,
     StaleIndexError,
 )
-from lease_companion_ai.rag.indexing.chunker import chunk_sections
+from lease_companion_ai.rag.indexing.chunker import chunk_sections, normalize_source_text
 from lease_companion_ai.rag.models import (
     EvidenceQuery,
     JudgmentRetrievalQuery,
@@ -74,10 +74,14 @@ class EvidenceRetrievalService:
         judgment_search_contexts: Mapping[str, str] | None = None,
         rule_source_ids: Mapping[str, tuple[str, ...]] | None = None,
         rule_search_contexts: Mapping[str, str] | None = None,
+        source_texts: Mapping[str, str] | None = None,
         initial_routing_decisions: Sequence[RoutingDecision] = (),
     ) -> None:
         self._retriever = retriever
         self._reranker = reranker
+        self._source_texts = dict(
+            source_texts if source_texts is not None else load_source_full_texts()
+        )
         self._judgment_source_ids = dict(
             judgment_source_ids
             if judgment_source_ids is not None
@@ -187,6 +191,7 @@ class EvidenceRetrievalService:
                             title=metadata.document_title,
                             institution=metadata.institution,
                             summary=hit.chunk.text,
+                            source_text=self._source_texts.get(metadata.source_id),
                             source_url=metadata.source_url,
                             retrieval_method=hit.retrieval_method,
                         )
@@ -218,6 +223,7 @@ class EvidenceRetrievalService:
                             title=metadata.document_title,
                             institution=metadata.institution,
                             summary=hit.chunk.text,
+                            source_text=self._source_texts.get(metadata.source_id),
                             source_url=metadata.source_url,
                             retrieval_method=hit.retrieval_method,
                         )
@@ -357,6 +363,27 @@ def load_local_official_chunks(root: Path | None = None) -> list[RagChunk]:
     if not chunks:
         raise ValueError("검색 가능한 공식 로컬 원문이 없습니다.")
     return chunks
+
+
+def load_source_full_texts(root: Path | None = None) -> dict[str, str]:
+    """source_id → 공식자료 전체 원문. 화면 "전체 보기"에 청크 대신 원문을 쓰기 위함.
+
+    로컬 원문(local_source)만 담고, manifest가 없으면 빈 map을 반환한다(검색 청크로 폴백).
+    """
+    repo_root = root or _repo_root()
+    manifest = repo_root / "data" / "rag" / "metadata" / "official_sources.jsonl"
+    if not manifest.exists():
+        return {}
+    texts: dict[str, str] = {}
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        record = json.loads(line)
+        if record["distribution_mode"] != "local_source":
+            continue
+        local_path = repo_root / record["local_path"]
+        texts[record["source_id"]] = normalize_source_text(
+            local_path.read_text(encoding="utf-8")
+        )
+    return texts
 
 
 def build_evidence_service(
