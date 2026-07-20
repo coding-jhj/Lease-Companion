@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+async function expandAllResultGroups(page: import("@playwright/test").Page) {
+  for (const label of ["확인 권장", "일반 확인"]) {
+    const toggle = page.getByRole("button", { name: new RegExp(`^${label}`) });
+    if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
+  }
+  const unavailableToggle = page.getByRole("button", { name: /^지금 판단할 수 없는 항목/ });
+  if (await unavailableToggle.count() && await unavailableToggle.getAttribute("aria-expanded") === "false") {
+    await unavailableToggle.click();
+  }
+}
+
 test("v1.9 signup through saved checklist follows the complete MVP flow", async ({ page }, testInfo) => {
   const isRealApi = testInfo.project.name.startsWith("real-api");
   const userSuffix = Date.now().toString(36);
@@ -45,6 +56,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(page.getByLabel("수리·원상복구 책임 값")).toHaveCount(0);
   }
   await page.getByRole("button", { name: "읽힌 값 모두 확인" }).click();
+  const confirmedFields = page.getByText(/확인된 항목 \d+개/);
+  if (await confirmedFields.count()) await confirmedFields.click();
   const accountHolder = page.getByLabel("입금 계좌 예금주 값");
   if (await accountHolder.count()) await accountHolder.fill("이정훈");
   const secondMainClause = page.getByLabel("계약서 본문 주요 조항 2 값");
@@ -66,6 +79,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     expect((guidanceBox?.x ?? 0) > (resultsBox?.x ?? 0)).toBeTruthy();
   }
   const allResults = page.locator('section[aria-labelledby="all-results-title"]');
+  await expandAllResultGroups(page);
   for (const ruleId of Array.from({ length: 10 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`)) {
     await expect(allResults).toContainText(ruleId);
   }
@@ -80,6 +94,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "방어 행동 허브" })).toBeVisible();
+  await expandAllResultGroups(page);
   await expect(allResults).toContainText("R01");
   await expect(allResults).toContainText("R24");
   await expect(allResults).toContainText("J01");

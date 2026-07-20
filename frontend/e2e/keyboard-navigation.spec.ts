@@ -41,6 +41,11 @@ test("critical upload, review, analysis, and report actions work with the keyboa
   await expect(confirmAll).toBeVisible({ timeout: 60_000 });
   await confirmAll.focus();
   await page.keyboard.press("Enter");
+  const confirmedFieldsSummary = page.getByText(/확인된 항목 \d+개/).locator("..");
+  await confirmedFieldsSummary.focus();
+  await expect(confirmedFieldsSummary).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(confirmedFieldsSummary.locator("..")).toHaveAttribute("open", "");
   const clauseSummary = page.getByText(/조항 \d+개 펼쳐서 확인/).first();
   await clauseSummary.focus();
   await expect(clauseSummary).toBeFocused();

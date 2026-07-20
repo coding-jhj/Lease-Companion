@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
@@ -68,6 +68,14 @@ function renderPage() {
   );
 }
 
+function expandAllResultGroups() {
+  for (const label of ["확인 권장", "일반 확인"]) {
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
+  }
+  const unavailableToggle = screen.queryByRole("button", { name: /^지금 판단할 수 없는 항목/ });
+  if (unavailableToggle) fireEvent.click(unavailableToggle);
+}
+
 beforeEach(() => {
   vi.spyOn(mvpService, "getFeedback").mockResolvedValue([]);
 });
@@ -90,6 +98,11 @@ describe("ResultReportPage", () => {
     expect(screen.getByRole("heading", { name: "전체 확인 결과" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
     expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
+    expect(document.querySelectorAll(".result-card").length).toBeLessThan(36);
+    expect(screen.getByRole("button", { name: /^확인 권장/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: /^일반 확인/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: /^지금 판단할 수 없는 항목/ })).toHaveAttribute("aria-expanded", "false");
+    expandAllResultGroups();
     expect(document.querySelectorAll(".result-card")).toHaveLength(36);
     for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
       expect(screen.getByText(judgmentId)).toBeInTheDocument();
@@ -97,6 +110,11 @@ describe("ResultReportPage", () => {
     for (const title of ["먼저 물어볼 질문", "서명 전 확인 행동", "계약 직후 행동", "보관할 자료"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
+    const questionGroup = screen.getByRole("heading", { name: "먼저 물어볼 질문" }).closest("section")!;
+    expect(within(questionGroup).getAllByRole("listitem")).toHaveLength(3);
+    fireEvent.click(within(questionGroup).getByRole("button", { name: /개 더 보기/ }));
+    expect(within(questionGroup).getAllByRole("listitem").length).toBeGreaterThan(3);
+    expect(within(questionGroup).getByRole("button", { name: "접기" })).toBeInTheDocument();
     expect(screen.getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(1);
 
     const r01 = screen.getAllByText("R01")[0].closest("article");
@@ -115,6 +133,7 @@ describe("ResultReportPage", () => {
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "전체 확인 결과" })).toBeInTheDocument();
+    expandAllResultGroups();
     for (const judgmentId of ["J10", "J11", "J12"]) {
       const card = screen.getByText(judgmentId).closest("article");
       expect(card).toHaveTextContent("상태: 확인 필요");
@@ -130,6 +149,7 @@ describe("ResultReportPage", () => {
     renderPage();
 
     expect(await screen.findByText(/규칙 판정은 정상이며 안내 생성에 실패했습니다/)).toBeInTheDocument();
+    expandAllResultGroups();
     expect(document.querySelectorAll(".result-card")).toHaveLength(36);
     expect(screen.getByText("R01")).toBeInTheDocument();
   });
