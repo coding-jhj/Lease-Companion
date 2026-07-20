@@ -35,6 +35,8 @@ export interface ContractSummaryDto {
   is_proxy_contract: boolean | null;
   registry_case_id: string | null;
   created_at: string;
+  // 대시보드 행동 상태: none(미행동)/in_progress(행동중)/done(행동 완료).
+  action_status?: "none" | "in_progress" | "done";
 }
 
 export type ContractType = "전세" | "보증부 월세" | "일반 월세";

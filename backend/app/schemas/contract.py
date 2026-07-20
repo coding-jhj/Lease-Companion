@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -38,5 +39,8 @@ class ContractResponse(BaseModel):
     is_proxy_contract: bool | None
     registry_case_id: str | None
     created_at: datetime
+    # 대시보드 행동 상태: none(아무 행동 안 함)/in_progress(일부 완료)/done(전부 완료).
+    # 최신 완료 분석의 체크리스트+계약 직후 행동 항목 대비 done 개수로 계산한다.
+    action_status: Literal["none", "in_progress", "done"] = "none"
 
     model_config = {"from_attributes": True}

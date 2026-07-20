@@ -44,6 +44,13 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .contract-grid, .checklist-grid, .history-grid, .extraction-workspace-grid, .report-grid, .page-actions { display: grid; gap: 16px; }
 .contract-grid { grid-template-columns: 1fr; }
 .contract-card { align-content: start; background: #fff; }
+.contract-groups { display: grid; gap: 24px; }
+.contract-group__title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 1rem; color: #245236; }
+.contract-group__count { padding: 1px 10px; border-radius: 999px; background: #e3ede4; color: #245236; font-size: 0.85rem; font-weight: 700; }
+.contract-group--done { border: 1px solid #dce5dd; border-radius: 14px; background: #f7faf7; }
+.contract-group--done > summary { padding: 14px 16px; color: #245236; font-weight: 800; cursor: pointer; }
+.contract-group--done[open] > summary { border-bottom: 1px solid #dce5dd; }
+.contract-group--done > .contract-grid { padding: 16px; }
 .document-review-panel { min-width: 0; padding: 18px; border: 1px solid #dce5dd; border-radius: 18px; background: #f8faf8; }
 .document-review-panel > h2 { margin-top: 0; }
 .field-card { min-width: 0; background: #fff; }

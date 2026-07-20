@@ -133,6 +133,53 @@ def test_delete(client, alice):
     assert client.get(f"/api/contracts/{cid}", headers=alice).status_code == 404
 
 
+def test_dashboard_action_status_reflects_checklist_completion(client, alice):
+    from app.core.db import SessionLocal
+    from app.models.analysis import STATUS_COMPLETED, AnalysisRun
+
+    cid = client.post("/api/contracts", json={"title": "행동상태용"}, headers=alice).json()["id"]
+    generation_result = {
+        "items": [
+            {
+                "signing_checklist_items": [{"item_key": "R01:checklist:aaaaaaaaaaaa"}],
+                "post_contract_action_items": [{"item_key": "R01:post_action:bbbbbbbbbbbb"}],
+            }
+        ],
+        "judgment_items": [],
+    }
+    with SessionLocal() as db:
+        db.add(
+            AnalysisRun(
+                contract_id=cid,
+                analysis_run_id="RUN-DASH-1",
+                input_snapshot_id="SNAP-DASH-1",
+                status=STATUS_COMPLETED,
+                input_snapshot={},
+                result={},
+                generation_result=generation_result,
+            )
+        )
+        db.commit()
+
+    def action_status() -> str:
+        contracts = client.get("/api/contracts", headers=alice).json()
+        return next(c for c in contracts if c["id"] == cid)["action_status"]
+
+    assert action_status() == "none"  # 아무 항목도 완료 안 함
+
+    client.put(
+        f"/api/contracts/{cid}/checklist-items/checklist/R01:checklist:aaaaaaaaaaaa",
+        json={"done": True}, headers=alice,
+    )
+    assert action_status() == "in_progress"  # 둘 중 하나만 완료
+
+    client.put(
+        f"/api/contracts/{cid}/checklist-items/post_action/R01:post_action:bbbbbbbbbbbb",
+        json={"done": True}, headers=alice,
+    )
+    assert action_status() == "done"  # 체크리스트+행동 전부 완료
+
+
 def test_requires_auth(client):
     assert client.get("/api/contracts").status_code == 401
     assert client.post("/api/contracts", json={"title": "x"}).status_code == 401
