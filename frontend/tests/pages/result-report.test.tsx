@@ -120,4 +120,17 @@ describe("ResultReportPage", () => {
     expect(document.querySelectorAll(".result-card")).toHaveLength(13);
     expect(screen.getByText("R01")).toBeInTheDocument();
   });
+
+  it("shows an empty report state when a completed response has no rule results", async () => {
+    const empty = detail();
+    vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue({
+      ...empty,
+      result: empty.result ? { ...empty.result, results: [], judgments: [] } : null,
+      generation_result: null,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("아직 생성된 리포트가 없습니다")).toBeInTheDocument();
+  });
 });
