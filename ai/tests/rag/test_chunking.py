@@ -89,6 +89,10 @@ def test_section_heading_stays_with_its_first_body_paragraph(source_metadata):
             "· 임대인은 다음날까지 담보권을 설정하지 않는다.",
             "[수선비용 부담의 해석 기준]",
             "· 임대인 부담: 주요 설비의 노후로 인한 수선비용.",
+            "[별지1] 법의 보호를 받기 위한 중요사항",
+            "주택임대차 관련 분쟁은 분쟁조정위원회에서 조정할 수 있다.",
+            "【묵시적 갱신 등】",
+            "① 계약 종료 통지가 없으면 동일한 조건으로 갱신될 수 있다.",
         ]
     )
 
@@ -105,5 +109,13 @@ def test_section_heading_stays_with_its_first_body_paragraph(source_metadata):
     )
     assert any(
         "[수선비용 부담의 해석 기준]\n· 임대인 부담:" in chunk.text
+        for chunk in chunks
+    )
+    assert any(
+        "[별지1] 법의 보호를 받기 위한 중요사항\n주택임대차 관련 분쟁" in chunk.text
+        for chunk in chunks
+    )
+    assert any(
+        "【묵시적 갱신 등】\n① 계약 종료 통지가 없으면" in chunk.text
         for chunk in chunks
     )
