@@ -90,8 +90,10 @@ class AnalysisRun(Base):
     # classification 결과 (2026-07-18 BC_HANDOFF B 결정): canonical ClassificationResult JSON을
     # provenance(provider_model·prompt_version·classification_method·fallback_reason_code) 포함
     # 통째 저장. API 미노출 — 내부 분석 단계 전용. 별도 status 없음(분석 status에 포함).
-    # classification_error는 내부 provider 실패 사유 — 사용자 응답·일반 로그에 노출하지 않는다.
     classification_result: Mapped[dict | None] = mapped_column(_JSON)
+    # classification_error: 성공·safe fallback 모두 항상 None (data-contract-v1). 실패 사유의
+    # 단일 원본은 classification_result.fallback_reason_code — 여기에 중복 저장하지 않는다.
+    # provider 원문 예외·응답·PII 저장 금지. 컬럼은 호환 위해 유지, 후속 migration에서 삭제 검토.
     classification_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

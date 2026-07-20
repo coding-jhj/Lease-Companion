@@ -218,6 +218,7 @@ def test_classification_persisted_internally_and_not_exposed(
         assert row.classification_result["classification_method"] == "safe_fallback"
         assert row.classification_result["fallback_reason_code"] == "provider_unavailable"
         assert row.classification_result["candidates"] == []
+        assert row.classification_error is None  # 실패 사유는 fallback_reason_code 단일 원본
 
 
 class _StubClassificationProvider:
@@ -274,7 +275,7 @@ def _latest_classification_result(run_id):
 
     with SessionLocal() as db:
         row = db.scalar(select(AnalysisRun).where(AnalysisRun.analysis_run_id == run_id))
-        return row.classification_result, row.status
+        return row.classification_result, row.classification_error, row.status
 
 
 def test_provider_success_persists_provider_result_not_exposed(
@@ -294,10 +295,11 @@ def test_provider_success_persists_provider_result_not_exposed(
 
     assert detail["status"] == "completed", detail.get("error")
     assert "classification_result" not in detail  # 미노출
-    result, status = _latest_classification_result(run_id)
+    result, error, status = _latest_classification_result(run_id)
     assert status == "completed"
     assert result["classification_method"] == "provider"
     assert result["fallback_reason_code"] is None
+    assert error is None  # 성공 시에도 classification_error는 항상 None
     assert len(result["candidates"]) == 1
 
 
@@ -318,10 +320,11 @@ def test_provider_failure_falls_back_and_analysis_completes(
 
     assert detail["status"] == "completed", detail.get("error")
     assert len(detail["result"]["results"]) == 10  # 규칙 분석 정상
-    result, status = _latest_classification_result(run_id)
+    result, error, status = _latest_classification_result(run_id)
     assert status == "completed"
     assert result["classification_method"] == "safe_fallback"
     assert result["fallback_reason_code"] == "provider_error"
+    assert error is None  # 실패도 fallback_reason_code에만 — classification_error 중복 저장 금지
     assert result["candidates"] == []
 
 
