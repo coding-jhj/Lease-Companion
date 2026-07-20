@@ -9,11 +9,12 @@
 | `auth` | 1 | 회원가입·로그인·세션 |
 | `contracts` | 2 | 계약 건 목록·생성·조회 관리 |
 | `contract-stage` | 3 | 계약 상황(단계·유형) 입력 |
-| `document-upload` | 4 | 계약서·등기 등 문서 업로드 |
-| `extraction-review` | 5 | AI 추출값 확인·수정 |
-| `judgment-results` | 7 | R01~R24 단계형 규칙 결과와 J01~J12 판정을 분리해 표시 |
+| `document-upload` | 4 | 필수 계약서·선택 문서별 업로드 카드와 개별 상태·재시도 |
+| `extraction-review` | 5 | 문서별 AI 추출 필드 카드 확인·수정 |
+| `analysis-progress` | 6 | 실제 분석·안내 생성 상태를 4단계 타임라인으로 표시 |
+| `judgment-results` | 7 | R01~R24·J01~J12를 화면 우선순위 3단계로 통합 표시 |
 | `evidence-sources` | 7 | 원문 증거·공식 근거(RAG) 표시 |
-| `question-cards` | 7 | 임대인·공인중개사 대상 확인 질문 카드 |
+| `question-cards` | 7 | 중복을 제거한 질문·체크리스트·직후 행동 방어 허브 |
 | `signing-checklist` | 8 | 서명 전 체크리스트 |
 | `post-contract-actions` | 8 | 계약 직후 권리 확보 행동 관리 |
 | `result-feedback` | 7·8 | 결과에 대한 사용자 피드백 |

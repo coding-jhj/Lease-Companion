@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
@@ -78,34 +78,26 @@ afterEach(() => {
 });
 
 describe("ResultReportPage", () => {
-  it("renders R01-R24 by implementation stage and generated guidance", async () => {
+  it("renders one prioritized result list and one deduplicated defense action hub", async () => {
     vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue(detail());
 
     renderPage();
 
     expect(screen.getByText("리포트를 불러오는 중")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "임대인=등기 소유자 이름 일치" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "기존 핵심 규칙 R01~R10" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "1차 MVP 확장 판정" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "질문·체크리스트 우선 확인" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "외부 데이터 연결 후 자동화" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "J01~J12 계약 판정" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "서두르지 않아도 괜찮아요." })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toHaveAttribute("href", "#first-priority-group");
+    expect(screen.getByRole("heading", { name: "전체 확인 결과" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
+    expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
     expect(document.querySelectorAll(".result-card")).toHaveLength(36);
-    const judgmentSection = screen.getByRole("heading", { name: "J01~J12 계약 판정" }).closest("section");
-    expect(judgmentSection).not.toBeNull();
     for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
-      expect(within(judgmentSection as HTMLElement).getByText(judgmentId)).toBeInTheDocument();
+      expect(screen.getByText(judgmentId)).toBeInTheDocument();
     }
-    expect(screen.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "J01~J12 판정 기반 질문과 행동" })).toBeInTheDocument();
-    const stageSection = screen.getByRole("heading", { name: "계약 단계별 안내" }).closest("section");
-    expect(stageSection).not.toBeNull();
-    for (const title of ["계약금 입금 전 질문", "서명 전 체크리스트", "계약 직후 행동", "보관해야 할 자료"]) {
-      expect(within(stageSection as HTMLElement).getByRole("heading", { name: title })).toBeInTheDocument();
+    for (const title of ["먼저 물어볼 질문", "서명 전 확인 행동", "계약 직후 행동", "보관할 자료"]) {
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
-    expect(screen.getAllByText("안전한 기본 안내").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(2);
-    expect(screen.getAllByText("서명 또는 입금 전에 계약 권한과 관련 서류를 확인하세요.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(1);
 
     const r01 = screen.getAllByText("R01")[0].closest("article");
     expect(r01).toHaveTextContent("상태: 불일치");
@@ -122,13 +114,12 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "J01~J12 계약 판정" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "전체 확인 결과" })).toBeInTheDocument();
     for (const judgmentId of ["J10", "J11", "J12"]) {
       const card = screen.getByText(judgmentId).closest("article");
       expect(card).toHaveTextContent("상태: 확인 필요");
     }
-    expect(screen.getByRole("heading", { name: "기존 핵심 규칙 R01~R10" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("provider_unavailable");
     expect(document.body).not.toHaveTextContent("classification provider");
   });
@@ -138,7 +129,7 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("규칙 판정은 정상이며 안내 생성에 실패했습니다.")).toBeInTheDocument();
+    expect(await screen.findByText(/규칙 판정은 정상이며 안내 생성에 실패했습니다/)).toBeInTheDocument();
     expect(document.querySelectorAll(".result-card")).toHaveLength(36);
     expect(screen.getByText("R01")).toBeInTheDocument();
   });

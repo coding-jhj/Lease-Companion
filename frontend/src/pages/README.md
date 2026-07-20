@@ -9,8 +9,8 @@
 | `auth` | 1 | 회원가입·로그인 화면 |
 | `dashboard` | 2 | 계약 대시보드 — 계약 건 목록, 계약 건 생성 진입 |
 | `contract-create` | 2·3 | 계약 건 생성과 계약 상황 입력 |
-| `document-upload` | 4 | 계약서·등기 등 문서 업로드 |
+| `document-upload` | 4 | 필수 계약서·선택 등기·확인설명서 업로드 |
 | `extraction-review` | 5 | AI 추출값 확인·수정 (분석 전) |
-| `analysis-progress` | 6 | 분석 진행 상태 표시 (분석 중/완료 구분) |
-| `result-report` | 7 | 판정·원문 증거·공식 근거·질문·행동 리포트 |
+| `analysis-progress` | 6 | 요청·규칙/근거·안내 생성·완료 타임라인과 실패/지연 재시도 |
+| `result-report` | 7 | 우선순위 판정·접이식 근거·통합 방어 행동 리포트 |
 | `contract-detail` | 8 | 계약 건 상세 — 저장된 체크리스트·계약 직후 행동 관리 |

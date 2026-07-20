@@ -35,7 +35,8 @@ describe("PriorityGroups", () => {
       expect(within(heading.closest("section")!).getAllByRole("article")).toHaveLength(1);
     }
     expect(screen.getByText("R03").closest("article")).toHaveTextContent("사실 플래그");
-    expect(document.querySelectorAll(".evidence-list p")).toHaveLength(3);
+    expect(document.querySelectorAll(".result-support")).toHaveLength(3);
+    expect(screen.getAllByText("근거와 판정 한계 확인")).toHaveLength(3);
   });
 
   it("uses the agreed urgency mapping", () => {

@@ -335,7 +335,7 @@ def test_analysis_requires_confirmed_snapshot(client, alice):
     assert res.json()["error"]["code"] == "no_confirmed_snapshot"
 
 
-def test_extraction_requires_documents(client, alice):
+def test_extraction_requires_contract_but_registry_is_optional(client, alice):
     cid = client.post("/api/contracts", json={"title": "문서 없음"}, headers=alice).json()["id"]
     res = client.post(f"/api/contracts/{cid}/extractions", headers=alice)
     assert res.status_code == 422
@@ -343,8 +343,12 @@ def test_extraction_requires_documents(client, alice):
 
     _upload(client, alice, cid, CONTRACT_TXT, "계약서")
     res = client.post(f"/api/contracts/{cid}/extractions", headers=alice)
-    assert res.status_code == 422
-    assert res.json()["error"]["code"] == "missing_registry_source"
+    assert res.status_code == 202
+    state = client.get(f"/api/contracts/{cid}/extractions/latest", headers=alice).json()
+    assert state["status"] == "completed"
+    assert state["registry_doc"]["warnings"] == [
+        "등기사항증명서가 없어 관련 항목은 확인 불가로 처리합니다."
+    ]
 
 
 def test_corrections_require_completed_extraction(client, alice):
