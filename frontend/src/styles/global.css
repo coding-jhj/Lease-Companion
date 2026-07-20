@@ -139,7 +139,13 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .evidence-summary { width: 100%; min-width: 0; margin-top: 8px; border-radius: 9px; background: #f7f5ef; }
 .evidence-summary summary { padding: 10px 12px; color: #355a40; font-size: 14px; }
 .evidence-summary[open] summary { border-bottom: 1px solid #e3ded2; }
-.evidence-summary p { width: 100%; max-width: none; margin: 0; padding: 12px; color: #414841; font-size: 14px; line-height: 1.8; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
+.evidence-summary__content { display: grid; gap: 10px; width: 100%; min-width: 0; padding: 14px 12px; color: #414841; font-size: 14px; line-height: 1.8; word-break: keep-all; overflow-wrap: break-word; }
+.evidence-summary__content h5 { margin: 4px 0 0; color: #2f4938; font-size: 14px; line-height: 1.6; }
+.evidence-summary__content h5:first-child { margin-top: 0; }
+.evidence-summary__content p { width: 100%; max-width: none; margin: 0; }
+.evidence-summary__article strong { color: #303a32; }
+.evidence-summary__bullet { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 3px; padding-left: 2px; }
+.evidence-summary__bullet > span:first-child { color: #355a40; font-weight: 900; }
 .evidence-summary-empty { margin: 8px 0 0; color: #687069; font-size: 14px; line-height: 1.55; }
 .evidence-source-link { display: inline-flex; gap: 4px; margin-top: 10px; color: #245c38; font-size: 14px; font-weight: 800; }
 .plain-evidence-card { display: grid; gap: 12px; padding: 14px; border: 1px solid #cdd9cf; border-radius: 12px; background: #f8fbf8; }
