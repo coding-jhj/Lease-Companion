@@ -132,18 +132,23 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .evidence-disclosure__intro p { margin: 5px 0 0; color: #626b64; font-size: 14px; line-height: 1.55; }
 .evidence-count { flex: 0 0 auto; padding: 4px 8px; border-radius: 999px; background: #e5eee7; color: #245236; font-size: 12px; font-weight: 800; }
 .evidence-source-list { display: grid; gap: 10px; }
-.evidence-source-card { min-width: 0; padding: 14px; border: 1px solid #ddd7ca; border-radius: 12px; background: #fff; }
+.evidence-source-card { width: 100%; min-width: 0; padding: 14px; border: 1px solid #ddd7ca; border-radius: 12px; background: #fff; }
 .evidence-source-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: #667067; font-size: 13px; }
 .evidence-source-badge { padding: 3px 7px; border-radius: 999px; background: #edf3ee; color: #31583d; font-weight: 800; }
 .evidence-source-card h4 { margin: 10px 0 4px; font-size: 16px; line-height: 1.45; }
-.evidence-summary { margin-top: 8px; border-radius: 9px; background: #f7f5ef; }
+.evidence-summary { width: 100%; min-width: 0; margin-top: 8px; border-radius: 9px; background: #f7f5ef; }
 .evidence-summary summary { padding: 10px 12px; color: #355a40; font-size: 14px; }
 .evidence-summary[open] summary { border-bottom: 1px solid #e3ded2; }
-.evidence-summary p { max-width: 72ch; margin: 0; padding: 12px; color: #414841; font-size: 14px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+.evidence-summary p { width: 100%; max-width: none; margin: 0; padding: 12px; color: #414841; font-size: 14px; line-height: 1.8; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
 .evidence-summary-empty { margin: 8px 0 0; color: #687069; font-size: 14px; line-height: 1.55; }
 .evidence-source-link { display: inline-flex; gap: 4px; margin-top: 10px; color: #245c38; font-size: 14px; font-weight: 800; }
+.plain-evidence-card { display: grid; gap: 12px; padding: 14px; border: 1px solid #cdd9cf; border-radius: 12px; background: #f8fbf8; }
+.plain-evidence-card__explanation p { margin: 6px 0 0; color: #3f4941; font-size: 15px; line-height: 1.7; word-break: keep-all; overflow-wrap: break-word; }
+.financial-impact { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 12px; border: 1px solid #e2b36b; border-radius: 10px; background: #fff6e7; }
+.financial-impact__icon { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: #996000; color: #fff; font-weight: 900; }
+.financial-impact p { margin: 5px 0 0; color: #5c4726; font-size: 14px; line-height: 1.65; word-break: keep-all; overflow-wrap: break-word; }
 .limitation-card { padding: 12px 14px; border-left: 4px solid #9da8a0; border-radius: 8px; background: #f3f4f2; }
-.limitation-card p { margin: 5px 0 0; color: #555e57; font-size: 14px; line-height: 1.65; }
+.limitation-card p { margin: 5px 0 0; color: #555e57; font-size: 14px; line-height: 1.65; word-break: keep-all; overflow-wrap: break-word; }
 .evidence-empty { padding: 10px; border-radius: 9px; background: #f3f0e9; color: #687069; }
 .unavailable-results { overflow: hidden; border: 1px solid #c9cec9; border-radius: 16px; background: #f3f4f2; }
 .unavailable-results__toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; border-radius: 0; background: transparent; color: #4d5850; text-align: left; }
@@ -198,8 +203,8 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .stage-guidance__group { min-width: 0; padding: 16px; border: 1px solid #dce5dd; border-radius: 14px; background: #fff; }
 .stage-guidance__group h3 { margin: 0 0 8px; font-size: 16px; }
 .stage-guidance__group ul { margin: 0; padding-left: 20px; }
-.result-card, .guidance-card, .stage-guidance__group, .history-section { overflow-wrap: anywhere; }
-.evidence-list a { overflow-wrap: anywhere; }
+.result-card, .guidance-card, .stage-guidance__group, .history-section { word-break: keep-all; overflow-wrap: break-word; }
+.evidence-source-link { overflow-wrap: anywhere; }
 .danger-button { border: 1px solid #9f2d2d; background: #fff; color: #8a2020; }
 .danger-button:hover { background: #fff0ef; }
 
