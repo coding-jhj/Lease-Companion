@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE = os.path.join(BASE, "sample")
@@ -313,4 +314,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     main()
