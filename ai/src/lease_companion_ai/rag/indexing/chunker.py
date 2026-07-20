@@ -68,7 +68,10 @@ def _split_text(text: str, *, max_chars: int, overlap_chars: int) -> list[str]:
     index = 0
     while index < len(paragraphs):
         paragraph = paragraphs[index]
-        is_section_heading = re.fullmatch(r"\[[^\]]+\]", paragraph) is not None
+        is_section_heading = (
+            re.fullmatch(r"\[[^\]]+\](?:\s+.+)?", paragraph) is not None
+            or re.fullmatch(r"【[^】]+】", paragraph) is not None
+        )
         if is_section_heading and index + 1 < len(paragraphs):
             units.append(f"{paragraph}\n{paragraphs[index + 1]}")
             index += 2

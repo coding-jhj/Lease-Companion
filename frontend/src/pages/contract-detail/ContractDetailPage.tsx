@@ -124,23 +124,49 @@ export function ContractDetailPage() {
 
   const checklistItems = items.filter((item) => item.kind === "checklist");
   const postActions = items.filter((item) => item.kind === "post_action");
+  const pendingChecklistItems = checklistItems.filter((item) => !item.done);
+  const completedChecklistItems = checklistItems.filter((item) => item.done);
 
-  function renderItems(title: string, entries: ChecklistViewItem[]) {
-    if (entries.length === 0) return null;
+  function renderActionItems({
+    title,
+    entries,
+    actionLabel,
+    completedActionLabel,
+    emptyMessage,
+  }: {
+    title: string;
+    entries: ChecklistViewItem[];
+    actionLabel: string;
+    completedActionLabel: string;
+    emptyMessage: string;
+  }) {
     return (
-      <section className="history-section">
+      <section className="history-section checklist-section">
         <h2>{title}</h2>
-        {entries.map((item) => (
-          <label className="check-item" key={item.kind + ":" + item.item_key}>
-            <input
-              type="checkbox"
-              checked={item.done}
-              disabled={!item.writable || savingItemKey === item.item_key}
-              onChange={() => void toggle(item)}
-            />
-            <span>{item.text}</span>
-          </label>
-        ))}
+        {entries.length === 0
+          ? <p className="checklist-section__empty">{emptyMessage}</p>
+          : <div className="checklist-section__items">
+            {entries.map((item) => {
+              const label = item.done ? completedActionLabel : actionLabel;
+              const saving = savingItemKey === item.item_key;
+              return (
+                <div className={`check-item check-item--button${item.done ? " check-item--complete" : ""}`} key={item.kind + ":" + item.item_key}>
+                  <span className="check-item__text">{item.text}</span>
+                  {item.writable
+                    ? <button
+                      aria-label={`${item.text} ${label}`}
+                      className="check-item__button"
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void toggle(item)}
+                    >
+                      {saving ? "저장 중" : label}
+                    </button>
+                    : <span className="check-item__status">변경 불가</span>}
+                </div>
+              );
+            })}
+          </div>}
       </section>
     );
   }
@@ -152,9 +178,28 @@ export function ContractDetailPage() {
         {status === "error" && <ErrorState title="계약 상세를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContractDetail()} />}
         {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="리포트가 생성되면 확인 행동이 여기에 표시됩니다." />}
         {status === "success" && items.length > 0 && (
-          <div className="checklist-grid">
-            {renderItems("서명 전 체크리스트", checklistItems)}
-            {renderItems("계약 직후 행동", postActions)}
+          <div className="checklist-flow">
+            {renderActionItems({
+              title: "서명 전 체크리스트",
+              entries: pendingChecklistItems,
+              actionLabel: "확인",
+              completedActionLabel: "확인 취소",
+              emptyMessage: "모든 서명 전 체크리스트 항목을 확인했습니다.",
+            })}
+            {completedChecklistItems.length > 0 && renderActionItems({
+              title: "완료된 체크리스트 항목",
+              entries: completedChecklistItems,
+              actionLabel: "확인",
+              completedActionLabel: "확인 취소",
+              emptyMessage: "완료된 항목이 없습니다.",
+            })}
+            {completedChecklistItems.length > 0 && renderActionItems({
+              title: "계약 직후 행동",
+              entries: postActions,
+              actionLabel: "완료",
+              completedActionLabel: "완료 취소",
+              emptyMessage: "현재 생성된 계약 직후 행동이 없습니다.",
+            })}
           </div>
         )}
         {updateError && <p className="error" role="alert">{updateError}</p>}
