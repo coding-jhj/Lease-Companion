@@ -71,3 +71,39 @@ def test_chunking_does_not_cut_articles_or_special_clause_sentences(source_metad
         for chunk in chunks
         for line in chunk.text.splitlines()
     )
+    for chunk in chunks:
+        lines = chunk.text.splitlines()
+        assert all(
+            index < len(lines) - 1
+            for index, line in enumerate(lines)
+            if line.startswith("[") and line.endswith("]")
+        )
+
+
+def test_section_heading_stays_with_its_first_body_paragraph(source_metadata):
+    text = "\n".join(
+        [
+            "제13조(교부) 임대인은 관련 서류를 임차인에게 교부한다.",
+            "[특약사항]",
+            "· 임차인은 약정일까지 전입신고와 확정일자를 받는다.",
+            "· 임대인은 다음날까지 담보권을 설정하지 않는다.",
+            "[수선비용 부담의 해석 기준]",
+            "· 임대인 부담: 주요 설비의 노후로 인한 수선비용.",
+        ]
+    )
+
+    chunks = chunk_sections(
+        source_metadata,
+        [("전체", text)],
+        max_chars=105,
+        overlap_chars=20,
+    )
+
+    assert all(
+        not chunk.text.endswith(("[특약사항]", "[수선비용 부담의 해석 기준]"))
+        for chunk in chunks
+    )
+    assert any(
+        "[수선비용 부담의 해석 기준]\n· 임대인 부담:" in chunk.text
+        for chunk in chunks
+    )
