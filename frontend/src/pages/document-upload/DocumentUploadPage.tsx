@@ -68,7 +68,7 @@ export function DocumentUploadPage() {
         <label>계약서 PDF<input aria-describedby="upload-file-help" type="file" accept="application/pdf,image/jpeg,image/png,.txt" onChange={(event) => selectFile(event.target.files?.[0] ?? null, setContractFile)} /></label>
         <label>등기 자료<select value={registrySource} onChange={(event) => setRegistrySource(event.target.value as "mock" | "upload")}><option value="mock">모의 등기 연결</option><option value="upload">등기사항증명서 업로드</option></select></label>
         {registrySource === "mock" ? (
-          <label>모의 등기 case_id<input required value={caseId} onChange={(event) => setCaseId(event.target.value)} /></label>
+          <label>모의 등기 사례 번호<input required value={caseId} onChange={(event) => setCaseId(event.target.value)} /></label>
         ) : (
           <label>등기사항증명서<input aria-describedby="upload-file-help" type="file" accept="application/pdf,image/jpeg,image/png,.txt" onChange={(event) => selectFile(event.target.files?.[0] ?? null, setRegistryFile)} /></label>
         )}

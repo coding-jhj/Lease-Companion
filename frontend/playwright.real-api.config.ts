@@ -20,5 +20,9 @@ export default defineConfig({
       name: "real-api-mobile-360",
       use: { ...devices["Pixel 7"], viewport: { width: 360, height: 800 } },
     },
+    {
+      name: "real-api-desktop-1440",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+    },
   ],
 });

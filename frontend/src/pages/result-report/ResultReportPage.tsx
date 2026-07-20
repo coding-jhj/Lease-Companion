@@ -56,7 +56,7 @@ export function ResultReportPage() {
   const externalPending = items.filter((item) => [20, 21, 22].includes(Number(item.rule_id.slice(1))));
 
   return (
-    <PageShell step="7 / 8" title="계약 확인 리포트" description="항목별 확인 필요성과 다음 질문을 살펴보세요.">
+    <PageShell layout="report" step="7 / 8" title="계약 확인 리포트" description="항목별 확인 필요성과 다음 질문을 살펴보세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="리포트를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
         {status === "error" && <ErrorState title="리포트를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}
@@ -64,6 +64,9 @@ export function ResultReportPage() {
           <p className="notice" role="alert">규칙 판정은 정상이며 안내 생성에 실패했습니다.</p>
         )}
         {status === "success" && items.length === 0 && <EmptyState title="아직 생성된 리포트가 없습니다" description="추출값 확인과 분석을 완료하면 결과가 표시됩니다." />}
+        {status === "success" && items.length > 0 && (
+          <div className="report-grid">
+            <div className="report-results-column stack">
         {status === "success" && coreRules.length > 0 && (
           <section aria-labelledby="rule-results-title">
             <h2 id="rule-results-title">기존 핵심 규칙 R01~R10</h2>
@@ -98,14 +101,19 @@ export function ResultReportPage() {
             <PriorityGroups idPrefix="judgment-priority" items={judgments} />
           </section>
         )}
-        {status === "success" && ruleGuidance.length > 0 && (
-          <GenerationGuidance headingId="rule-guidance-title" title="R01~R24 규칙 기반 질문과 행동" items={ruleGuidance} />
+            </div>
+            <aside className="report-guidance-column stack" aria-label="질문과 행동 안내">
+              {ruleGuidance.length > 0 && (
+                <GenerationGuidance headingId="rule-guidance-title" title="R01~R24 규칙 기반 질문과 행동" items={ruleGuidance} />
+              )}
+              {judgmentGuidance.length > 0 && (
+                <GenerationGuidance headingId="judgment-guidance-title" title="J01~J12 판정 기반 질문과 행동" items={judgmentGuidance} />
+              )}
+              {stageGuidance && <StageGuidance guidance={stageGuidance} />}
+              <ResultFeedback contractId={contractId} />
+            </aside>
+          </div>
         )}
-        {status === "success" && judgmentGuidance.length > 0 && (
-          <GenerationGuidance headingId="judgment-guidance-title" title="J01~J12 판정 기반 질문과 행동" items={judgmentGuidance} />
-        )}
-        {status === "success" && stageGuidance && <StageGuidance guidance={stageGuidance} />}
-        {status === "success" && <ResultFeedback contractId={contractId} />}
         <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>체크리스트로 이동</button>
       </div>
     </PageShell>

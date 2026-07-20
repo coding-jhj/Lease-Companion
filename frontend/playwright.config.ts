@@ -19,5 +19,9 @@ export default defineConfig({
       name: "mobile-360",
       use: { ...devices["Pixel 7"], viewport: { width: 360, height: 800 } },
     },
+    {
+      name: "desktop-1440",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+    },
   ],
 });

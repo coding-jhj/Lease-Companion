@@ -19,6 +19,13 @@ interface ChecklistViewItem extends GuidanceActionItemDto {
   writable: boolean;
 }
 
+const analysisStatusLabels: Record<AnalysisRunSummaryDto["status"], string> = {
+  pending: "대기 중",
+  running: "분석 중",
+  completed: "완료",
+  failed: "실패",
+};
+
 export function ContractDetailPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -139,42 +146,48 @@ export function ContractDetailPage() {
   }
 
   return (
-    <PageShell step="8 / 8" title="체크리스트와 계약 직후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
+    <PageShell layout="workspace" step="8 / 8" title="체크리스트와 계약 직후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
       <div className="stack">
         {status === "loading" && <LoadingState title="계약 상세를 불러오는 중" description="체크리스트와 저장 이력을 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 상세를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContractDetail()} />}
         {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="리포트가 생성되면 확인 행동이 여기에 표시됩니다." />}
-        {status === "success" && renderItems("서명 전 체크리스트", checklistItems)}
-        {status === "success" && renderItems("계약 직후 행동", postActions)}
+        {status === "success" && items.length > 0 && (
+          <div className="checklist-grid">
+            {renderItems("서명 전 체크리스트", checklistItems)}
+            {renderItems("계약 직후 행동", postActions)}
+          </div>
+        )}
         {updateError && <p className="error" role="alert">{updateError}</p>}
         {status === "success" && (
-          <section className="history-section">
-            <h2>분석 이력</h2>
-            {analysisRuns.length === 0
-              ? <p>저장된 분석 이력이 없습니다.</p>
-              : <ul>{analysisRuns.map((run) => (
-                <li key={run.analysis_run_id}>
-                  {run.status === "completed"
-                    ? <Link to={`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(run.analysis_run_id)}`}>{new Date(run.created_at).toLocaleString("ko-KR")} · 완료 리포트 보기</Link>
-                    : <span>{new Date(run.created_at).toLocaleString("ko-KR")} · {run.status}</span>}
-                </li>
-              ))}</ul>}
-          </section>
+          <div className="history-grid">
+            <section className="history-section">
+              <h2>분석 이력</h2>
+              {analysisRuns.length === 0
+                ? <p>저장된 분석 이력이 없습니다.</p>
+                : <ul>{analysisRuns.map((run) => (
+                  <li key={run.analysis_run_id}>
+                    {run.status === "completed"
+                      ? <Link to={`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(run.analysis_run_id)}`}>{new Date(run.created_at).toLocaleString("ko-KR")} · 완료 리포트 보기</Link>
+                      : <span>{new Date(run.created_at).toLocaleString("ko-KR")} · {analysisStatusLabels[run.status]}</span>}
+                  </li>
+                ))}</ul>}
+            </section>
+            <section className="history-section">
+              <h2>문서 이력</h2>
+              {documents.length === 0
+                ? <p>업로드된 문서가 없습니다.</p>
+                : <ul>{documents.map((document) => <li key={document.id}>{document.doc_type} · {document.filename}</li>)}</ul>}
+            </section>
+          </div>
         )}
-        {status === "success" && (
-          <section className="history-section">
-            <h2>문서 이력</h2>
-            {documents.length === 0
-              ? <p>업로드된 문서가 없습니다.</p>
-              : <ul>{documents.map((document) => <li key={document.id}>{document.doc_type} · {document.filename}</li>)}</ul>}
-          </section>
-        )}
-        <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>리포트 다시 보기</Link>
+        <div className="page-actions">
+          <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>리포트 다시 보기</Link>
+          <Link className="button-link" to="/contracts">대시보드로 돌아가기</Link>
+        </div>
         {deleteError && <p className="error" role="alert">{deleteError}</p>}
         <button className="danger-button" type="button" disabled={deleting} onClick={() => void deleteContract()}>
           {deleting ? "계약 삭제 중" : "계약 삭제"}
         </button>
-        <Link className="button-link" to="/contracts">대시보드로 돌아가기</Link>
       </div>
     </PageShell>
   );
