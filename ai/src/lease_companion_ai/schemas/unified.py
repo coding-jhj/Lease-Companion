@@ -23,8 +23,8 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validat
 
 SchemaVersion = Literal["1.8.0", "1.9.0"]
 SCHEMA_VERSION: SchemaVersion = "1.9.0"
-GenerationPromptVersion = Literal["v1"]
-GENERATION_PROMPT_VERSION: GenerationPromptVersion = "v1"
+GenerationPromptVersion = Literal["v1", "v2"]  # v1은 과거 저장 결과 읽기 호환용
+GENERATION_PROMPT_VERSION: GenerationPromptVersion = "v2"
 
 # 필드 값 타입 — 문서 추출·사용자 수정·판정 입력이 공유하는 wire 형태.
 class FrozenList(list):
