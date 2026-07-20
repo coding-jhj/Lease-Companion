@@ -64,10 +64,22 @@ def _split_text(text: str, *, max_chars: int, overlap_chars: int) -> list[str]:
         for part in split_long_paragraph(line)
         if part
     ]
+    units: list[str] = []
+    index = 0
+    while index < len(paragraphs):
+        paragraph = paragraphs[index]
+        is_section_heading = re.fullmatch(r"\[[^\]]+\]", paragraph) is not None
+        if is_section_heading and index + 1 < len(paragraphs):
+            units.append(f"{paragraph}\n{paragraphs[index + 1]}")
+            index += 2
+            continue
+        units.append(paragraph)
+        index += 1
+
     chunks: list[str] = []
     current: list[str] = []
 
-    for paragraph in paragraphs:
+    for paragraph in units:
         candidate = "\n".join([*current, paragraph])
         if current and len(candidate) > max_chars:
             chunks.append("\n".join(current))

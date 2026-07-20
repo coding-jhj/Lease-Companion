@@ -19,7 +19,7 @@ from lease_companion_ai.rag.models import (
 
 
 DEFAULT_COLLECTION_NAME = "lease_companion_official"
-DEFAULT_CHUNKING_VERSION = "paragraph-section-v2-1200-120"
+DEFAULT_CHUNKING_VERSION = "paragraph-section-v3-heading-body-1200-120"
 
 
 class StaleIndexError(RuntimeError):
