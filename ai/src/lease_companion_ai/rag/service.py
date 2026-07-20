@@ -186,7 +186,7 @@ class EvidenceRetrievalService:
                             source_id=metadata.source_id,
                             title=metadata.document_title,
                             institution=metadata.institution,
-                            summary=hit.chunk.text[:500],
+                            summary=hit.chunk.text,
                             source_url=metadata.source_url,
                             retrieval_method=hit.retrieval_method,
                         )
@@ -217,7 +217,7 @@ class EvidenceRetrievalService:
                             source_id=metadata.source_id,
                             title=metadata.document_title,
                             institution=metadata.institution,
-                            summary=hit.chunk.text[:500],
+                            summary=hit.chunk.text,
                             source_url=metadata.source_url,
                             retrieval_method=hit.retrieval_method,
                         )

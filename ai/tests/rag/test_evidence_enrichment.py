@@ -219,6 +219,10 @@ def test_judgment_enrichment_preserves_decision_and_uses_source_mapping(source_m
     unrelated_metadata = source_metadata.model_copy(
         update={"source_id": "SRC-HTA-LAW"}
     )
+    full_summary = "[특약사항]\n· " + " ".join(
+        ["임차인은 전입신고와 확정일자를 확인한다."] * 24
+    )
+    assert len(full_summary) > 500
     hits = [
         RetrievalHit(
             chunk=chunk_sections(unrelated_metadata, [("제외", "관련 없는 법령")])[0],
@@ -227,7 +231,7 @@ def test_judgment_enrichment_preserves_decision_and_uses_source_mapping(source_m
             retrieval_method="bm25",
         ),
         RetrievalHit(
-            chunk=chunk_sections(allowed_metadata, [("허용", "소유자 확인")])[0],
+            chunk=chunk_sections(allowed_metadata, [("허용", full_summary)])[0],
             score=1.0,
             rank=2,
             retrieval_method="bm25",
@@ -252,6 +256,7 @@ def test_judgment_enrichment_preserves_decision_and_uses_source_mapping(source_m
     assert [
         source.source_id for source in enriched.judgments[0].evidence_sources
     ] == ["SRC-STD-LEASE"]
+    assert enriched.judgments[0].evidence_sources[0].summary == full_summary
     assert all(not item.evidence_sources for item in enriched.judgments[1:])
 
 

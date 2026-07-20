@@ -1,5 +1,48 @@
 import type { OfficialSourceDto } from "../../types/api";
 
+const SECTION_HEADING_PATTERN = /^\[[^\]]+\]$/;
+const ARTICLE_PATTERN = /^(제\d+조(?:의\d+)?(?:\([^)]*\))?)\s*(.*)$/;
+const BULLET_PATTERN = /^[·•]\s*(.*)$/;
+
+function EvidenceSummary({ summary }: { summary: string }) {
+  const lines = summary
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="evidence-summary__content">
+      {lines.map((line, index) => {
+        if (SECTION_HEADING_PATTERN.test(line)) {
+          return <h5 key={`${index}-${line}`}>{line}</h5>;
+        }
+
+        const bullet = line.match(BULLET_PATTERN);
+        if (bullet) {
+          return (
+            <p className="evidence-summary__bullet" key={`${index}-${line}`}>
+              <span aria-hidden="true">·</span>
+              <span>{bullet[1]}</span>
+            </p>
+          );
+        }
+
+        const article = line.match(ARTICLE_PATTERN);
+        if (article) {
+          return (
+            <p className="evidence-summary__article" key={`${index}-${line}`}>
+              <strong>{article[1]}</strong>{article[2] ? ` ${article[2]}` : ""}
+            </p>
+          );
+        }
+
+        return <p key={`${index}-${line}`}>{line}</p>;
+      })}
+    </div>
+  );
+}
+
 function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; index: number }) {
   return (
     <section className="evidence-source-card">
@@ -11,7 +54,7 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
       {source.summary ? (
         <details className="evidence-summary">
           <summary>공식자료 내용 전체 보기</summary>
-          <p>{source.summary}</p>
+          <EvidenceSummary summary={source.summary} />
         </details>
       ) : (
         <p className="evidence-summary-empty">제공된 요약이 없습니다. 공식 원문에서 내용을 확인해 주세요.</p>
