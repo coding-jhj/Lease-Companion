@@ -2,35 +2,35 @@
   "actionable_failure_diagnostics": [],
   "candidate_k": 20,
   "case_count": 34,
-  "citation_count": 270,
-  "complete_citation_count": 270,
+  "citation_count": 482,
+  "complete_citation_count": 482,
   "config_version": "local-bm25-chunk-v1",
   "expected_source_count": 194,
-  "expected_source_hit_count": 90,
-  "expected_source_recall": 0.4639175257731959,
+  "expected_source_hit_count": 184,
+  "expected_source_recall": 0.9484536082474226,
   "failure_reason_counts": {
     "allowlist_filtered": 0,
     "bm25_candidate_miss": 0,
-    "expected_source_not_locally_available": 104,
+    "expected_source_not_locally_available": 10,
     "outside_top_k": 0
   },
-  "locally_available_expected_source_count": 90,
-  "locally_available_expected_source_hit_count": 90,
+  "locally_available_expected_source_count": 184,
+  "locally_available_expected_source_hit_count": 184,
   "locally_available_expected_source_recall": 1.0,
   "locally_unavailable_expected_source_ids": [
-    "SRC-CONFIRM-FORM",
-    "SRC-MOLIT-CHECKLIST"
+    "SRC-CONFIRM-FORM"
   ],
   "measured_at": "2026-07-20",
   "provider_fallback_count": 124,
   "query_count": 124,
   "source_retrieval_frequency": {
-    "SRC-HTA-LAW": 70,
-    "SRC-STD-LEASE": 200
+    "SRC-HTA-LAW": 60,
+    "SRC-MOLIT-CHECKLIST": 282,
+    "SRC-STD-LEASE": 140
   },
   "split": "dev",
   "top_k": 5,
-  "top_k_answer_inclusion_count": 60,
-  "top_k_answer_inclusion_rate": 0.4838709677419355,
+  "top_k_answer_inclusion_count": 124,
+  "top_k_answer_inclusion_rate": 1.0,
   "unofficial_source_exposure_count": 0
 }

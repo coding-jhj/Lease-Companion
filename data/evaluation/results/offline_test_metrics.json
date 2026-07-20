@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.040592,
+    "elapsed_seconds": 0.047899,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.004059
+    "mean_seconds_per_case": 0.00479
   },
   "extraction": {
     "accuracy": 1.0,
@@ -160,7 +160,7 @@
     "judgment_grounding_violation_count": 0,
     "judgment_guidance_item_count": 50,
     "judgment_trigger_coverage_rate": 1.0,
-    "missing_evidence_fallback_count": 17,
+    "missing_evidence_fallback_count": 0,
     "prohibited_claim_count": 0,
     "prompt_version_match_count": 10,
     "provider_call_count": 0,
@@ -181,10 +181,10 @@
   },
   "judgment_retrieval": {
     "expected_source_count": 41,
-    "expected_source_recall": 0.7317073170731707,
-    "locally_available_expected_source_count": 30,
+    "expected_source_recall": 0.8048780487804879,
+    "locally_available_expected_source_count": 33,
     "query_count": 32,
-    "retrieved_expected_source_count": 30,
+    "retrieved_expected_source_count": 33,
     "unofficial_source_exposure_count": 0
   },
   "judgments": {
@@ -325,36 +325,36 @@
     "actionable_failure_diagnostics": [],
     "candidate_k": 20,
     "case_count": 10,
-    "citation_count": 45,
-    "complete_citation_count": 45,
+    "citation_count": 100,
+    "complete_citation_count": 100,
     "config_version": "offline-regex-bm25-template-v3",
     "expected_source_count": 39,
-    "expected_source_hit_count": 15,
-    "expected_source_recall": 0.38461538461538464,
+    "expected_source_hit_count": 38,
+    "expected_source_recall": 0.9743589743589743,
     "failure_reason_counts": {
       "allowlist_filtered": 0,
       "bm25_candidate_miss": 0,
-      "expected_source_not_locally_available": 24,
+      "expected_source_not_locally_available": 1,
       "outside_top_k": 0
     },
-    "locally_available_expected_source_count": 15,
-    "locally_available_expected_source_hit_count": 15,
+    "locally_available_expected_source_count": 38,
+    "locally_available_expected_source_hit_count": 38,
     "locally_available_expected_source_recall": 1.0,
     "locally_unavailable_expected_source_ids": [
-      "SRC-CONFIRM-FORM",
-      "SRC-MOLIT-CHECKLIST"
+      "SRC-CONFIRM-FORM"
     ],
     "measured_at": "2026-07-20",
     "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {
-      "SRC-HTA-LAW": 11,
-      "SRC-STD-LEASE": 34
+      "SRC-HTA-LAW": 9,
+      "SRC-MOLIT-CHECKLIST": 69,
+      "SRC-STD-LEASE": 22
     },
     "split": "test",
     "top_k": 5,
-    "top_k_answer_inclusion_count": 10,
-    "top_k_answer_inclusion_rate": 0.37037037037037035,
+    "top_k_answer_inclusion_count": 27,
+    "top_k_answer_inclusion_rate": 1.0,
     "unofficial_source_exposure_count": 0
   },
   "rules": {

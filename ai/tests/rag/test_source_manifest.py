@@ -30,11 +30,17 @@ def test_official_source_manifest_matches_inventory_and_local_hashes():
         for record in records
         if record["distribution_mode"] == "local_source"
     }
-    assert set(local_records) == {"SRC-HTA-LAW", "SRC-HTA-DECREE", "SRC-STD-LEASE"}
+    # SRC-MOLIT-CHECKLIST: 2026-07-20 팀 예외 규정으로 로컬 원문 적재 (재배포 규칙 예외 1건)
+    assert set(local_records) == {
+        "SRC-HTA-LAW",
+        "SRC-HTA-DECREE",
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST",
+    }
     for record in local_records.values():
         path = ROOT / record["local_path"]
         assert hashlib.sha256(path.read_bytes()).hexdigest() == record["content_sha256"]
     metadata_only = [record for record in records if record["distribution_mode"] == "metadata_only"]
-    assert len(metadata_only) == 6
+    assert len(metadata_only) == 5
     assert all(record["local_path"] is None for record in metadata_only)
     assert all(record["content_sha256"] is None for record in metadata_only)
