@@ -1,4 +1,4 @@
-"""공식자료 section 경계를 보존하는 결정적 문자 기반 청킹."""
+"""공식자료의 section·문단 경계를 보존하는 결정적 청킹."""
 
 from __future__ import annotations
 
@@ -35,25 +35,60 @@ def _split_text(text: str, *, max_chars: int, overlap_chars: int) -> list[str]:
     if overlap_chars < 0 or overlap_chars >= max_chars:
         raise ValueError("overlap_chars는 0 이상 max_chars 미만이어야 합니다.")
 
+    def split_long_paragraph(paragraph: str) -> list[str]:
+        """긴 단일 문단도 우선 문장, 불가피할 때만 단어 경계에서 나눈다."""
+        parts: list[str] = []
+        remaining = paragraph
+        while len(remaining) > max_chars:
+            window = remaining[: max_chars + 1]
+            sentence_ends = [match.end() for match in re.finditer(r"[.!?]", window)]
+            usable_sentence_ends = [
+                end for end in sentence_ends if end >= max_chars // 2
+            ]
+            if usable_sentence_ends:
+                end = usable_sentence_ends[-1]
+            else:
+                end = window.rfind(" ", max_chars // 2, max_chars + 1)
+                if end <= 0:
+                    end = max_chars
+            parts.append(remaining[:end].strip())
+            remaining = remaining[end:].strip()
+        if remaining:
+            parts.append(remaining)
+        return parts
+
+    # 줄 하나가 조항·특약 항목 하나인 정규화 원문의 구조를 보존한다.
+    paragraphs = [
+        part
+        for line in text.split("\n")
+        for part in split_long_paragraph(line)
+        if part
+    ]
     chunks: list[str] = []
-    start = 0
-    while start < len(text):
-        limit = min(start + max_chars, len(text))
-        end = limit
-        if limit < len(text):
-            minimum = start + max_chars // 2
-            newline = text.rfind("\n", minimum, limit + 1)
-            space = text.rfind(" ", minimum, limit + 1)
-            boundary = max(newline, space)
-            if boundary > start:
-                end = boundary
-        chunk = text[start:end].strip()
-        if chunk:
-            chunks.append(chunk)
-        if end >= len(text):
-            break
-        next_start = end - overlap_chars
-        start = next_start if next_start > start else end
+    current: list[str] = []
+
+    for paragraph in paragraphs:
+        candidate = "\n".join([*current, paragraph])
+        if current and len(candidate) > max_chars:
+            chunks.append("\n".join(current))
+
+            overlap: list[str] = []
+            overlap_length = 0
+            for previous in reversed(current):
+                added_length = len(previous) + (1 if overlap else 0)
+                if overlap_length + added_length > overlap_chars:
+                    break
+                overlap.insert(0, previous)
+                overlap_length += added_length
+            current = overlap
+            candidate = "\n".join([*current, paragraph])
+            if len(candidate) > max_chars:
+                current = []
+
+        current.append(paragraph)
+
+    if current:
+        chunks.append("\n".join(current))
     return chunks
 
 
