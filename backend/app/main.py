@@ -3,9 +3,18 @@
 실행: backend/ 에서 `uvicorn app.main:app --reload`
 """
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+# 앱 로거(추출·분석 진단 등)를 stderr로 형식 있게 내보낸다. uvicorn은 자기 로거만
+# 설정하고 root는 건드리지 않으므로, 이게 없으면 app 로그가 형식 없이 WARNING만 샌다.
+# start-dev.ps1의 [BE] 로그 tail에서 원인 진단 줄을 바로 볼 수 있게 한다.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 from app.api.routes import analyses, auth, checklists, contracts, documents, extractions, feedback
 from app.core.db import Base, engine
