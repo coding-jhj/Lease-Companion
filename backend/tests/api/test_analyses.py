@@ -149,7 +149,7 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     assert detail["generation_error"] is None
     generation = detail["generation_result"]
     assert generation["analysis_run_id"] == run_id
-    assert generation["prompt_version"] == "v1"
+    assert generation["prompt_version"] == "v2"
     assert generation["guardrail_passed"] is True
     stage_guidance = generation["stage_guidance"]
     assert stage_guidance["contract_context"]["contract_stage"] == "서명 전"

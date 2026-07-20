@@ -16,7 +16,8 @@ from lease_companion_ai.schemas import (
 from lease_companion_ai.schemas.unified import InputSnapshot, SCHEMA_VERSION
 
 
-FIXTURE_DIR = Path("data/sample/fixtures/case-001")
+# CWD와 무관하게 repo 루트 기준으로 fixture를 찾는다(다른 테스트와 동일한 앵커).
+FIXTURE_DIR = Path(__file__).resolve().parents[3] / "data/sample/fixtures/case-001"
 
 
 def _input(**overrides) -> ClassificationInput:

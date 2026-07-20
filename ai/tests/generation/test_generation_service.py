@@ -16,6 +16,9 @@ from lease_companion_ai.schemas.unified import (
     OfficialSource,
 )
 
+# CWD와 무관하게 repo 루트 기준으로 fixture를 찾는다(다른 테스트와 동일한 앵커).
+ROOT = Path(__file__).resolve().parents[3]
+
 
 def _context(
     *,
@@ -227,8 +230,8 @@ def test_prompts_are_loaded_from_versioned_files():
 
     generated = GenerationService(provider).generate(analysis, _context())
 
-    assert generated.prompt_version == "v1"
-    assert provider.calls[0].prompt_version == "v1"
+    assert generated.prompt_version == "v2"
+    assert provider.calls[0].prompt_version == "v2"
     assert set(provider.calls[0].prompts) == {"questions", "checklists", "summaries"}
     assert all("버전:" in prompt for prompt in provider.calls[0].prompts.values())
 
@@ -239,21 +242,21 @@ def test_prompt_loader_rejects_header_that_does_not_match_prompt_set(
     for name in ("questions", "checklists", "summaries"):
         directory = tmp_path / name
         directory.mkdir()
-        (directory / "v1.txt").write_text(
-            f"버전: {name}-v1\n역할: 테스트", encoding="utf-8"
+        (directory / "v2.txt").write_text(
+            f"버전: {name}-v2\n역할: 테스트", encoding="utf-8"
         )
-    (tmp_path / "questions" / "v1.txt").write_text(
-        "버전: questions-v2\n역할: 잘못된 버전", encoding="utf-8"
+    (tmp_path / "questions" / "v2.txt").write_text(
+        "버전: questions-v1\n역할: 잘못된 버전", encoding="utf-8"
     )
 
-    with pytest.raises(ValueError, match="questions-v1"):
+    with pytest.raises(ValueError, match="questions-v2"):
         load_generation_prompts(tmp_path)
 
 
 def test_case001_fixture_can_use_template_fallback_with_contract_context():
     from pathlib import Path
 
-    fixture = Path("data/sample/fixtures/case-001/analysis_run_result.json")
+    fixture = ROOT / "data/sample/fixtures/case-001/analysis_run_result.json"
     analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
 
     generated = GenerationService().generate(analysis, _context(contract_id=1001))
@@ -340,7 +343,7 @@ def test_provider_unavailable_fallback_is_guarded_again():
 def test_contract_context_changes_stage_guidance_deterministically():
     from pathlib import Path
 
-    fixture = Path("data/sample/fixtures/case-001/analysis_run_result.json")
+    fixture = ROOT / "data/sample/fixtures/case-001/analysis_run_result.json"
     analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
     before = _context(
         contract_id=1001,
