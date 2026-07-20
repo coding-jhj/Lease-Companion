@@ -7,7 +7,11 @@ import { EvidenceDisclosure } from "../../src/features/evidence-sources/Evidence
 
 describe("EvidenceDisclosure", () => {
   it("separates source identity, long summary, original link, and limitations", () => {
-    const longSummary = "임대차계약에서 확인할 내용을 설명하는 긴 공식 근거 요약입니다.";
+    const longSummary = [
+      "제11조(분쟁의 해결) 임대차 관련 분쟁은 협의하거나 조정을 신청할 수 있다.",
+      "[특약사항]",
+      "· 임차인은 약정일까지 전입신고와 확정일자를 받기로 한다.",
+    ].join("\n");
     render(
       <EvidenceDisclosure
         idPrefix="R01"
@@ -27,7 +31,10 @@ describe("EvidenceDisclosure", () => {
     expect(screen.getByLabelText("공식 근거 1건")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "주택임대차 표준계약서" })).toBeInTheDocument();
     expect(screen.getByText("법무부")).toBeInTheDocument();
-    expect(screen.getByText(longSummary).closest("details")).toHaveClass("evidence-summary");
+    expect(screen.getByRole("heading", { name: "[특약사항]" })).toBeInTheDocument();
+    expect(screen.getByText("제11조(분쟁의 해결)")).toBeInTheDocument();
+    expect(screen.getByText("임차인은 약정일까지 전입신고와 확정일자를 받기로 한다.")).toBeInTheDocument();
+    expect(screen.getByText("[특약사항]").closest("details")).toHaveClass("evidence-summary");
     expect(screen.getByText("계약서 임대인과 등기 소유자가 같은지 확인하는 항목입니다.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /공식 원문 열기/ })).toHaveAttribute("target", "_blank");
     expect(screen.getByText("권한을 확인하지 않으면 보증금을 돌려받는 과정이 복잡해질 수 있습니다.")).toBeInTheDocument();
