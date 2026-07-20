@@ -216,7 +216,7 @@
   "$id": "lease-companion/document-extraction-v1.9.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "문서 1건의 추출 결과. R01~R10 필수 키는 값이 null이어도 항상 존재한다.",
+  "description": "문서 1건의 추출 결과. 핵심 R01~R10 필수 키는 값이 null이어도 항상 존재한다.",
   "properties": {
     "document_id": {
       "minLength": 1,

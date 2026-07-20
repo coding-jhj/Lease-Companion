@@ -243,19 +243,19 @@ def load_rule_search_contexts(path: Path | None = None) -> dict[str, str]:
     for row in rows:
         rule_id = row["rule_id"].strip()
         relevance_note = row["relevance_note"].strip()
-        if re.fullmatch(r"R(?:0[1-9]|10)", rule_id) is None or not relevance_note:
+        if re.fullmatch(r"R(?:0[1-9]|1[0-9]|2[0-4])", rule_id) is None or not relevance_note:
             raise ValueError("R 공식 근거 검색 문맥이 잘못되었습니다.")
         notes = contexts.setdefault(rule_id, [])
         if relevance_note not in notes:
             notes.append(relevance_note)
-    expected_ids = [f"R{index:02d}" for index in range(1, 11)]
+    expected_ids = [f"R{index:02d}" for index in range(1, 25)]
     if list(contexts) != expected_ids:
-        raise ValueError("rule_evidence_map에는 R01~R10이 순서대로 있어야 합니다.")
+        raise ValueError("rule_evidence_map에는 R01~R24가 순서대로 있어야 합니다.")
     return {rule_id: " ".join(notes) for rule_id, notes in contexts.items()}
 
 
 def load_rule_source_ids(path: Path | None = None) -> dict[str, tuple[str, ...]]:
-    """R01~R10의 공식자료 allowlist를 순서까지 보존해 읽는다."""
+    """R01~R24의 공식자료 allowlist를 순서까지 보존해 읽는다."""
     source_path = path or _repo_root() / "data" / "rules" / "rule_evidence_map.csv"
     with source_path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -263,7 +263,7 @@ def load_rule_source_ids(path: Path | None = None) -> dict[str, tuple[str, ...]]
     for row in rows:
         rule_id = row["rule_id"].strip()
         source_id = row["source_id"].strip()
-        if re.fullmatch(r"R(?:0[1-9]|10)", rule_id) is None or re.fullmatch(
+        if re.fullmatch(r"R(?:0[1-9]|1[0-9]|2[0-4])", rule_id) is None or re.fullmatch(
             r"SRC-[A-Z0-9-]+", source_id
         ) is None:
             raise ValueError("R 공식자료 allowlist가 잘못되었습니다.")
@@ -271,9 +271,9 @@ def load_rule_source_ids(path: Path | None = None) -> dict[str, tuple[str, ...]]
         if source_id in source_ids:
             raise ValueError("R 공식자료 allowlist에는 중복 source ID를 둘 수 없습니다.")
         source_ids.append(source_id)
-    expected_ids = [f"R{index:02d}" for index in range(1, 11)]
+    expected_ids = [f"R{index:02d}" for index in range(1, 25)]
     if list(mapping) != expected_ids:
-        raise ValueError("rule_evidence_map에는 R01~R10이 순서대로 있어야 합니다.")
+        raise ValueError("rule_evidence_map에는 R01~R24가 순서대로 있어야 합니다.")
     return {rule_id: tuple(source_ids) for rule_id, source_ids in mapping.items()}
 
 

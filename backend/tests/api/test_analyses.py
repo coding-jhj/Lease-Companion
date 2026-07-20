@@ -140,7 +140,7 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     res = client.get(f"/api/contracts/{contract_id}/analysis-runs/{run_id}", headers=alice)
     detail = res.json()
     assert detail["status"] == "completed", detail.get("error")
-    assert len(detail["result"]["results"]) == 10
+    assert len(detail["result"]["results"]) == 24
     assert [item["judgment_id"] for item in detail["result"]["judgments"]] == [
         f"J{index:02d}" for index in range(1, 13)
     ]
@@ -319,7 +319,7 @@ def test_provider_failure_falls_back_and_analysis_completes(
     ).json()
 
     assert detail["status"] == "completed", detail.get("error")
-    assert len(detail["result"]["results"]) == 10  # 규칙 분석 정상
+    assert len(detail["result"]["results"]) == 24  # 확장 규칙 분석 정상
     result, error, status = _latest_classification_result(run_id)
     assert status == "completed"
     assert result["classification_method"] == "safe_fallback"

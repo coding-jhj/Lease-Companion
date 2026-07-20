@@ -2,7 +2,7 @@
 
 실행: python data/check_dataset.py
 검증 항목:
-  1) rule_spec R01–R10 × 14열, 결과상태 어휘
+  1) rule_spec R01–R24 × 14열, 결과상태 어휘
   2) judgment_spec J01–J12 메타데이터·상태·구현 경로
   3) 스키마 파싱
   4) source_inventory / RAG manifest / rule_evidence_map 유효성
@@ -25,9 +25,10 @@ E2E = os.path.join(BASE, "evaluation", "end-to-end")
 COMMON_STATUS = {"일치", "불일치", "명확", "불명확", "미기재", "상충 가능", "확인 필요", "확인 불가", "적용 제외"}
 CLEAN = {"일치", "명확", "적용 제외"}                        # 비해당
 FIRED = {"불일치", "확인 필요", "불명확", "미기재", "상충 가능"}  # 해당
-RULE_IDS = [f"R{n:02d}" for n in range(1, 11)]
+RULE_IDS = [f"R{n:02d}" for n in range(1, 25)]
+CORE_RULE_IDS = [f"R{n:02d}" for n in range(1, 11)]
 JUDGMENT_IDS = [f"J{n:02d}" for n in range(1, 13)]
-QUOTA_RULES = [r for r in RULE_IDS if r != "R07"]           # R07은 항상 발동, 쿼터 제외
+QUOTA_RULES = [r for r in CORE_RULE_IDS if r != "R07"]      # 기존 goldset 쿼터는 R01~R10만 유지
 QUOTA = 10
 
 
@@ -61,8 +62,8 @@ def main():
     # 1) rule_spec
     with open(os.path.join(BASE, "rules/rule_spec.csv"), encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-    assert len(rows) == 10, f"rule_spec 행 {len(rows)} != 10"
-    assert [r["rule_id"] for r in rows] == RULE_IDS, "rule_id가 R01–R10이 아님"
+    assert len(rows) == 24, f"rule_spec 행 {len(rows)} != 24"
+    assert [r["rule_id"] for r in rows] == RULE_IDS, "rule_id가 R01–R24가 아님"
     assert len(rows[0].keys()) == 14, f"rule_spec 열 {len(rows[0].keys())} != 14"
     for r in rows:
         for status in r["result_status"].split("|"):
@@ -217,7 +218,7 @@ def main():
                 assert not phone.search(text), f"{fn} 휴대폰 패턴"
 
     print(
-        f"\nOK: dev {len(ids)}쌍 + test {len(tids)}쌍, 규칙 10, "
+        f"\nOK: dev {len(ids)}쌍 + test {len(tids)}쌍, 규칙 24(기존 gold 쿼터 10), "
         f"J gold {len(judgment_case_ids)}건, 누수 0, 개인정보 0"
     )
 

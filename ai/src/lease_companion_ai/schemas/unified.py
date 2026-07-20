@@ -260,7 +260,7 @@ REQUIRED_FIELDS_BY_TYPE: dict[DocumentType, frozenset[str]] = {
     DocumentType.REGISTRY: REQUIRED_REGISTRY_FIELDS,
 }
 
-# R01~R10 canonical 필드의 값 타입. null은 판독 실패를 표현하므로 모두 허용한다.
+# R 규칙 canonical 필드의 값 타입. null은 판독 실패·미입력을 표현하므로 모두 허용한다.
 # bool은 int의 하위 타입이므로 isinstance 대신 type(value) is expected_type으로 검사한다.
 R_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
     DocumentType.CONTRACT: {
@@ -270,6 +270,11 @@ R_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
         "deposit_return_condition": str,
         "repair_responsibility": str,
         "rights_change_clause_present": bool,
+        "estimated_housing_value": int,
+        "building_use": str,
+        "violation_building": bool,
+        "guarantee_eligibility_confirmed": bool,
+        "lessor_sublease_authority_confirmed": bool,
     },
     DocumentType.REGISTRY: {
         "owner_names": list,
@@ -279,6 +284,7 @@ R_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
         "seizure_present": bool,
         "provisional_seizure_present": bool,
         "trust_present": bool,
+        "senior_claim_amount": int,
     },
 }
 
@@ -334,6 +340,20 @@ ALLOWED_RULE_STATUSES: dict[str, frozenset[RuleStatus]] = {
     "R08": frozenset({RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}),
     "R09": frozenset({RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_STATED, RuleStatus.CHECK_NEEDED}),
     "R10": frozenset({RuleStatus.CLEAR, RuleStatus.NOT_STATED, RuleStatus.CANNOT_CHECK}),
+    "R11": frozenset({RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
+    "R12": frozenset({RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
+    "R13": frozenset({RuleStatus.CLEAR, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK, RuleStatus.NOT_APPLICABLE}),
+    "R14": frozenset({RuleStatus.CLEAR, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
+    "R15": frozenset({RuleStatus.CLEAR, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
+    "R16": frozenset({RuleStatus.CHECK_NEEDED}),
+    "R17": frozenset({RuleStatus.CLEAR, RuleStatus.CHECK_NEEDED, RuleStatus.CANNOT_CHECK}),
+    "R18": frozenset({RuleStatus.CLEAR, RuleStatus.UNCLEAR, RuleStatus.NOT_APPLICABLE, RuleStatus.CANNOT_CHECK}),
+    "R19": frozenset({RuleStatus.CLEAR, RuleStatus.NOT_STATED, RuleStatus.CANNOT_CHECK}),
+    "R20": frozenset({RuleStatus.CANNOT_CHECK}),
+    "R21": frozenset({RuleStatus.CANNOT_CHECK}),
+    "R22": frozenset({RuleStatus.CANNOT_CHECK}),
+    "R23": frozenset({RuleStatus.CHECK_NEEDED}),
+    "R24": frozenset({RuleStatus.CHECK_NEEDED}),
 }
 
 ALLOWED_JUDGMENT_STATUSES: dict[str, frozenset[RuleStatus]] = {
@@ -397,6 +417,7 @@ RESULT_TYPE_BY_RULE_ID: dict[str, ResultType] = {
     "R08": ResultType.JUDGMENT,
     "R09": ResultType.JUDGMENT,
     "R10": ResultType.FACT_FLAG,
+    **{f"R{index:02d}": ResultType.JUDGMENT for index in range(11, 25)},
 }
 
 CLEAN_STATUSES: frozenset[RuleStatus] = frozenset(
@@ -696,7 +717,7 @@ def _validate_fields_map(
 
 
 class DocumentExtraction(BaseModel):
-    """문서 1건의 추출 결과. R01~R10 필수 키는 값이 null이어도 항상 존재한다."""
+    """문서 1건의 추출 결과. 핵심 R01~R10 필수 키는 값이 null이어도 항상 존재한다."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1160,7 +1181,8 @@ class AnalysisRunResult(BaseModel):
     input_snapshot_id: str = Field(min_length=1)
     contract_id: ContractId
     case_id: str | None = None
-    results: list[RuleResult] = Field(min_length=10, max_length=10)
+    # v1.9의 기존 R01~R10 저장 결과도 계속 읽되, 신규 실행은 R01~R24를 생성한다.
+    results: list[RuleResult] = Field(min_length=10, max_length=24)
     # 1단계 R-only 실행은 빈 목록, 2단계 J 확장 실행은 J01~J12 전체를 요구한다.
     judgments: list[JudgmentResult] = Field(default_factory=list, max_length=12)
 
@@ -1169,9 +1191,12 @@ class AnalysisRunResult(BaseModel):
         rule_ids = [result.rule_id for result in self.results]
         if len(rule_ids) != len(set(rule_ids)):
             raise ValueError("results에 중복 rule_id가 있습니다.")
-        expected = [f"R{index:02d}" for index in range(1, 11)]
-        if rule_ids != expected:
-            raise ValueError("results에는 R01~R10이 순서대로 각각 정확히 1개씩 있어야 합니다.")
+        allowed_sequences = (
+            [f"R{index:02d}" for index in range(1, 11)],
+            [f"R{index:02d}" for index in range(1, 25)],
+        )
+        if rule_ids not in allowed_sequences:
+            raise ValueError("results에는 R01~R10 또는 R01~R24가 순서대로 각각 정확히 1개씩 있어야 합니다.")
         if self.judgments:
             judgment_ids = [result.judgment_id for result in self.judgments]
             expected_judgments = [f"J{index:02d}" for index in range(1, 13)]

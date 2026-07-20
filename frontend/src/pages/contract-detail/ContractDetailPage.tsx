@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
@@ -22,6 +22,7 @@ interface ChecklistViewItem extends GuidanceActionItemDto {
 export function ContractDetailPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
+  const navigate = useNavigate();
   const [items, setItems] = useState<ChecklistViewItem[]>([]);
   const [analysisRuns, setAnalysisRuns] = useState<AnalysisRunSummaryDto[]>([]);
   const [documents, setDocuments] = useState<DocumentDto[]>([]);
@@ -29,6 +30,8 @@ export function ContractDetailPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [updateError, setUpdateError] = useState("");
   const [savingItemKey, setSavingItemKey] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function loadContractDetail() {
     setStatus("loading");
@@ -99,6 +102,19 @@ export function ContractDetailPage() {
     }
   }
 
+  async function deleteContract() {
+    if (!window.confirm("이 계약과 저장된 분석 이력을 삭제할까요? 삭제한 데이터는 복구할 수 없습니다.")) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await mvpService.deleteContract(contractId);
+      navigate("/contracts", { replace: true });
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "계약을 삭제하지 못했습니다.");
+      setDeleting(false);
+    }
+  }
+
   const checklistItems = items.filter((item) => item.kind === "checklist");
   const postActions = items.filter((item) => item.kind === "post_action");
 
@@ -136,7 +152,13 @@ export function ContractDetailPage() {
             <h2>분석 이력</h2>
             {analysisRuns.length === 0
               ? <p>저장된 분석 이력이 없습니다.</p>
-              : <ul>{analysisRuns.map((run) => <li key={run.analysis_run_id}>{new Date(run.created_at).toLocaleString("ko-KR")} · {run.status}</li>)}</ul>}
+              : <ul>{analysisRuns.map((run) => (
+                <li key={run.analysis_run_id}>
+                  {run.status === "completed"
+                    ? <Link to={`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(run.analysis_run_id)}`}>{new Date(run.created_at).toLocaleString("ko-KR")} · 완료 리포트 보기</Link>
+                    : <span>{new Date(run.created_at).toLocaleString("ko-KR")} · {run.status}</span>}
+                </li>
+              ))}</ul>}
           </section>
         )}
         {status === "success" && (
@@ -148,6 +170,10 @@ export function ContractDetailPage() {
           </section>
         )}
         <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>리포트 다시 보기</Link>
+        {deleteError && <p className="error" role="alert">{deleteError}</p>}
+        <button className="danger-button" type="button" disabled={deleting} onClick={() => void deleteContract()}>
+          {deleting ? "계약 삭제 중" : "계약 삭제"}
+        </button>
         <Link className="button-link" to="/contracts">대시보드로 돌아가기</Link>
       </div>
     </PageShell>

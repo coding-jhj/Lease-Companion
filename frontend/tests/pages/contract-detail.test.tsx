@@ -51,10 +51,54 @@ describe("ContractDetailPage", () => {
     const checkbox = await screen.findByLabelText(action.text);
     expect(checkbox).toBeChecked();
     expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
-    expect(screen.getByText(/completed/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /완료 리포트 보기/ })).toHaveAttribute(
+      "href",
+      "/contracts/1001/report?analysisRunId=RUN-1001-001",
+    );
 
     fireEvent.click(checkbox);
     await waitFor(() => expect(update).toHaveBeenCalledWith(1001, "checklist", action.item_key, false));
     expect(checkbox).not.toBeChecked();
+  });
+
+  it("deletes after confirmation and returns to the dashboard", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(mvpService, "getChecklist").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getAnalysisDetail").mockRejectedValue(new Error("no completed run"));
+    vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getDocuments").mockResolvedValue([]);
+    const deleteContract = vi.spyOn(mvpService, "deleteContract").mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter initialEntries={["/contracts/1001"]}>
+        <Routes>
+          <Route path="/contracts/:contractId" element={<ContractDetailPage />} />
+          <Route path="/contracts" element={<p>대시보드 갱신 완료</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "계약 삭제" }));
+    await waitFor(() => expect(deleteContract).toHaveBeenCalledWith(1001));
+    expect(await screen.findByText("대시보드 갱신 완료")).toBeInTheDocument();
+  });
+
+  it("keeps the detail page available when deletion fails", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(mvpService, "getChecklist").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getAnalysisDetail").mockRejectedValue(new Error("no completed run"));
+    vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getDocuments").mockResolvedValue([]);
+    vi.spyOn(mvpService, "deleteContract").mockRejectedValue(new Error("삭제 권한을 확인해 주세요."));
+
+    render(
+      <MemoryRouter initialEntries={["/contracts/1001"]}>
+        <Routes><Route path="/contracts/:contractId" element={<ContractDetailPage />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "계약 삭제" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("삭제 권한을 확인해 주세요.");
+    expect(screen.getByRole("button", { name: "계약 삭제" })).toBeEnabled();
   });
 });

@@ -31,13 +31,13 @@ function resultScope(item: ReportResultDto) {
   return "조항 분류 판정";
 }
 
-export function PriorityGroups({ items }: { items: ReportResultDto[] }) {
+export function PriorityGroups({ items, idPrefix = "priority" }: { items: ReportResultDto[]; idPrefix?: string }) {
   return (
     <div className="priority-groups">
       {priorityOrder.map((priority) => {
         const groupItems = items.filter((item) => displayPriorityForUrgency(item.urgency) === priority);
         const meta = priorityMeta[priority];
-        const headingId = `priority-${priority.replaceAll(" ", "-")}`;
+        const headingId = `${idPrefix}-${priority.replaceAll(" ", "-")}`;
 
         return (
           <section className="priority-group" data-priority={priority} aria-labelledby={headingId} key={priority}>

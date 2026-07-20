@@ -42,7 +42,7 @@
 - `triggers_actions`: `불일치`·`불명확`·`미기재`·`상충 가능`·`확인 필요`·`확인 불가`일 때만 `true`다.
 - `reason`·`question`·`recommended_actions`·`evidence_sources`·`limitations`: 판정 이유, 질문, 행동, 공식 근거, 한계를 분리한다.
 
-`AnalysisRunResult.results`는 기존 R01~R10을 유지하고 `judgments`를 별도 축으로 둔다. 단계 전환 중 R-only 실행은 `judgments=[]`를 사용하며, J 확장 실행은 J01~J12를 순서대로 각각 정확히 1개씩 반환한다. 일부 J만 반환하는 중간 상태는 허용하지 않는다.
+`AnalysisRunResult.results`와 `judgments`는 별도 축이다. 과거 R01~R10 저장 결과를 읽을 수 있고 신규 실행은 R01~R24를 순서대로 반환한다. 단계 전환 중 R-only 실행은 `judgments=[]`를 사용하며, J 실행은 J01~J12를 순서대로 각각 정확히 1개씩 반환한다. 일부 J만 반환하는 중간 상태는 허용하지 않는다.
 
 ### Canonical 입력 키 매핑
 

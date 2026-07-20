@@ -8,24 +8,48 @@ import type {
 
 const labels: Record<string, string> = {
   account_holder: "입금 계좌 예금주",
+  building_use: "건축물 용도",
   deposit: "보증금",
   deposit_return_clause: "보증금 반환 조항 원문",
   deposit_return_condition: "보증금 반환 조건",
+  estimated_housing_value: "확인된 주택가치",
+  guarantee_eligibility_confirmed: "전세보증 가입 요건 확인",
   issue_date: "등기 발급일",
   landlord_name: "임대인 이름",
+  lessor_sublease_authority_confirmed: "임대·전대 권한 확인",
   main_clauses: "계약서 본문 주요 조항",
   mortgage_present: "근저당권 존재",
+  management_fee: "관리비 금액",
+  management_fee_items: "관리비 포함 항목",
+  management_fee_present: "관리비 존재",
   owner_names: "등기 소유자",
   property_address: "목적물 주소",
   provisional_seizure_present: "가압류 존재",
+  proxy_authority_documents: "대리권 확인 서류",
   repair_responsibility: "수리·원상복구 책임",
   repair_responsibility_clause: "수리·원상복구 조항 원문",
   rights_change_clause_present: "권리변동 제한 특약",
   seizure_present: "압류 존재",
+  senior_claim_amount: "선순위 권리·채권 합계",
   special_clauses: "특약사항",
   tenant_name: "임차인 이름",
   trust_present: "신탁등기 존재",
+  violation_building: "위반건축물 표시",
 };
+
+const numericFields = new Set([
+  "balance_payment", "contract_payment", "deposit", "estimated_housing_value",
+  "management_fee", "monthly_rent", "senior_claim_amount",
+]);
+const booleanFields = new Set([
+  "guarantee_eligibility_confirmed", "lessor_sublease_authority_confirmed",
+  "management_fee_present", "mortgage_present", "provisional_seizure_present",
+  "rights_change_clause_present", "seizure_present", "special_clauses_present",
+  "trust_present", "violation_building",
+]);
+const listFields = new Set([
+  "main_clauses", "management_fee_items", "owner_names", "proxy_authority_documents", "special_clauses",
+]);
 
 const clauseListFields = new Set(["main_clauses", "special_clauses"]);
 
@@ -145,7 +169,10 @@ export function correctionValue(
         .map(([key, ...parts]) => [key.trim(), parts.join(":").trim()]),
     );
   }
-  // 실패로 원래 타입을 알 수 없는 현재 canonical 필드는 account_holder(string)다.
+  if (numericFields.has(field.field_name)) return Number(scalarValue.replaceAll(",", ""));
+  if (booleanFields.has(field.field_name)) return scalarValue === "있음" || scalarValue === "true" || scalarValue === "예";
+  if (listFields.has(field.field_name)) return scalarValue.split(",").map((value) => value.trim()).filter(Boolean);
+  // 판독 실패 필드는 canonical field_name으로 타입을 복원한다.
   if (documentType === "contract" && field.field_name === "account_holder") return scalarValue;
   return scalarValue;
 }

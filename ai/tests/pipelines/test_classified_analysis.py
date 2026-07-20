@@ -94,5 +94,5 @@ def test_safe_fallback_keeps_analysis_available_without_candidates() -> None:
     assert classification.candidates == []
     assert _status(analysis, "J10") is RuleStatus.CHECK_NEEDED
     assert [result.rule_id for result in analysis.results] == [
-        f"R{index:02d}" for index in range(1, 11)
+        f"R{index:02d}" for index in range(1, 25)
     ]

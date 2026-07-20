@@ -22,6 +22,7 @@ interface PollUntilTerminalOptions<T extends Pollable> {
   onUpdate?: (value: T) => void;
   intervalMs?: number;
   timeoutMs?: number;
+  isTerminal?: (value: T) => boolean;
 }
 
 function abortError() {
@@ -53,12 +54,13 @@ export async function pollUntilTerminal<T extends Pollable>({
   onUpdate,
   intervalMs = POLL_INTERVAL_MS,
   timeoutMs = LOCAL_MVP_POLL_TIMEOUT_MS,
+  isTerminal = (current) => current.status === "completed" || current.status === "failed",
 }: PollUntilTerminalOptions<T>): Promise<T> {
   const startedAt = Date.now();
   let value = initialValue;
   onUpdate?.(value);
 
-  while (value.status === "pending" || value.status === "running") {
+  while (!isTerminal(value)) {
     if (signal?.aborted) throw abortError();
     const remainingMs = timeoutMs - (Date.now() - startedAt);
     if (remainingMs <= 0) throw new PollTimeoutError();
