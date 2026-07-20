@@ -49,7 +49,15 @@ describe("ContractDetailPage", () => {
     );
 
     const completedSection = (await screen.findByRole("heading", { name: "완료된 체크리스트 항목" })).closest("section")!;
+    const completedDetails = completedSection.querySelector("details")!;
+    const completedPostActionDetails = screen.getByRole("heading", { name: "완료된 계약 직후 행동" }).closest("section")!.querySelector("details")!;
+    expect(completedDetails).not.toHaveAttribute("open");
+    expect(completedPostActionDetails).not.toHaveAttribute("open");
+    fireEvent.click(completedDetails.querySelector("summary")!);
+    expect(completedDetails).toHaveAttribute("open");
+    expect(completedPostActionDetails).not.toHaveAttribute("open");
     expect(within(completedSection).getByText(action.text)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "완료된 계약 직후 행동" })).toBeInTheDocument();
     expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /완료 리포트 보기/ })).toHaveAttribute(
       "href",
@@ -101,15 +109,24 @@ describe("ContractDetailPage", () => {
     );
 
     expect(screen.queryByRole("heading", { name: "완료된 체크리스트 항목" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "계약 직후 행동" })).not.toBeInTheDocument();
+    const activeGrid = (await screen.findByRole("heading", { name: "서명 전 체크리스트" })).closest(".checklist-active-grid")!;
+    expect(within(activeGrid).getByRole("heading", { name: "계약 직후 행동" })).toBeInTheDocument();
+    expect(within(activeGrid).getByText(postAction.text)).toBeInTheDocument();
 
     fireEvent.click(await screen.findByRole("button", { name: `${signingAction.text} 확인` }));
 
     await waitFor(() => expect(update).toHaveBeenCalledWith(1001, "checklist", signingAction.item_key, true));
     const completedSection = screen.getByRole("heading", { name: "완료된 체크리스트 항목" }).closest("section")!;
+    fireEvent.click(completedSection.querySelector("summary")!);
     expect(within(completedSection).getByText(signingAction.text)).toBeInTheDocument();
     const postActionSection = screen.getByRole("heading", { name: "계약 직후 행동" }).closest("section")!;
     expect(within(postActionSection).getByText(postAction.text)).toBeInTheDocument();
+
+    fireEvent.click(within(postActionSection).getByRole("button", { name: `${postAction.text} 완료` }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith(1001, "post_action", postAction.item_key, true));
+    const completedPostActionSection = screen.getByRole("heading", { name: "완료된 계약 직후 행동" }).closest("section")!;
+    fireEvent.click(completedPostActionSection.querySelector("summary")!);
+    expect(within(completedPostActionSection).getByText(postAction.text)).toBeInTheDocument();
   });
 
   it("deletes after confirmation and returns to the dashboard", async () => {
