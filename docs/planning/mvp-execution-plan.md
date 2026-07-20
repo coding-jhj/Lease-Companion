@@ -77,11 +77,11 @@
 선행 조건: 1~3단계 완료. **CASE-001**로 처음부터 끝까지 실행한다.
 
 - [x] 회원가입 → 로그인 → 계약 건 생성 → 상황 입력 → 문서 업로드 → 추출 → 수정·확인 → 분석 → 리포트 → 체크리스트 (2026-07-20, PostgreSQL·실제 API, 320px·360px)
-- [ ] 로그아웃 후 재로그인해도 리포트가 다시 열리는가
-- [ ] 다른 계정으로 로그인하면 남의 계약 건이 안 보이는가
-- [ ] Gemini 키 없이(폴백 경로) 앱이 죽지 않는가
-- [ ] 로그에 이름·주소 같은 개인정보가 찍히지 않는가
-- [ ] "안전합니다" 같은 단정 문구가 화면 어디에도 없는가
+- [x] 로그아웃 후 재로그인해도 리포트가 다시 열리는가 (2026-07-20, `test_case001_e2e::test_case001_full_flow` 재로그인 재조회 + `test_analyses::test_analysis_run_poll_and_reload`)
+- [x] 다른 계정으로 로그인하면 남의 계약 건이 안 보이는가 (2026-07-20, `test_analyses::test_other_user_cannot_access`)
+- [x] Gemini 키 없이(폴백 경로) 앱이 죽지 않는가 (2026-07-20, `test_analyses::test_provider_failure_falls_back_and_analysis_completes` + e2e 오프라인 template fallback)
+- [x] 로그에 이름·주소 같은 개인정보가 찍히지 않는가 (2026-07-20, backend logger 호출 전부 ID만 — `workers/analysis.py` + guardrails `test_pii`)
+- [x] "안전합니다" 같은 단정 문구가 화면 어디에도 없는가 (2026-07-20, `guardrails/prohibited_claims.py` 차단 + `test_guardrail_service`)
 
 ### 5단계 — J01~J12 전체 판정 확장 (2026-07-18 구현 완료)
 
