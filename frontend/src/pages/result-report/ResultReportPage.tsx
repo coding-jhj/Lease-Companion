@@ -56,10 +56,12 @@ export function ResultReportPage() {
   useEffect(() => { void loadReport(); }, [contractId, analysisRunId]);
 
   const allResults = [...items, ...judgments];
+  const userFacingResults = judgments.length > 0 ? judgments : items;
+  const usesJudgmentSummary = judgments.length > 0;
   const allGuidance = [...ruleGuidance, ...judgmentGuidance];
   const counts = Object.fromEntries(priorities.map((priority) => [
     priority,
-    allResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
+    userFacingResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
   ])) as Record<DisplayPriority, number>;
   const firstPriority = priorities.find((priority) => counts[priority] > 0);
 
@@ -93,10 +95,20 @@ export function ResultReportPage() {
             <div className="report-grid">
               <section className="report-results-column stack" aria-labelledby="all-results-title">
                 <div className="section-heading">
-                  <p>문서와 입력값을 바탕으로 정리한 결과</p>
-                  <h2 id="all-results-title">전체 확인 결과</h2>
+                  <p>
+                    {usesJudgmentSummary
+                      ? "내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다"
+                      : "이전 분석의 핵심 규칙 결과를 정리했습니다"}
+                  </p>
+                  <h2 id="all-results-title">
+                    {usesJudgmentSummary ? "12가지 계약 확인 결과" : "핵심 규칙 확인 결과"}
+                  </h2>
                 </div>
-                <PriorityGroups items={allResults} idPrefix="all-results-priority" focusPriority={firstPriority} />
+                <PriorityGroups
+                  items={userFacingResults}
+                  idPrefix="all-results-priority"
+                  focusPriority={firstPriority}
+                />
               </section>
               <aside className="report-guidance-column stack" aria-label="질문과 행동 안내">
                 <DefenseActionHub results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
