@@ -77,6 +77,16 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .result-card p { margin: 0; line-height: 1.5; }
 .check-item { grid-template-columns: auto 1fr; align-items: center; }
 .check-item input { width: 20px; height: 20px; }
+.checklist-flow, .checklist-section__items { display: grid; gap: 14px; }
+.checklist-section h2 { margin-bottom: 12px; }
+.checklist-section__empty { margin: 0; padding: 14px; border-radius: 12px; background: #f3f6f3; color: #667269; }
+.check-item--button { grid-template-columns: minmax(0, 1fr) auto; gap: 14px; background: #fff; }
+.check-item--complete { border-color: #b9cfbe; background: #f5faf6; }
+.check-item__text { min-width: 0; line-height: 1.55; }
+.check-item--complete .check-item__text { color: #496150; }
+.check-item__button { width: auto; min-width: 72px; padding: 10px 14px; }
+.check-item--complete .check-item__button { background: #e5eee7; color: #245236; }
+.check-item__status { color: #667269; font-size: 13px; font-weight: 700; }
 .helper-banner { padding: 18px 20px; border-radius: 16px; background: #1f5133; color: #fff; }
 .helper-banner strong { font-size: 18px; }
 .helper-banner p { margin: 6px 0 0; color: #e2eee5; line-height: 1.5; }
