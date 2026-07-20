@@ -1,0 +1,113 @@
+<style>
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; align-items:start; }
+  .direction { cursor:pointer; border:2px solid #d9ded9; border-radius:22px; padding:14px; background:#fff; transition:.18s ease; }
+  .direction:hover { transform:translateY(-2px); box-shadow:0 15px 36px rgba(26,45,32,.12); }
+  .direction.selected { border-color:#286340; box-shadow:0 0 0 4px rgba(40,99,64,.12); }
+  .phone { max-width:310px; min-height:540px; margin:auto; border:7px solid #172019; border-radius:32px; overflow:hidden; background:#f4f6f3; box-shadow:0 15px 30px rgba(20,35,24,.18); }
+  .screen { padding:18px 14px 20px; font-family:Pretendard,"Noto Sans KR",sans-serif; color:#18231b; }
+  .screen h4 { margin:2px 0 5px; font-size:20px; }
+  .screen p { margin:0; line-height:1.4; }
+  .top { display:flex; justify-content:space-between; font-size:11px; font-weight:800; margin-bottom:18px; }
+  .chip { display:inline-flex; padding:5px 8px; border-radius:999px; font-size:10px; font-weight:800; background:#e5eee7; color:#245236; }
+  .summary { margin:15px 0 12px; padding:14px; border-radius:18px; background:#183f2a; color:#fff; }
+  .summary small { opacity:.76; }
+  .summary strong { display:block; margin-top:6px; font-size:24px; }
+  .signals { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+  .signal { padding:8px 5px; border-radius:10px; text-align:center; font-size:10px; background:rgba(255,255,255,.12); }
+  .signal b { display:block; font-size:17px; }
+  .section-title { margin:16px 0 8px; font-size:12px; font-weight:900; letter-spacing:-.01em; }
+  .item { margin:7px 0; padding:11px; border:1px solid #dce5dd; border-radius:13px; background:#fff; }
+  .item b { display:block; margin:4px 0; font-size:12px; }
+  .item small { display:block; color:#687169; font-size:10px; }
+  .red { border-left:4px solid #b8413b; }
+  .gold { border-left:4px solid #c18822; }
+  .blue { border-left:4px solid #4c7c91; }
+  .action { display:flex; gap:6px; margin-top:8px; }
+  .action span { flex:1; padding:7px; border-radius:8px; background:#edf3ee; color:#26543a; font-size:9px; font-weight:800; text-align:center; }
+  .warm .screen { background:#fbf7ee; }
+  .warm .summary { background:#315743; border-radius:22px; }
+  .warm .item { border-color:#eadfce; box-shadow:0 5px 12px rgba(95,72,39,.05); }
+  .warm .section-title { color:#6d4b27; }
+  .dashboard .screen { background:#eef2ef; }
+  .dashboard .summary { background:#142e20; border-radius:12px; }
+  .dashboard .item { border-radius:8px; }
+  .dashboard .section-title { text-transform:uppercase; font-size:10px; letter-spacing:.08em; color:#46604f; }
+  .public .summary { background:#f0f5f1; color:#1a3d29; border:1px solid #cbd8ce; }
+  .public .signal { background:#fff; border:1px solid #d9e2db; }
+  .direction-copy { padding:14px 4px 4px; }
+  .direction-copy h3 { margin:0 0 6px; font-size:18px; }
+  .direction-copy p { color:#59645c; font-size:14px; }
+  .recommended { display:inline-block; margin-bottom:8px; padding:5px 8px; border-radius:999px; background:#dff2e4; color:#235b37; font-size:11px; font-weight:900; }
+  @media(max-width:900px){ .direction-grid{grid-template-columns:1fr;} }
+</style>
+
+<h2>임차인 방어 리포트 디자인 방향</h2>
+<p class="subtitle">모바일에서 “무엇을 먼저 확인하고, 누구에게 무엇을 물어볼지”가 바로 보이는 방향을 골라주세요.</p>
+
+<div class="direction-grid">
+  <div class="direction" data-choice="public" onclick="toggleSelect(this)">
+    <div class="phone public">
+      <div class="screen">
+        <div class="top"><span>슬기로운 계약생활</span><span>7 / 8</span></div>
+        <span class="chip">분석 완료</span>
+        <h4>임차인 방어 리포트</h4>
+        <p style="font-size:11px;color:#607067">계약 전 확인할 내용을 정리했어요.</p>
+        <div class="summary">
+          <small>확인 우선순위</small>
+          <strong>반드시 확인 2</strong>
+          <div class="signals"><div class="signal"><b>2</b>반드시</div><div class="signal"><b>4</b>권장</div><div class="signal"><b>7</b>일반</div></div>
+        </div>
+        <div class="section-title">반드시 확인</div>
+        <div class="item red"><small>R01 · 불일치</small><b>임대인과 등기 소유자 확인</b><small>서명·입금 전에 권한 서류를 확인하세요.</small></div>
+        <div class="item red"><small>R04 · 확인 불가</small><b>대리인 권한 서류 확인</b><small>위임장과 인감증명서를 요청하세요.</small></div>
+        <div class="section-title">다음 단계</div>
+        <div class="action"><span>질문 모아보기</span><span>체크리스트</span></div>
+      </div>
+    </div>
+    <div class="direction-copy"><h3>A. 차분한 공공서비스형</h3><p>정보 신뢰도와 명확성을 우선합니다. 가장 익숙하지만 개성은 다소 적습니다.</p></div>
+  </div>
+
+  <div class="direction selected" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="phone warm">
+      <div class="screen">
+        <div class="top"><span>슬기로운 계약생활</span><span>리포트 7 / 8</span></div>
+        <span class="chip">내 계약 방어 가이드</span>
+        <h4>서두르지 않아도 괜찮아요</h4>
+        <p style="font-size:11px;color:#71675a">확인할 순서대로 하나씩 준비해 볼게요.</p>
+        <div class="summary">
+          <small>지금 가장 먼저</small>
+          <strong>2가지를 확인하세요</strong>
+          <div class="signals"><div class="signal"><b>2</b>반드시</div><div class="signal"><b>4</b>권장</div><div class="signal"><b>7</b>일반</div></div>
+        </div>
+        <div class="section-title">01 · 먼저 물어볼 것</div>
+        <div class="item red"><small>계약 상대 확인 · 즉시 확인</small><b>등기 소유자와 계약자가 달라요</b><small>“계약 권한을 확인할 서류를 보여주실 수 있나요?”</small><div class="action"><span>질문 복사</span><span>근거 보기</span></div></div>
+        <div class="section-title">02 · 서명 전에 챙길 것</div>
+        <div class="item gold"><small>계약 전 확인</small><b>관리비 포함 항목 확인</b><small>포함 항목을 계약서에 구체적으로 남겨보세요.</small></div>
+      </div>
+    </div>
+    <div class="direction-copy"><span class="recommended">추천</span><h3>B. 따뜻한 방어 가이드형</h3><p>생활도우미의 안심감과 전문 대시보드의 구조를 결합합니다. 현재 서비스 대상에 가장 잘 맞습니다.</p></div>
+  </div>
+
+  <div class="direction" data-choice="dashboard" onclick="toggleSelect(this)">
+    <div class="phone dashboard">
+      <div class="screen">
+        <div class="top"><span>LEASE DEFENSE</span><span>RUN-001</span></div>
+        <span class="chip">분석 리포트</span>
+        <h4>계약 확인 현황</h4>
+        <p style="font-size:11px;color:#607067">총 13개 항목 · 공식 근거 연결</p>
+        <div class="summary">
+          <small>Action required</small>
+          <strong>2 Critical</strong>
+          <div class="signals"><div class="signal"><b>2</b>필수</div><div class="signal"><b>4</b>권장</div><div class="signal"><b>7</b>정보</div></div>
+        </div>
+        <div class="section-title">Priority queue</div>
+        <div class="item red"><small>R01 / 불일치 / 즉시</small><b>소유자-계약자 불일치</b><small>증거 2 · 질문 1 · 행동 2</small></div>
+        <div class="item red"><small>R04 / 확인 불가 / 즉시</small><b>대리권 확인 필요</b><small>증거 1 · 질문 2 · 행동 2</small></div>
+        <div class="section-title">Evidence & actions</div>
+        <div class="item blue"><small>공식 자료</small><b>주택임대차 체크리스트</b><small>국토교통부 · 근거 원문 보기</small></div>
+        <div class="action"><span>질문 목록</span><span>행동 보드</span></div>
+      </div>
+    </div>
+    <div class="direction-copy"><h3>C. 전문 방어 대시보드형</h3><p>근거와 상태 밀도가 높고 강한 인상을 줍니다. 초보 임차인에게는 조금 긴장감이 있을 수 있습니다.</p></div>
+  </div>
+</div>
