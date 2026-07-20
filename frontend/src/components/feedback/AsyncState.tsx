@@ -17,16 +17,17 @@ export function LoadingState({ title, description }: StateMessageProps) {
 
 interface ErrorStateProps extends StateMessageProps {
   onRetry: () => void;
+  retryLabel?: string;
 }
 
-export function ErrorState({ title, description, onRetry }: ErrorStateProps) {
+export function ErrorState({ title, description, onRetry, retryLabel = "다시 시도" }: ErrorStateProps) {
   return (
     <div className="state-panel state-panel--error" role="alert">
       <span className="state-icon" aria-hidden="true">!</span>
       <div>
         <strong>{title}</strong>
         <p>{description}</p>
-        <button className="inline-button" type="button" onClick={onRetry}>다시 시도</button>
+        <button className="inline-button" type="button" onClick={onRetry}>{retryLabel}</button>
       </div>
     </div>
   );

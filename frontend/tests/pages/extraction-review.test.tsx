@@ -38,6 +38,7 @@ function renderPage() {
       <Routes>
         <Route path="/contracts/:contractId/review" element={<ExtractionReviewPage />} />
         <Route path="/contracts/:contractId/analyzing" element={<p>분석 화면</p>} />
+        <Route path="/contracts/:contractId/upload" element={<p>문서 업로드 화면</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -157,15 +158,23 @@ describe("ExtractionReviewPage", () => {
     });
   });
 
-  it("renders load error, retry, and empty states", async () => {
-    vi.spyOn(mvpService, "getLatestExtraction")
-      .mockRejectedValueOnce(new Error("network down"))
-      .mockResolvedValueOnce(emptyExtraction);
+  it("sends the user back to upload when extraction cannot be loaded", async () => {
+    // 잘못된 문서로 추출이 실패하면 재폴링은 같은 실패만 반환하므로,
+    // 복구 경로는 문서를 다시 올리는 것뿐이다.
+    vi.spyOn(mvpService, "getLatestExtraction").mockRejectedValue(new Error("network down"));
 
     renderPage();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("network down");
-    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    fireEvent.click(screen.getByRole("button", { name: "문서 다시 올리기" }));
+    expect(await screen.findByText("문서 업로드 화면")).toBeInTheDocument();
+  });
+
+  it("renders the empty extraction state", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(emptyExtraction);
+
+    renderPage();
+
     expect(await screen.findByText("확인할 추출값이 없습니다")).toBeInTheDocument();
   });
 
