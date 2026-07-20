@@ -11,10 +11,13 @@ a { color: inherit; }
 button, input, select { font: inherit; }
 
 .app-shell { width: min(100%, 520px); min-height: 100vh; margin: 0 auto; padding: 20px 16px 48px; }
+.app-shell--auth, .app-shell--default { width: min(100%, 520px); }
+.app-shell--workspace { width: min(100%, 1200px); }
+.app-shell--report { width: min(100%, 1320px); }
 .app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .brand { font-weight: 800; text-decoration: none; }
 .step-badge, .confidence, .priority { display: inline-flex; width: fit-content; border-radius: 999px; padding: 6px 10px; background: #e5eee7; color: #245236; font-size: 13px; font-weight: 700; }
-.page-card { padding: 24px; border: 1px solid #dce5dd; border-radius: 24px; background: #fff; box-shadow: 0 16px 50px rgba(35, 63, 43, 0.08); }
+.page-card { min-width: 0; padding: 24px; border: 1px solid #dce5dd; border-radius: 24px; background: #fff; box-shadow: 0 16px 50px rgba(35, 63, 43, 0.08); }
 .eyebrow { margin: 0 0 6px; color: #42704f; font-size: 13px; font-weight: 800; }
 h1 { margin: 0; font-size: 28px; line-height: 1.25; }
 h2 { margin: 8px 0; font-size: 18px; }
@@ -28,9 +31,25 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .switch-link { margin: 20px 0 0; text-align: center; }
 .error { margin: 0; color: #a02222; }
 .contract-card, .field-card, .result-card, .check-item { display: grid; gap: 6px; padding: 16px; border: 1px solid #dce5dd; border-radius: 14px; text-decoration: none; }
+.contract-grid, .checklist-grid, .history-grid, .extraction-workspace-grid, .report-grid, .page-actions { display: grid; gap: 16px; }
+.contract-grid { grid-template-columns: 1fr; }
+.contract-card { align-content: start; background: #fff; }
+.document-review-panel { min-width: 0; padding: 18px; border: 1px solid #dce5dd; border-radius: 18px; background: #f8faf8; }
+.document-review-panel > h2 { margin-top: 0; }
+.field-card { min-width: 0; background: #fff; }
+.field-card__meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.field-card__meta strong { margin-right: auto; }
+.verification { display: inline-flex; width: fit-content; border-radius: 999px; padding: 6px 10px; background: #eef3ef; color: #31523a; font-size: 13px; font-weight: 700; }
+.text-button { width: auto; justify-self: start; padding: 9px 12px; background: #e5eee7; color: #245236; }
+.field-error, .unsaved { margin: 0; color: #a02222; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .contract-card span, small { color: #667269; font-weight: 400; }
 .field-card input { margin-top: 4px; }
 .clause-list-editor { display: grid; gap: 10px; }
+.clause-details { border-radius: 10px; background: #f7faf7; }
+.clause-details summary { padding: 12px; color: #245236; font-weight: 800; cursor: pointer; }
+.clause-details[open] summary { border-bottom: 1px solid #dce5dd; }
+.clause-details .clause-list-editor { padding: 12px; }
 .clause-list-editor__item { display: grid; gap: 4px; padding: 10px; border: 1px solid #edf1ed; border-radius: 10px; }
 .result-card p { margin: 0; line-height: 1.5; }
 .check-item { grid-template-columns: auto 1fr; align-items: center; }
@@ -112,6 +131,34 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .evidence-list a { overflow-wrap: anywhere; }
 .danger-button { border: 1px solid #9f2d2d; background: #fff; color: #8a2020; }
 .danger-button:hover { background: #fff0ef; }
+
+.report-results-column, .report-guidance-column { min-width: 0; align-content: start; }
+.report-guidance-column { padding: 18px; border-radius: 18px; background: #f7faf7; }
+
+@media (max-width: 767px) {
+  .contract-grid,
+  .checklist-grid,
+  .history-grid,
+  .extraction-workspace-grid,
+  .report-grid,
+  .page-actions,
+  .stage-guidance__grid { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 768px) {
+  .contract-grid, .checklist-grid, .history-grid, .page-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .app-shell--workspace .page-card, .app-shell--report .page-card { padding: 32px; }
+  .extraction-workspace-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .report-grid { grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr); align-items: start; }
+  .report-guidance-column { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
+}
+
+@media (min-width: 1180px) {
+  .contract-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 @media (max-width: 360px) {
   .app-shell { padding: 8px 6px 24px; }

@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { PageShell } from "../../src/components/layout/PageShell";
+
+afterEach(cleanup);
 
 describe("PageShell logout", () => {
   it("returns authenticated screens to login", () => {
@@ -29,5 +31,15 @@ describe("PageShell logout", () => {
     );
 
     expect(screen.queryByRole("button", { name: "로그아웃" })).not.toBeInTheDocument();
+  });
+
+  it("applies the requested responsive layout variant", () => {
+    render(
+      <MemoryRouter>
+        <PageShell layout="workspace" step="2 / 8" title="내 계약" description="계약 목록"><p>대시보드</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("main")).toHaveClass("app-shell", "app-shell--workspace");
   });
 });

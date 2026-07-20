@@ -15,6 +15,10 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
   await expect(page.getByRole("heading", { name: "내 계약" })).toBeVisible();
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--workspace/);
+    await expect.poll(async () => (await page.locator("main.app-shell").boundingBox())?.width ?? 0).toBeGreaterThan(1000);
+  }
 
   await page.getByRole("link", { name: "새 계약 만들기" }).click();
   await page.getByLabel("계약 이름").fill("E2E 전세 계약");
@@ -44,6 +48,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   if (await accountHolder.count()) await accountHolder.fill("이정훈");
   const secondMainClause = page.getByLabel("계약서 본문 주요 조항 2 값");
   if (await secondMainClause.count()) {
+    await page.getByText(/조항 \d+개 펼쳐서 확인/).first().click();
     await secondMainClause.fill("주요 설비 하자 수선은 임대인이 부담하고, 임차인에게 알린다.");
   }
   await page.getByRole("button", { name: "확인 완료하고 분석하기" }).click();
@@ -51,6 +56,14 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "리포트 보기" }).click();
   await expect(page.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeVisible();
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--report/);
+    const resultsBox = await page.locator(".report-results-column").boundingBox();
+    const guidanceBox = await page.locator(".report-guidance-column").boundingBox();
+    expect(resultsBox).not.toBeNull();
+    expect(guidanceBox).not.toBeNull();
+    expect((guidanceBox?.x ?? 0) > (resultsBox?.x ?? 0)).toBeTruthy();
+  }
   const ruleResults = page.locator('section[aria-labelledby="rule-results-title"]');
   const judgmentResults = page.locator('section[aria-labelledby="judgment-results-title"]');
   for (const ruleId of Array.from({ length: 10 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`)) {

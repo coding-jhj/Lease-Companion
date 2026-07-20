@@ -66,7 +66,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText("불확실")).toBeInTheDocument();
     expect(screen.getAllByText("실패").length).toBeGreaterThan(0);
     expect(screen.getAllByText("미확인").length).toBe(fieldViewModels(documents).length);
-    expect(screen.getAllByText("원문 위치 미확인").length).toBeGreaterThan(0);
+    expect(screen.queryByText("원문 위치 미확인")).not.toBeInTheDocument();
     expect(screen.getByText("입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "읽힌 값 모두 확인" }));

@@ -8,9 +8,17 @@ interface PageShellProps {
   description: string;
   children: ReactNode;
   showLogout?: boolean;
+  layout?: "auth" | "default" | "workspace" | "report";
 }
 
-export function PageShell({ step, title, description, children, showLogout = true }: PageShellProps) {
+export function PageShell({
+  step,
+  title,
+  description,
+  children,
+  showLogout = true,
+  layout = "default",
+}: PageShellProps) {
   const navigate = useNavigate();
 
   function logout() {
@@ -19,7 +27,7 @@ export function PageShell({ step, title, description, children, showLogout = tru
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell app-shell--${layout}`}>
       <header className="app-header">
         <Link className="brand" to="/contracts">슬기로운 계약생활</Link>
         <div className="header-actions">

@@ -37,6 +37,26 @@ const ownerSharesField: ExtractedFieldDto = {
 };
 
 describe("J structured field values", () => {
+  it("uses Korean display labels without exposing canonical English field names", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-LABELS",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        end_date: extractedField("end_date", "2027-12-22"),
+        owner_shares: ownerSharesField,
+        future_field: extractedField("future_field", "확인 값"),
+      },
+    };
+
+    expect(fieldViewModels([document]).map((view) => view.label)).toEqual([
+      "계약 종료일",
+      "소유자별 지분",
+      "추가 확인 항목",
+    ]);
+  });
+
   it("uses the canonical corrected, normalized, extracted value priority", () => {
     const field = extractedField("deposit", "10000000");
     field.normalized_value = 10_000_000;

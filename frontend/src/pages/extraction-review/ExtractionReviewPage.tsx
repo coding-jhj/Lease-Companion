@@ -201,8 +201,72 @@ export function ExtractionReviewPage() {
     }
   }
 
+  function renderField(view: FieldViewModel) {
+    const verification = verificationByKey[view.key] ?? view.field.verification_status;
+    const locationUnknown = view.field.source_evidence.page === null || view.field.source_evidence.text === null;
+    const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput(view.key);
+    const editor = view.editor === "clause-list" ? (
+      <div className="clause-list-editor">
+        {(currentClauseValues(view).length > 0 ? currentClauseValues(view) : [""]).map((value, index) => (
+          <div className="clause-list-editor__item" key={view.key + ":" + index}>
+            <label>
+              <span className="sr-only">{view.label + " " + (index + 1) + " 값"}</span>
+              <input
+                aria-label={view.label + " " + (index + 1) + " 값"}
+                value={value}
+                placeholder={view.field.confidence === "실패" ? "조항을 직접 입력해 주세요" : undefined}
+                onChange={(event) => updateClauseItem(view, index, event.target.value)}
+              />
+            </label>
+            <button
+              className="text-button"
+              type="button"
+              aria-label={view.label + " " + (index + 1) + " 삭제"}
+              onClick={() => removeClauseItem(view, index)}
+            >
+              이 조항 삭제
+            </button>
+          </div>
+        ))}
+        <button className="secondary" type="button" onClick={() => addClauseItem(view)}>
+          조항 추가
+        </button>
+      </div>
+    ) : (
+      <label>
+        <span className="sr-only">{view.label} 값</span>
+        <input
+          aria-label={view.label + " 값"}
+          value={typeof drafts[view.key] === "string" ? drafts[view.key] : view.formattedValue}
+          placeholder={view.field.confidence === "실패" ? "직접 입력해 주세요" : undefined}
+          onChange={(event) => updateField(view, event.target.value)}
+        />
+      </label>
+    );
+    const collapsible = view.field.field_name === "main_clauses" || view.field.field_name === "special_clauses";
+    const clauseCount = currentClauseValues(view).length;
+    return (
+      <article className="field-card" key={view.key}>
+        <div className="field-card__meta">
+          <strong>{view.label}</strong>
+          <span className={"confidence confidence--" + view.field.confidence}>{view.field.confidence}</span>
+          <span className={"verification verification--" + verification}>{verificationLabels[verification]}</span>
+        </div>
+        {collapsible ? (
+          <details className="clause-details">
+            <summary>{clauseCount > 0 ? `조항 ${clauseCount}개 펼쳐서 확인` : "조항을 펼쳐서 입력"}</summary>
+            {editor}
+          </details>
+        ) : editor}
+        {view.field.failure_reason && <p className="field-error">{view.field.failure_reason}</p>}
+        {!locationUnknown && <small>{view.field.source_evidence.page + "쪽 · " + view.field.source_evidence.text}</small>}
+        <button className="text-button" type="button" disabled={verification !== "unverified" || failedWithoutInput} onClick={() => confirmField(view)}>이 값 확인</button>
+      </article>
+    );
+  }
+
   return (
-    <PageShell step="5 / 8" title="추출값 확인·수정" description="분석 전에 문서에서 읽은 값이 맞는지 직접 확인하세요.">
+    <PageShell layout="workspace" step="5 / 8" title="추출값 확인·수정" description="분석 전에 문서에서 읽은 값이 맞는지 직접 확인하세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="추출 상태를 확인하는 중" description="서버의 최신 추출 실행을 찾고 있습니다." />}
         {status === "processing" && <LoadingState title={runStatus === "pending" ? "추출 대기 중" : "문서에서 값을 추출하는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
@@ -211,61 +275,20 @@ export function ExtractionReviewPage() {
         {status === "success" && fields.length > 0 && (
           <button className="secondary" type="button" onClick={confirmReadableFields}>읽힌 값 모두 확인</button>
         )}
-        {status === "success" && fields.map((view) => {
-          const verification = verificationByKey[view.key] ?? view.field.verification_status;
-          const locationUnknown = view.field.source_evidence.page === null || view.field.source_evidence.text === null;
-          const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput(view.key);
-          return (
-            <article className="field-card" key={view.key}>
-              <div className="field-card__meta">
-                <strong>{view.label}</strong>
-                <span className={"confidence confidence--" + view.field.confidence}>{view.field.confidence}</span>
-                <span className={"verification verification--" + verification}>{verificationLabels[verification]}</span>
-              </div>
-              {view.editor === "clause-list" ? (
-                <div className="clause-list-editor">
-                  {(currentClauseValues(view).length > 0 ? currentClauseValues(view) : [""]).map((value, index) => (
-                    <div className="clause-list-editor__item" key={view.key + ":" + index}>
-                      <label>
-                        <span className="sr-only">{view.label + " " + (index + 1) + " 값"}</span>
-                        <input
-                          aria-label={view.label + " " + (index + 1) + " 값"}
-                          value={value}
-                          placeholder={view.field.confidence === "실패" ? "조항을 직접 입력해 주세요" : undefined}
-                          onChange={(event) => updateClauseItem(view, index, event.target.value)}
-                        />
-                      </label>
-                      <button
-                        className="text-button"
-                        type="button"
-                        aria-label={view.label + " " + (index + 1) + " 삭제"}
-                        onClick={() => removeClauseItem(view, index)}
-                      >
-                        이 조항 삭제
-                      </button>
-                    </div>
-                  ))}
-                  <button className="secondary" type="button" onClick={() => addClauseItem(view)}>
-                    조항 추가
-                  </button>
-                </div>
-              ) : (
-                <label>
-                  <span className="sr-only">{view.label} 값</span>
-                  <input
-                    aria-label={view.label + " 값"}
-                    value={typeof drafts[view.key] === "string" ? drafts[view.key] : view.formattedValue}
-                    placeholder={view.field.confidence === "실패" ? "직접 입력해 주세요" : undefined}
-                    onChange={(event) => updateField(view, event.target.value)}
-                  />
-                </label>
-              )}
-              {view.field.failure_reason && <p className="field-error">{view.field.failure_reason}</p>}
-              <small>{locationUnknown ? "원문 위치 미확인" : view.field.source_evidence.page + "쪽 · " + view.field.source_evidence.text}</small>
-              <button className="text-button" type="button" disabled={verification !== "unverified" || failedWithoutInput} onClick={() => confirmField(view)}>이 값 확인</button>
-            </article>
-          );
-        })}
+        {status === "success" && fields.length > 0 && (
+          <div className="extraction-workspace-grid">
+            <section className="document-review-panel" aria-labelledby="contract-fields-title">
+              <h2 id="contract-fields-title">계약서 추출값</h2>
+              <p className="section-description">계약서에서 읽은 값과 원문 근거를 함께 확인하세요.</p>
+              <div className="stack">{fields.filter((view) => view.document_type === "contract").map(renderField)}</div>
+            </section>
+            <section className="document-review-panel" aria-labelledby="registry-fields-title">
+              <h2 id="registry-fields-title">등기사항증명서 추출값</h2>
+              <p className="section-description">등기에서 읽은 소유자·주소·권리 정보를 확인하세요.</p>
+              <div className="stack">{fields.filter((view) => view.document_type === "registry").map(renderField)}</div>
+            </section>
+          </div>
+        )}
         {pendingCorrectionKeys.length > 0 && <p className="unsaved" role="status">저장되지 않은 수정 {pendingCorrectionKeys.length}건</p>}
         {correctionError && <p className="error" role="alert">수정 요청 실패: {correctionError}</p>}
         {confirmationError && <p className="error" role="alert">확인 실패: {confirmationError}</p>}
