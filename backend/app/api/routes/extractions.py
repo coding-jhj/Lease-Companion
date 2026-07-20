@@ -103,6 +103,8 @@ def start_extraction(
             detail={"code": "missing_contract_document", "message": "업로드된 계약서가 없습니다."},
         )
 
+    registry_path: str | None
+    registry_name: str | None
     registry_doc = _latest_document(db, contract.id, "등기사항증명서")
     if registry_doc is not None:
         registry_path, registry_name = registry_doc.stored_path, registry_doc.filename
