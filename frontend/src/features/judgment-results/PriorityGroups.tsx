@@ -35,7 +35,7 @@ function resultScope(item: ReportResultDto) {
   return "조항 분류 판정";
 }
 
-function cannotJudgeNow(item: ReportResultDto) {
+export function cannotJudgeNow(item: ReportResultDto) {
   return item.status === "확인 불가"
     || item.status === "적용 제외"
     || ("rule_id" in item && externalDataRuleIds.has(item.rule_id));
