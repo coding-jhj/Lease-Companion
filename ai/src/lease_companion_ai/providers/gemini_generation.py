@@ -11,6 +11,28 @@ from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.providers.generation import GenerationRequest
 
 
+def _clean_response_schema(node: Any) -> Any:
+    """Gemini response_schema가 거부하는 키(additionalProperties·title·default)를 제거한다.
+
+    Pydantic이 생성한 JSON Schema를 그대로 넘기면 `additionalProperties` 때문에
+    400 INVALID_ARGUMENT가 발생하므로 지원되는 하위 집합만 남긴다.
+    """
+    if isinstance(node, dict):
+        return {
+            key: _clean_response_schema(value)
+            for key, value in node.items()
+            if key not in ("additionalProperties", "title", "default")
+        }
+    if isinstance(node, list):
+        return [_clean_response_schema(item) for item in node]
+    return node
+
+
+_GEMINI_RESPONSE_SCHEMA = _clean_response_schema(
+    GeneratedGuidanceDraft.model_json_schema()
+)
+
+
 class GeminiGenerationProvider:
     """고정 모델·호출 한도로 구조화된 안내 초안을 생성한다."""
 
@@ -84,9 +106,12 @@ class GeminiGenerationProvider:
                     ],
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
-                        response_schema=GeneratedGuidanceDraft,
+                        response_schema=_GEMINI_RESPONSE_SCHEMA,
                         temperature=0,
                         max_output_tokens=self._max_output_tokens,
+                        # gemini-3.5-flash는 thinking 모델 — thinking이 max_output_tokens를
+                        # 소진해 답변이 잘리고 비용도 커지므로 구조화 생성에는 thinking을 끈다.
+                        thinking_config=types.ThinkingConfig(thinking_budget=0),
                     ),
                 )
                 parsed = getattr(response, "parsed", None)
