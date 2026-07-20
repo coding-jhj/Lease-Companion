@@ -6,7 +6,7 @@
 
 ## 하위 구조
 
-- 상용 LLM 어댑터 (구조화 Gemini 3.5 Flash / 생성·재검토 GPT-5.6 Sol)
+- 상용 LLM 어댑터 (구조화·생성·재검토 Gemini 3.5 Flash)
 - 임베딩 어댑터 (gemini-embedding-001, RAG 인덱싱·검색용)
 - 리랭커 어댑터 (Cohere rerank-v4.0-pro)
 - 공통 인터페이스 (키·타임아웃·재시도, 키는 `.env`)
@@ -21,11 +21,11 @@
 
 ## 확정 / TODO
 
-- 확정(2026-07-14 선정표): 구조화 Gemini 3.5 Flash · 생성 GPT-5.6 Sol · 임베딩 gemini-embedding-001 · 리랭커 Cohere rerank-v4.0-pro. 어댑터로 감싸 호출부는 제공자 무관 유지.
+- 변경 확정(2026-07-20): 구조화·생성 Gemini 3.5 Flash · 임베딩 gemini-embedding-001 · 리랭커 Cohere rerank-v4.0-pro. 어댑터로 감싸 호출부는 제공자 무관 유지.
 - API 키·비밀정보는 `.env`, Git 커밋 금지
 - 구현 완료(배치 1): embedding·rerank `Protocol`, 민감 입력 없는 `ProviderError`, 응답 개수·차원·유한 점수·문서 인덱스 검증, 네트워크 없는 fake provider 테스트.
 - 구현 완료(배치 2): `GeminiEmbeddingProvider`와 `CohereRerankProvider`. SDK 예외·응답·입력 원문을 외부 예외 메시지에 노출하지 않는다.
-- 구현 완료(A10 offline): `OpenAIGenerationProvider`가 Responses API의 `gpt-5.6-sol`과 Pydantic Structured Outputs를 사용한다. SDK는 provider 내부에서만 지연 import하며 timeout 30초·재시도 2회·provider 인스턴스당 최대 10회·응답 1,500토큰을 기본 상한으로 둔다. `store=false`로 호출한다.
+- 구현 완료: `GeminiGenerationProvider`가 Gemini API의 `gemini-3.5-flash`와 Pydantic Structured Outputs를 사용한다. SDK는 provider 내부에서만 지연 import하며 timeout 30초·재시도 2회·provider 인스턴스당 최대 10회·응답 1,500토큰을 기본 상한으로 둔다.
 - 구현 완료(classification v1): `ClassificationProvider` Protocol과 결정적 Fake provider, `GeminiClassificationProvider`를 분리했다. Gemini adapter는 `classification-v1` prompt와 canonical `ClassificationInput`·`ClassificationResult`만 사용하며, SDK·원문 오류를 외부 예외에 노출하지 않는다.
 - Gemini·Cohere 유료 실호출은 미수행. 키·비용 승인 후 별도 smoke test가 필요하다.
-- OpenAI 유료 실호출도 미수행. `RUN_OPENAI_SMOKE=1`과 승인된 `OPENAI_API_KEY`가 함께 있을 때만 합성 CASE-001 smoke test가 실행된다.
+- Gemini 유료 실호출은 미수행. `RUN_GEMINI_GENERATION_SMOKE=1`과 승인된 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`가 함께 있을 때만 합성 CASE-001 smoke test가 실행된다.

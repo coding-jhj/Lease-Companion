@@ -38,14 +38,14 @@ conda run -n lease-py310 python scripts/generate_case001_fixture.py    # fixture
 conda run -n lease-py310 python -m pytest ai/tests backend/tests -q    # 전체 테스트
 ```
 
-OpenAI 실제 호출은 기본 테스트에서 실행되지 않는다. 키·비용을 별도 승인한 경우에만 합성 CASE-001 하나로 실행한다.
+Gemini 생성 실제 호출은 기본 테스트에서 실행되지 않는다. 키·비용을 별도 승인한 경우에만 합성 CASE-001 하나로 실행한다.
 
 ```powershell
 $env:RUN_OPENAI_SMOKE='1'
 conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case001_smoke.py -q
 ```
 
-검증 결과는 시점마다 달라지므로 이 문서에 고정 개수를 복제하지 않는다. 위 명령과 저장소의 현재 CI·작업 기록으로 확인한다. OpenAI 실제 호출은 기본 회귀에서 제외한다.
+검증 결과는 시점마다 달라지므로 이 문서에 고정 개수를 복제하지 않는다. 위 명령과 저장소의 현재 CI·작업 기록으로 확인한다. Gemini 생성 실제 호출은 기본 회귀에서 제외한다.
 
 ## 3. 핵심 모델 요약
 

@@ -1,4 +1,4 @@
-"""OpenAI Responses API를 격리한 사용자 안내 생성 provider."""
+"""Google GenAI SDK를 격리한 사용자 안내 생성 provider."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.providers.generation import GenerationRequest
 
 
-class OpenAIGenerationProvider:
+class GeminiGenerationProvider:
     """고정 모델·호출 한도로 구조화된 안내 초안을 생성한다."""
 
-    model_name = "gpt-5.6-sol"
+    model_name = "gemini-3.5-flash"
 
     def __init__(
         self,
@@ -43,51 +43,68 @@ class OpenAIGenerationProvider:
     def _get_client(self) -> Any:
         if self._client is not None:
             return self._client
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            raise ProviderError("OpenAI generation provider 설정이 없습니다.")
+            raise ProviderError("Gemini generation provider 설정이 없습니다.")
         try:
-            from openai import OpenAI
+            from google import genai
+            from google.genai import types
 
-            self._client = OpenAI(
+            self._client = genai.Client(
                 api_key=api_key,
-                timeout=self._timeout_seconds,
-                max_retries=self._max_retries,
+                http_options=types.HttpOptions(
+                    timeout=int(self._timeout_seconds * 1_000)
+                ),
             )
         except Exception:
             raise ProviderError(
-                "OpenAI generation provider 초기화에 실패했습니다."
+                "Gemini generation provider 초기화에 실패했습니다."
             ) from None
         return self._client
 
     def generate(self, request: GenerationRequest) -> GeneratedGuidanceDraft:
         if self._calls_made >= self._max_calls:
-            raise ProviderError("OpenAI generation provider 호출 예산을 초과했습니다.")
+            raise ProviderError("Gemini generation provider 호출 예산을 초과했습니다.")
         if not request.evidence:
             raise ProviderError("공식 근거 없는 생성 요청은 허용되지 않습니다.")
 
         self._calls_made += 1
-        try:
-            response = self._get_client().responses.parse(
-                model=self.model_name,
-                instructions=(
-                    "공식 근거에 한정해 임차인이 직접 확인할 설명, 질문, "
-                    "체크리스트와 행동을 작성하십시오. 규칙 판정을 변경하지 마십시오."
-                ),
-                input=self._serialize_request(request),
-                text_format=GeneratedGuidanceDraft,
-                max_output_tokens=self._max_output_tokens,
-                reasoning={"effort": "low"},
-                store=False,
-            )
-            parsed = getattr(response, "output_parsed", None)
-            if parsed is None:
-                raise ProviderError("OpenAI generation 응답을 구조화하지 못했습니다.")
-            return GeneratedGuidanceDraft.model_validate(parsed)
-        except ProviderError:
-            raise
-        except Exception:
-            raise ProviderError("OpenAI generation 호출에 실패했습니다.") from None
+        for attempt in range(self._max_retries + 1):
+            try:
+                from google.genai import types
+
+                response = self._get_client().models.generate_content(
+                    model=self.model_name,
+                    contents=[
+                        (
+                            "공식 근거에 한정해 임차인이 직접 확인할 설명, 질문, "
+                            "체크리스트와 행동을 작성하십시오. 규칙 판정을 변경하지 마십시오."
+                        ),
+                        self._serialize_request(request),
+                    ],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=GeneratedGuidanceDraft,
+                        temperature=0,
+                        max_output_tokens=self._max_output_tokens,
+                    ),
+                )
+                parsed = getattr(response, "parsed", None)
+                if parsed is not None:
+                    return GeneratedGuidanceDraft.model_validate(parsed)
+                text = getattr(response, "text", None)
+                if text:
+                    return GeneratedGuidanceDraft.model_validate_json(text)
+                raise ValueError("empty structured response")
+            except ProviderError:
+                raise
+            except Exception:
+                if attempt == self._max_retries:
+                    raise ProviderError(
+                        "Gemini generation 호출에 실패했습니다."
+                    ) from None
+
+        raise ProviderError("Gemini generation 호출에 실패했습니다.")
 
     @staticmethod
     def _serialize_request(request: GenerationRequest) -> str:

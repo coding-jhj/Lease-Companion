@@ -14,7 +14,7 @@
 ## 후속 범위
 
 - classification-aware AI 실행 함수를 Backend worker의 snapshot 이후 단계에 연결
-- 승인된 실제 Gemini·Cohere·OpenAI provider의 품질·지연시간·비용 기준선 측정
+- 승인된 실제 Gemini·Cohere provider의 품질·지연시간·비용 기준선 측정
 - metadata-only 공식자료 중 이용 가능한 원문 추가 후 R·J 검색 재평가
 
 저장과 사용자별 실행 오케스트레이션은 `backend/`가 담당한다.

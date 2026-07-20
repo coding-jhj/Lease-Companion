@@ -41,5 +41,5 @@
 ## 미정 (TODO)
 
 - 목표 수치, 자동/수동 평가 비중
-- 실제 Gemini 구조화·Hybrid/Rerank·OpenAI 생성의 승인된 provider 기준선
+- 실제 Gemini 구조화·생성·Hybrid/Rerank의 승인된 provider 기준선
 - 사람 또는 독립 judge를 사용한 쉬운 설명·질문·행동 품질 라벨

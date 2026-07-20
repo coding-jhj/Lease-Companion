@@ -60,6 +60,6 @@
 
 - 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): 프론트엔드 **React + Vite + TypeScript**, DB **PostgreSQL**, 벡터 저장소 **Chroma 로컬 모드**, 인증 **JWT Bearer(Python: PyJWT + Passlib-bcrypt)**. refresh token·운영 키 정책은 TODO이며 현재 MVP는 로컬 실행이다.
 - 통합 스키마 확정(2026-07-16): `ai/src/lease_companion_ai/schemas/` Pydantic 모델 단일 원본, Backend가 공통 타입 재사용(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)). 실제 사용자 계약 건은 `contract_id`, 합성·평가 사례는 `case_id`로 구분한다.
-- 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js). VLM은 Gemini에 통합(별도 OCR·VLM 단계 없음, 2026-07-14 변경 → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험.
+- 상용 LLM 확정: 조항 구조화와 설명·질문·행동 생성 모두 Gemini 3.5 Flash. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js). VLM은 Gemini에 통합(별도 OCR·VLM 단계 없음, 2026-07-14 변경 → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). 생성 provider 통합은 [`../decisions/2026-07-20-gemini-generation-provider.md`](../decisions/2026-07-20-gemini-generation-provider.md)를 따른다. PaddleOCR-VL은 (선택) 비교실험.
 - (선택)로컬 7B 성능비교 실험용 베이스 모델은 실험 진행 시 확정.
 - backend↔ai 연동 방식(동일 프로세스 호출 vs 별도 서비스) 확정 필요.

@@ -1,4 +1,4 @@
-"""명시적 승인 환경에서만 실행하는 합성 CASE-001 OpenAI smoke test."""
+"""명시적 승인 환경에서만 실행하는 합성 CASE-001 Gemini 생성 smoke test."""
 
 from __future__ import annotations
 
@@ -8,20 +8,20 @@ from pathlib import Path
 import pytest
 
 from lease_companion_ai.generation.service import GenerationService
-from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvider
+from lease_companion_ai.providers.gemini_generation import GeminiGenerationProvider
 from lease_companion_ai.schemas.unified import AnalysisRunResult, ContractContext
 
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("RUN_OPENAI_SMOKE") != "1",
-    reason="RUN_OPENAI_SMOKE=1인 승인된 유료 smoke 실행에서만 호출합니다.",
+    os.getenv("RUN_GEMINI_GENERATION_SMOKE") != "1",
+    reason="RUN_GEMINI_GENERATION_SMOKE=1인 승인된 smoke 실행에서만 호출합니다.",
 )
 
 
-def test_case001_openai_generation_smoke():
+def test_case001_gemini_generation_smoke():
     fixture = Path("data/sample/fixtures/case-001/analysis_run_result.json")
     analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
-    provider = OpenAIGenerationProvider(max_calls=10, max_output_tokens=1_500)
+    provider = GeminiGenerationProvider(max_calls=10, max_output_tokens=1_500)
 
     context = ContractContext.model_validate_json(
         (fixture.parent / "contract_context.json").read_text(encoding="utf-8")

@@ -52,6 +52,6 @@
 
 ## 미정 (TODO)
 
-- 상용 LLM 확정: 조항 구조화 Gemini 3.5 Flash, 설명·질문·행동 생성 GPT-5.6 Sol. 임베딩·검색 확정: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 저장소는 Chroma 로컬 모드로 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)).
+- 상용 LLM 확정: 조항 구조화와 설명·질문·행동 생성 모두 Gemini 3.5 Flash. 임베딩·검색 확정: gemini-embedding-001 + BM25, 리랭커 Cohere rerank-v4.0-pro. OCR 확정: 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). 생성 provider 통합은 [`../decisions/2026-07-20-gemini-generation-provider.md`](../decisions/2026-07-20-gemini-generation-provider.md)를 따른다. PaddleOCR-VL은 (선택) 비교실험. 벡터 저장소는 Chroma 로컬 모드로 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)).
 - (선택)로컬 7B 성능비교 실험용 베이스 모델은 실험 진행 시 확정.
 - 저신뢰 판단 기준(재검토로 넘길 임계값)·routing fallback 정책 확정 필요.

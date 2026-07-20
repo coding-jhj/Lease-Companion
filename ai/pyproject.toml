@@ -9,7 +9,6 @@ dependencies = [
     "cohere>=7,<8",
     "PyMuPDF>=1.24,<2",
     "google-genai>=2,<3",
-    "openai>=2.45,<3",
     "pydantic>=2,<3",
 ]
 

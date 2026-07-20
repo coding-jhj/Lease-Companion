@@ -25,7 +25,7 @@
 | 위험 판정 (최종) | 로컬 | Python 규칙 엔진 (결정론) | 없음 (항상 수행) |
 | 공식 근거 검색 | API+로컬 | gemini-embedding-001 + BM25 (Top-20) | embedding·Chroma 실패 시 BM25 |
 | 공식 근거 재정렬 | **API** | Cohere rerank-v4.0-pro (Top-20→Top-5) | 실패 시 hybrid 순위 유지 |
-| 설명·질문·행동 생성 | **API** | GPT-5.6 Sol (`gpt-5.6-sol`) | provider 제한 재시도 후 안전 템플릿 |
+| 설명·질문·행동 생성 | **API** | Gemini 3.5 Flash (`gemini-3.5-flash`) | provider 제한 재시도 후 안전 템플릿 |
 | 복원·표시·삭제 | 로컬 | 매핑표 복원 → 세션 종료 시 전량 삭제 | 없음 |
 
 ## 개인정보 비식별 게이트 (privacy-by-design)

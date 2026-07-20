@@ -4,7 +4,7 @@
 
 ## 최신 MVP 정의
 
-회원 기반 모바일 웹앱에서 사용자가 계약 건과 계약 문서를 관리하고, 상용 LLM(Gemini 3.5 Flash)이 임대차 조항 유형과 불명확성 후보를 구조화한다. Python 규칙 엔진은 계약서와 관련 문서의 값을 교차검증하고, 공식자료 RAG와 상용 LLM(GPT-5.6 Sol)은 판정 근거·쉬운 설명·확인 질문·사용자 행동을 생성한다. 파인튜닝한 로컬 7B 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
+회원 기반 모바일 웹앱에서 사용자가 계약 건과 계약 문서를 관리하고, 상용 LLM(Gemini 3.5 Flash)이 임대차 조항 유형과 불명확성 후보를 구조화한다. Python 규칙 엔진은 계약서와 관련 문서의 값을 교차검증하고, 공식자료 RAG와 상용 LLM(Gemini 3.5 Flash)은 판정 근거·쉬운 설명·확인 질문·사용자 행동을 생성한다. 파인튜닝한 로컬 7B 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
 
 ## 사용자 기능 흐름 (8단계)
 
@@ -63,5 +63,5 @@ J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../dat
 
 - 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): DB **PostgreSQL**, 인증 **JWT Bearer(Python: PyJWT + Passlib-bcrypt)**, 프론트엔드 **React + Vite + TypeScript**, Vector DB **Chroma 로컬 모드**. refresh token·운영 키 정책과 운영 배포 플랫폼은 TODO다.
 - 통합 스키마는 `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
-- OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출은 상용 LLM Gemini 3.5 Flash, 설명·질문·행동 생성은 GPT-5.6 Sol, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB는 Chroma 로컬 모드로 확정(2026-07-16).
+- OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출과 설명·질문·행동 생성은 Gemini 3.5 Flash, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB는 Chroma 로컬 모드로 확정(2026-07-16).
 - 파인튜닝 로컬 7B 베이스 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.

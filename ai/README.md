@@ -4,7 +4,7 @@
 
 ## 목적
 
-계약 문서를 인식(디지털 PDF 직접 추출·스캔/사진 OCR은 상용 LLM Gemini 3.5 Flash VLM 통합)해 핵심 필드를 추출·정규화하고, 상용 LLM(Gemini 3.5 Flash)이 조항 유형·불명확성 후보를 구조화한다. Python 규칙 엔진이 문서 내부 판정과 문서 교차검증으로 최종 판정을 내리고, 공식자료 RAG가 근거를 검색한다. 저신뢰 결과 재검토와 쉬운 설명·확인 질문·체크리스트·계약 직후 행동 생성은 상용 LLM(GPT-5.6 Sol)이 담당한다. guardrail이 단정 표현·근거 없는 출력을 차단한다. 로컬 7B 조항 분류는 (선택) 상용 vs 로컬 성능비교 실험으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
+계약 문서를 인식(디지털 PDF 직접 추출·스캔/사진 OCR은 상용 LLM Gemini 3.5 Flash VLM 통합)해 핵심 필드를 추출·정규화하고, 상용 LLM(Gemini 3.5 Flash)이 조항 유형·불명확성 후보를 구조화한다. Python 규칙 엔진이 문서 내부 판정과 문서 교차검증으로 최종 판정을 내리고, 공식자료 RAG가 근거를 검색한다. 저신뢰 결과 재검토와 쉬운 설명·확인 질문·체크리스트·계약 직후 행동 생성도 상용 LLM(Gemini 3.5 Flash)이 담당한다. guardrail이 단정 표현·근거 없는 출력을 차단한다. 로컬 7B 조항 분류는 (선택) 상용 vs 로컬 성능비교 실험으로만 유지하며 MVP 크리티컬 패스에서 제외한다.
 
 ## 파이프라인
 
@@ -16,7 +16,7 @@
   → 규칙 엔진 문서 내부 판정·교차검증 (최종 판정)
   → 공식자료 RAG 근거
   → 저신뢰 결과 상용 LLM 재검토
-  → 쉬운 설명·질문·체크리스트·행동 생성 (GPT-5.6 Sol)
+  → 쉬운 설명·질문·체크리스트·행동 생성 (Gemini 3.5 Flash)
   → guardrail → 저장(backend)
 ```
 
@@ -28,7 +28,7 @@
 - **로컬 7B (`local_model`)**: (선택) 상용 vs 로컬 성능비교 실험용. MVP 크리티컬 패스 제외. 최종 판정 안 함, 규칙 결과 변경 안 함, 근거 없이 행동 확정 안 함.
 - **규칙 엔진 (`rules`)**: 문서 내부 판정·교차검증 최종 판정. 결정론적.
 - **RAG (`rag`)**: 공식 근거만. 판정 안 함.
-- **상용 LLM (`providers`)**: 구조화·추출 Gemini 3.5 Flash, 저신뢰 재검토 + 설명·질문·행동 생성 GPT-5.6 Sol. 규칙 판정 변경 안 함.
+- **상용 LLM (`providers`)**: 구조화·추출과 저신뢰 재검토 + 설명·질문·행동 생성 모두 Gemini 3.5 Flash. 규칙 판정 변경 안 함.
 - **guardrails / routing**: 출력 제한 / 모델·fallback 선택.
 
 ## 하위 구조
@@ -80,10 +80,10 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 - 구현됨(최소 MVP 범위): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 1회 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `classification`(Gemini provider·safe fallback·pipeline helper), `rules`(R01~R10·J01~J12), `pipelines`, canonical `schemas` v1.8.0 읽기 호환·v1.9.0 신규 출력 경로와 관련 테스트. Backend worker도 classification 실행·내부 저장까지 연결됐다.
 - 구현됨(RAG 배치 1~6): 공식 출처 manifest·로컬 원문 3개(법령 2개·표준 주택임대차계약서 1개), 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R01~R10 및 J01~J12 공식 근거 enrichment, dev/test retrieval 평가와 실패 원인 진단. 기본 런타임은 Gemini 키가 있으면 영속 Chroma+BM25 Hybrid/RRF를 사용하고 Cohere 키가 있으면 rerank를 추가한다. 키·provider·인덱스 실패 시 BM25로 축소한다. 외부 실호출 smoke test는 별도 승인 전 미수행이다.
-- 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, OpenAI Responses API `gpt-5.6-sol` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
+- 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
 - 구현됨(평가·routing): 추출·사용자 수정·R/J 규칙·RAG·생성·guardrail·PII·end-to-end offline 평가와 단계별 provider 오류·할당량·응답 검증 실패 기록, Gemini→로컬·embedding→BM25·Cohere→hybrid fallback 실행 계층.
 - 미구현·후속: GPT 저신뢰 재검토 경로, 선택 실험 `local_model`, 실제 provider smoke test, routing 전용 데이터셋·품질 평가.
-- 확정(2026-07-14): 상용 LLM Gemini 3.5 Flash(구조화·추출)·GPT-5.6 Sol(생성·재검토). 공식 API model ID는 `gpt-5.6-sol`; 실제 유료 호출은 키·비용 승인 후 수행.
+- 변경 확정(2026-07-20): 상용 LLM Gemini 3.5 Flash가 구조화·추출과 생성·재검토를 담당한다. 공식 API model ID는 `gemini-3.5-flash`; 실제 유료 호출은 키·비용 승인 후 수행.
 - 확정(2026-07-14 변경): 스캔 PDF·이미지는 Gemini 3.5 Flash가 원본에서 고정 Pydantic 필드를 1회 호출로 직접 추출한다. 디지털 PDF는 PyMuPDF 텍스트 경로다. PaddleOCR-VL은 선택 비교실험이다 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`).
 - 확정·구현(offline 경계): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro·Chroma 로컬 모드. 실제 유료 호출 smoke test는 별도 승인 필요 (`../docs/decisions/2026-07-16-mvp-platform-stack.md`).
 - 구현 완료(2026-07-19): `schemas/`의 Pydantic 모델이 런타임 통합 스키마 단일 원본이다. v1.9.0은 v1.8.0 읽기 호환과 `ClassificationInput`·`ClassificationResult`·fallback provenance 계약을 추가했다. Frontend는 두 버전을 지원하며, Backend worker는 classification 실행 결과를 내부 저장하고 API에는 노출하지 않는다 (`../docs/decisions/2026-07-18-classification-boundary.md`).

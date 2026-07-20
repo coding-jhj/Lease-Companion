@@ -15,7 +15,7 @@ from lease_companion_ai.generation.service import GenerationService
 from lease_companion_ai.pipelines.classified_analysis import analyze_with_classification
 from lease_companion_ai.pipelines.minimum_mvp import extract_documents
 from lease_companion_ai.providers.gemini_classification import GeminiClassificationProvider
-from lease_companion_ai.providers.openai_generation import OpenAIGenerationProvider
+from lease_companion_ai.providers.gemini_generation import GeminiGenerationProvider
 from lease_companion_ai.schemas.adapters import document_from_legacy
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
@@ -163,7 +163,9 @@ def _run_generation(
     (fallback 여부는 각 항목 generation_method로 구분) 여기 실패는 전체 생성 실패뿐이다.
     """
     try:
-        provider = OpenAIGenerationProvider() if os.getenv("OPENAI_API_KEY") else None
+        provider = GeminiGenerationProvider() if (
+            os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        ) else None
         generation = GenerationService(provider=provider).generate(
             analysis, contract_context
         )
