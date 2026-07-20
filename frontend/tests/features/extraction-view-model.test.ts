@@ -110,4 +110,13 @@ describe("J structured field values", () => {
       ),
     ).toEqual(["임대인은 수리하고, 임차인에게 알린다.", "두 번째 조항"]);
   });
+
+  it("restores R11-R19 field types when a failed extraction is manually entered", () => {
+    expect(correctionValue("300,000,000", extractedField("estimated_housing_value", null), "contract")).toBe(300_000_000);
+    expect(correctionValue("예", extractedField("violation_building", null), "contract")).toBe(true);
+    expect(correctionValue("위임장, 인감증명서", extractedField("proxy_authority_documents", null), "contract")).toEqual([
+      "위임장",
+      "인감증명서",
+    ]);
+  });
 });

@@ -69,7 +69,7 @@ def test_sample_case_001_extracts_core_fields():
     assert registry_fields["seizure_present"] is False
 
 
-def test_rules_return_all_ten_results_without_safety_score():
+def test_rules_return_all_twenty_four_results_without_safety_score():
     contract = {
         "landlord_name": "이정훈",
         "property_address": "서울특별시 가온구 나래로 12, 305동 1201호",
@@ -91,7 +91,8 @@ def test_rules_return_all_ten_results_without_safety_score():
     results = run_rules(contract, registry)
     by_id = {result.rule_id: result for result in results}
 
-    assert len(results) == 10
+    assert len(results) == 24
+    assert [result.rule_id for result in results] == [f"R{i:02d}" for i in range(1, 25)]
     assert by_id["R01"].status == "불일치"
     assert by_id["R02"].status == "일치"
     assert by_id["R03"].status == "확인 필요"
@@ -194,7 +195,7 @@ def test_gemini_field_shape_feeds_run_rules():
     ).model_dump()
 
     by_id = {r.rule_id: r for r in run_rules(contract, registry)}
-    assert len(by_id) == 10
+    assert len(by_id) == 24
     assert by_id["R01"].status == "일치"        # landlord ∈ owners
     assert by_id["R03"].status == "확인 불가"    # mortgage_present=None (tri-state)
     assert by_id["R05"].status == "확인 불가"    # trust_present=None
@@ -310,13 +311,14 @@ def test_verified_legacy_analysis_uses_canonical_result_contract():
         ),
     )
 
-    assert [result["rule_id"] for result in results] == [f"R{i:02d}" for i in range(1, 11)]
+    assert [result["rule_id"] for result in results] == [f"R{i:02d}" for i in range(1, 25)]
     assert all(set(result) == {
         "rule_id", "rule_name", "judgment_id", "status", "urgency", "reason",
         "result_type", "triggers_actions", "question", "recommended_actions",
         "evidence_sources", "limitations", "completed",
     } for result in results)
-    legacy_results = [result.to_dict() for result in run_rules(contract, registry)]
+    direct_contract = {**contract, "is_proxy_contract": False}
+    legacy_results = [result.to_dict() for result in run_rules(direct_contract, registry)]
     for result, legacy in zip(results, legacy_results, strict=True):
         comparable = {
             key: value
@@ -326,6 +328,48 @@ def test_verified_legacy_analysis_uses_canonical_result_contract():
         assert comparable == {key: value for key, value in legacy.items() if key != "evidence_sources"}
         assert legacy["evidence_sources"] == []
         assert all(source["source_id"].startswith("SRC-") for source in result["evidence_sources"])
+
+
+def test_extended_rules_calculate_inputs_and_keep_deferred_rules_honest():
+    contract = {
+        "deposit": 180_000_000,
+        "estimated_housing_value": 300_000_000,
+        "is_proxy_contract": True,
+        "proxy_authority_documents": ["위임장", "인감증명서"],
+        "building_use": "공동주택",
+        "violation_building": False,
+        "guarantee_eligibility_confirmed": True,
+        "lessor_sublease_authority_confirmed": False,
+        "management_fee_present": True,
+        "management_fee": 120_000,
+        "management_fee_items": ["일반관리비", "수도료"],
+        "rights_change_clause_present": True,
+    }
+    registry = {"senior_claim_amount": 60_000_000}
+
+    by_id = {result.rule_id: result for result in run_rules(contract, registry)}
+
+    assert "60.0%" in by_id["R11"].reason
+    assert "60,000,000원" in by_id["R12"].reason
+    assert by_id["R13"].status == "명확"
+    assert by_id["R14"].status == "명확"
+    assert by_id["R15"].status == "명확"
+    assert by_id["R16"].status == "확인 필요"
+    assert by_id["R17"].status == "확인 필요"
+    assert by_id["R18"].status == "명확"
+    assert by_id["R19"].status == "명확"
+    assert {by_id[rule_id].status for rule_id in ("R20", "R21", "R22")} == {"확인 불가"}
+    assert {by_id[rule_id].status for rule_id in ("R23", "R24")} == {"확인 필요"}
+
+    not_applicable = {
+        result.rule_id: result
+        for result in run_rules(
+            {"is_proxy_contract": False, "management_fee_present": False},
+            {},
+        )
+    }
+    assert not_applicable["R13"].reason == "대리계약이 아닌 것으로 입력되어 이 항목은 적용하지 않습니다."
+    assert not_applicable["R18"].reason == "관리비가 없는 것으로 입력되어 이 항목은 적용하지 않습니다."
 
 
 def test_registry_parser_keeps_only_latest_full_transfer_owner():

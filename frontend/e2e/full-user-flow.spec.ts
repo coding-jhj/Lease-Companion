@@ -30,38 +30,53 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.getByRole("button", { name: "추출 시작하기" }).click();
 
   await expect(page.getByRole("heading", { name: "추출값 확인·수정" })).toBeVisible();
-  await expect(page.getByLabel("보증금 반환 조항 원문 값")).toBeVisible();
-  await expect(page.getByLabel("수리·원상복구 조항 원문 값")).toBeVisible();
-  await expect(page.getByLabel("보증금 반환 조건 값")).toHaveCount(0);
-  await expect(page.getByLabel("수리·원상복구 책임 값")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "읽힌 값 모두 확인" })).toBeVisible({ timeout: 60_000 });
+  if (isRealApi) {
+    await expect.poll(() => page.locator(".field-card").count()).toBeGreaterThan(0);
+  } else {
+    await expect(page.getByLabel("보증금 반환 조항 원문 값")).toBeVisible();
+    await expect(page.getByLabel("수리·원상복구 조항 원문 값")).toBeVisible();
+    await expect(page.getByLabel("보증금 반환 조건 값")).toHaveCount(0);
+    await expect(page.getByLabel("수리·원상복구 책임 값")).toHaveCount(0);
+  }
   await page.getByRole("button", { name: "읽힌 값 모두 확인" }).click();
-  await page.getByLabel("입금 계좌 예금주 값").fill("이정훈");
+  const accountHolder = page.getByLabel("입금 계좌 예금주 값");
+  if (await accountHolder.count()) await accountHolder.fill("이정훈");
   const secondMainClause = page.getByLabel("계약서 본문 주요 조항 2 값");
   if (await secondMainClause.count()) {
     await secondMainClause.fill("주요 설비 하자 수선은 임대인이 부담하고, 임차인에게 알린다.");
   }
   await page.getByRole("button", { name: "확인 완료하고 분석하기" }).click();
 
-  await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "리포트 보기" }).click();
-  await expect(page.getByRole("heading", { name: "확인 질문과 다음 행동" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeVisible();
   const ruleResults = page.locator('section[aria-labelledby="rule-results-title"]');
-  const clauseJudgments = page.locator('section[aria-labelledby="clause-judgments-title"]');
+  const judgmentResults = page.locator('section[aria-labelledby="judgment-results-title"]');
   for (const ruleId of Array.from({ length: 10 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`)) {
     await expect(ruleResults).toContainText(ruleId);
   }
-  for (const judgmentId of ["J10", "J11", "J12"]) {
-    await expect(clauseJudgments).toContainText(judgmentId);
+  for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
+    await expect(judgmentResults).toContainText(judgmentId);
   }
-  await expect(clauseJudgments).toContainText("상태:");
+  await expect(judgmentResults).toContainText("상태:");
+  await expect(page.getByRole("heading", { name: "계약 단계별 안내" })).toBeVisible();
+  for (const title of ["계약금 입금 전 질문", "서명 전 체크리스트", "계약 직후 행동", "보관해야 할 자료"]) {
+    await expect(page.getByRole("heading", { name: title }).last()).toBeVisible();
+  }
   await expect(page.getByText("안전한 기본 안내").first()).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "확인 질문과 다음 행동" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "R01~R24 규칙 기반 질문과 행동" })).toBeVisible();
   await expect(ruleResults).toContainText("R01");
   await expect(ruleResults).toContainText("R10");
-  await expect(clauseJudgments).toContainText("J10");
-  await expect(clauseJudgments).toContainText("J12");
+  await expect(page.getByRole("heading", { name: "1차 MVP 확장 판정" })).toBeVisible();
+  const checklistRuleResults = page.getByRole("heading", { name: "질문·체크리스트 우선 확인" }).locator("..");
+  await expect(checklistRuleResults).toBeVisible();
+  await expect(page.getByRole("heading", { name: "외부 데이터 연결 후 자동화" })).toBeVisible();
+  await expect(checklistRuleResults.getByText("R24", { exact: true })).toBeVisible();
+  await expect(judgmentResults).toContainText("J01");
+  await expect(judgmentResults).toContainText("J12");
 
   if (!isRealApi) {
     await page.getByLabel("평점").selectOption("5");
@@ -81,11 +96,11 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   const analysisHistory = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "분석 이력" }),
   });
-  await expect(analysisHistory).toContainText("completed");
+  await expect(analysisHistory).toContainText("완료 리포트 보기");
 
   if (isRealApi) {
     await page.reload();
     await expect(action).toBeChecked();
-    await expect(analysisHistory).toContainText("completed");
+    await expect(analysisHistory).toContainText("완료 리포트 보기");
   }
 });

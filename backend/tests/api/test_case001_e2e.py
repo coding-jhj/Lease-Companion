@@ -99,7 +99,12 @@ def test_case001_full_flow(client):
     detail = client.get(f"/api/contracts/{cid}/analysis-runs/{run_id}", headers=auth).json()
     assert detail["status"] == "completed", detail.get("error")
     results = detail["result"]["results"]
-    assert [r["rule_id"] for r in results] == [f"R{i:02d}" for i in range(1, 11)]
+    assert [r["rule_id"] for r in results] == [f"R{i:02d}" for i in range(1, 25)]
+    by_rule = {result["rule_id"]: result for result in results}
+    assert by_rule["R16"]["status"] == "확인 필요"
+    assert by_rule["R23"]["question"]
+    assert by_rule["R24"]["recommended_actions"]
+    assert {by_rule[rule_id]["status"] for rule_id in ("R20", "R21", "R22")} == {"확인 불가"}
     # 생성 결과 분리 저장 — 키 없는 오프라인 실행도 template fallback으로 완료
     assert detail["generation_status"] == "completed"
     assert detail["generation_result"]["guardrail_passed"] is True

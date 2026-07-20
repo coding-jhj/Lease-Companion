@@ -39,6 +39,8 @@ export const mvpService = {
       headers: jsonHeaders,
       body: JSON.stringify({ title }),
     }),
+  deleteContract: (contractId: number) =>
+    apiClient<void>(`/api/contracts/${contractId}`, { method: "DELETE" }),
   saveSituation: (contractId: number, situation: SituationRequestDto) =>
     apiClient<ContractSummaryDto>(`/api/contracts/${contractId}/situation`, {
       method: "PUT",

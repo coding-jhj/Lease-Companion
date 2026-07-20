@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 120_000,
   fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: "list",
   use: {
@@ -12,8 +13,12 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "real-api-mobile-chromium",
-      use: { ...devices["Pixel 7"] },
+      name: "real-api-mobile-320",
+      use: { ...devices["Pixel 7"], viewport: { width: 320, height: 720 } },
+    },
+    {
+      name: "real-api-mobile-360",
+      use: { ...devices["Pixel 7"], viewport: { width: 360, height: 800 } },
     },
   ],
 });
