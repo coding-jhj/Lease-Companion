@@ -56,9 +56,10 @@ npm install
 npm run dev
 npm test
 npm run test:e2e
+npm run test:e2e:real
 ```
 
-`npm run test:e2e`는 Playwright Chromium 모바일 viewport에서 MSW 기반 8단계 사용자 흐름을 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
+`npm run test:e2e`는 Playwright Chromium 320px·360px viewport에서 MSW 기반 8단계 사용자 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
 
 기본 개발 실행은 실제 API를 사용한다. MSW 기반 test/Story 개발이 필요할 때만 `VITE_ENABLE_MSW=true`를 설정한다.
 
@@ -84,11 +85,11 @@ npm run test:e2e
 - React + Vite + TypeScript SPA 초기화와 사용자 흐름 8단계 화면 구현 완료.
 - JWT Bearer 로그인, 계약·문서·추출·분석·체크리스트 실제 API 연결 완료. refresh token과 운영 토큰 정책은 Backend TODO를 따른다.
 - 추출과 분석은 `pending`·`running`·`completed`·`failed` 상태를 실제 API 폴링으로 처리한다.
-- 추출과 분석은 공통 `pollUntilTerminal()`을 사용한다. 로컬 MVP 임시 최대 대기시간은 60초이며, timeout은 Backend `failed`와 구분해 기존 실행 상태를 다시 확인한다. 화면 이탈 시 폴링을 중단한다.
+- 추출과 분석은 공통 `pollUntilTerminal()`을 사용한다. 분석은 규칙 결과뿐 아니라 안내 생성이 완료 또는 실패 상태가 될 때까지 기다린다. 로컬 MVP 임시 최대 대기시간은 60초이며, timeout은 Backend `failed`와 구분해 기존 실행 상태를 다시 확인한다. 화면 이탈 시 폴링을 중단한다.
 - 분석 규칙 결과와 안내 생성 상태는 분리한다. 안내 생성만 실패하면 규칙 결과를 유지하고 사용자에게 별도 안내를 표시한다.
-- 리포트는 canonical v1.8.0 `GenerationResult`의 R/J 설명·질문·서명 전 체크리스트·계약 직후 행동과 안전한 fallback 표시를 제공한다.
+- 리포트는 R01~R24 규칙 결과와 J01~J12 전체 판정을 분리해 상태·시급도·질문·근거·행동을 표시한다. R 규칙은 기존 R01~R10, 1차 MVP 확장, 질문·체크리스트 우선, 외부 데이터 연결 대기 영역으로 구분한다. canonical `GenerationResult`의 R/J 생성 안내와 `stage_guidance` 4영역(계약금 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 자료)도 제공한다.
 - 체크리스트·계약 직후 행동은 안정 `item_key`로 실제 문구와 저장 상태를 결합한다.
-- 피드백 등록·이력, 분석 이력, 문서 이력 API를 화면에 연결했다.
-- MSW는 실제 API 경로·DTO와 같은 계약을 사용하며, Playwright E2E로 8단계 흐름을 검증한다.
+- 피드백 등록·이력, 과거 완료 리포트 링크, 문서 이력, 계약 삭제 API를 화면에 연결했다.
+- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-20 기준 단위·컴포넌트 41개, MSW E2E 2개, 실제 PostgreSQL/API E2E 2개(320px·360px)가 통과했다.
 - `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

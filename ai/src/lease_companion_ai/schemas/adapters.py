@@ -1,6 +1,6 @@
 """통합 스키마(unified) ↔ 기존 최소 MVP 코드 사이의 변환 계층.
 
-기존 R01~R10 규칙 엔진(rules/minimum_mvp.run_rules)은 재작성하지 않는다.
+R01~R24 규칙 엔진(rules/minimum_mvp.run_rules)을 canonical 결과로 변환한다.
 흐름: 기존 추출 dict → DocumentExtraction → (사용자 확인·수정) → InputSnapshot
       → effective value 평면 dict → 기존 run_rules() → RuleResult(unified).
 
@@ -218,9 +218,11 @@ def analyze_snapshot(
     analysis_run_id: str,
     classification_result: ClassificationResult | None = None,
 ) -> AnalysisRunResult:
-    """확인 완료 스냅샷으로 R01~R10과 J01~J12를 실행한다."""
+    """확인 완료 스냅샷으로 R01~R24와 J01~J12를 실행한다."""
+    contract_inputs = rule_inputs(snapshot.confirmed_fields.contract)
+    contract_inputs["is_proxy_contract"] = snapshot.contract_context.is_proxy_contract
     legacy_results = run_rules(
-        rule_inputs(snapshot.confirmed_fields.contract),
+        contract_inputs,
         rule_inputs(snapshot.confirmed_fields.registry),
     )
     analysis = AnalysisRunResult(

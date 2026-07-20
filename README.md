@@ -108,40 +108,88 @@ ai 파이프라인
 - refresh token·토큰 폐기·운영 서명 키 관리와 운영용 토큰 만료 정책
 - 로컬 7B 베이스 모델 (상용 대비 선택적 성능비교 실험 — 베이스 미정)
 
-## 최소 MVP 실행
+## 로컬 실행 (전체 MVP)
 
-현재 최소 MVP는 계약서와 등기사항증명서를 업로드하고, 추출값을 확인·수정한 뒤 R01~R10 결과와 질문·행동·근거 후보를 확인하는 브라우저 데모다.
+회원가입부터 계약 건 저장, 문서 업로드, 추출값 확인·수정, 분석 리포트와 체크리스트 재조회까지 실행하는 기본 경로다. Windows PowerShell 기준이며 다음 프로그램이 필요하다.
 
-### 1. 의존성 설치
+- Python 3.10
+- Node.js 20.19 이상 또는 22.12 이상과 npm
+- Docker Desktop
 
-최소 MVP는 Python 3.10을 사용한다.
+### 1. 최초 1회 설치
 
-저장소 루트에서 PowerShell을 열고 실행한다.
-
-```powershell
-python -m pip install -r requirements-minimum-mvp.txt
-```
-
-### 2. 서버 실행
+저장소 루트에서 Python 가상환경과 백엔드·AI 의존성을 설치한다.
 
 ```powershell
-.\scripts\run-minimum-mvp.ps1
+py -3.10 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e .\ai -e .\backend
+
+if (-not (Test-Path backend\.env)) {
+    Copy-Item backend\.env.example backend\.env
+}
+
+cd frontend
+npm install
+cd ..
 ```
 
-### 3. 브라우저 접속
+PowerShell이 가상환경 스크립트 실행을 막으면 현재 터미널에서 `Set-ExecutionPolicy -Scope Process Bypass`를 한 번 실행한 뒤 다시 활성화한다. `backend/.env`의 개발용 DB 주소와 JWT 키는 Docker 로컬 실행에 바로 사용할 수 있는 예시값이다. 실제 비밀값은 Git에 커밋하지 않는다.
 
-```text
-http://127.0.0.1:8000
+Gemini·Cohere 실호출은 선택 사항이다. 사용하려면 `backend/.env`에 `GEMINI_API_KEY`와 `COHERE_API_KEY`를 설정한다. 키가 없으면 디지털 PDF/TXT 추출, 정규식 구조화 폴백, 로컬 BM25 근거 검색과 안전 생성 폴백으로 동작한다. 스캔·사진 PDF의 OCR에는 `GEMINI_API_KEY`가 필요하다.
+
+### 2. PostgreSQL 시작과 마이그레이션
+
+Docker Desktop을 실행한 뒤 저장소 루트에서 실행한다. PostgreSQL은 로컬 `5432`와 겹치지 않도록 `5433` 포트를 사용한다.
+
+```powershell
+docker compose up -d db
+
+cd backend
+..\.venv\Scripts\Activate.ps1
+alembic upgrade head
 ```
 
-개발 확인에는 다음 합성 TXT 샘플을 사용할 수 있다.
+DB 연결을 확인하려면 같은 `backend` 터미널에서 `python -m app.core.db`를 실행한다.
+
+### 3. 백엔드 실행 (터미널 1)
+
+```powershell
+cd backend
+..\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+`http://127.0.0.1:8000/health`에서 `{"status":"ok"}`가 나오면 준비된 상태다. API 문서는 `http://127.0.0.1:8000/docs`에서 확인한다.
+
+### 4. 프론트엔드 실행 (터미널 2)
+
+```powershell
+cd frontend
+npm run dev
+```
+
+브라우저에서 `http://127.0.0.1:5173`에 접속한다. 기본 개발 모드는 MSW가 아니라 `http://127.0.0.1:8000`의 실제 백엔드 API를 사용한다.
+
+개발 확인용 문서는 다음 합성 샘플을 사용할 수 있다.
 
 - 계약서: `data/sample/contracts/contract_001.txt`
 - 등기사항증명서: `data/sample/registry-records/registry_001.txt`
 
-텍스트 레이어가 있는 PDF·UTF-8 TXT와 스캔·사진 PDF(OCR — Gemini VLM, `GEMINI_API_KEY` 필요)를 지원한다. 구조화는 상용 LLM(Gemini 3.5 Flash)이 기본이며 키가 없거나 호출 실패 시 정규식 파서로 폴백한다. 회원·DB 저장은 아직 포함하지 않는다. 상세한 실행 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
+서버는 각 터미널에서 `Ctrl+C`로 종료하고 DB는 저장소 루트에서 `docker compose down`으로 중지한다. 이 명령은 DB 데이터를 보존한다.
 
-전체 MVP의 프론트엔드(React + Vite + TypeScript)·DB(PostgreSQL)·인증(JWT Bearer)은 2026-07-16 확정됐다. 회원·계약·문서 업로드·추출/수정/확인·분석 실행/조회·체크리스트 상태 API와 이를 사용하는 프론트 8단계 흐름이 구현됐다. 환경변수는 `backend/.env.example`을 복사해 사용하고, 프론트 실행은 [`frontend/README.md`](frontend/README.md)를 따른다.
+### DB 없이 빠르게 데모만 실행
+
+회원·계약 건 저장이 필요 없는 단일 서버 데모는 저장소 루트에서 다음과 같이 실행한다.
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-minimum-mvp.txt
+.\scripts\run-minimum-mvp.ps1
+```
+
+브라우저에서 `http://127.0.0.1:8000`에 접속한다. 이 경로는 정식 React 프론트엔드와 PostgreSQL 영속 저장을 포함하지 않는다. 상세 범위와 제한사항은 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 참고한다.
 
 ## 데이터 / 개인정보 보호 원칙
 
@@ -153,6 +201,6 @@ http://127.0.0.1:8000
 
 ## 현재 프로젝트 상태
 
-구조·설계 문서·평가 데이터에 더해 **최소 MVP 브라우저 데모**가 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R10 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
+구조·설계 문서·평가 데이터에 더해 **MVP 브라우저 앱**이 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R24 규칙 실행, 항목별 질문·행동·근거 후보 표시까지 동작한다.
 
-RAG 배치 1~3으로 공식 출처 manifest, 이용조건이 확인된 법령 원문 2개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid 검색·규칙 근거 enrichment·retrieval 평가가 구현됐다. 외부 Gemini·Cohere 실호출은 수행하지 않았으며 현재 로컬 공식 원문이 2개라 retrieval 실측치는 낮다. 생성 배치 4~5와 A10 offline 작업으로 내부 생성 계약·fake provider·안전 fallback·PII 토큰화·Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계가 구현됐다. 실제 유료 Gemini smoke는 미수행이다. 회원·계약·문서·추출 스냅샷·분석 결과·체크리스트 상태 저장 API와 정식 프론트엔드 연결은 구현됐으며, J01~J12 전체 판정 확장은 후속 대상이다. 최소 MVP 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
+RAG 배치 1~3으로 공식 출처 manifest, 이용조건이 확인된 공식 원문 3개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid 검색·규칙 근거 enrichment·retrieval 평가가 구현됐다. 외부 Gemini·Cohere 실호출은 수행하지 않았으며 현재 로컬 공식 원문이 3개라 retrieval 실측 범위는 여전히 제한적이다. 생성 배치 4~5와 A10 offline 작업으로 내부 생성 계약·fake provider·안전 fallback·PII 토큰화·Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계가 구현됐다. 실제 유료 Gemini smoke는 미수행이다. 회원·계약·문서·추출 스냅샷·R01~R24·J01~J12 분석 결과·단계별 안내·체크리스트 상태 저장 API와 정식 프론트엔드 연결이 구현됐다. 2026-07-20에는 PostgreSQL·실제 Backend·MSW 비활성 Frontend를 연결한 320px·360px Playwright E2E를 통과했다. 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.

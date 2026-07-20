@@ -5,6 +5,7 @@ import correctionRequestFixture from "../../../data/sample/fixtures/case-001/cor
 import inputSnapshotFixture from "../../../data/sample/fixtures/case-001/input_snapshot.json";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
 import generationResultFixture from "../../../data/sample/fixtures/case-001/generation_result.json";
+import extendedRuleResultsFixture from "../../../data/sample/fixtures/case-001/extended_rule_results.json";
 import type {
   AnalysisRunDetailDto,
   AnalysisRunResultDto,
@@ -19,6 +20,7 @@ import type {
   FeedbackDto,
   GenerationResultDto,
   InputSnapshotDto,
+  RuleResultDto,
 } from "../types/api";
 import { CASE_001_CONTRACT_ID } from "./mockRoutes";
 
@@ -42,7 +44,13 @@ export const case001Fixtures = {
   registry_extraction: registryExtractionFixture as DocumentExtractionDto,
   correction_request: correctionRequestFixture as CorrectionRequestDto,
   input_snapshot: inputSnapshotFixture as InputSnapshotDto,
-  analysis_run_result: analysisRunResultFixture as AnalysisRunResultDto,
+  analysis_run_result: {
+    ...(analysisRunResultFixture as AnalysisRunResultDto),
+    results: [
+      ...(analysisRunResultFixture as AnalysisRunResultDto).results,
+      ...(extendedRuleResultsFixture as RuleResultDto[]),
+    ],
+  },
   generation_result: generationResultFixture as GenerationResultDto,
 };
 
@@ -101,6 +109,7 @@ export const handlers = [
     }
     return HttpResponse.json({ ...mockContract, title: body.title }, { status: 201 });
   }),
+  http.delete("/api/contracts/:contractId", () => new HttpResponse(null, { status: 204 })),
   http.put("/api/contracts/:contractId/situation", async ({ request }) =>
     HttpResponse.json({ ...mockContract, ...await request.json() as object }),
   ),

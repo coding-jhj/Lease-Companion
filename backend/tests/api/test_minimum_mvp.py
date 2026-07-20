@@ -60,7 +60,7 @@ def test_extract_review_analyze_flow():
     )
     assert analysis_response.status_code == 200
     payload = analysis_response.json()
-    assert len(payload["results"]) == 10
+    assert len(payload["results"]) == 24
     assert "안전" in payload["disclaimer"]
 
 

@@ -12,8 +12,12 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "mobile-chromium",
-      use: { ...devices["Pixel 7"] },
+      name: "mobile-320",
+      use: { ...devices["Pixel 7"], viewport: { width: 320, height: 720 } },
+    },
+    {
+      name: "mobile-360",
+      use: { ...devices["Pixel 7"], viewport: { width: 360, height: 800 } },
     },
   ],
 });

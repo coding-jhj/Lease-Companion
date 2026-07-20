@@ -162,9 +162,12 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
     )
     analysis = analyze_snapshot(snapshot, analysis_run_id="RUN-1")
 
-    direct = run_rules(gold_extraction["contract"], gold_extraction["registry"])
+    direct = run_rules(
+        {**gold_extraction["contract"], "is_proxy_contract": _context().is_proxy_contract},
+        gold_extraction["registry"],
+    )
     direct_by_id = {r.rule_id: r for r in direct}
-    assert len(analysis.results) == 10
+    assert len(analysis.results) == 24
     assert [item.judgment_id for item in analysis.judgments] == [
         f"J{index:02d}" for index in range(1, 13)
     ]
@@ -186,7 +189,9 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
             result.status.value not in {"일치", "명확", "적용 제외"}
         )
     # CASE-001 rule goldset 유지
-    assert {r.rule_id: r.status.value for r in analysis.results} == gold_statuses
+    assert {
+        r.rule_id: r.status.value for r in analysis.results if r.rule_id in gold_statuses
+    } == gold_statuses
 
 
 def test_extraction_goldset_values_survive_adapter_round_trip():
@@ -222,7 +227,13 @@ def test_regex_parser_output_feeds_adapter_and_rules():
         confirmed_at=CONFIRMED_AT,
     )
     analysis = analyze_snapshot(snapshot, analysis_run_id="RUN-1")
-    direct = {r.rule_id: r.status for r in run_rules(legacy_contract["fields"], legacy_registry["fields"])}
+    direct = {
+        r.rule_id: r.status
+        for r in run_rules(
+            {**legacy_contract["fields"], "is_proxy_contract": _context().is_proxy_contract},
+            legacy_registry["fields"],
+        )
+    }
     assert {r.rule_id: r.status.value for r in analysis.results} == direct
 
 

@@ -296,7 +296,7 @@
       "items": {
         "$ref": "#/$defs/RuleResult"
       },
-      "maxItems": 10,
+      "maxItems": 24,
       "minItems": 10,
       "title": "Results",
       "type": "array"

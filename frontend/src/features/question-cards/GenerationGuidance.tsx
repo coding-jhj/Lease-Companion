@@ -16,11 +16,19 @@ function guidanceId(item: GuidanceDto) {
   return "rule_id" in item ? item.rule_id : item.judgment_id;
 }
 
-export function GenerationGuidance({ items }: { items: GuidanceDto[] }) {
+export function GenerationGuidance({
+  items,
+  title = "확인 질문과 다음 행동",
+  headingId = "guidance-title",
+}: {
+  items: GuidanceDto[];
+  title?: string;
+  headingId?: string;
+}) {
   if (items.length === 0) return null;
   return (
-    <section className="guidance-list" aria-labelledby="guidance-title">
-      <h2 id="guidance-title">확인 질문과 다음 행동</h2>
+    <section className="guidance-list" aria-labelledby={headingId}>
+      <h2 id={headingId}>{title}</h2>
       {items.map((item) => (
         <article className="guidance-card" key={guidanceId(item)}>
           <div className="guidance-card__header">

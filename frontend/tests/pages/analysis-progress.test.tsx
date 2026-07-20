@@ -19,7 +19,7 @@ function run(status: AsyncRunStatus, error: string | null = null): AnalysisRunDe
     created_at: "2026-07-16T00:00:00Z",
     result: null,
     generation_result: null,
-    generation_status: null,
+    generation_status: status === "completed" ? "completed" : null,
     generation_error: null,
   };
 }
@@ -138,5 +138,24 @@ describe("AnalysisProgressPage", () => {
     });
 
     expect(getRun).not.toHaveBeenCalled();
+  });
+
+  it("waits for generation to become terminal after rule analysis completes", async () => {
+    vi.useFakeTimers();
+    const generationRunning = { ...run("completed"), generation_status: "running" as const };
+    const generationCompleted = { ...run("completed"), generation_status: "completed" as const };
+    vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(run("pending"));
+    const getRun = vi.spyOn(mvpService, "getAnalysisRun")
+      .mockResolvedValueOnce(generationRunning)
+      .mockResolvedValueOnce(generationCompleted);
+
+    renderPage();
+    await flushPromises();
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS); });
+    expect(screen.getByRole("heading", { name: "계약 내용을 분석하고 있어요" })).toBeInTheDocument();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS); });
+    expect(screen.getByRole("heading", { name: "분석 완료" })).toBeInTheDocument();
+    expect(getRun).toHaveBeenCalledTimes(2);
   });
 });

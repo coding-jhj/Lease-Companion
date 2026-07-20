@@ -16,3 +16,23 @@ R09,SRC-STD-LEASE,수리 책임 표준 문구
 R10,SRC-STD-LEASE,계약 후 권리변동 제한 표준 특약 문구
 R10,SRC-HTA-LAW,임차인 보호 관련 법령 근거
 R10,SRC-MOLIT-CHECKLIST,권리 보호 특약 확인 안내
+R11,SRC-MOLIT-CHECKLIST,보증금과 주택가치 비교 확인 안내
+R12,SRC-MOLIT-CHECKLIST,선순위 권리와 금액 확인 안내
+R13,SRC-POA-FORM,위임장 확인 참고 서식
+R13,SRC-MOLIT-CHECKLIST,대리계약 권한 확인 안내
+R14,SRC-BLDG-LEDGER,건축물 용도와 위반건축물 확인 서식
+R14,SRC-MOLIT-CHECKLIST,건축물대장 확인 안내
+R15,SRC-HUG,전세보증 상품 요건 공식 안내
+R16,SRC-MOLIT-CHECKLIST,계약 전 중복계약 질문 안내
+R17,SRC-MOLIT-CHECKLIST,임대와 전대 권한 확인 안내
+R18,SRC-STD-LEASE,관리비 금액과 포함 항목 표준 기재
+R18,SRC-CONFIRM-FORM,관리비와 추가비용 확인 항목
+R19,SRC-STD-LEASE,계약 전후 권리변동 제한 표준 특약
+R19,SRC-MOLIT-CHECKLIST,지급 단계별 최신 등기 확인 안내
+R20,SRC-MOLIT-CHECKLIST,주택가격과 보증금 비교 확인 안내
+R21,SRC-HUG,보증기관 공식 확인 절차 안내
+R22,SRC-STD-LEASE,미납 국세와 지방세 확인 안내
+R22,SRC-MOLIT-CHECKLIST,세금 관련 계약 전 확인 안내
+R23,SRC-STD-LEASE,선순위 임대차 정보 고지와 확인 안내
+R23,SRC-MOLIT-CHECKLIST,다가구 선순위 임차보증금 확인 안내
+R24,SRC-MOLIT-CHECKLIST,최신 등기와 소유권 이력 확인 안내

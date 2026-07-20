@@ -11,12 +11,15 @@ import { case001Fixtures } from "../../src/mocks/handlers";
 import { CASE_001_CONTRACT_ID } from "../../src/mocks/mockRoutes";
 
 describe("CASE-001 MSW fixtures", () => {
-  it("uses canonical repository fixtures without field rewriting", () => {
+  it("uses canonical repository fixtures and appends the staged R11-R24 fixture", () => {
     expect(case001Fixtures.contract_extraction).toEqual(contractExtraction);
     expect(case001Fixtures.registry_extraction).toEqual(registryExtraction);
     expect(case001Fixtures.correction_request).toEqual(correctionRequest);
     expect(case001Fixtures.input_snapshot).toEqual(inputSnapshot);
-    expect(case001Fixtures.analysis_run_result).toEqual(analysisRunResult);
+    expect({
+      ...case001Fixtures.analysis_run_result,
+      results: case001Fixtures.analysis_run_result.results.slice(0, 10),
+    }).toEqual(analysisRunResult);
     expect(case001Fixtures.generation_result).toEqual(generationResult);
   });
 
@@ -60,19 +63,10 @@ describe("CASE-001 MSW fixtures", () => {
     expect(guidance.post_contract_actions).toEqual([]);
   });
 
-  it("keeps the complete ordered R01-R10 result", () => {
-    expect(case001Fixtures.analysis_run_result.results.map((item) => item.rule_id)).toEqual([
-      "R01",
-      "R02",
-      "R03",
-      "R04",
-      "R05",
-      "R06",
-      "R07",
-      "R08",
-      "R09",
-      "R10",
-    ]);
+  it("keeps the complete ordered R01-R24 result", () => {
+    expect(case001Fixtures.analysis_run_result.results.map((item) => item.rule_id)).toEqual(
+      Array.from({ length: 24 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`),
+    );
     expect(
       case001Fixtures.analysis_run_result.judgments
         .filter((item) => ["J10", "J11", "J12"].includes(item.judgment_id))

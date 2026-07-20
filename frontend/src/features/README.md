@@ -11,7 +11,7 @@
 | `contract-stage` | 3 | 계약 상황(단계·유형) 입력 |
 | `document-upload` | 4 | 계약서·등기 등 문서 업로드 |
 | `extraction-review` | 5 | AI 추출값 확인·수정 |
-| `judgment-results` | 7 | 현재 R01~R10 결과 표시. J01~J12 확장 후 동일 feature에서 전체 판정 소비 |
+| `judgment-results` | 7 | R01~R24 단계형 규칙 결과와 J01~J12 판정을 분리해 표시 |
 | `evidence-sources` | 7 | 원문 증거·공식 근거(RAG) 표시 |
 | `question-cards` | 7 | 임대인·공인중개사 대상 확인 질문 카드 |
 | `signing-checklist` | 8 | 서명 전 체크리스트 |

@@ -4,7 +4,7 @@
 
 ## 파일 (규칙 축별 단일 소스)
 
-- **`rule_spec.csv` — R01~R10 정의의 단일 소스.** 사용자 리포트 문구·시급도·근거 ID를 포함한다.
+- **`rule_spec.csv` — R01~R24 정의의 단일 소스.** 사용자 리포트 문구·시급도·근거 ID를 포함한다.
 - **`judgment_spec.csv` — J01~J12 정의·표현 메타데이터의 단일 소스.** 입력·조건·예외·허용 상태·시급도·근거·버전·구현 위치를 기록하며 `judgments.py`가 사용자 문구와 한계를 직접 읽는다.
 - `source_inventory.csv` — 후보 15개의 메타데이터와 `official_verified`·`synthetic_reference`·`unverified`·`excluded` 검증 상태. `official_verified`만 OfficialSource로 노출한다.
 - `rule_evidence_map.csv` — 규칙 ↔ 공식 근거 연결.
@@ -22,7 +22,7 @@
 
 ## 현재 상태 / TODO
 
-- 1차 규칙 R01~R10 작성 완료(`rule_spec.csv`). 리포트 문구·근거·시급도 포함.
+- R01~R24 작성·실행 완료(`rule_spec.csv`). R11~R15·R17~R19는 확인 입력 기반 판정, R16·R23·R24는 질문형, R20~R22는 외부 연동 전 `확인 불가`로 실행한다.
 - 2차 판정 J01~J12 작성·실행 완료(`judgment_spec.csv`, `judgments.py`). J goldset 47건 회귀검증 연결.
 - J01~J12 공식 근거 검색 연결 완료. 판정별 allowlist 원문이 로컬에 없으면 판정은 유지하고 `evidence_sources=[]`를 반환한다.
 - TODO: metadata-only 공식자료 6개의 원문 재배포 가능 여부·적용 범위를 확인하고 R/J 검색을 재평가.

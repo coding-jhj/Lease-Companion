@@ -29,8 +29,18 @@ export function AnalysisProgressPage() {
       poll: () => mvpService.getAnalysisRun(contractId, initialRun.analysis_run_id, controller.signal),
       signal: controller.signal,
       onUpdate: (current) => {
-        if (current.status === "pending" || current.status === "running") setStatus(current.status);
+        if (current.status === "pending" || current.status === "running") {
+          setStatus(current.status);
+        } else if (current.status === "completed"
+          && (current.generation_status === null
+            || current.generation_status === "pending"
+            || current.generation_status === "running")) {
+          setStatus("running");
+        }
       },
+      isTerminal: (current) => current.status === "failed"
+        || (current.status === "completed"
+          && (current.generation_status === "completed" || current.generation_status === "failed")),
     });
 
     if (run.status === "failed") {
