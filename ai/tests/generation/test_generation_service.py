@@ -254,8 +254,6 @@ def test_prompt_loader_rejects_header_that_does_not_match_prompt_set(
 
 
 def test_case001_fixture_can_use_template_fallback_with_contract_context():
-    from pathlib import Path
-
     fixture = ROOT / "data/sample/fixtures/case-001/analysis_run_result.json"
     analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
 
@@ -341,8 +339,6 @@ def test_provider_unavailable_fallback_is_guarded_again():
 
 
 def test_contract_context_changes_stage_guidance_deterministically():
-    from pathlib import Path
-
     fixture = ROOT / "data/sample/fixtures/case-001/analysis_run_result.json"
     analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
     before = _context(
