@@ -1,0 +1,237 @@
+{
+  "fixture_type": "synthetic_practice_scenario",
+  "data_classification": "synthetic",
+  "scenario_id": "PRACTICE-BROKER-PRESSURE-001",
+  "scenario_version": "1.0.0",
+  "review_status": "approved",
+  "title": "공인중개사의 즉시 계약 압박",
+  "role": "공인중개사",
+  "difficulty": "기본",
+  "contract_stage": "계약금·가계약금 입금 전",
+  "always_show_labels": [
+    "가상 연습",
+    "합성 시나리오"
+  ],
+  "synthetic_contract": {
+    "contract_type": "전세",
+    "signed": false,
+    "deposit_paid": false,
+    "property_address": "서울특별시 가온구 나래로 24, 101동 804호",
+    "deposit": 260000000,
+    "monthly_rent": null,
+    "contract_payment": 26000000,
+    "balance_payment": 234000000,
+    "requested_provisional_payment": 2000000,
+    "contract_payment_date": "2026-07-20",
+    "balance_payment_date": "2026-08-28",
+    "move_in_date": "2026-08-28",
+    "start_date": "2026-08-28",
+    "end_date": "2028-08-27",
+    "landlord_name": "윤서준",
+    "broker_name": "김하람",
+    "account_holder": "김하람",
+    "account_number_stored": false,
+    "registry_issue_date": "2026-07-10",
+    "registry_property_address": "서울특별시 가온구 나래로 24, 101동 804호",
+    "owner_names": [
+      "윤서준",
+      "윤서연"
+    ],
+    "is_joint_ownership": true,
+    "owner_shares": {
+      "윤서준": "1/2",
+      "윤서연": "1/2"
+    },
+    "mortgage_present": true,
+    "mortgage_maximum_claim": 120000000,
+    "deposit_return_clause": "새 임차인 입주 후 협의하여 반환한다.",
+    "rights_change_clause_present": false,
+    "special_clauses": [
+      "시설 상태와 보증금 반환의 자세한 내용은 현장 설명에 따른다."
+    ]
+  },
+  "target_actions": [
+    {
+      "action_id": "PA01",
+      "name": "즉시 결정 유예",
+      "linked_signal_ids": []
+    },
+    {
+      "action_id": "PA02",
+      "name": "최신 등기사항증명서·소유자 확인",
+      "linked_signal_ids": [
+        "SIG-JOINT-OWNER",
+        "SIG-REGISTRY-CHECK"
+      ]
+    },
+    {
+      "action_id": "PA03",
+      "name": "특약·보증금 반환 조건 문서 확인",
+      "linked_signal_ids": [
+        "SIG-RETURN-AMBIGUOUS",
+        "SIG-NO-RIGHTS-CLAUSE"
+      ]
+    },
+    {
+      "action_id": "PA04",
+      "name": "확인 전 계약금·가계약금 송금 보류",
+      "linked_signal_ids": [
+        "SIG-THIRD-PARTY-PAYEE"
+      ]
+    }
+  ],
+  "hidden_confirmation_signals": [
+    {
+      "signal_id": "SIG-JOINT-OWNER",
+      "fact": "공동소유자 전원의 동의·서명 또는 권한 자료가 아직 제시되지 않았다.",
+      "linked_rule_ids": [],
+      "linked_judgment_ids": [
+        "J03"
+      ],
+      "official_source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "signal_id": "SIG-THIRD-PARTY-PAYEE",
+      "fact": "안내된 입금 명의가 임대인·공동소유자가 아닌 가상 공인중개사다.",
+      "linked_rule_ids": [
+        "R06"
+      ],
+      "linked_judgment_ids": [
+        "J05"
+      ],
+      "official_source_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "signal_id": "SIG-REGISTRY-CHECK",
+      "fact": "열람본에 근저당권 기재가 있고 계약 직전 최신 권리관계를 다시 확인하지 않았다.",
+      "linked_rule_ids": [
+        "R03",
+        "R07"
+      ],
+      "linked_judgment_ids": [],
+      "official_source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "signal_id": "SIG-RETURN-AMBIGUOUS",
+      "fact": "보증금 반환 시점과 조건이 새 임차인 입주와 추후 협의에 묶여 있다.",
+      "linked_rule_ids": [
+        "R08"
+      ],
+      "linked_judgment_ids": [
+        "J10"
+      ],
+      "official_source_ids": [
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "signal_id": "SIG-NO-RIGHTS-CLAUSE",
+      "fact": "계약 후 추가 권리변동을 제한하는 특약이 초안에 없다.",
+      "linked_rule_ids": [
+        "R10"
+      ],
+      "linked_judgment_ids": [],
+      "official_source_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    }
+  ],
+  "dialogue_turns": [
+    {
+      "turn_id": "TURN-01",
+      "goal_action_id": "PA01",
+      "prompt": "조건은 설명드린 대로예요. 이 집으로 진행하시겠어요?",
+      "wait_sequence": [
+        {
+          "state": "WAIT_BASIC",
+          "from_second": 0,
+          "to_second": 5,
+          "line": null
+        },
+        {
+          "state": "WAIT_PRESSURE",
+          "from_second": 5,
+          "to_second": 10,
+          "line": null
+        },
+        {
+          "state": "PRESSURE_REMINDER",
+          "from_second": 10,
+          "to_second": null,
+          "line": "다른 분도 곧 보러 오기로 했어요. 지금 결정하셔야 합니다."
+        }
+      ],
+      "responses": {
+        "appropriate_check": "네, 확인할 시간을 먼저 가지시는 게 좋겠습니다. 무엇부터 확인하시겠어요?",
+        "partial_check": "어떤 확인이 필요한지 한 가지만 더 구체적으로 말씀해 주세요.",
+        "ambiguous_answer": "그럼 오늘 진행 여부만 먼저 정해 주실 수 있을까요?",
+        "avoidance": "결정 전에 무엇을 확인할지 말씀해 주세요.",
+        "no_response": "다른 분도 곧 보러 오기로 했어요. 지금 결정하셔야 합니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 같은 내용을 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-02"
+    },
+    {
+      "turn_id": "TURN-02",
+      "goal_action_id": "PA02",
+      "prompt": "등기사항증명서는 열흘 전에 확인해 두었고 임대인 한 분은 곧 오실 예정입니다. 이 정도면 괜찮으시죠?",
+      "responses": {
+        "appropriate_check": "최신 등기와 공동소유자 확인을 요청하셨군요. 확인 자료를 준비하겠습니다.",
+        "partial_check": "등기에서 어떤 내용과 누구의 권한을 확인할지 더 말씀해 주세요.",
+        "ambiguous_answer": "전에 확인한 자료니까 우선 계약하고 나중에 다시 보면 어떨까요?",
+        "avoidance": "등기와 소유자 확인 여부를 말씀해 주세요.",
+        "no_response": "확인할 서류가 없다면 다음 설명으로 넘어가겠습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-03"
+    },
+    {
+      "turn_id": "TURN-03",
+      "goal_action_id": "PA03",
+      "prompt": "보증금은 새 임차인이 들어오면 협의해서 돌려드리는 것으로 적어 두었습니다. 자세한 내용은 나중에 정리해도 됩니다.",
+      "responses": {
+        "appropriate_check": "반환 시점과 조건을 계약서 문구로 명확히 하자는 요청이군요.",
+        "partial_check": "어떤 시점과 조건을 문서에 적을지 더 구체적으로 말씀해 주세요.",
+        "ambiguous_answer": "보통 이렇게 진행하니 우선 서명부터 하셔도 됩니다.",
+        "avoidance": "반환 조건을 문서로 확인할지 말씀해 주세요.",
+        "no_response": "특약 확인 요청이 없다면 다음 설명으로 넘어가겠습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-04"
+    },
+    {
+      "turn_id": "TURN-04",
+      "goal_action_id": "PA04",
+      "prompt": "그럼 김하람 명의 계좌로 가계약금 200만 원만 먼저 보내 주세요. 확인 자료는 송금 후 보내드리겠습니다.",
+      "responses": {
+        "appropriate_check": "계좌 명의와 계약 권한을 확인한 뒤 송금하겠다는 말씀이군요.",
+        "partial_check": "계좌 명의 확인과 송금 보류 의사를 함께 말씀해 주세요.",
+        "ambiguous_answer": "금액이 크지 않으니 자리만 잡아 두시죠.",
+        "avoidance": "송금 전에 무엇을 확인할지 말씀해 주세요.",
+        "no_response": "송금 여부를 정하지 않은 상태로 연습을 마치겠습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "ACTION-SELECTION"
+    }
+  ],
+  "action_selection": {
+    "state_id": "ACTION-SELECTION",
+    "allowed_actions": [
+      "진행",
+      "추가 확인",
+      "보류",
+      "중단"
+    ],
+    "next_state_id": "DEBRIEF"
+  },
+  "terminal_state_id": "DEBRIEF"
+}

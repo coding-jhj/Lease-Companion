@@ -184,4 +184,4 @@
 - [x] 영상·접근성·개인정보 원칙 확정
 - [x] 제외 범위 확정
 
-다음 단계는 이 문서를 기준으로 첫 시나리오 원본, 대화 대본, 정답표, fixture를 작성하는 1단계다.
+1단계 산출물은 [`practice-scenarios/PRACTICE-BROKER-PRESSURE-001.md`](practice-scenarios/PRACTICE-BROKER-PRESSURE-001.md)와 `data/sample/practice-scenarios/PRACTICE-BROKER-PRESSURE-001/`에 둔다. 사용자 내용 승인 후 2단계 공통 스키마의 입력으로 고정한다.
