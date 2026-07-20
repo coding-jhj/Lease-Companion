@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from lease_companion_ai.schemas.unified import ContractContext
@@ -8,12 +9,65 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_current_user
 from app.core.db import get_db
+from app.models.analysis import STATUS_COMPLETED, AnalysisRun
+from app.models.checklist import ChecklistItemState
 from app.models.contract import ContractProject
 from app.models.user import User
 from app.schemas.contract import ContractCreateRequest, ContractResponse, SituationRequest
 from app.schemas.document import RegistryLinkRequest
 
 router = APIRouter(prefix="/api/contracts", tags=["contracts"])
+
+
+def _generated_action_keys(generation_result: dict) -> set[tuple[str, str]]:
+    """최신 분석 생성결과에서 체크리스트·계약 직후 행동 항목의 (kind, item_key) 집합.
+
+    8번 화면(ContractDetailPage)이 쓰는 것과 동일한 소스 — items + judgment_items.
+    """
+    keys: set[tuple[str, str]] = set()
+    groups = (generation_result.get("items") or []) + (
+        generation_result.get("judgment_items") or []
+    )
+    for group in groups:
+        for entry in group.get("signing_checklist_items") or []:
+            keys.add(("checklist", entry["item_key"]))
+        for entry in group.get("post_contract_action_items") or []:
+            keys.add(("post_action", entry["item_key"]))
+    return keys
+
+
+def _action_status(contract_id: int, db: Session) -> Literal["none", "in_progress", "done"]:
+    """대시보드 행동 상태: none/in_progress/done. done 항목이 전체 항목과 같으면 done."""
+    run = db.scalar(
+        select(AnalysisRun)
+        .where(
+            AnalysisRun.contract_id == contract_id,
+            AnalysisRun.status == STATUS_COMPLETED,
+            AnalysisRun.generation_result.isnot(None),
+        )
+        .order_by(AnalysisRun.id.desc())
+        .limit(1)
+    )
+    if run is None or not run.generation_result:
+        return "none"
+    keys = _generated_action_keys(run.generation_result)
+    if not keys:
+        return "none"
+    done_keys = {
+        (state.kind, state.item_key)
+        for state in db.scalars(
+            select(ChecklistItemState).where(
+                ChecklistItemState.contract_id == contract_id,
+                ChecklistItemState.done.is_(True),
+            )
+        )
+    }
+    done_count = len(keys & done_keys)
+    if done_count == 0:
+        return "none"
+    if done_count == len(keys):
+        return "done"
+    return "in_progress"
 
 # 모의 등기 fixture 위치 (기본: 저장소 data/sample/registry-records)
 _DEFAULT_REGISTRY_DIR = Path(__file__).resolve().parents[4] / "data" / "sample" / "registry-records"
@@ -97,15 +151,19 @@ def create_contract(
 def list_contracts(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> list[ContractProject]:
-    """대시보드용 본인 계약 건 목록 (최신 생성 순)."""
-    return list(
-        db.scalars(
-            select(ContractProject)
-            .where(ContractProject.user_id == user.id)
-            .order_by(ContractProject.id.desc())
-        )
+) -> list[ContractResponse]:
+    """대시보드용 본인 계약 건 목록 (최신 생성 순, 행동 상태 포함)."""
+    contracts = db.scalars(
+        select(ContractProject)
+        .where(ContractProject.user_id == user.id)
+        .order_by(ContractProject.id.desc())
     )
+    responses: list[ContractResponse] = []
+    for contract in contracts:
+        response = ContractResponse.model_validate(contract)
+        response.action_status = _action_status(contract.id, db)
+        responses.append(response)
+    return responses
 
 
 @router.get("/{contract_id}", response_model=ContractResponse)
