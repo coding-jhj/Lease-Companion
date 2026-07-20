@@ -10,7 +10,7 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
       <h4>{source.title}</h4>
       {source.summary ? (
         <details className="evidence-summary">
-          <summary>근거 요약 자세히 보기</summary>
+          <summary>공식자료 내용 전체 보기</summary>
           <p>{source.summary}</p>
         </details>
       ) : (
@@ -33,13 +33,18 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
 export function EvidenceDisclosure({
   sources,
   limitations,
+  explanation,
+  financialImpact,
   idPrefix,
 }: {
   sources: OfficialSourceDto[];
   limitations: string;
+  explanation: string;
+  financialImpact: string;
   idPrefix: string;
 }) {
   const evidenceTitleId = `${idPrefix}-official-evidence-title`;
+  const explanationTitleId = `${idPrefix}-plain-explanation-title`;
   const limitationTitleId = `${idPrefix}-limitation-title`;
 
   return (
@@ -50,7 +55,7 @@ export function EvidenceDisclosure({
             <strong id={evidenceTitleId}>공식 근거</strong>
             <p>
               {sources.length > 0
-                ? "이 판정에 참고한 공공기관 자료입니다. 제목을 먼저 확인하고 필요한 내용만 펼쳐보세요."
+                ? "어려운 법률 문장 대신 핵심 의미와 생길 수 있는 금전 문제를 먼저 정리했습니다."
                 : "현재 연결된 공식 근거가 없습니다."}
             </p>
           </div>
@@ -65,6 +70,19 @@ export function EvidenceDisclosure({
         ) : (
           <p className="evidence-empty">공식 근거가 없는 항목은 계약 상대방이나 관련 기관에 직접 확인해 주세요.</p>
         )}
+      </section>
+      <section className="plain-evidence-card" aria-labelledby={explanationTitleId}>
+        <div className="plain-evidence-card__explanation">
+          <strong id={explanationTitleId}>조항을 쉽게 설명하면</strong>
+          <p>{explanation}</p>
+        </div>
+        <div className="financial-impact">
+          <span className="financial-impact__icon" aria-hidden="true">!</span>
+          <div>
+            <strong>생길 수 있는 금전 문제</strong>
+            <p>{financialImpact}</p>
+          </div>
+        </div>
       </section>
       <aside className="limitation-card" aria-labelledby={limitationTitleId}>
         <strong id={limitationTitleId}>이 판정에서 알아둘 점</strong>
