@@ -42,7 +42,8 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
     )
     assert report.judgment_retrieval.query_count > 0
     assert report.judgment_retrieval.locally_available_expected_source_count == 30
-    assert report.judgment_retrieval.expected_source_recall == 29 / 41
+    assert report.judgment_retrieval.retrieved_expected_source_count == 30
+    assert report.judgment_retrieval.expected_source_recall == 30 / 41
     assert report.judgment_retrieval.unofficial_source_exposure_count == 0
     assert report.generation.case_count == 10
     assert report.generation.schema_valid_rate == 1.0

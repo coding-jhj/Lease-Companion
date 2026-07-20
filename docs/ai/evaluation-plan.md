@@ -30,7 +30,7 @@
 - R01~R10 상태: 100/100, 100%. 시급도 라벨이 있는 27건도 27/27, 100%.
 - J01~J12: 상태·시급도 47/47, 100%. 이 값은 고정 경계 goldset 회귀 결과다.
 - BM25 검색: top-5 정답 근거 포함 10/27, 37.04%; 전체 기대 source recall 15/39, 38.46%; 로컬 가용 기대 source recall 15/15, 100%; 비공식 source 노출 0건. 남은 누락 24개는 모두 원문 부재이며 BM25 후보 누락·allowlist 제외·Top-5 밖 누락은 0개다.
-- J 검색 계약: 행동 발동 gold 32건·기대 source 41개 중 29개를 회수해 recall 70.73%이며, 로컬 원문으로 사용 가능한 기대 source 30개 중 29개를 회수했다. 비공식 source 노출은 0건이다. 남은 격차는 metadata-only·미수집 공식 원문과 로컬 검색 누락으로 분리해 관리한다.
+- J 검색 계약: 행동 발동 gold 32건·기대 source 41개 중 30개를 회수해 recall 73.17%이며, 로컬 원문으로 사용 가능한 기대 source 30개는 모두 회수했다. 비공식 source 노출은 0건이다. 남은 격차는 metadata-only·미수집 공식 원문으로 관리한다.
 - template 생성: schema 10/10, R trigger coverage 27/27, J trigger coverage 50/50, R/J grounding 위반 0건, 금지 단정 0건, 분석 결과 불변 10/10. 주관적 쉬운 설명 품질은 미측정.
 - Guardrail adversarial: 동일 3개 fixture를 R/J 양쪽에 적용해 기대 차단 사유 6/6 일치, false negative 0건.
 - PII: 합성 5개 유형의 외부 전송 전 raw PII 제거와 로컬 exact 복원 5/5 통과.

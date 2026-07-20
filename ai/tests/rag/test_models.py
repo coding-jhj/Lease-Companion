@@ -42,11 +42,13 @@ def test_judgment_retrieval_query_fixes_j_id_and_source_allowlist():
         judgment_name="계약서 임대인=등기 소유자",
         status="불일치",
         allowed_source_ids=("SRC-STD-LEASE", "SRC-REGISTRY-SAMPLE"),
+        evidence_search_context="계약 상대와 등기상 소유자 관계 확인",
         deidentified_clause_context="[PERSON_1]과 등기 소유자 불일치",
     )
 
     assert query.to_search_text() == (
         "J01 계약서 임대인=등기 소유자 불일치 "
+        "계약 상대와 등기상 소유자 관계 확인 "
         "[PERSON_1]과 등기 소유자 불일치"
     )
     with pytest.raises(ValidationError):

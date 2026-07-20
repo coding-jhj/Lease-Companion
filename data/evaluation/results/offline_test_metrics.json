@@ -1,5 +1,5 @@
 {
-  "config_version": "offline-regex-bm25-template-v2",
+  "config_version": "offline-regex-bm25-template-v3",
   "corrections": {
     "corrected_status_count": 1,
     "corrected_value_applied_count": 1,
@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.04225,
+    "elapsed_seconds": 0.040592,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.004225
+    "mean_seconds_per_case": 0.004059
   },
   "extraction": {
     "accuracy": 1.0,
@@ -160,7 +160,7 @@
     "judgment_grounding_violation_count": 0,
     "judgment_guidance_item_count": 50,
     "judgment_trigger_coverage_rate": 1.0,
-    "missing_evidence_fallback_count": 18,
+    "missing_evidence_fallback_count": 17,
     "prohibited_claim_count": 0,
     "prompt_version_match_count": 10,
     "provider_call_count": 0,
@@ -181,10 +181,10 @@
   },
   "judgment_retrieval": {
     "expected_source_count": 41,
-    "expected_source_recall": 0.7073170731707317,
+    "expected_source_recall": 0.7317073170731707,
     "locally_available_expected_source_count": 30,
     "query_count": 32,
-    "retrieved_expected_source_count": 29,
+    "retrieved_expected_source_count": 30,
     "unofficial_source_exposure_count": 0
   },
   "judgments": {
@@ -327,7 +327,7 @@
     "case_count": 10,
     "citation_count": 45,
     "complete_citation_count": 45,
-    "config_version": "offline-regex-bm25-template-v2",
+    "config_version": "offline-regex-bm25-template-v3",
     "expected_source_count": 39,
     "expected_source_hit_count": 15,
     "expected_source_recall": 0.38461538461538464,

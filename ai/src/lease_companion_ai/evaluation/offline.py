@@ -841,7 +841,7 @@ def evaluate_offline_pipeline(
     root: Path,
     *,
     measured_at: date,
-    config_version: str = "offline-regex-bm25-template-v2",
+    config_version: str = "offline-regex-bm25-template-v3",
 ) -> OfflineEvaluationReport:
     """잠금 test/goldset으로 외부 호출 없는 기준선을 생성한다."""
     extraction_records = _read_jsonl(

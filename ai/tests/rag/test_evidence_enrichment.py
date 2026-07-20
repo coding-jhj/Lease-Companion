@@ -5,7 +5,10 @@ from lease_companion_ai.rag.indexing.chunker import chunk_sections
 from lease_companion_ai.rag.models import JudgmentRetrievalQuery, RetrievalHit
 from lease_companion_ai.rag.service import (
     EvidenceRetrievalService,
+    build_evidence_service,
+    load_judgment_search_contexts,
     load_judgment_source_ids,
+    load_local_official_chunks,
 )
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
@@ -257,3 +260,28 @@ def test_judgment_source_map_covers_j01_to_j12():
 
     assert list(mapping) == [f"J{index:02d}" for index in range(1, 13)]
     assert mapping["J01"] == ("SRC-STD-LEASE", "SRC-REGISTRY-SAMPLE")
+
+
+def test_judgment_search_contexts_only_expand_diagnosed_misses():
+    contexts = load_judgment_search_contexts()
+
+    assert contexts == {
+        "J02": "부동산의 임대차 임차주택 표시 상세주소"
+    }
+
+
+def test_j02_mismatch_retrieves_locally_available_standard_lease_source():
+    service = build_evidence_service(load_local_official_chunks())
+
+    result = service.search(
+        JudgmentRetrievalQuery(
+            judgment_id="J02",
+            judgment_name="목적물 주소 일치",
+            status="불일치",
+            allowed_source_ids=("SRC-STD-LEASE", "SRC-REGISTRY-SAMPLE"),
+        )
+    )
+
+    assert {hit.chunk.metadata.source_id for hit in result.hits} == {
+        "SRC-STD-LEASE"
+    }
