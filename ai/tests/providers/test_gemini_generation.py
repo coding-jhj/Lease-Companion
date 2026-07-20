@@ -72,7 +72,18 @@ def test_gemini_provider_uses_fixed_model_structured_output_and_limits():
     call = models.calls[0]
     assert call["model"] == "gemini-3.5-flash"
     config = call["config"]
-    assert config.response_schema is GeneratedGuidanceDraft
+    # Gemini는 additionalProperties를 거부하므로 정리된 스키마(dict)를 넘긴다.
+    assert isinstance(config.response_schema, dict)
+    assert set(config.response_schema["properties"]) == {
+        "explanation",
+        "questions",
+        "signing_checklist",
+        "post_contract_actions",
+        "source_ids",
+    }
+    assert "additionalProperties" not in json.dumps(config.response_schema)
+    # thinking 모델의 추론 토큰이 답변 budget을 잠식하지 않도록 thinking을 끈다.
+    assert config.thinking_config.thinking_budget == 0
     assert config.response_mime_type == "application/json"
     assert config.max_output_tokens == 900
     assert config.temperature == 0
