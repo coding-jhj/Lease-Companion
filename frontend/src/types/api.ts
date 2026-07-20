@@ -139,6 +139,8 @@ export interface OfficialSourceDto {
   institution: string;
   summary: string | null;
   source_url: string | null;
+  // 이 근거를 회수한 검색 방식(관찰용). 정적 카탈로그 항목은 null.
+  retrieval_method?: "bm25" | "vector" | "hybrid" | "rerank" | null;
 }
 
 export interface RuleResultDto {

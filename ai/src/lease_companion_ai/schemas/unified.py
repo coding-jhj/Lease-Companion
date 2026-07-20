@@ -1090,6 +1090,9 @@ class OfficialSource(BaseModel):
     # 현행 source_inventory.csv에 요약이 비어 있는 항목이 있어 null 허용.
     summary: str | None = None
     source_url: str | None = None
+    # 이 근거를 회수한 검색 방식(관찰용). RAG enrich에서 실제 사용된 방식을 기록한다.
+    # 정적 카탈로그 항목·평가용 정답에는 None. RuleStatus·urgency를 바꾸지 않는다.
+    retrieval_method: Literal["bm25", "vector", "hybrid", "rerank"] | None = None
 
 
 class RuleResult(BaseModel):

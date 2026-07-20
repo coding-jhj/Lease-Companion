@@ -21,11 +21,13 @@
 - 프론트엔드 구현 스택: React + Vite + TypeScript SPA / React Router / fetch 서비스 계층 / MSW / Vitest + Testing Library / npm → [`2026-07-16-frontend-react-vite.md`](2026-07-16-frontend-react-vite.md)
 - 통합 스키마: `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본 → [`2026-07-16-shared-pydantic-schema.md`](2026-07-16-shared-pydantic-schema.md)
 - Classification 경계: extraction은 사실·조항 원문, 별도 classification은 조항 유형·명확성 후보 → [`2026-07-18-classification-boundary.md`](2026-07-18-classification-boundary.md)
+- 계약 연습 시뮬레이션: 실전 계약과 데이터 분리 / 승인된 합성 시나리오 / 행동 평가와 계약 판정 분리 / Gemini 기준 이미지·사전 제작 영상 → [`2026-07-20-practice-simulation-boundary.md`](2026-07-20-practice-simulation-boundary.md)
 
 ## 현재 미정 (결정 대기)
 
 - 운영 배포 플랫폼 (현재 MVP는 로컬 실행)
 - refresh token·토큰 폐기·운영 서명 키 관리와 운영용 토큰 만료 정책
 - 로컬 7B 베이스 모델(선택 성능비교 실험용)
+- 계약 연습 image-to-video·음성합성 제공자와 운영 미디어 저장소
 
 > 결정 시 이 폴더에 기록하고 관련 README·문서를 갱신한다.
