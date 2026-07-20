@@ -188,6 +188,7 @@ class EvidenceRetrievalService:
                             institution=metadata.institution,
                             summary=hit.chunk.text[:500],
                             source_url=metadata.source_url,
+                            retrieval_method=hit.retrieval_method,
                         )
                     )
             enriched.append(result.model_copy(update={"evidence_sources": evidence}))
@@ -218,6 +219,7 @@ class EvidenceRetrievalService:
                             institution=metadata.institution,
                             summary=hit.chunk.text[:500],
                             source_url=metadata.source_url,
+                            retrieval_method=hit.retrieval_method,
                         )
                     )
             enriched_judgments.append(
