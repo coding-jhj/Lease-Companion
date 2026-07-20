@@ -90,6 +90,7 @@ docs_dev/
 .claude/
 .agents/
 .superpowers/
+docs/superpowers/
 
 # === IDE / OS ===
 .idea/

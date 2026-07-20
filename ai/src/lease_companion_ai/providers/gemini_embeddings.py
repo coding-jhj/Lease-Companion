@@ -18,11 +18,15 @@ class GeminiEmbeddingProvider:
         *,
         client: Any | None = None,
         output_dimensionality: int = 768,
+        timeout_seconds: float = 30.0,
     ) -> None:
         if output_dimensionality <= 0:
             raise ValueError("output_dimensionality는 양수여야 합니다.")
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds는 양수여야 합니다.")
         self._client = client
         self._output_dimensionality = output_dimensionality
+        self._timeout_seconds = timeout_seconds
 
     def _get_client(self) -> Any:
         if self._client is not None:
@@ -31,8 +35,12 @@ class GeminiEmbeddingProvider:
         if not api_key:
             raise ProviderError("Gemini embedding provider 설정이 없습니다.")
         from google import genai
+        from google.genai import types
 
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=int(self._timeout_seconds * 1_000)),
+        )
         return self._client
 
     def _embed(self, texts: Sequence[str], *, task_type: str) -> list[list[float]]:

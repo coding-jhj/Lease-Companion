@@ -48,6 +48,11 @@ def test_gemini_adapter_does_not_require_key_until_real_call(monkeypatch):
         GeminiEmbeddingProvider().embed_query("비식별 질의")
 
 
+def test_gemini_embedding_rejects_non_positive_timeout():
+    with pytest.raises(ValueError, match="timeout_seconds"):
+        GeminiEmbeddingProvider(timeout_seconds=0)
+
+
 def test_cohere_adapter_uses_fixed_model():
     client = FakeCohereClient()
     results = CohereRerankProvider(client=client).rerank(
