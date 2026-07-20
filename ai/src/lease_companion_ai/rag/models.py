@@ -100,6 +100,7 @@ class JudgmentRetrievalQuery(BaseModel):
     judgment_name: str = Field(min_length=1)
     status: RuleStatus
     allowed_source_ids: tuple[SourceId, ...] = Field(min_length=1)
+    evidence_search_context: str | None = Field(default=None, max_length=2000)
     deidentified_clause_context: str | None = Field(default=None, max_length=2000)
 
     @field_validator("allowed_source_ids")
@@ -111,6 +112,8 @@ class JudgmentRetrievalQuery(BaseModel):
 
     def to_search_text(self) -> str:
         parts = [self.judgment_id, self.judgment_name, self.status.value]
+        if self.evidence_search_context:
+            parts.append(self.evidence_search_context)
         if self.deidentified_clause_context:
             parts.append(self.deidentified_clause_context)
         return " ".join(parts)

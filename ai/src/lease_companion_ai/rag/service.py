@@ -71,6 +71,7 @@ class EvidenceRetrievalService:
         reranker: RerankingService | None = None,
         *,
         judgment_source_ids: Mapping[str, tuple[str, ...]] | None = None,
+        judgment_search_contexts: Mapping[str, str] | None = None,
         rule_source_ids: Mapping[str, tuple[str, ...]] | None = None,
         rule_search_contexts: Mapping[str, str] | None = None,
         initial_routing_decisions: Sequence[RoutingDecision] = (),
@@ -81,6 +82,11 @@ class EvidenceRetrievalService:
             judgment_source_ids
             if judgment_source_ids is not None
             else load_judgment_source_ids()
+        )
+        self._judgment_search_contexts = dict(
+            judgment_search_contexts
+            if judgment_search_contexts is not None
+            else load_judgment_search_contexts()
         )
         self._rule_search_contexts = dict(
             rule_search_contexts
@@ -101,6 +107,15 @@ class EvidenceRetrievalService:
         top_k: int = 20,
         top_n: int = 5,
     ) -> EvidenceSearchResult:
+        if (
+            isinstance(query, JudgmentRetrievalQuery)
+            and query.evidence_search_context is None
+        ):
+            context = self._judgment_search_contexts.get(query.judgment_id)
+            if context:
+                query = query.model_copy(
+                    update={"evidence_search_context": context}
+                )
         routing_decisions = list(self._initial_routing_decisions)
         try:
             if isinstance(self._retriever, HybridRetriever):
@@ -288,6 +303,28 @@ def load_judgment_source_ids(root: Path | None = None) -> dict[str, tuple[str, .
             raise ValueError(f"{row['judgment_id']} 공식자료 source ID가 잘못되었습니다.")
         mapping[row["judgment_id"]] = source_ids
     return mapping
+
+
+def load_judgment_search_contexts(root: Path | None = None) -> dict[str, str]:
+    """용어 불일치가 확인된 J 판정의 정적 검색 확장 문맥을 읽는다."""
+    repo_root = root or _repo_root()
+    path = repo_root / "data" / "rules" / "judgment_search_context.csv"
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    contexts: dict[str, str] = {}
+    for row in rows:
+        judgment_id = row["judgment_id"].strip()
+        search_context = row["search_context"].strip()
+        if (
+            re.fullmatch(r"J(?:0[1-9]|1[0-2])", judgment_id) is None
+            or not search_context
+            or judgment_id in contexts
+        ):
+            raise ValueError("J 공식 근거 검색 문맥이 잘못되었습니다.")
+        contexts[judgment_id] = search_context
+    if not contexts:
+        raise ValueError("J 공식 근거 검색 문맥이 비어 있습니다.")
+    return contexts
 
 
 def load_local_official_chunks(root: Path | None = None) -> list[RagChunk]:
