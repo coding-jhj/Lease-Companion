@@ -7,6 +7,7 @@ import type {
   StageGuidanceDto,
   Urgency,
 } from "../../types/api";
+import { normalizeAction } from "./actionNormalization";
 
 type ResultItem = RuleResultDto | JudgmentResultDto;
 type GuidanceItem = RuleGuidanceDto | JudgmentGuidanceDto;
@@ -55,31 +56,15 @@ function prioritized(entries: Ranked[]): string[] {
   return [...best.entries()].sort((a, b) => a[1] - b[1]).map(([text]) => text);
 }
 
-const LEASE_REPORT_ACTION =
-  "신고 대상 여부를 확인하고, 대상이면 계약 체결일부터 30일 이내에 주택 임대차 계약 신고를 완료한 뒤 처리 결과를 보관하세요.";
-const MOVE_IN_PROTECTION_ACTION =
-  "실제 입주 후 전입신고·확정일자 등 권리 확보 절차를 완료하고 처리 결과를 확인하세요.";
-
-function canonicalPostAction(text: string): { key: string; text: string } {
-  const compact = text.replace(/\s+/g, "");
-  if (/임대차(?:계약)?신고/.test(compact)) {
-    return { key: "lease-report", text: LEASE_REPORT_ACTION };
-  }
-  if (/전입신고|확정일자/.test(compact)) {
-    return { key: "move-in-protection", text: MOVE_IN_PROTECTION_ACTION };
-  }
-  return { key: text.trim(), text: text.trim() };
-}
-
 function prioritizedPostActions(entries: Ranked[]): string[] {
   const best = new Map<string, { text: string; rank: number }>();
   for (const entry of entries) {
     const trimmed = entry.text?.trim();
     if (!trimmed) continue;
-    const canonical = canonicalPostAction(trimmed);
-    const previous = best.get(canonical.key);
+    const canonical = normalizeAction(trimmed, "post_action");
+    const previous = best.get(canonical.identity);
     if (previous === undefined || entry.rank < previous.rank) {
-      best.set(canonical.key, { text: canonical.text, rank: entry.rank });
+      best.set(canonical.identity, { text: canonical.text, rank: entry.rank });
     }
   }
   return [...best.values()].sort((a, b) => a.rank - b.rank).map(({ text }) => text);
