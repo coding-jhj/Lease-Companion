@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from collections.abc import Iterable
 from pathlib import Path
 from types import MappingProxyType
@@ -37,6 +38,73 @@ from lease_companion_ai.schemas.unified import (
 
 PROMPT_NAMES = ("questions", "checklists", "summaries")
 logger = logging.getLogger(__name__)
+
+_CANONICAL_ACTIONS: tuple[tuple[re.Pattern[str], str, str, str], ...] = (
+    (
+        re.compile(r"임대차(?:계약)?신고"),
+        "lease-report",
+        "post_action",
+        "신고 대상 여부를 확인하고, 대상이면 계약 체결일부터 30일 이내에 주택 임대차 계약 신고를 완료한 뒤 처리 결과를 보관하세요.",
+    ),
+    (
+        re.compile(r"전입신고|확정일자"),
+        "move-in-protection",
+        "post_action",
+        "실제 입주 후 전입신고·확정일자 등 권리 확보 절차를 완료하고 처리 결과를 확인하세요.",
+    ),
+    (
+        re.compile(
+            r"갑구.*소유자|소유자.*갑구|등기상소유자|소유자와계약자|소유자와계약상대|계약권한"
+        ),
+        "ownership-authority",
+        "checklist",
+        "최신 등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하고, 다르면 계약 권한 서류를 확인하세요.",
+    ),
+    (
+        re.compile(
+            r"최신.*등기|등기사항증명서.*발급|갑구와을구|갑구.*을구|소유권제한|권리제한"
+        ),
+        "registry-rights",
+        "checklist",
+        "계약·잔금 직전 최신 등기사항증명서를 발급받아 갑구·을구의 소유권과 권리제한을 확인하세요.",
+    ),
+    (
+        re.compile(r"선순위.*(?:근저당|권리|채권|금액)|근저당.*선순위"),
+        "senior-claims",
+        "checklist",
+        "선순위 권리의 종류와 채권최고액·실채무액을 확인하고 관련 자료를 보관하세요.",
+    ),
+    (
+        re.compile(r"국세|지방세|납세증명|완납증명"),
+        "tax-arrears",
+        "checklist",
+        "계약 전에 적법한 절차로 임대인의 국세·지방세 관련 자료를 확인하고 보관하세요.",
+    ),
+    (
+        re.compile(r"예금주|계좌명의|임대인명의의계좌"),
+        "account-holder",
+        "checklist",
+        "입금 전에 계좌 명의와 계약 상대가 일치하는지 확인하세요.",
+    ),
+    (
+        re.compile(r"계약서주소.*등기|등기상주소|목적물주소"),
+        "property-address",
+        "checklist",
+        "계약서의 목적물 주소와 등기사항증명서의 주소가 일치하는지 확인하세요.",
+    ),
+    (
+        re.compile(r"실거래|시세|전세가"),
+        "market-price",
+        "checklist",
+        "공식 실거래 자료에서 동일·유사 주택의 가격을 확인하고 기준일과 비교 조건을 기록하세요.",
+    ),
+    (
+        re.compile(r"중개대상물.*(?:확인|설명)|확인.?설명서"),
+        "broker-disclosure",
+        "checklist",
+        "서명 전에 중개대상물 확인·설명서의 내용을 확인하고 사본을 교부받으세요.",
+    ),
+)
 
 
 def load_generation_prompts(root: Path | None = None) -> MappingProxyType[str, str]:
@@ -86,6 +154,7 @@ class GenerationService:
         )
         if analysis.model_dump(mode="json") != before:
             raise RuntimeError("생성 단계가 규칙 결과를 변경했습니다.")
+        items, judgment_items = self._compact_guidance_actions(items, judgment_items)
         generated = GenerationResult(
             analysis_run_id=analysis.analysis_run_id,
             prompt_version=GENERATION_PROMPT_VERSION,
@@ -94,6 +163,62 @@ class GenerationService:
             stage_guidance=self._stage_guidance(analysis, contract_context),
         )
         return validate_generation_result_for_analysis(analysis, generated)
+
+    @staticmethod
+    def _normalize_action(text: str, fallback_kind: str) -> tuple[str, str, str]:
+        trimmed = text.strip()
+        compact = re.sub(r"\s+", "", trimmed)
+        for pattern, identity, kind, canonical_text in _CANONICAL_ACTIONS:
+            if pattern.search(compact):
+                return identity, kind, canonical_text
+        return compact, fallback_kind, trimmed
+
+    @classmethod
+    def _compact_guidance_actions(
+        cls,
+        items: tuple[RuleGuidance, ...],
+        judgment_items: tuple[JudgmentGuidance, ...],
+    ) -> tuple[tuple[RuleGuidance, ...], tuple[JudgmentGuidance, ...]]:
+        """의미가 같은 행동을 한 번만 유지하고 잘못 생성된 실행 단계를 바로잡는다."""
+        seen: dict[str, set[str]] = {"checklist": set(), "post_action": set()}
+
+        def compact(guidance: RuleGuidance | JudgmentGuidance):
+            result_id = (
+                guidance.rule_id
+                if isinstance(guidance, RuleGuidance)
+                else guidance.judgment_id
+            )
+            collected: dict[str, list[str]] = {"checklist": [], "post_action": []}
+            for fallback_kind, texts in (
+                ("checklist", guidance.signing_checklist),
+                ("post_action", guidance.post_contract_actions),
+            ):
+                for text in texts:
+                    identity, kind, normalized_text = cls._normalize_action(
+                        text, fallback_kind
+                    )
+                    if identity in seen[kind]:
+                        continue
+                    seen[kind].add(identity)
+                    collected[kind].append(normalized_text)
+            signing = tuple(collected["checklist"])
+            post_actions = tuple(collected["post_action"])
+            return guidance.model_copy(
+                update={
+                    "signing_checklist": signing,
+                    "post_contract_actions": post_actions,
+                    "signing_checklist_items": cls._action_items(
+                        result_id, "checklist", signing
+                    ),
+                    "post_contract_action_items": cls._action_items(
+                        result_id, "post_action", post_actions
+                    ),
+                }
+            )
+
+        compacted_rules = tuple(compact(item) for item in items)
+        compacted_judgments = tuple(compact(item) for item in judgment_items)
+        return compacted_rules, compacted_judgments
 
     @staticmethod
     def _stage_guidance(
@@ -247,9 +372,7 @@ class GenerationService:
                     source.source_id for source in result.evidence_sources
                 ),
                 generation_method=GenerationMethod.TEMPLATE_FALLBACK,
-                fallback_reason=(
-                    "guardrail_blocked_fallback:" + ",".join(exc.reasons)
-                ),
+                fallback_reason=("guardrail_blocked_fallback:" + ",".join(exc.reasons)),
             )
             return self._guardrails.enforce(result, minimal)
 
@@ -293,9 +416,7 @@ class GenerationService:
                     "reason_codes": ("raw_pii",),
                 },
             )
-            return self._safe_judgment_fallback(
-                result, "pii_tokenization_failed"
-            )
+            return self._safe_judgment_fallback(result, "pii_tokenization_failed")
         try:
             draft = self._provider.generate(request)
         except ProviderError:
@@ -347,9 +468,7 @@ class GenerationService:
                     source.source_id for source in result.evidence_sources
                 ),
                 generation_method=GenerationMethod.TEMPLATE_FALLBACK,
-                fallback_reason=(
-                    "guardrail_blocked_fallback:" + ",".join(exc.reasons)
-                ),
+                fallback_reason=("guardrail_blocked_fallback:" + ",".join(exc.reasons)),
             )
             return self._guardrails.enforce_judgment(result, minimal)
 
@@ -378,15 +497,11 @@ class GenerationService:
         )
 
     @staticmethod
-    def _judgment_fallback(
-        result: JudgmentResult, reason: str
-    ) -> JudgmentGuidance:
+    def _judgment_fallback(result: JudgmentResult, reason: str) -> JudgmentGuidance:
         has_evidence = bool(result.evidence_sources)
         source_ids = tuple(source.source_id for source in result.evidence_sources)
         questions = (result.question,) if result.question else ()
-        signing_checklist = (
-            tuple(result.recommended_actions) if has_evidence else ()
-        )
+        signing_checklist = tuple(result.recommended_actions) if has_evidence else ()
         return JudgmentGuidance(
             judgment_id=result.judgment_id,
             explanation=(

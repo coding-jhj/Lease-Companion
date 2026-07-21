@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
+import { normalizeAction } from "../../features/question-cards/actionNormalization";
 import { mvpService } from "../../services/mvpService";
 import type {
   AnalysisRunSummaryDto,
@@ -14,6 +15,8 @@ import { contractIdFromRoute } from "../../utils/contractId";
 
 interface ChecklistViewItem extends GuidanceActionItemDto {
   kind: ChecklistItemKind;
+  storageKind: ChecklistItemKind;
+  resultIds: string[];
   done: boolean;
   updated_at: string | null;
   writable: boolean;
@@ -51,24 +54,46 @@ export function ContractDetailPage() {
         mvpService.getDocuments(contractId),
       ]);
       const stateByKey = new Map(states.map((item) => [item.kind + ":" + item.item_key, item]));
-      const generatedItems: Array<GuidanceActionItemDto & { kind: ChecklistItemKind }> =
+      const rawGeneratedItems: Array<GuidanceActionItemDto & { kind: ChecklistItemKind; resultId: string }> =
         detail?.generation_result
           ? [...detail.generation_result.items, ...detail.generation_result.judgment_items].flatMap(
             (guidance) => [
-              ...guidance.signing_checklist_items.map((item) => ({ ...item, kind: "checklist" as const })),
-              ...guidance.post_contract_action_items.map((item) => ({ ...item, kind: "post_action" as const })),
+              ...guidance.signing_checklist_items.map((item) => ({ ...item, kind: "checklist" as const, resultId: "rule_id" in guidance ? guidance.rule_id : guidance.judgment_id })),
+              ...guidance.post_contract_action_items.map((item) => ({ ...item, kind: "post_action" as const, resultId: "rule_id" in guidance ? guidance.rule_id : guidance.judgment_id })),
             ],
           )
           : [];
-      const generatedKeys = new Set(generatedItems.map((item) => item.kind + ":" + item.item_key));
-      const merged = generatedItems.map((item) => {
+      const generatedKeys = new Set(rawGeneratedItems.map((item) => item.kind + ":" + item.item_key));
+      const compacted = new Map<string, ChecklistViewItem>();
+      for (const item of rawGeneratedItems) {
+        const normalized = normalizeAction(item.text, item.kind);
         const saved = stateByKey.get(item.kind + ":" + item.item_key);
-        return { ...item, done: saved?.done ?? false, updated_at: saved?.updated_at ?? null, writable: true };
-      });
+        const compactKey = normalized.kind + ":" + normalized.identity;
+        const previous = compacted.get(compactKey);
+        if (previous) {
+          previous.done ||= saved?.done ?? false;
+          previous.resultIds = [...new Set([...previous.resultIds, item.resultId])];
+          if (saved?.updated_at && (!previous.updated_at || saved.updated_at > previous.updated_at)) previous.updated_at = saved.updated_at;
+          continue;
+        }
+        compacted.set(compactKey, {
+          item_key: item.item_key,
+          text: normalized.text,
+          kind: normalized.kind,
+          storageKind: item.kind,
+          resultIds: [item.resultId],
+          done: saved?.done ?? false,
+          updated_at: saved?.updated_at ?? null,
+          writable: true,
+        });
+      }
+      const merged = [...compacted.values()];
       const legacy = states
         .filter((item) => !generatedKeys.has(item.kind + ":" + item.item_key))
         .map((item) => ({
           kind: item.kind,
+          storageKind: item.kind,
+          resultIds: [],
           item_key: item.item_key,
           text: `이전 분석 항목 (${item.item_key})`,
           done: item.done,
@@ -93,12 +118,12 @@ export function ContractDetailPage() {
     try {
       const updated: ChecklistItemStateDto = await mvpService.updateChecklistItem(
         contractId,
-        item.kind,
+        item.storageKind,
         item.item_key,
         !item.done,
       );
       setItems((current) => current.map((candidate) =>
-        candidate.kind === updated.kind && candidate.item_key === updated.item_key
+        candidate.storageKind === updated.kind && candidate.item_key === updated.item_key
           ? { ...candidate, done: updated.done, updated_at: updated.updated_at }
           : candidate,
       ));
@@ -153,7 +178,10 @@ export function ContractDetailPage() {
           const saving = savingItemKey === item.item_key;
           return (
             <div className={`check-item check-item--button${item.done ? " check-item--complete" : ""}`} key={item.kind + ":" + item.item_key}>
-              <span className="check-item__text">{item.text}</span>
+              <span className="check-item__text">
+                {item.text}
+                {item.resultIds.length > 0 && <small className="check-item__source">근거 판정 {item.resultIds.join(" · ")}</small>}
+              </span>
               {item.writable
                 ? <button
                   aria-label={`${item.text} ${label}`}

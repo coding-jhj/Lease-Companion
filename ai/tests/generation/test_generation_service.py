@@ -6,8 +6,13 @@ import pytest
 from lease_companion_ai.generation.models import (
     GeneratedGuidanceDraft,
     GenerationMethod,
+    JudgmentGuidance,
+    RuleGuidance,
 )
-from lease_companion_ai.generation.service import GenerationService, load_generation_prompts
+from lease_companion_ai.generation.service import (
+    GenerationService,
+    load_generation_prompts,
+)
 from lease_companion_ai.providers.generation import FakeGenerationProvider
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
@@ -53,8 +58,12 @@ def _analysis() -> AnalysisRunResult:
     for index in range(1, 11):
         rule_id = f"R{index:02d}"
         active = index in {1, 2}
-        status = RuleStatus.CHECK_NEEDED if active else (
-            RuleStatus.CLEAR if index in {8, 9, 10} else RuleStatus.NOT_APPLICABLE
+        status = (
+            RuleStatus.CHECK_NEEDED
+            if active
+            else (
+                RuleStatus.CLEAR if index in {8, 9, 10} else RuleStatus.NOT_APPLICABLE
+            )
         )
         if index in {1, 2, 6} and not active:
             status = RuleStatus.MATCH
@@ -62,7 +71,13 @@ def _analysis() -> AnalysisRunResult:
             status = RuleStatus.CHECK_NEEDED
             active = True
         source = (
-            [OfficialSource(source_id="SRC-HTA-LAW", title="법령", institution="국가법령정보센터")]
+            [
+                OfficialSource(
+                    source_id="SRC-HTA-LAW",
+                    title="법령",
+                    institution="국가법령정보센터",
+                )
+            ]
             if index == 1
             else []
         )
@@ -70,7 +85,11 @@ def _analysis() -> AnalysisRunResult:
             RuleResult(
                 rule_id=rule_id,
                 rule_name=f"규칙 {rule_id}",
-                result_type=(ResultType.JUDGMENT if index in {1, 2, 6, 8, 9} else ResultType.FACT_FLAG),
+                result_type=(
+                    ResultType.JUDGMENT
+                    if index in {1, 2, 6, 8, 9}
+                    else ResultType.FACT_FLAG
+                ),
                 triggers_actions=active,
                 status=status,
                 urgency=Urgency.BEFORE_CONTRACT if active else Urgency.REFERENCE,
@@ -115,9 +134,7 @@ def _analysis_with_judgments(*, with_j01_evidence: bool = True) -> AnalysisRunRe
             reason=f"{judgment_id} 확인 사유",
             question=f"{judgment_id}을 확인했습니까?" if judgment_id == "J01" else None,
             recommended_actions=(
-                [f"{judgment_id} 자료를 확인하십시오."]
-                if judgment_id == "J01"
-                else []
+                [f"{judgment_id} 자료를 확인하십시오."] if judgment_id == "J01" else []
             ),
             evidence_sources=(
                 [
@@ -214,7 +231,9 @@ def test_unknown_provider_source_id_uses_fallback():
     assert generated.items[0].generation_method is GenerationMethod.TEMPLATE_FALLBACK
     assert generated.items[0].fallback_reason == "invalid_source_id"
     assert generated.items[0].source_ids == ("SRC-HTA-LAW",)
-    assert generated.items[0].signing_checklist_items[0].text == "R01 자료를 확인하십시오."
+    assert (
+        generated.items[0].signing_checklist_items[0].text == "R01 자료를 확인하십시오."
+    )
 
 
 def test_prompts_are_loaded_from_versioned_files():
@@ -255,7 +274,9 @@ def test_prompt_loader_rejects_header_that_does_not_match_prompt_set(
 
 def test_case001_fixture_can_use_template_fallback_with_contract_context():
     fixture = ROOT / "data/sample/fixtures/case-001/analysis_run_result.json"
-    analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
+    analysis = AnalysisRunResult.model_validate_json(
+        fixture.read_text(encoding="utf-8")
+    )
 
     generated = GenerationService().generate(analysis, _context(contract_id=1001))
 
@@ -269,9 +290,10 @@ def test_case001_fixture_can_use_template_fallback_with_contract_context():
 
 def test_provider_request_is_tokenized_and_output_is_restored_locally():
     analysis = _analysis()
-    analysis.results[0].reason = (
-        "임대인: 홍길동, 주소: 서울특별시 종로구 새싹로 12, "
-        "계좌번호: 110-123-456789"
+    analysis.results[
+        0
+    ].reason = (
+        "임대인: 홍길동, 주소: 서울특별시 종로구 새싹로 12, 계좌번호: 110-123-456789"
     )
     provider = FakeGenerationProvider(
         {
@@ -340,7 +362,9 @@ def test_provider_unavailable_fallback_is_guarded_again():
 
 def test_contract_context_changes_stage_guidance_deterministically():
     fixture = ROOT / "data/sample/fixtures/case-001/analysis_run_result.json"
-    analysis = AnalysisRunResult.model_validate_json(fixture.read_text(encoding="utf-8"))
+    analysis = AnalysisRunResult.model_validate_json(
+        fixture.read_text(encoding="utf-8")
+    )
     before = _context(
         contract_id=1001,
         move_in_date="2026-09-01",
@@ -353,7 +377,9 @@ def test_contract_context_changes_stage_guidance_deterministically():
     assert before_guidance.before_deposit_questions
     assert before_guidance.signing_checklist
     assert before_guidance.post_contract_actions == ()
-    assert all("계약금 이체내역" not in item for item in before_guidance.record_retention)
+    assert all(
+        "계약금 이체내역" not in item for item in before_guidance.record_retention
+    )
 
     after = _context(
         contract_id=1001,
@@ -370,6 +396,60 @@ def test_contract_context_changes_stage_guidance_deterministically():
     assert any("2026-09-01" in item for item in after_guidance.post_contract_actions)
     assert any("계약금 이체내역" in item for item in after_guidance.record_retention)
     assert before_result.stage_guidance != after_result.stage_guidance
+
+
+def test_guidance_actions_are_deduplicated_and_assigned_to_the_right_stage():
+    service = GenerationService()
+    rule_signing = ("등기사항증명서 갑구의 소유자를 확인한다.",)
+    rule_post = (
+        "계약 후 30일 이내에 임대차 신고를 한다.",
+        "계약금은 임대인 명의의 계좌로 송금한다.",
+    )
+    judgment_signing = ("등기상 소유자와 계약자가 일치하는지 확인한다.",)
+    judgment_post = (
+        "계약 후 30일 이내에 주택임대차 신고를 완료한다.",
+        "주민센터에서 전입신고와 확정일자를 받는다.",
+    )
+    rule = RuleGuidance(
+        rule_id="R01",
+        explanation="R01 안내",
+        generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+        fallback_reason="test",
+        signing_checklist=rule_signing,
+        post_contract_actions=rule_post,
+        signing_checklist_items=service._action_items("R01", "checklist", rule_signing),
+        post_contract_action_items=service._action_items(
+            "R01", "post_action", rule_post
+        ),
+    )
+    judgment = JudgmentGuidance(
+        judgment_id="J01",
+        explanation="J01 안내",
+        generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+        fallback_reason="test",
+        signing_checklist=judgment_signing,
+        post_contract_actions=judgment_post,
+        signing_checklist_items=service._action_items(
+            "J01", "checklist", judgment_signing
+        ),
+        post_contract_action_items=service._action_items(
+            "J01", "post_action", judgment_post
+        ),
+    )
+
+    rules, judgments = service._compact_guidance_actions((rule,), (judgment,))
+
+    assert rules[0].signing_checklist == (
+        "최신 등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하고, 다르면 계약 권한 서류를 확인하세요.",
+        "입금 전에 계좌 명의와 계약 상대가 일치하는지 확인하세요.",
+    )
+    assert rules[0].post_contract_actions == (
+        "신고 대상 여부를 확인하고, 대상이면 계약 체결일부터 30일 이내에 주택 임대차 계약 신고를 완료한 뒤 처리 결과를 보관하세요.",
+    )
+    assert judgments[0].signing_checklist == ()
+    assert judgments[0].post_contract_actions == (
+        "실제 입주 후 전입신고·확정일자 등 권리 확보 절차를 완료하고 처리 결과를 확인하세요.",
+    )
 
 
 def test_generation_rejects_contract_context_for_another_contract():
@@ -449,9 +529,9 @@ def test_prohibited_judgment_output_is_replaced_with_guarded_fallback():
 
 def test_judgment_provider_request_is_tokenized_and_restored_locally():
     analysis = _analysis_with_judgments()
-    analysis.judgments[0].reason = (
-        "임대인: 홍길동, 주소: 서울특별시 종로구 새싹로 12 확인 필요"
-    )
+    analysis.judgments[
+        0
+    ].reason = "임대인: 홍길동, 주소: 서울특별시 종로구 새싹로 12 확인 필요"
     provider = FakeGenerationProvider(
         {
             "R01": GeneratedGuidanceDraft(

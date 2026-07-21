@@ -92,6 +92,7 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .check-item--button { grid-template-columns: minmax(0, 1fr) auto; gap: 14px; background: #fff; }
 .check-item--complete { border-color: #b9cfbe; background: #f5faf6; }
 .check-item__text { min-width: 0; line-height: 1.55; }
+.check-item__source { display: block; margin-top: 4px; color: #667269; font-size: 12px; font-weight: 700; }
 .check-item--complete .check-item__text { color: #496150; }
 .check-item__button { width: auto; min-width: 72px; padding: 10px 14px; }
 .check-item--complete .check-item__button { background: #e5eee7; color: #245236; }
