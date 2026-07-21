@@ -464,7 +464,15 @@ def _clause_sections(
     )
     if "없음" in header or following in {"없음", "(없음)", "기재 사항 없음"}:
         return main or None, False, None
+    # 불릿(•·ㆍ- 등)으로 시작하는 특약을 모으고, PDF 줄바꿈으로 이어진 줄은 같은 특약에 합친다.
+    # 서명·중개사 블록을 만나면 특약 영역이 끝난 것으로 보고 멈춘다.
+    _BULLETS = "-·ㆍ•◦▪‣*"
+    _STOP = (
+        "주민등록번호", "서명 또는", "날인", "등록번호", "개업공인중개사", "중개업자",
+        "보관한다", "교육", "실습용",  # 서명 블록·합성 문서 워터마크 경계
+    )
     special: list[str] = []
+<<<<<<< HEAD
     bullet = re.compile(r"^[-·ㆍ•▪◦]\s*")
     for line in lines[special_index + 1 :]:
         stripped = line.strip()
@@ -479,6 +487,23 @@ def _clause_sections(
         elif special:
             # PDF 텍스트 레이어에서 한 특약 문장이 다음 줄로 잘린 경우 이전 항목에 잇는다.
             special[-1] = f"{special[-1]} {stripped}"
+=======
+    current: list[str] = []
+    for line in lines[special_index + 1 :]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if re.match(r"\d+\.\s+", stripped) or any(token in stripped for token in _STOP):
+            break
+        if stripped[0] in _BULLETS:
+            if current:
+                special.append(" ".join(current))
+            current = [stripped.lstrip(_BULLETS + " ").strip()]
+        elif current:
+            current.append(stripped)
+    if current:
+        special.append(" ".join(current))
+>>>>>>> main
     return main or None, True, special or None
 
 

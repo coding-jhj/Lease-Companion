@@ -174,7 +174,9 @@ export function ContractDetailPage() {
 
   function guideForItem(item: ChecklistViewItem) {
     for (const id of item.resultIds) {
-      const judgmentId = id.startsWith("J") ? id : judgmentByResultId[id] ?? null;
+      // 규칙/판정 id로 바로 가이드가 있으면 사용, 없으면 연결된 판정(J)으로 매핑해 찾는다.
+      if (id in plainJudgmentGuides) return plainGuideById(id);
+      const judgmentId = judgmentByResultId[id] ?? null;
       if (judgmentId && judgmentId in plainJudgmentGuides) return plainGuideById(judgmentId);
     }
     return plainGuideById(null);

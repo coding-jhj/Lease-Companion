@@ -43,7 +43,8 @@ export function cannotJudgeNow(item: ReportResultDto) {
 }
 
 function ResultCard({ item, idPrefix }: { item: ReportResultDto; idPrefix: string }) {
-  const guide = plainGuideById(item.judgment_id);
+  // 판정(J) 가이드 우선, 없으면 규칙 id(R) 가이드로 폴백 — J 미매핑 규칙도 개별 안내를 보이게.
+  const guide = plainGuideById(item.judgment_id ?? ("rule_id" in item ? item.rule_id : null));
   return (
     <article className="result-card">
       <p className="result-meta">

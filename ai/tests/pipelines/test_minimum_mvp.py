@@ -606,6 +606,24 @@ def test_account_number_and_bank_extracted_without_account_holder():
     assert fields["account_holder"] is None
 
 
+def test_special_clauses_extracts_unicode_bullets_and_wrapped_lines():
+    # 표준계약서는 • (U+2022) 불릿을 쓰고 PDF 추출 시 특약이 여러 줄로 쪼개진다.
+    contract = """주택임대차계약서
+[특약사항]
+• 임대인은 잔금일 다음 날까지 임차주택에 근저당권을
+설정하지 않는다.
+• 분쟁이 있는 경우 조정위원회에 조정을 신청한다.
+임대인 성명 안이름 (서명 또는 날인)
+"""
+    fields = parse_contract(contract).fields
+    assert fields["special_clauses_present"] is True
+    special = fields["special_clauses"]
+    assert len(special) == 2
+    assert "설정하지 않는다" in special[0]  # 줄바꿈으로 쪼개진 줄이 이어붙었는지
+    assert "조정위원회" in special[1]
+    assert "서명" not in " ".join(special)  # 서명 블록은 포함하지 않는다
+
+
 def test_registry_address_excludes_adjacent_building_details_and_notes():
     registry = """등기사항전부증명서
 [표제부]

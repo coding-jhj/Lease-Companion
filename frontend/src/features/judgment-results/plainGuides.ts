@@ -1,5 +1,6 @@
-// 판정 항목의 쉬운 설명 + 금전 문제 안내. 리포트(PriorityGroups)와 8번 체크리스트가 공유한다.
-// canonical 판정 id(J01~J12) 기준 정적 큐레이션 — 근거 없는 위험 단정이 아니라 "확인이 필요한 이유"를 쉽게 설명한다.
+// 판정·규칙 항목의 쉬운 설명 + 금전 문제 안내. 리포트(PriorityGroups)와 8번 체크리스트가 공유한다.
+// 판정 id(J01~J12)와 J에 매핑되지 않는 규칙 id(R축)를 함께 큐레이션 — 근거 없는 위험 단정이 아니라
+// "확인이 필요한 이유"를 쉽게 설명한다.
 export interface PlainJudgmentGuide {
   explanation: string;
   financialImpact: string;
@@ -54,6 +55,75 @@ export const plainJudgmentGuides: Record<string, PlainJudgmentGuide> = {
     explanation: "계약서 본문과 특약에 서로 다르거나 충돌하는 조건이 있는지 확인하는 항목입니다.",
     financialImpact: "충돌하는 문구를 그대로 두면 어떤 조건을 따라야 하는지 불분명해져 추가 비용이나 금전 책임 분쟁이 생길 수 있습니다.",
   },
+  // J 판정에 매핑되지 않는 확장 규칙(R축). 없으면 일반 안내로 폴백되어 항목마다 같은 문구가 반복되므로 개별 제공한다.
+  R03: {
+    explanation: "등기사항증명서에 근저당권 등 담보가 잡혀 있는지 확인하는 항목입니다.",
+    financialImpact: "선순위 담보가 있으면 집이 경매로 넘어갈 때 보증금을 온전히 돌려받지 못할 수 있습니다.",
+  },
+  R04: {
+    explanation: "등기사항증명서에 압류·가압류 기재가 있는지 확인하는 항목입니다.",
+    financialImpact: "압류가 있으면 보증금 반환이 지연되거나 회수가 어려워질 수 있습니다.",
+  },
+  R05: {
+    explanation: "집이 신탁회사에 맡겨진 상태(신탁등기)인지 확인하는 항목입니다.",
+    financialImpact: "신탁 부동산은 계약 상대·보증금 반환 주체가 달라져 돌려받기 어려워질 수 있습니다.",
+  },
+  R07: {
+    explanation: "확인한 등기사항증명서가 계약·잔금 시점의 최신본인지 확인하는 항목입니다.",
+    financialImpact: "오래된 등기로 확인하면 그 사이 생긴 담보·압류를 놓쳐 보증금 위험을 못 볼 수 있습니다.",
+  },
+  R10: {
+    explanation: "계약 후 임대인이 새 담보를 설정하지 않기로 하는 특약이 있는지 확인하는 항목입니다.",
+    financialImpact: "특약이 없으면 입주 후 집에 담보가 잡혀 보증금 반환 순위가 밀릴 수 있습니다.",
+  },
+  R11: {
+    explanation: "보증금이 집 시세 대비 어느 정도인지 살펴보는 항목입니다.",
+    financialImpact: "시세 대비 보증금이 크면 집값이 떨어졌을 때 보증금을 다 돌려받지 못할 수 있습니다.",
+  },
+  R12: {
+    explanation: "나보다 앞서는 담보·채권의 합계를 확인하는 항목입니다.",
+    financialImpact: "선순위 금액이 크면 경매가 진행될 때 내 보증금 회수 순위가 밀릴 수 있습니다.",
+  },
+  R14: {
+    explanation: "집이 위반건축물로 표시돼 있는지, 주거용 용도가 맞는지 확인하는 항목입니다.",
+    financialImpact: "위반건축물은 전세보증 가입이 거절되거나 이행강제금 등 예상치 못한 부담이 생길 수 있습니다.",
+  },
+  R15: {
+    explanation: "전세보증금 반환보증에 가입할 수 있는 요건을 갖췄는지 확인하는 항목입니다.",
+    financialImpact: "요건을 놓치면 보증에 가입하지 못해 보증금을 지킬 안전장치가 없어질 수 있습니다.",
+  },
+  R16: {
+    explanation: "임대인·중개사에게 서면으로 확인하고 답변을 기록으로 남기는 항목입니다.",
+    financialImpact: "구두로만 확인하면 나중에 분쟁이 생겼을 때 증빙이 없어 불리해질 수 있습니다.",
+  },
+  R17: {
+    explanation: "계약 상대가 임대하거나 전대할 적법한 권한이 있는지 확인하는 항목입니다.",
+    financialImpact: "권한 없는 상대와 계약하면 계약 효력이나 보증금 반환을 두고 분쟁이 생길 수 있습니다.",
+  },
+  R19: {
+    explanation: "계약 전후로 임대인이 담보를 설정하지 않기로 한 특약을 확인하는 항목입니다.",
+    financialImpact: "특약이 없으면 입주 후 담보가 설정돼 보증금 반환 순위가 밀릴 수 있습니다.",
+  },
+  R20: {
+    explanation: "공식 실거래 자료로 집의 시세를 확인하는 항목입니다.",
+    financialImpact: "시세를 모르면 보증금이 적정한지 판단하기 어려워 과도한 보증금을 낼 수 있습니다.",
+  },
+  R21: {
+    explanation: "임대인의 세금 체납 이력을 확인하는 항목입니다.",
+    financialImpact: "임대인이 세금을 체납하면 체납액이 보증금보다 먼저 회수돼 보증금을 못 돌려받을 수 있습니다.",
+  },
+  R22: {
+    explanation: "임대인의 국세·지방세 체납 여부를 확인하는 항목입니다.",
+    financialImpact: "밀린 세금이 있으면 경매 시 보증금보다 먼저 회수돼 손해를 볼 수 있습니다.",
+  },
+  R23: {
+    explanation: "임대인이 제공해야 하는 임대차·납세 관련 정보를 확인하는 항목입니다.",
+    financialImpact: "정보를 확인하지 않으면 선순위 위험을 모른 채 계약해 보증금을 위험에 둘 수 있습니다.",
+  },
+  R24: {
+    explanation: "선순위 임차인이나 다른 임대차 관계가 있는지 확인하는 항목입니다.",
+    financialImpact: "앞선 임차인이 있으면 보증금 회수 순위가 밀려 손해를 볼 수 있습니다.",
+  },
 };
 
 const GENERIC_GUIDE: PlainJudgmentGuide = {
@@ -61,8 +131,8 @@ const GENERIC_GUIDE: PlainJudgmentGuide = {
   financialImpact: "확인하지 않으면 예상하지 못한 비용이나 책임을 부담하거나 분쟁이 생길 수 있습니다.",
 };
 
-// 판정 id(J01~J12)로 가이드를 찾는다. 없으면(R 규칙·사실 플래그·미매핑) 일반 안내로 폴백한다.
-export function plainGuideById(judgmentId: string | null | undefined): PlainJudgmentGuide {
-  const guide = judgmentId ? plainJudgmentGuides[judgmentId] : undefined;
+// 판정 id(J01~J12) 또는 규칙 id(R##)로 가이드를 찾는다. 없으면(사실 플래그·미매핑) 일반 안내로 폴백한다.
+export function plainGuideById(resultId: string | null | undefined): PlainJudgmentGuide {
+  const guide = resultId ? plainJudgmentGuides[resultId] : undefined;
   return guide ?? GENERIC_GUIDE;
 }
