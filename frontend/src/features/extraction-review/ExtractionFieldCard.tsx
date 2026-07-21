@@ -19,6 +19,21 @@ const issueStateLabels: Record<string, string> = {
   not_applicable: "적용 제외",
 };
 
+const troubleshootingLocations: Record<string, string> = {
+  special_clauses: "계약서의 [특약사항] 아래 글머리표 문장을 확인하세요.",
+  end_date: "계약서 제2조(임대차기간)의 ‘~까지로 한다’ 날짜를 확인하세요.",
+  start_date: "계약서 제2조(임대차기간)의 인도일 또는 시작일을 확인하세요.",
+  bank_name: "제1조 차임·월세 항목의 입금계좌 괄호 안 은행명을 확인하세요.",
+  account_number: "제1조 차임·월세 항목의 입금계좌 번호를 확인하세요.",
+  account_holder: "입금계좌 옆 예금주 표기 또는 계약 상대 명의를 확인하세요.",
+  contract_payment: "제1조의 계약금 금액을 확인하세요.",
+  contract_payment_date: "제1조의 계약금 지급 문구와 계약 체결일을 확인하세요.",
+  balance_payment: "제1조의 잔금 금액을 확인하세요.",
+  balance_payment_date: "제1조의 잔금 지급일을 확인하세요.",
+  owner_shares: "등기사항증명서 갑구의 현재 소유자와 지분 표시를 확인하세요.",
+  senior_claim_amount: "등기사항증명서 을구의 권리 종류와 채권최고액을 확인하세요.",
+};
+
 export function ExtractionFieldCard({
   view,
   draft,
@@ -47,6 +62,10 @@ export function ExtractionFieldCard({
   const selectedChoice = typeof draft === "string" ? draft : "";
   const confirmLabel = view.field.issue_code === "not_stated" && !hasDraftInput ? "직접 확인" : "이 값 확인";
   const showInlineDirectConfirm = confirmLabel === "직접 확인" && view.editor === "scalar";
+  const showTroubleshooting = ["unreadable", "parse_failed"].includes(view.field.issue_code ?? "")
+    || (view.field.confidence === "실패" && !canConfirmMissing);
+  const troubleshootingLocation = troubleshootingLocations[view.field.field_name]
+    ?? "원본 문서에서 해당 항목의 제목과 기재란을 확인하세요.";
 
   const choiceEditor = (
     options: Array<{ value: string; label: string }>,
@@ -149,6 +168,17 @@ export function ExtractionFieldCard({
         </div>
       ) : editor}
       {view.field.failure_reason && <p className="field-error">{view.field.failure_reason}</p>}
+      {showTroubleshooting && (
+        <details className="field-troubleshooting">
+          <summary>판독 실패 해결 방법</summary>
+          <ol>
+            <li>{troubleshootingLocation}</li>
+            <li>원문에서 값이 확인되면 위 입력칸에 그대로 입력하고 <strong>이 값 확인</strong>을 누르세요.</li>
+            <li>원문도 흐리거나 잘려 있다면 해당 페이지가 선명하게 보이는 PDF·이미지를 다시 업로드해 추출하세요.</li>
+          </ol>
+          <p>직접 입력한 값은 자동 추출값이 아니라 사용자가 확인한 수정값으로 저장됩니다.</p>
+        </details>
+      )}
       {view.guidance && <small>{view.guidance}</small>}
       {hasEvidence && <small>{`${view.field.source_evidence.page}쪽 · ${view.field.source_evidence.text}`}</small>}
       {!showInlineDirectConfirm && (

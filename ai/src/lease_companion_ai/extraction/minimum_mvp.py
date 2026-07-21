@@ -465,12 +465,20 @@ def _clause_sections(
     if "없음" in header or following in {"없음", "(없음)", "기재 사항 없음"}:
         return main or None, False, None
     special: list[str] = []
+    bullet = re.compile(r"^[-·ㆍ•▪◦]\s*")
     for line in lines[special_index + 1 :]:
         stripped = line.strip()
+        if not stripped:
+            if special:
+                break
+            continue
         if re.match(r"\d+\.\s+", stripped):
             break
-        if stripped.startswith(("-", "·", "ㆍ")):
+        if bullet.match(stripped):
             special.append(stripped)
+        elif special:
+            # PDF 텍스트 레이어에서 한 특약 문장이 다음 줄로 잘린 경우 이전 항목에 잇는다.
+            special[-1] = f"{special[-1]} {stripped}"
     return main or None, True, special or None
 
 
@@ -752,8 +760,24 @@ def parse_contract(text: str) -> DocumentExtraction:
         and re.search(r"계약\s*시(?:에)?", contract_payment_line)
     ):
         contract_payment_date = _contract_execution_date(text)
-    period_line = _line_matching(text, r"(?:존속\s*기간|임대차\s*기간|\]\s*기간)")
-    period_dates = _dates(period_line or "")
+    period_lines = text.splitlines()
+    period_index = next(
+        (
+            index
+            for index, line in enumerate(period_lines)
+            if re.search(r"(?:존속\s*기간|임대차\s*기간|\]\s*기간)", line)
+        ),
+        None,
+    )
+    period_parts: list[str] = []
+    if period_index is not None:
+        for line in period_lines[period_index : period_index + 3]:
+            stripped = line.strip()
+            if period_parts and re.match(r"제\s*\d+\s*조", stripped):
+                break
+            if stripped:
+                period_parts.append(stripped)
+    period_dates = _dates(" ".join(period_parts))
     management_present, management_fee, management_items = _management_fields(text)
     return_line = _line_containing(text, "보증금", "반환")
     repair_line = next(

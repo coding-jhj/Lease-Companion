@@ -38,6 +38,63 @@ from lease_companion_ai.schemas.unified import (
 
 _KIND_LABELS = {"contract": "계약서", "registry": "등기사항증명서"}
 
+_CONTRACT_PROVIDER_REPAIR_FIELDS = (
+    "building_use",
+    "deposit",
+    "deposit_korean_amount",
+    "monthly_rent",
+    "monthly_rent_korean_amount",
+    "contract_payment",
+    "contract_payment_korean_amount",
+    "balance_payment",
+    "balance_payment_korean_amount",
+    "contract_payment_date",
+    "balance_payment_date",
+    "move_in_date",
+    "start_date",
+    "end_date",
+    "management_fee_present",
+    "management_fee",
+    "management_fee_items",
+    "account_number",
+    "bank_name",
+    "special_clauses_present",
+    "special_clauses",
+)
+
+
+def _repair_contract_provider_fields(
+    fields: dict[str, Any], text: str
+) -> tuple[dict[str, Any], list[str]]:
+    """Gemini가 비워 둔 명시적 계약값만 결정론적 파서 결과로 보완한다.
+
+    Gemini와 로컬 값이 충돌하면 Gemini 값을 덮어쓰지 않는다. 대리권·보증 가입
+    가능 여부처럼 별도 확인이 필요한 필드는 이 보완 대상에 포함하지 않는다.
+    """
+    repaired = dict(fields)
+    local = parse_contract(text)
+    repaired_names: list[str] = []
+    for name in _CONTRACT_PROVIDER_REPAIR_FIELDS:
+        if name in {"management_fee", "management_fee_items"} and repaired.get("management_fee_present") is False:
+            continue
+        if name == "special_clauses" and repaired.get("special_clauses_present") is False:
+            continue
+        provider_value = repaired.get(name)
+        local_value = local.fields.get(name)
+        provider_missing = provider_value is None or provider_value == [] or provider_value == {}
+        local_present = local_value is not None and local_value != [] and local_value != {}
+        if provider_missing and local_present:
+            repaired[name] = local_value
+            repaired_names.append(name)
+
+    warnings = list(local.warnings)
+    if repaired_names:
+        warnings.append(
+            "Gemini 미확인 필드를 결정론적 계약서 파서로 보완했습니다: "
+            + ", ".join(repaired_names)
+        )
+    return repaired, warnings
+
 
 def _repair_registry_provider_fields(
     fields: dict[str, Any], text: str
@@ -112,7 +169,9 @@ def _structure_unified(
             else extract_registry_fields(text)
         )
         warnings: list[str] = []
-        if doc_type == "registry":
+        if doc_type == "contract":
+            fields, warnings = _repair_contract_provider_fields(fields, text)
+        elif doc_type == "registry":
             fields, warnings = _repair_registry_provider_fields(fields, text)
         unconfirmed = [key for key, value in fields.items() if value is None]
         return LegacyDocumentExtraction(label, fields, unconfirmed, warnings)

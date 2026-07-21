@@ -2,6 +2,7 @@ from pathlib import Path
 
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
 from lease_companion_ai.pipelines.minimum_mvp import (
+    _repair_contract_provider_fields,
     _structure_unified,
     analyze_verified_fields,
     extract_documents,
@@ -15,6 +16,57 @@ from lease_companion_ai.schemas.unified import (
 
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_contract_provider_nulls_are_repaired_without_overwriting_provider_values():
+    repaired, warnings = _repair_contract_provider_fields(
+        {
+            "bank_name": "제공자은행",
+            "balance_payment": None,
+            "balance_payment_date": None,
+            "end_date": None,
+            "special_clauses_present": None,
+            "special_clauses": None,
+        },
+        """주택임대차표준계약서
+잔 금 금 8,000,000원은 2026년 2월 13일에 지불한다.
+차임은 매월 지급한다 (입금계좌: 가상은행 804-71-336785)
+제2조(임대차기간) 2026년 10월 2일부터 임대차기간은
+2028년 10월 2일까지로 한다.
+[특약사항]
+• 임대인은 다음날까지 담보권을 설정할 수 없다.
+""",
+    )
+
+    assert repaired["bank_name"] == "제공자은행"
+    assert repaired["balance_payment"] == 8_000_000
+    assert repaired["balance_payment_date"] == "2026-02-13"
+    assert repaired["end_date"] == "2028-10-02"
+    assert repaired["special_clauses"] == ["• 임대인은 다음날까지 담보권을 설정할 수 없다."]
+    assert any("balance_payment" in warning for warning in warnings)
+
+
+def test_contract_provider_explicit_absence_is_not_replaced_with_local_content():
+    repaired, _ = _repair_contract_provider_fields(
+        {
+            "management_fee_present": False,
+            "management_fee": None,
+            "management_fee_items": None,
+            "special_clauses_present": False,
+            "special_clauses": None,
+        },
+        """주택임대차표준계약서
+관리비 월 100,000원(청소·경비)
+[특약사항]
+• 임대인은 다음날까지 담보권을 설정할 수 없다.
+""",
+    )
+
+    assert repaired["management_fee_present"] is False
+    assert repaired["management_fee"] is None
+    assert repaired["management_fee_items"] is None
+    assert repaired["special_clauses_present"] is False
+    assert repaired["special_clauses"] is None
 
 
 def test_swapped_documents_are_flagged_with_guidance():

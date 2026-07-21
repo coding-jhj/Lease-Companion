@@ -211,6 +211,31 @@ def test_standard_monthly_form_extracts_use_handover_contract_date_and_variable_
     assert fields["management_fee_items"] == ["전기", "수도", "가스", "공용관리비"]
 
 
+def test_wrapped_period_and_bullet_special_clauses_are_joined():
+    fields = parse_contract(
+        """주택임대차표준계약서
+제2조(임대차기간) 임대인은 2026년 10월 2일까지 임차인에게 인도하고, 임대차기간은 인도일
+로부터 2028년 10월 2일까지로 한다.
+제3조(입주 전 수리) 수리 사항을 정한다.
+[특약사항]
+• 임차인은 2026년 10월 2일까지 전입신고를 하고, 임대인은 다음날
+까지 담보권을 설정할 수 없다.
+• 분쟁이 있으면 조정위원회에 조정을 신청한다.
+  (☐ 동의 ☑ 미동의)
+
+본 계약을 증명하기 위하여 서명한다.
+"""
+    ).fields
+
+    assert fields["start_date"] == "2026-10-02"
+    assert fields["end_date"] == "2028-10-02"
+    assert fields["special_clauses_present"] is True
+    assert fields["special_clauses"] == [
+        "• 임차인은 2026년 10월 2일까지 전입신고를 하고, 임대인은 다음날 까지 담보권을 설정할 수 없다.",
+        "• 분쟁이 있으면 조정위원회에 조정을 신청한다. (☐ 동의 ☑ 미동의)",
+    ]
+
+
 def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
     contract_fields = _contract("contract_002.txt")
     registry_text = (
