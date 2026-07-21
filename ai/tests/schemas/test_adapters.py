@@ -163,6 +163,25 @@ def test_document_from_legacy_marks_absent_proxy_fields_as_not_applicable():
         assert "대리인 계약 표시가 없어" in field.failure_reason
 
 
+def test_document_from_legacy_marks_variable_management_fee_as_not_stated():
+    contract = document_from_legacy(
+        {
+            "document_type": "contract",
+            "fields": {
+                "management_fee": None,
+                "management_fee_present": True,
+                "management_fee_items": ["전기", "수도", "공용관리비"],
+            },
+        },
+        document_id="DOC-VARIABLE-FEE",
+    )
+
+    fee = contract.fields["management_fee"]
+    assert fee.confidence is Confidence.UNCERTAIN
+    assert fee.issue_code is FieldIssueCode.NOT_STATED
+    assert "고정 관리비 금액이 없습니다" in fee.failure_reason
+
+
 def test_document_from_legacy_normalizes_empty_list_to_null():
     doc = document_from_legacy(
         {

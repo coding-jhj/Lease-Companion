@@ -29,6 +29,7 @@ export function ExtractionReviewPage() {
   const [documents, setDocuments] = useState<DocumentExtractionDto[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftValue>>({});
   const [verificationByKey, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
+  const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
   const [savedDraftKeys, setSavedDraftKeys] = useState<string[]>([]);
   const [status, setStatus] = useState<"loading" | "processing" | "success" | "error">("loading");
   const [runStatus, setRunStatus] = useState<"pending" | "running">("pending");
@@ -82,9 +83,13 @@ export function ExtractionReviewPage() {
       setDocuments(extractedDocuments);
       setDrafts({});
       setSavedDraftKeys([]);
+      const loadedFields = fieldViewModels(extractedDocuments);
       setVerificationByKey(Object.fromEntries(
-        fieldViewModels(extractedDocuments).map((view) => [view.key, view.field.verification_status]),
+        loadedFields.map((view) => [view.key, view.field.verification_status]),
       ));
+      setReviewedKeys(loadedFields
+        .filter((view) => view.field.verification_status !== "unverified")
+        .map((view) => view.key));
       setStatus("success");
     } catch (error) {
       if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
@@ -102,6 +107,7 @@ export function ExtractionReviewPage() {
 
   function updateField(view: FieldViewModel, value: string) {
     setSavedDraftKeys((current) => current.filter((key) => key !== view.key));
+    setReviewedKeys((current) => current.filter((key) => key !== view.key));
     if (value === view.formattedValue) {
       setDrafts((current) => {
         const next = { ...current };
@@ -117,6 +123,7 @@ export function ExtractionReviewPage() {
 
   function updateClauseDraft(view: FieldViewModel, nextValues: string[]) {
     setSavedDraftKeys((current) => current.filter((key) => key !== view.key));
+    setReviewedKeys((current) => current.filter((key) => key !== view.key));
     if (JSON.stringify(nextValues) === JSON.stringify(clauseValues(view.field))) {
       setDrafts((current) => {
         const next = { ...current };
@@ -131,10 +138,18 @@ export function ExtractionReviewPage() {
   }
 
   function confirmField(view: FieldViewModel) {
-    setVerificationByKey((current) => ({ ...current, [view.key]: "confirmed" }));
+    setReviewedKeys((current) => [...new Set([...current, view.key])]);
+    setVerificationByKey((current) => ({
+      ...current,
+      [view.key]: current[view.key] === "corrected" ? "corrected" : "confirmed",
+    }));
   }
 
   function confirmReadableFields() {
+    const readableKeys = fields
+      .filter((view) => view.field.confidence !== "실패" || hasDraftInput(view.key))
+      .map((view) => view.key);
+    setReviewedKeys((current) => [...new Set([...current, ...readableKeys])]);
     setVerificationByKey((current) => ({
       ...current,
       ...Object.fromEntries(
@@ -147,14 +162,17 @@ export function ExtractionReviewPage() {
 
   const pendingCorrectionKeys = Object.keys(drafts).filter((key) => !savedDraftKeys.includes(key));
   const hasUnverified = fields.some(
-    (view) => (view.field.confidence !== "실패" || directConfirmationFields.has(view.field.field_name))
-      && (verificationByKey[view.key] ?? view.field.verification_status) === "unverified",
+    (view) => !reviewedKeys.includes(view.key)
+      && (
+        view.field.confidence !== "실패"
+        || view.field.issue_code === "not_stated"
+        || view.field.issue_code === "not_applicable"
+        || directConfirmationFields.has(view.field.field_name)
+        || hasDraftInput(view.key)
+      ),
   );
-  const confirmedHighConfidenceFields = fields.filter((view) => (
-    view.field.confidence === "추출됨"
-    && (verificationByKey[view.key] ?? view.field.verification_status) !== "unverified"
-  ));
-  const attentionFields = fields.filter((view) => !confirmedHighConfidenceFields.includes(view));
+  const confirmedFields = fields.filter((view) => reviewedKeys.includes(view.key));
+  const attentionFields = fields.filter((view) => !reviewedKeys.includes(view.key));
 
   function renderFieldCard(view: FieldViewModel) {
     return (
@@ -163,6 +181,7 @@ export function ExtractionReviewPage() {
         view={view}
         draft={drafts[view.key]}
         verification={verificationByKey[view.key] ?? view.field.verification_status}
+        reviewed={reviewedKeys.includes(view.key)}
         onValueChange={(value) => updateField(view, value)}
         onClauseChange={(values) => updateClauseDraft(view, values)}
         onConfirm={() => confirmField(view)}
@@ -246,14 +265,14 @@ export function ExtractionReviewPage() {
             </section>
           </div>
         )}
-        {status === "success" && confirmedHighConfidenceFields.length > 0 && (
+        {status === "success" && confirmedFields.length > 0 && (
           <details className="confirmed-fields">
             <summary>
-              <span>확인된 항목 {confirmedHighConfidenceFields.length}개</span>
+              <span>확인된 항목 {confirmedFields.length}개</span>
               <span className="collapse-arrow" aria-hidden="true">▸</span>
             </summary>
             <div className="confirmed-fields__items">
-              {confirmedHighConfidenceFields.map(renderFieldCard)}
+              {confirmedFields.map(renderFieldCard)}
             </div>
           </details>
         )}

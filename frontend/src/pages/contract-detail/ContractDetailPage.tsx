@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -269,7 +270,7 @@ export function ContractDetailPage() {
                 <button className="secondary" type="button" onClick={printChecklist}>체크리스트 PDF 저장</button>
               </div>
             )}
-            <article className="checklist-print-sheet" aria-hidden="true">
+            {createPortal(<article className="checklist-print-sheet" aria-hidden="true">
               <header>
                 <p>슬기로운 계약생활</p>
                 <h1>서명 전 체크리스트</h1>
@@ -292,7 +293,7 @@ export function ContractDetailPage() {
                 ))}
               </ol>
               <footer>이 체크리스트는 문서 분석을 바탕으로 확인할 항목을 정리한 자료이며, 계약의 안전성이나 적법성을 확정하지 않습니다.</footer>
-            </article>
+            </article>, document.body)}
             <div className="checklist-active-grid">
               {renderActionItems({
                 title: "서명 전 체크리스트",
