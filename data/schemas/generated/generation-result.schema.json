@@ -196,6 +196,14 @@
           "title": "Questions",
           "type": "array"
         },
+        "request_templates": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Templates",
+          "type": "array"
+        },
         "signing_checklist": {
           "default": [],
           "items": {
@@ -289,6 +297,14 @@
           "title": "Questions",
           "type": "array"
         },
+        "request_templates": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Request Templates",
+          "type": "array"
+        },
         "rule_id": {
           "pattern": "^R\\d{2}$",
           "title": "Rule Id",
@@ -331,6 +347,22 @@
       "additionalProperties": false,
       "description": "ContractContext와 J 판정을 결합한 단계별 사용자 행동 묶음.",
       "properties": {
+        "after_contract_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "After Contract Actions",
+          "type": "array"
+        },
+        "before_contract_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Before Contract Actions",
+          "type": "array"
+        },
         "before_deposit_questions": {
           "default": [],
           "items": {
@@ -339,8 +371,24 @@
           "title": "Before Deposit Questions",
           "type": "array"
         },
+        "closing_day_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Closing Day Actions",
+          "type": "array"
+        },
         "contract_context": {
           "$ref": "#/$defs/ContractContext"
+        },
+        "during_contract_actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "During Contract Actions",
+          "type": "array"
         },
         "post_contract_actions": {
           "default": [],

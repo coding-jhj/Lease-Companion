@@ -16,9 +16,10 @@ export function StageGuidance({ guidance }: { guidance: StageGuidanceDto }) {
     <section className="stage-guidance" aria-labelledby="stage-guidance-title">
       <h2 id="stage-guidance-title">계약 단계별 안내</h2>
       <div className="stage-guidance__grid">
-        <StageList title="계약금 입금 전 질문" items={guidance.before_deposit_questions} />
-        <StageList title="서명 전 체크리스트" items={guidance.signing_checklist} />
-        <StageList title="계약 직후 행동" items={guidance.post_contract_actions} />
+        <StageList title="계약 전" items={guidance.before_contract_actions ?? guidance.signing_checklist} />
+        <StageList title="계약 중" items={guidance.during_contract_actions ?? guidance.signing_checklist} />
+        <StageList title="잔금·입주 당일" items={guidance.closing_day_actions ?? []} />
+        <StageList title="계약 후" items={guidance.after_contract_actions ?? guidance.post_contract_actions} />
         <StageList title="보관해야 할 자료" items={guidance.record_retention} />
       </div>
     </section>

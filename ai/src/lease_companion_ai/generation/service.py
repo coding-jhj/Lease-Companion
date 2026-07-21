@@ -160,7 +160,9 @@ class GenerationService:
             prompt_version=GENERATION_PROMPT_VERSION,
             items=items,
             judgment_items=judgment_items,
-            stage_guidance=self._stage_guidance(analysis, contract_context),
+            stage_guidance=self._guardrails.enforce_stage(
+                self._stage_guidance(analysis, contract_context)
+            ),
         )
         return validate_generation_result_for_analysis(analysis, generated)
 
@@ -279,7 +281,51 @@ class GenerationService:
             signing_checklist=signing_checklist,
             post_contract_actions=GenerationService._unique(post_contract_actions),
             record_retention=GenerationService._unique(record_retention),
+            before_contract_actions=(
+                "등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하세요.",
+                "대리계약이면 위임장·인감증명서 등 계약 권한 자료를 확인하세요.",
+                "공식 실거래 자료에서 동일·유사 주택의 가격과 보증금을 비교하세요.",
+                "최신 등기사항증명서에서 근저당·압류·가압류·신탁 기재를 확인하세요.",
+                "다가구주택이면 선순위 임차보증금을 확인할 자료를 요청하세요.",
+                "보증기관 공식 채널에서 반환보증 가입 요건과 신청 기한을 확인하세요.",
+            ),
+            during_contract_actions=(
+                "보증금 반환 시점과 조건을 계약서에 구체적으로 기재해 달라고 요청하세요.",
+                "신규 임차인 입주를 보증금 반환 조건으로 삼는 문구는 삭제 또는 수정을 요청하세요.",
+                "잔금 지급 다음 날까지 새로운 권리 설정을 제한하는 특약을 협의해 기재하세요.",
+                "반환보증 가입에 필요한 임대인의 서류 제출·확인 협조 내용을 특약으로 협의하세요.",
+                "보증 가입이 불가능한 경우의 계약 처리와 지급금 반환 조건을 서면으로 협의하세요.",
+                "입금 계좌가 임대인 본인 명의인지 확인하세요.",
+                "공인중개사의 서명과 등록번호를 확인하세요.",
+            ),
+            closing_day_actions=(
+                "잔금 송금 직전에 최신 등기사항증명서를 다시 발급해 권리변동을 확인하세요.",
+                "계약 당시 없던 근저당·압류·소유권 변경 기재가 생겼는지 확인하세요.",
+                "확인된 임대인 명의 계좌로 송금하고 이체내역과 영수증을 보관하세요.",
+                "주택 인도 상태와 열쇠 수령 내용을 기록하세요.",
+                "실제 입주 후 전입신고·확정일자 등 권리 확보 절차를 진행하세요.",
+            ),
+            after_contract_actions=(
+                "보증기관의 심사를 거쳐 반환보증 가입 결과를 확인하고 자료를 보관하세요.",
+                "계약서·등기사항증명서·송금증·중개대상물 확인설명서를 함께 보관하세요.",
+                "필요한 시점에 최신 등기사항증명서를 다시 확인해 권리변동을 살펴보세요.",
+                "계약 종료 전에 보증금 반환 일정과 대응 절차를 공식 안내에서 확인하세요.",
+            ),
         )
+
+    @staticmethod
+    def _request_templates(result_id: str) -> tuple[str, ...]:
+        templates = {
+            "R06": ("입금 계좌를 임대인 본인 명의 계좌로 변경하고 변경 내용을 계약서에 반영해 주세요.",),
+            "J05": ("입금 계좌를 임대인 본인 명의 계좌로 변경하고 변경 내용을 계약서에 반영해 주세요.",),
+            "R08": ("보증금은 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 문구를 명확히 수정해 주세요.",),
+            "J10": ("보증금은 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 문구를 명확히 수정해 주세요.",),
+            "R10": ("잔금 지급 다음 날까지 근저당 등 새로운 권리를 설정하지 않는다는 특약을 추가해 주세요.",),
+            "R19": ("잔금 지급 다음 날까지 근저당 등 새로운 권리를 설정하지 않는다는 특약을 추가해 주세요.",),
+            "R15": ("반환보증 가입에 필요한 서류 제출과 확인 절차에 협조한다는 특약을 추가해 주세요.",),
+            "J12": ("본문과 특약이 다르게 해석되지 않도록 충돌하는 조건을 하나의 문구로 정리해 주세요.",),
+        }
+        return templates.get(result_id, ())
 
     @staticmethod
     def _unique(values: Iterable[str | None]) -> tuple[str, ...]:
@@ -333,6 +379,9 @@ class GenerationService:
             rule_id=result.rule_id,
             explanation=restored.explanation,
             questions=restored.questions,
+            request_templates=self._unique(
+                (*restored.request_templates, *self._request_templates(result.rule_id))
+            ),
             signing_checklist=restored.signing_checklist,
             post_contract_actions=restored.post_contract_actions,
             signing_checklist_items=self._action_items(
@@ -427,6 +476,9 @@ class GenerationService:
             judgment_id=result.judgment_id,
             explanation=restored.explanation,
             questions=restored.questions,
+            request_templates=self._unique(
+                (*restored.request_templates, *self._request_templates(result.judgment_id))
+            ),
             signing_checklist=restored.signing_checklist,
             post_contract_actions=restored.post_contract_actions,
             signing_checklist_items=self._action_items(
@@ -486,6 +538,7 @@ class GenerationService:
                 else f"{result.rule_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요."
             ),
             questions=questions,
+            request_templates=GenerationService._request_templates(result.rule_id),
             signing_checklist=signing_checklist,
             post_contract_actions=(),
             signing_checklist_items=GenerationService._action_items(
@@ -510,6 +563,7 @@ class GenerationService:
                 else f"{result.judgment_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요."
             ),
             questions=questions,
+            request_templates=GenerationService._request_templates(result.judgment_id),
             signing_checklist=signing_checklist,
             post_contract_actions=(),
             signing_checklist_items=GenerationService._action_items(
@@ -555,6 +609,10 @@ class GenerationService:
             questions=tuple(
                 GenerationService._restore_required(tokenizer, value)
                 for value in draft.questions
+            ),
+            request_templates=tuple(
+                GenerationService._restore_required(tokenizer, value)
+                for value in draft.request_templates
             ),
             signing_checklist=tuple(
                 GenerationService._restore_required(tokenizer, value)

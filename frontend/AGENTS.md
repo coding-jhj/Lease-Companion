@@ -41,7 +41,7 @@
 | `document-upload` | 4 | 계약서·등기 등 문서 업로드 |
 | `extraction-review` | 5 | AI 추출값 확인·수정 |
 | `analysis-progress` | 6 | 분석 진행 상태 표시 |
-| `result-report` | 7 | 판정·원문 증거·공식 근거·질문·행동 리포트 |
+| `result-report` | 7 | 판정·원문 증거·공식 근거·피해 유형 비교·질문·수정 요청·단계별 행동·전체 PDF 리포트 |
 | `contract-detail` | 8 | 계약 건 상세, 저장된 체크리스트·계약 직후 행동 관리 |
 
 세부 목록은 [`src/pages/README.md`](src/pages/README.md).

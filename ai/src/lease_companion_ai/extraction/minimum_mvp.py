@@ -469,25 +469,9 @@ def _clause_sections(
     _BULLETS = "-·ㆍ•◦▪‣*"
     _STOP = (
         "주민등록번호", "서명 또는", "날인", "등록번호", "개업공인중개사", "중개업자",
-        "보관한다", "교육", "실습용",  # 서명 블록·합성 문서 워터마크 경계
+        "보관한다", "본 계약", "서명한다", "교육", "실습용",  # 서명 블록·합성 문서 워터마크 경계
     )
     special: list[str] = []
-<<<<<<< HEAD
-    bullet = re.compile(r"^[-·ㆍ•▪◦]\s*")
-    for line in lines[special_index + 1 :]:
-        stripped = line.strip()
-        if not stripped:
-            if special:
-                break
-            continue
-        if re.match(r"\d+\.\s+", stripped):
-            break
-        if bullet.match(stripped):
-            special.append(stripped)
-        elif special:
-            # PDF 텍스트 레이어에서 한 특약 문장이 다음 줄로 잘린 경우 이전 항목에 잇는다.
-            special[-1] = f"{special[-1]} {stripped}"
-=======
     current: list[str] = []
     for line in lines[special_index + 1 :]:
         stripped = line.strip()
@@ -498,12 +482,11 @@ def _clause_sections(
         if stripped[0] in _BULLETS:
             if current:
                 special.append(" ".join(current))
-            current = [stripped.lstrip(_BULLETS + " ").strip()]
+            current = [stripped]
         elif current:
             current.append(stripped)
     if current:
         special.append(" ".join(current))
->>>>>>> main
     return main or None, True, special or None
 
 

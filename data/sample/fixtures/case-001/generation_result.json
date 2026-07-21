@@ -3,7 +3,7 @@
   "guardrail_passed": true,
   "items": [
     {
-      "explanation": "임대인=등기 소유자 이름 일치: 계약서의 임대인과 등기상 소유자 정보가 다르면 계약 권한 확인이 필요합니다. 공식 근거와 함께 확인하십시오.",
+      "explanation": "임대인=등기 소유자 이름 일치: 계약서의 임대인과 등기상 소유자 정보가 다르면 계약 권한 확인이 필요합니다. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "post_contract_action_items": [],
@@ -12,23 +12,25 @@
       "questions": [
         "등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?"
       ],
+      "request_templates": [],
       "rule_id": "R01",
       "signing_checklist": [
-        "서명 또는 입금 전에 계약 권한과 관련 서류를 확인하세요."
+        "최신 등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하고, 다르면 계약 권한 서류를 확인하세요."
       ],
       "signing_checklist_items": [
         {
-          "item_key": "R01:checklist:1eff33c2aa58",
-          "text": "서명 또는 입금 전에 계약 권한과 관련 서류를 확인하세요."
+          "item_key": "R01:checklist:9d891960944a",
+          "text": "최신 등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하고, 다르면 계약 권한 서류를 확인하세요."
         }
       ],
       "source_ids": [
+        "SRC-MOLIT-CHECKLIST",
         "SRC-STD-LEASE"
       ]
     },
     {
-      "explanation": "근저당권 존재 탐지: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
-      "fallback_reason": "missing_evidence",
+      "explanation": "근저당권 존재 탐지: 등기부에 근저당권 관련 기재가 확인되어 추가 확인이 필요합니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "post_contract_action_items": [],
       "post_contract_actions": [],
@@ -36,14 +38,24 @@
       "questions": [
         "현재 설정된 근저당권의 채권최고액과 선순위 관계를 확인할 수 있나요?"
       ],
+      "request_templates": [],
       "rule_id": "R03",
-      "signing_checklist": [],
-      "signing_checklist_items": [],
-      "source_ids": []
+      "signing_checklist": [
+        "선순위 권리의 종류와 채권최고액·실채무액을 확인하고 관련 자료를 보관하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R03:checklist:890616e6c934",
+          "text": "선순위 권리의 종류와 채권최고액·실채무액을 확인하고 관련 자료를 보관하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
     },
     {
-      "explanation": "등기 발급일 확인: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
-      "fallback_reason": "missing_evidence",
+      "explanation": "등기 발급일 확인: 등기 발급일이 오래되었으면 최신 등기로 권리관계를 다시 확인해야 합니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "post_contract_action_items": [],
       "post_contract_actions": [],
@@ -51,13 +63,23 @@
       "questions": [
         "계약 직전 기준으로 발급된 최신 등기사항증명서를 확인할 수 있나요?"
       ],
+      "request_templates": [],
       "rule_id": "R07",
-      "signing_checklist": [],
-      "signing_checklist_items": [],
-      "source_ids": []
+      "signing_checklist": [
+        "계약·잔금 직전 최신 등기사항증명서를 발급받아 갑구·을구의 소유권과 권리제한을 확인하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R07:checklist:5c04b06cc161",
+          "text": "계약·잔금 직전 최신 등기사항증명서를 발급받아 갑구·을구의 소유권과 권리제한을 확인하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
     },
     {
-      "explanation": "보증금 반환 시점·조건 명확성: 보증금 반환 시점·조건이 불명확하면 반환 분쟁 위험이 있습니다. 공식 근거와 함께 확인하십시오.",
+      "explanation": "보증금 반환 시점·조건 명확성: 보증금 반환 시점·조건이 불명확하면 반환 분쟁 위험이 있습니다. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "post_contract_action_items": [],
@@ -65,6 +87,9 @@
       "provider_model": null,
       "questions": [
         "보증금 반환 시점과 조건을 계약서에 구체적으로 명시할 수 있나요?"
+      ],
+      "request_templates": [
+        "보증금은 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 문구를 명확히 수정해 주세요."
       ],
       "rule_id": "R08",
       "signing_checklist": [
@@ -82,7 +107,7 @@
       ]
     },
     {
-      "explanation": "수리·원상복구 책임 명확성: 수리·원상복구 책임이 불명확하면 거주 중·종료 시 분쟁 위험이 있습니다. 공식 근거와 함께 확인하십시오.",
+      "explanation": "수리·원상복구 책임 명확성: 수리·원상복구 책임이 불명확하면 거주 중·종료 시 분쟁 위험이 있습니다. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "post_contract_action_items": [],
@@ -91,6 +116,7 @@
       "questions": [
         "보일러·누수·전기설비 등 수리 주체와 비용 부담을 계약서에 명시할 수 있나요?"
       ],
+      "request_templates": [],
       "rule_id": "R09",
       "signing_checklist": [
         "수리·원상복구 책임 범위를 계약서에 구체적으로 기재하도록 요청하세요."
@@ -105,11 +131,277 @@
         "SRC-STD-LEASE",
         "SRC-HTA-LAW"
       ]
+    },
+    {
+      "explanation": "보증금 대비 주택가치 비율: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "주택가치는 어떤 자료와 기준일로 확인했나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R11",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "선순위 권리·채권 총액: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "선순위 권리의 종류와 채권최고액·실채무액을 확인할 수 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R12",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "건축물 용도·위반건축물: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "건축물대장의 용도와 위반건축물 표시를 최신 자료로 확인했나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R14",
+      "signing_checklist": [
+        "최신 건축물대장을 발급받아 용도와 위반건축물 표시를 확인하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R14:checklist:87d96ace7975",
+          "text": "최신 건축물대장을 발급받아 용도와 위반건축물 표시를 확인하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "전세보증 가입 요건: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "현재 계약 조건으로 보증기관의 가입 가능 여부와 신청 기한을 직접 확인했나요?"
+      ],
+      "request_templates": [
+        "반환보증 가입에 필요한 서류 제출과 확인 절차에 협조한다는 특약을 추가해 주세요."
+      ],
+      "rule_id": "R15",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "중복계약 위험: 중복계약 여부는 현재 업로드 문서만으로 자동 확인할 수 없어 당사자 확인이 필요합니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "같은 목적물에 이미 체결되었거나 진행 중인 다른 임대차계약이 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R16",
+      "signing_checklist": [
+        "임대인과 중개사에게 서면으로 확인하고 답변 기록을 보관하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R16:checklist:43ecc5f98f35",
+          "text": "임대인과 중개사에게 서면으로 확인하고 답변 기록을 보관하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "임대·전대 권한: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "계약 상대방의 소유권 또는 적법한 전대 권한을 확인할 수 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R17",
+      "signing_checklist": [
+        "권한 근거 서류와 필요한 동의서를 서명 전에 확인하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R17:checklist:6fd358bb371d",
+          "text": "권한 근거 서류와 필요한 동의서를 서명 전에 확인하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "관리비 및 추가비용: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "관리비 외에 별도로 부담할 비용과 변동 기준이 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R18",
+      "signing_checklist": [
+        "금액과 포함 항목 및 정산 기준을 계약서에 구체적으로 기재하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R18:checklist:b55760df4919",
+          "text": "금액과 포함 항목 및 정산 기준을 계약서에 구체적으로 기재하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-CONFIRM-FORM",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "explanation": "최근 실거래가·전세가 비교: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "최근 동일·유사 주택의 실거래가와 전세가는 얼마인가요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R20",
+      "signing_checklist": [
+        "공식 실거래 자료에서 동일·유사 주택의 가격을 확인하고 기준일과 비교 조건을 기록하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R20:checklist:3ff8d2ce6b2c",
+          "text": "공식 실거래 자료에서 동일·유사 주택의 가격을 확인하고 기준일과 비교 조건을 기록하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "임대인 보증사고 이력: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요.",
+      "fallback_reason": "missing_evidence",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "보증기관의 공식 절차로 임대인 관련 확인이 가능한가요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R21",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": []
+    },
+    {
+      "explanation": "국세·지방세 체납: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "임대인의 납세증명서 또는 미납세금 열람 동의를 받을 수 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R22",
+      "signing_checklist": [
+        "계약 전에 적법한 절차로 임대인의 국세·지방세 관련 자료를 확인하고 보관하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R22:checklist:3bbbb8273248",
+          "text": "계약 전에 적법한 절차로 임대인의 국세·지방세 관련 자료를 확인하고 보관하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "explanation": "동일 건물 선순위 임차보증금: 동일 건물의 선순위 임차보증금은 현재 문서만으로 자동 확인하기 어렵습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "동일 건물의 선순위 임차인 수와 보증금 합계를 확인할 자료가 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R23",
+      "signing_checklist": [
+        "임대차정보 제공 범위와 임대인 고지 자료를 확인하고 기록을 보관하세요."
+      ],
+      "signing_checklist_items": [
+        {
+          "item_key": "R23:checklist:4f25a284639f",
+          "text": "임대차정보 제공 범위와 임대인 고지 자료를 확인하고 기록을 보관하세요."
+        }
+      ],
+      "source_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "explanation": "단기 소유·명의 이전 위험: 최근 소유권 이전이 있다면 이전 사유와 현재 계약 권한을 추가 확인해야 합니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "최근 소유권이나 명의가 이전된 사유와 대금 지급 관계를 확인할 수 있나요?"
+      ],
+      "request_templates": [],
+      "rule_id": "R24",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ]
     }
   ],
   "judgment_items": [
     {
-      "explanation": "계약서 임대인=등기 소유자: 계약 상대와 등기상 소유자 관계를 확인합니다. 결과: 불일치. 공식 근거와 함께 확인하십시오.",
+      "explanation": "계약서 임대인=등기 소유자: 계약 상대와 등기상 소유자 관계를 확인합니다. 결과: 불일치. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "judgment_id": "J01",
@@ -119,21 +411,15 @@
       "questions": [
         "계약 상대의 권한 근거를 확인하셨습니까?"
       ],
-      "signing_checklist": [
-        "입금·서명 전에 소유자와 계약 권한 자료를 대조하세요."
-      ],
-      "signing_checklist_items": [
-        {
-          "item_key": "J01:checklist:e2c47fdfd417",
-          "text": "입금·서명 전에 소유자와 계약 권한 자료를 대조하세요."
-        }
-      ],
+      "request_templates": [],
+      "signing_checklist": [],
+      "signing_checklist_items": [],
       "source_ids": [
         "SRC-STD-LEASE"
       ]
     },
     {
-      "explanation": "공동소유 여부·추가확인: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오.",
+      "explanation": "공동소유 여부·추가확인: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요.",
       "fallback_reason": "missing_evidence",
       "generation_method": "template_fallback",
       "judgment_id": "J03",
@@ -143,12 +429,13 @@
       "questions": [
         "공동소유자 전원의 동의·서명을 확인하셨습니까?"
       ],
+      "request_templates": [],
       "signing_checklist": [],
       "signing_checklist_items": [],
       "source_ids": []
     },
     {
-      "explanation": "입금 계좌 명의=계약 상대: 입금 계좌 명의와 계약 상대 관계를 확인합니다. 결과: 불일치. 공식 근거와 함께 확인하십시오.",
+      "explanation": "입금 계좌 명의=계약 상대: 입금 계좌 명의와 계약 상대 관계를 확인합니다. 결과: 불일치. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "judgment_id": "J05",
@@ -158,21 +445,25 @@
       "questions": [
         "입금 계좌 명의가 다른 이유를 확인하셨습니까?"
       ],
+      "request_templates": [
+        "입금 계좌를 임대인 본인 명의 계좌로 변경하고 변경 내용을 계약서에 반영해 주세요."
+      ],
       "signing_checklist": [
-        "입금 전에 계좌 명의와 계약 상대 관계를 증빙으로 확인하세요."
+        "입금 전에 계좌 명의와 계약 상대가 일치하는지 확인하세요."
       ],
       "signing_checklist_items": [
         {
-          "item_key": "J05:checklist:d63a3e5ea7a7",
-          "text": "입금 전에 계좌 명의와 계약 상대 관계를 증빙으로 확인하세요."
+          "item_key": "J05:checklist:f9a36f22131d",
+          "text": "입금 전에 계좌 명의와 계약 상대가 일치하는지 확인하세요."
         }
       ],
       "source_ids": [
+        "SRC-MOLIT-CHECKLIST",
         "SRC-STD-LEASE"
       ]
     },
     {
-      "explanation": "보증금·월세·계약금·잔금 기재 상태: 계약 유형에 필요한 금액 기재 상태를 확인합니다. 결과: 확인 필요. 공식 근거와 함께 확인하십시오.",
+      "explanation": "보증금·월세·계약금·잔금 기재 상태: 계약 유형에 필요한 금액 기재 상태를 확인합니다. 결과: 확인 필요. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "judgment_id": "J06",
@@ -182,6 +473,7 @@
       "questions": [
         "필수 금액이 모두 기재됐습니까?"
       ],
+      "request_templates": [],
       "signing_checklist": [
         "누락·모호한 금액을 계약서에 구체적으로 기재하세요."
       ],
@@ -196,7 +488,7 @@
       ]
     },
     {
-      "explanation": "금액 숫자·한글 표기 일치: 금액 숫자·한글 표기 일치 판정에 필요한 값을 확인할 수 없습니다. 공식 근거와 함께 확인하십시오.",
+      "explanation": "금액 숫자·한글 표기 일치: 금액 숫자·한글 표기 일치 판정에 필요한 값을 확인할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "judgment_id": "J07",
@@ -206,6 +498,7 @@
       "questions": [
         "두 금액 표기를 대조하셨습니까?"
       ],
+      "request_templates": [],
       "signing_checklist": [
         "불일치·파싱 실패 금액 표기를 수정한 뒤 다시 확인하세요."
       ],
@@ -220,7 +513,7 @@
       ]
     },
     {
-      "explanation": "지급일·입주일·계약기간 일관성: 지급·입주·계약기간 날짜의 일관성을 확인합니다. 결과: 확인 필요. 공식 근거와 함께 확인하십시오.",
+      "explanation": "지급일·입주일·계약기간 일관성: 지급·입주·계약기간 날짜의 일관성을 확인합니다. 결과: 확인 필요. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "judgment_id": "J08",
@@ -230,6 +523,7 @@
       "questions": [
         "날짜 순서와 계약 상황 입력을 대조하셨습니까?"
       ],
+      "request_templates": [],
       "signing_checklist": [
         "모순되거나 누락된 날짜를 계약서에서 정리하세요."
       ],
@@ -244,7 +538,7 @@
       ]
     },
     {
-      "explanation": "관리비 금액·포함 항목 명확성: 관리비 금액과 포함 항목의 기재 상태를 확인합니다. 결과: 확인 필요. 공식 근거와 함께 확인하십시오.",
+      "explanation": "관리비 금액·포함 항목 명확성: 관리비 금액과 포함 항목의 기재 상태를 확인합니다. 결과: 확인 필요. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
       "judgment_id": "J09",
@@ -254,6 +548,7 @@
       "questions": [
         "관리비 세부 항목을 확인하셨습니까?"
       ],
+      "request_templates": [],
       "signing_checklist": [
         "관리비 금액·포함·별도 부과 항목을 문서로 확인하세요."
       ],
@@ -268,13 +563,34 @@
       ]
     }
   ],
-  "prompt_version": "v1",
+  "prompt_version": "v2",
   "schema_version": "1.9.0",
   "stage_guidance": {
+    "after_contract_actions": [
+      "보증기관의 심사를 거쳐 반환보증 가입 결과를 확인하고 자료를 보관하세요.",
+      "계약서·등기사항증명서·송금증·중개대상물 확인설명서를 함께 보관하세요.",
+      "필요한 시점에 최신 등기사항증명서를 다시 확인해 권리변동을 살펴보세요.",
+      "계약 종료 전에 보증금 반환 일정과 대응 절차를 공식 안내에서 확인하세요."
+    ],
+    "before_contract_actions": [
+      "등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하세요.",
+      "대리계약이면 위임장·인감증명서 등 계약 권한 자료를 확인하세요.",
+      "공식 실거래 자료에서 동일·유사 주택의 가격과 보증금을 비교하세요.",
+      "최신 등기사항증명서에서 근저당·압류·가압류·신탁 기재를 확인하세요.",
+      "다가구주택이면 선순위 임차보증금을 확인할 자료를 요청하세요.",
+      "보증기관 공식 채널에서 반환보증 가입 요건과 신청 기한을 확인하세요."
+    ],
     "before_deposit_questions": [
       "계약 상대의 권한 근거를 확인하셨습니까?",
       "입금 계좌 명의가 다른 이유를 확인하셨습니까?",
       "두 금액 표기를 대조하셨습니까?"
+    ],
+    "closing_day_actions": [
+      "잔금 송금 직전에 최신 등기사항증명서를 다시 발급해 권리변동을 확인하세요.",
+      "계약 당시 없던 근저당·압류·소유권 변경 기재가 생겼는지 확인하세요.",
+      "확인된 임대인 명의 계좌로 송금하고 이체내역과 영수증을 보관하세요.",
+      "주택 인도 상태와 열쇠 수령 내용을 기록하세요.",
+      "실제 입주 후 전입신고·확정일자 등 권리 확보 절차를 진행하세요."
     ],
     "contract_context": {
       "balance_payment_date": null,
@@ -287,6 +603,15 @@
       "schema_version": "1.9.0",
       "signed": false
     },
+    "during_contract_actions": [
+      "보증금 반환 시점과 조건을 계약서에 구체적으로 기재해 달라고 요청하세요.",
+      "신규 임차인 입주를 보증금 반환 조건으로 삼는 문구는 삭제 또는 수정을 요청하세요.",
+      "잔금 지급 다음 날까지 새로운 권리 설정을 제한하는 특약을 협의해 기재하세요.",
+      "반환보증 가입에 필요한 임대인의 서류 제출·확인 협조 내용을 특약으로 협의하세요.",
+      "보증 가입이 불가능한 경우의 계약 처리와 지급금 반환 조건을 서면으로 협의하세요.",
+      "입금 계좌가 임대인 본인 명의인지 확인하세요.",
+      "공인중개사의 서명과 등록번호를 확인하세요."
+    ],
     "post_contract_actions": [],
     "record_retention": [
       "계약 관련 대화와 확인 자료를 보관하세요."

@@ -11,7 +11,7 @@ from lease_companion_ai.guardrails.grounding import (
 )
 from lease_companion_ai.guardrails.immutable_rules import changed_rule_fields
 from lease_companion_ai.guardrails.prohibited_claims import has_prohibited_claim
-from lease_companion_ai.schemas.unified import JudgmentResult, RuleResult
+from lease_companion_ai.schemas.unified import JudgmentResult, RuleResult, StageGuidance
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,27 @@ class GuardrailBlocked(ValueError):
 
 
 class GuardrailService:
+    def enforce_stage(self, guidance: StageGuidance) -> StageGuidance:
+        texts = (
+            *guidance.before_deposit_questions,
+            *guidance.signing_checklist,
+            *guidance.post_contract_actions,
+            *guidance.record_retention,
+            *guidance.before_contract_actions,
+            *guidance.during_contract_actions,
+            *guidance.closing_day_actions,
+            *guidance.after_contract_actions,
+        )
+        if has_prohibited_claim(texts):
+            raise GuardrailBlocked("stage_guidance", ("prohibited_claim",))
+        return guidance
     def enforce(self, rule: RuleResult, guidance: RuleGuidance) -> RuleGuidance:
         signing_texts = tuple(item.text for item in guidance.signing_checklist_items)
         post_action_texts = tuple(item.text for item in guidance.post_contract_action_items)
         texts = (
             guidance.explanation,
             *guidance.questions,
+            *guidance.request_templates,
             *(signing_texts or guidance.signing_checklist),
             *(post_action_texts or guidance.post_contract_actions),
         )
@@ -55,6 +70,7 @@ class GuardrailService:
         texts = (
             guidance.explanation,
             *guidance.questions,
+            *guidance.request_templates,
             *(signing_texts or guidance.signing_checklist),
             *(post_action_texts or guidance.post_contract_actions),
         )

@@ -75,9 +75,10 @@ def test_gemini_provider_uses_fixed_model_structured_output_and_limits():
     # Gemini는 additionalProperties를 거부하므로 정리된 스키마(dict)를 넘긴다.
     assert isinstance(config.response_schema, dict)
     assert set(config.response_schema["properties"]) == {
-        "explanation",
-        "questions",
-        "signing_checklist",
+            "explanation",
+            "questions",
+            "request_templates",
+            "signing_checklist",
         "post_contract_actions",
         "source_ids",
     }

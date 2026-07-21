@@ -11,15 +11,12 @@ import { case001Fixtures } from "../../src/mocks/handlers";
 import { CASE_001_CONTRACT_ID } from "../../src/mocks/mockRoutes";
 
 describe("CASE-001 MSW fixtures", () => {
-  it("uses canonical repository fixtures and appends the staged R11-R24 fixture", () => {
+  it("uses canonical repository fixtures without hand-copied result extensions", () => {
     expect(case001Fixtures.contract_extraction).toEqual(contractExtraction);
     expect(case001Fixtures.registry_extraction).toEqual(registryExtraction);
     expect(case001Fixtures.correction_request).toEqual(correctionRequest);
     expect(case001Fixtures.input_snapshot).toEqual(inputSnapshot);
-    expect({
-      ...case001Fixtures.analysis_run_result,
-      results: case001Fixtures.analysis_run_result.results.slice(0, 10),
-    }).toEqual(analysisRunResult);
+    expect(case001Fixtures.analysis_run_result).toEqual(analysisRunResult);
     expect(case001Fixtures.generation_result).toEqual(generationResult);
   });
 
@@ -52,7 +49,7 @@ describe("CASE-001 MSW fixtures", () => {
   });
 
   it("keeps ContractContext-derived stage guidance", () => {
-    expect(case001Fixtures.generation_result.prompt_version).toBe("v1");
+    expect(case001Fixtures.generation_result.prompt_version).toBe("v2");
     expect(
       case001Fixtures.generation_result.judgment_items.map((item) => item.judgment_id),
     ).toEqual(["J01", "J03", "J05", "J06", "J07", "J08", "J09"]);
@@ -61,6 +58,8 @@ describe("CASE-001 MSW fixtures", () => {
     expect(guidance.before_deposit_questions.length).toBeGreaterThan(0);
     expect(guidance.signing_checklist.length).toBeGreaterThan(0);
     expect(guidance.post_contract_actions).toEqual([]);
+    expect(guidance.before_contract_actions.length).toBeGreaterThan(0);
+    expect(guidance.closing_day_actions.length).toBeGreaterThan(0);
   });
 
   it("keeps the complete ordered R01-R24 result", () => {
@@ -76,5 +75,8 @@ describe("CASE-001 MSW fixtures", () => {
       ["J11", "명확"],
       ["J12", "명확"],
     ]);
+    expect(case001Fixtures.analysis_run_result.damage_patterns.map((item) => item.pattern_id)).toEqual(
+      Array.from({ length: 8 }, (_, index) => `DP${String(index + 1).padStart(2, "0")}`),
+    );
   });
 });

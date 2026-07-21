@@ -1099,6 +1099,45 @@ class OfficialSource(BaseModel):
     retrieval_method: Literal["bm25", "vector", "hybrid", "rerank"] | None = None
 
 
+class ReferenceCase(BaseModel):
+    """판정 근거와 분리해 보여주는 검증된 유사 참고 사례."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    reference_case_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    publisher: str = Field(min_length=1)
+    published_at: date | None = None
+    source_url: str
+    summary: str = Field(min_length=1)
+    verification_scope: str = Field(min_length=1)
+
+
+class DamagePatternStatus(str, Enum):
+    """화면용 피해 유형 관련성. 규칙 상태·시급도를 대체하지 않는다."""
+
+    RELATED_SIGNAL = "관련 확인 신호 있음"
+    NO_SIGNAL_IN_SUBMITTED_DOCS = "제출 자료에서 관련 신호 미확인"
+    CANNOT_ASSESS = "자료 부족으로 확인 불가"
+    PREVENTIVE_CHECK = "예방 확인 필요"
+
+
+class DamagePatternComparison(BaseModel):
+    """기존 R/J 판정을 피해 유형 관점으로 결정적으로 묶은 표시용 결과."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    pattern_id: str = Field(pattern=r"^DP\d{2}$")
+    pattern_name: str = Field(min_length=1)
+    status: DamagePatternStatus
+    reason: str = Field(min_length=1)
+    related_rule_ids: tuple[str, ...] = ()
+    related_judgment_ids: tuple[str, ...] = ()
+    limitations: str = Field(min_length=1)
+    official_sources: tuple[OfficialSource, ...] = ()
+    reference_cases: tuple[ReferenceCase, ...] = ()
+
+
 class RuleResult(BaseModel):
     """규칙 결과 1개. 결과 역할·행동 활성화·상태·시급도를 분리한다."""
 
@@ -1192,6 +1231,8 @@ class AnalysisRunResult(BaseModel):
     results: list[RuleResult] = Field(min_length=10, max_length=24)
     # 1단계 R-only 실행은 빈 목록, 2단계 J 확장 실행은 J01~J12 전체를 요구한다.
     judgments: list[JudgmentResult] = Field(default_factory=list, max_length=12)
+    # 과거 결과에는 필드가 없으므로 빈 목록을 기본값으로 유지한다.
+    damage_patterns: list[DamagePatternComparison] = Field(default_factory=list, max_length=8)
 
     @model_validator(mode="after")
     def _check(self) -> "AnalysisRunResult":
@@ -1212,6 +1253,11 @@ class AnalysisRunResult(BaseModel):
                     "judgments에는 J01~J12가 순서대로 각각 정확히 1개씩 있거나 "
                     "R-only 실행을 나타내는 빈 목록이어야 합니다."
                 )
+        if self.damage_patterns:
+            pattern_ids = [item.pattern_id for item in self.damage_patterns]
+            expected_patterns = [f"DP{index:02d}" for index in range(1, 9)]
+            if pattern_ids != expected_patterns:
+                raise ValueError("damage_patterns에는 DP01~DP08이 순서대로 각각 정확히 1개씩 있어야 합니다.")
         return self
 
 
@@ -1249,6 +1295,7 @@ class RuleGuidance(BaseModel):
     rule_id: str = Field(pattern=r"^R\d{2}$")
     explanation: str = Field(min_length=1)
     questions: tuple[str, ...] = ()
+    request_templates: tuple[str, ...] = ()
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
     signing_checklist_items: tuple[GuidanceActionItem, ...] = ()
@@ -1259,7 +1306,7 @@ class RuleGuidance(BaseModel):
     fallback_reason: str | None = None
 
     @field_validator(
-        "questions", "signing_checklist", "post_contract_actions", "source_ids"
+        "questions", "request_templates", "signing_checklist", "post_contract_actions", "source_ids"
     )
     @classmethod
     def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
@@ -1295,6 +1342,7 @@ class JudgmentGuidance(BaseModel):
     judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
     explanation: str = Field(min_length=1)
     questions: tuple[str, ...] = ()
+    request_templates: tuple[str, ...] = ()
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
     signing_checklist_items: tuple[GuidanceActionItem, ...] = ()
@@ -1305,7 +1353,7 @@ class JudgmentGuidance(BaseModel):
     fallback_reason: str | None = None
 
     @field_validator(
-        "questions", "signing_checklist", "post_contract_actions", "source_ids"
+        "questions", "request_templates", "signing_checklist", "post_contract_actions", "source_ids"
     )
     @classmethod
     def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
@@ -1344,12 +1392,20 @@ class StageGuidance(BaseModel):
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
     record_retention: tuple[str, ...] = ()
+    before_contract_actions: tuple[str, ...] = ()
+    during_contract_actions: tuple[str, ...] = ()
+    closing_day_actions: tuple[str, ...] = ()
+    after_contract_actions: tuple[str, ...] = ()
 
     @field_validator(
         "before_deposit_questions",
         "signing_checklist",
         "post_contract_actions",
         "record_retention",
+        "before_contract_actions",
+        "during_contract_actions",
+        "closing_day_actions",
+        "after_contract_actions",
     )
     @classmethod
     def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:

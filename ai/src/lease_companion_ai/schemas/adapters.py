@@ -306,9 +306,12 @@ def analyze_snapshot(
     try:
         from lease_companion_ai.rag.service import get_default_evidence_service
 
-        return get_default_evidence_service().enrich(analysis)
+        analysis = get_default_evidence_service().enrich(analysis)
     except (OSError, ValueError):
-        return analysis
+        pass
+    from lease_companion_ai.risk_patterns.service import attach_damage_patterns
+
+    return attach_damage_patterns(analysis)
 
 
 def allowed_statuses(rule_id: str) -> set[RuleStatus]:

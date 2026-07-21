@@ -27,7 +27,7 @@
 | 4 | 계약서·등기 등 문서 업로드 | `document-upload` |
 | 5 | 추출값 확인·수정 | `extraction-review` |
 | 6 | 분석 (상용 LLM 구조화 → 규칙 엔진 → RAG → 상용 LLM 생성, 로컬 7B는 선택적 성능비교 실험) | `analysis-progress` |
-| 7 | 판정·원문 증거·공식 근거·질문·행동 리포트 | `result-report` |
+| 7 | 판정·원문 증거·공식 근거·피해 유형 비교·감지 신호·질문·수정 요청·행동 리포트/PDF | `result-report` |
 | 8 | 체크리스트·계약 직후 행동 관리 | `contract-detail` |
 
 ## 하위 구조
@@ -60,6 +60,8 @@ npm run test:e2e:real
 ```
 
 `npm run test:e2e`는 Playwright Chromium 320px·360px 모바일과 1440×900 PC viewport에서 MSW 기반 8단계 사용자 흐름과 핵심 키보드 탐색 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
+
+리포트의 피해 유형 비교는 종합 안전·사기 판정이 아니라 **현재 제출 자료에서 확인되는 신호와 확인 한계**를 표시한다. 유사 피해사례는 검증된 사례 데이터가 연결된 경우에만 노출하며, 빈 상태를 임의의 사례로 채우지 않는다.
 
 기본 개발 실행은 실제 API를 사용한다. MSW 기반 test/Story 개발이 필요할 때만 `VITE_ENABLE_MSW=true`를 설정한다.
 

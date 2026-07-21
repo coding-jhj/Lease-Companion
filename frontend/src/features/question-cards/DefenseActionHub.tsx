@@ -131,6 +131,9 @@ export function DefenseActionHub({
     ...guidance.flatMap((item) => item.questions.map((text) => ({ text, rank: guidanceRank(item) }))),
     ...(stageGuidance?.before_deposit_questions ?? []).map((text) => ({ text, rank: rankOf("계약 전 확인") })),
   ]).map(toPoliteEnding);
+  const requestTemplates = prioritized(
+    guidance.flatMap((item) => (item.request_templates ?? []).map((text) => ({ text, rank: guidanceRank(item) }))),
+  );
   const signingActions = prioritized([
     ...unguidedResults.flatMap((item) => item.recommended_actions.map((text) => ({ text, rank: rankOf(item.urgency) }))),
     ...guidance.flatMap((item) => item.signing_checklist_items.map((entry) => ({ text: entry.text, rank: guidanceRank(item) }))),
@@ -141,6 +144,10 @@ export function DefenseActionHub({
     ...(stageGuidance?.post_contract_actions ?? []).map((text) => ({ text, rank: rankOf("계약 직후 조치") })),
   ]).map(toPoliteEnding);
   const records = unique(stageGuidance?.record_retention ?? []).map(toPoliteEnding);
+  const beforeContract = unique(stageGuidance?.before_contract_actions ?? signingActions).map(toPoliteEnding);
+  const duringContract = unique(stageGuidance?.during_contract_actions ?? signingActions).map(toPoliteEnding);
+  const closingDay = unique(stageGuidance?.closing_day_actions ?? []).map(toPoliteEnding);
+  const afterContract = unique(stageGuidance?.after_contract_actions ?? postActions).map(toPoliteEnding);
 
   return (
     <section className="action-hub" aria-labelledby="action-hub-title">
@@ -151,8 +158,11 @@ export function DefenseActionHub({
       </header>
       <div className="action-hub__grid">
         <ActionList collapsible title="먼저 물어볼 질문" description="입금이나 서명 전에 상대방에게 확인하세요." items={questions} />
-        <ActionList collapsible title="서명 전 확인 행동" description="문서와 조건을 직접 대조할 항목입니다." items={signingActions} />
-        <ActionList collapsible title="계약 직후 행동" description="임차권을 지키기 위해 이어서 처리하세요." items={postActions} />
+        <ActionList collapsible title="수정·추가 요청 문구" description="필요한 문구를 상대방에게 구체적으로 요청하세요." items={requestTemplates} />
+        <ActionList collapsible title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
+        <ActionList collapsible title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
+        <ActionList collapsible title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
+        <ActionList collapsible title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
         <ActionList title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
       </div>
     </section>

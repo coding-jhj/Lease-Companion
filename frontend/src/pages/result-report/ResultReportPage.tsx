@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -10,6 +11,9 @@ import {
 } from "../../features/judgment-results/PriorityGroups";
 import { DefenseActionHub } from "../../features/question-cards/DefenseActionHub";
 import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
+import { DamagePatternTable } from "../../features/damage-patterns/DamagePatternTable";
+import { DetectedSignalSection } from "../../features/damage-patterns/DetectedSignalSection";
+import { ReportPrintSheet } from "../../features/result-report/ReportPrintSheet";
 import { mvpService } from "../../services/mvpService";
 import type {
   JudgmentGuidanceDto,
@@ -17,6 +21,7 @@ import type {
   RuleGuidanceDto,
   RuleResultDto,
   StageGuidanceDto,
+  DamagePatternComparisonDto,
 } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
 
@@ -33,6 +38,7 @@ export function ResultReportPage() {
   const [ruleGuidance, setRuleGuidance] = useState<RuleGuidanceDto[]>([]);
   const [judgmentGuidance, setJudgmentGuidance] = useState<JudgmentGuidanceDto[]>([]);
   const [stageGuidance, setStageGuidance] = useState<StageGuidanceDto | null>(null);
+  const [damagePatterns, setDamagePatterns] = useState<DamagePatternComparisonDto[]>([]);
   const [generationFailed, setGenerationFailed] = useState(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -46,6 +52,7 @@ export function ResultReportPage() {
       setRuleGuidance(run.generation_result?.items ?? []);
       setJudgmentGuidance(run.generation_result?.judgment_items ?? []);
       setStageGuidance(run.generation_result?.stage_guidance ?? null);
+      setDamagePatterns(run.result?.damage_patterns ?? []);
       setGenerationFailed(run.generation_status === "failed");
       setStatus("success");
     } catch (error) {
@@ -68,6 +75,18 @@ export function ResultReportPage() {
     actionableResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
   ])) as Record<DisplayPriority, number>;
   const firstPriority = priorities.find((priority) => counts[priority] > 0);
+  const patternCounts = {
+    signal: damagePatterns.filter((item) => item.status === "관련 확인 신호 있음").length,
+    clear: damagePatterns.filter((item) => item.status === "제출 자료에서 관련 신호 미확인").length,
+    unknown: damagePatterns.filter((item) => item.status === "자료 부족으로 확인 불가").length,
+  };
+
+  function printReport() {
+    const previousTitle = document.title;
+    document.title = `임차인_방어_리포트_계약_${contractId}`;
+    window.print();
+    document.title = previousTitle;
+  }
 
   return (
     <PageShell layout="report" step="7 / 8" title="임차인 방어 리포트" description="판정 자체보다 무엇을 확인하고 어떻게 행동할지 차근차근 살펴보세요.">
@@ -96,6 +115,16 @@ export function ResultReportPage() {
                 </div>
               ))}
             </section>
+            {damagePatterns.length > 0 && <section className="comparison-summary" aria-label="제출 자료 기준 피해 유형 비교 요약">
+              <strong>제출 자료 기준 비교</strong>
+              <span>관련 확인 신호 {patternCounts.signal}건</span>
+              <span>관련 신호 미확인 {patternCounts.clear}건</span>
+              <span>자료 부족 {patternCounts.unknown}건</span>
+            </section>}
+            <div className="report-export-toolbar"><p>비교표·질문·수정 요청·단계별 행동을 함께 저장할 수 있습니다.</p><button className="secondary" type="button" onClick={printReport}>전체 리포트 PDF 저장</button></div>
+            {createPortal(<ReportPrintSheet contractId={contractId} patterns={damagePatterns} guidance={allGuidance} stageGuidance={stageGuidance} />, document.body)}
+            <DetectedSignalSection patterns={damagePatterns} guidance={allGuidance} />
+            <DamagePatternTable items={damagePatterns} />
             <div className="report-grid">
               <section className="report-results-column stack" aria-labelledby="all-results-title">
                 <div className="section-heading">

@@ -88,9 +88,24 @@ def _extracted(name: str, value, page: int | None = None, text: str | None = Non
 def _with_unreadable_fields(
     fields: dict[str, ExtractedField], document_type: DocumentType
 ) -> dict[str, ExtractedField]:
-    """대표 fixture에도 J 실행에 필요한 canonical 키를 모두 보존한다."""
+    """대표 문서에서 실제 추출하는 canonical 키의 실패 상태를 보존한다.
+
+    외부 확인·사용자 입력 전용 값은 문서 OCR 실패처럼 합성하지 않는다.
+    """
+    user_or_external_only = {
+        DocumentType.CONTRACT: {
+            "building_use",
+            "estimated_housing_value",
+            "guarantee_eligibility_confirmed",
+            "lessor_sublease_authority_confirmed",
+            "violation_building",
+        },
+        DocumentType.REGISTRY: {"ground_right_present", "senior_claim_amount"},
+    }
     completed = dict(fields)
     for name in CANONICAL_FIELD_TYPES_BY_DOCUMENT[document_type]:
+        if name in user_or_external_only[document_type]:
+            continue
         completed.setdefault(
             name,
             ExtractedField(
@@ -300,7 +315,10 @@ def _self_check(analysis, classification_input, classified) -> None:
         rule_id: gold[rule_id] for rule_id in stable_rule_ids
     }
     assert [result.rule_id for result in analysis.results] == [
-        f"R{index:02d}" for index in range(1, 11)
+        f"R{index:02d}" for index in range(1, 25)
+    ]
+    assert [item.pattern_id for item in analysis.damage_patterns] == [
+        f"DP{index:02d}" for index in range(1, 9)
     ]
     assert {clause.clause_ref for clause in classification_input.clauses} == {
         candidate.clause_ref for candidate in classified.candidates

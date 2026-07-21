@@ -59,11 +59,15 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   const confirmedFields = page.getByText(/확인된 항목 \d+개/);
   if (await confirmedFields.count()) await confirmedFields.click();
   const accountHolder = page.getByLabel("입금 계좌 예금주 값");
-  if (await accountHolder.count()) await accountHolder.fill("이정훈");
+  if (await accountHolder.count()) {
+    await accountHolder.fill("이정훈");
+    await page.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }).click();
+  }
   const secondMainClause = page.getByLabel("계약서 본문 주요 조항 2 값");
   if (await secondMainClause.count()) {
     await page.getByText(/조항 \d+개 펼쳐서 확인/).first().click();
     await secondMainClause.fill("주요 설비 하자 수선은 임대인이 부담하고, 임차인에게 알린다.");
+    await page.getByRole("button", { name: "계약서 본문 주요 조항 이 값 확인" }).click();
   }
   await page.getByRole("button", { name: "확인 완료하고 분석하기" }).click();
 
@@ -85,9 +89,11 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   }
   await expect(allResults).not.toContainText("R01");
   await expect(allResults).toContainText("상태:");
-  for (const title of ["먼저 물어볼 질문", "서명 전 확인 행동", "계약 직후 행동", "보관할 자료"]) {
+  for (const title of ["먼저 물어볼 질문", "수정·추가 요청 문구", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
+  await expect(page.getByRole("heading", { name: "주요 금전피해 유형 비교" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "전체 리포트 PDF 저장" })).toBeVisible();
   await expect(page.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toBeVisible();
 
   await page.reload();
@@ -108,10 +114,14 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   const checklistSection = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "서명 전 체크리스트" }),
   });
-  const action = checklistSection.getByRole("checkbox").first();
+  const action = checklistSection.locator("button.check-item__button").first();
   await expect(action).toBeVisible();
-  if (!await action.isChecked()) await action.click();
-  await expect(action).toBeChecked();
+  if ((await action.getAttribute("aria-label"))?.endsWith(" 확인")) await action.click();
+  const completedChecklistSection = page.locator("section.history-section").filter({
+    has: page.getByRole("heading", { name: "완료된 체크리스트 항목" }),
+  });
+  const completedAction = completedChecklistSection.locator("button.check-item__button").first();
+  await expect(completedAction).toHaveAttribute("aria-label", /확인 취소$/);
   const analysisHistory = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "분석 이력" }),
   });
@@ -119,7 +129,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
 
   if (isRealApi) {
     await page.reload();
-    await expect(action).toBeChecked();
+    await expect(completedAction).toHaveAttribute("aria-label", /확인 취소$/);
     await expect(analysisHistory).toContainText("완료 리포트 보기");
   }
 });

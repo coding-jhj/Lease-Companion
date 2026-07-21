@@ -6,14 +6,12 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
 import generationResultFixture from "../../../data/sample/fixtures/case-001/generation_result.json";
-import extendedRuleResultsFixture from "../../../data/sample/fixtures/case-001/extended_rule_results.json";
 import { ResultReportPage } from "../../src/pages/result-report/ResultReportPage";
 import { mvpService } from "../../src/services/mvpService";
 import type {
   AnalysisRunDetailDto,
   AnalysisRunResultDto,
   GenerationResultDto,
-  RuleResultDto,
 } from "../../src/types/api";
 
 function detail(generationStatus: AnalysisRunDetailDto["generation_status"] = "completed"): AnalysisRunDetailDto {
@@ -25,10 +23,6 @@ function detail(generationStatus: AnalysisRunDetailDto["generation_status"] = "c
     created_at: "2026-07-16T00:00:00Z",
     result: {
       ...(analysisRunResultFixture as AnalysisRunResultDto),
-      results: [
-        ...(analysisRunResultFixture as AnalysisRunResultDto).results,
-        ...(extendedRuleResultsFixture as RuleResultDto[]),
-      ],
     },
     generation_result: generationStatus === "completed"
       ? generationResultFixture as GenerationResultDto
@@ -114,15 +108,18 @@ describe("ResultReportPage", () => {
     for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
       expect(screen.getByText(judgmentId)).toBeInTheDocument();
     }
-    for (const title of ["먼저 물어볼 질문", "서명 전 확인 행동", "계약 직후 행동", "보관할 자료"]) {
+    for (const title of ["먼저 물어볼 질문", "수정·추가 요청 문구", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
+    expect(screen.getByRole("heading", { name: "주요 금전피해 유형 비교" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "전체 리포트 PDF 저장" })).toBeInTheDocument();
+    expect(screen.getByLabelText("제출 자료 기준 피해 유형 비교 요약")).toBeInTheDocument();
     const questionGroup = screen.getByRole("heading", { name: "먼저 물어볼 질문" }).closest("section")!;
     expect(within(questionGroup).getAllByRole("listitem")).toHaveLength(3);
     fireEvent.click(within(questionGroup).getByRole("button", { name: /개 더 보기/ }));
     expect(within(questionGroup).getAllByRole("listitem").length).toBeGreaterThan(3);
     expect(within(questionGroup).getByRole("button", { name: "접기" })).toBeInTheDocument();
-    expect(screen.getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(1);
+    expect(within(questionGroup).getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(1);
 
     expect(screen.queryByText("R01")).not.toBeInTheDocument();
 

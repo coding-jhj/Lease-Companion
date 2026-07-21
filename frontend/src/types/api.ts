@@ -147,6 +147,34 @@ export interface OfficialSourceDto {
   retrieval_method?: "bm25" | "vector" | "hybrid" | "rerank" | null;
 }
 
+export type DamagePatternStatus =
+  | "관련 확인 신호 있음"
+  | "제출 자료에서 관련 신호 미확인"
+  | "자료 부족으로 확인 불가"
+  | "예방 확인 필요";
+
+export interface ReferenceCaseDto {
+  reference_case_id: string;
+  title: string;
+  publisher: string;
+  published_at: string | null;
+  source_url: string;
+  summary: string;
+  verification_scope: string;
+}
+
+export interface DamagePatternComparisonDto {
+  pattern_id: string;
+  pattern_name: string;
+  status: DamagePatternStatus;
+  reason: string;
+  related_rule_ids: string[];
+  related_judgment_ids: string[];
+  limitations: string;
+  official_sources: OfficialSourceDto[];
+  reference_cases: ReferenceCaseDto[];
+}
+
 export interface RuleResultDto {
   rule_id: string;
   rule_name: string;
@@ -183,6 +211,7 @@ export interface AnalysisRunResultDto {
   case_id: string | null;
   results: RuleResultDto[];
   judgments: JudgmentResultDto[];
+  damage_patterns?: DamagePatternComparisonDto[];
 }
 
 export type GenerationMethod = "provider" | "template_fallback";
@@ -196,6 +225,7 @@ export interface RuleGuidanceDto {
   rule_id: string;
   explanation: string;
   questions: string[];
+  request_templates?: string[];
   signing_checklist: string[];
   post_contract_actions: string[];
   signing_checklist_items: GuidanceActionItemDto[];
@@ -210,6 +240,7 @@ export interface JudgmentGuidanceDto {
   judgment_id: string;
   explanation: string;
   questions: string[];
+  request_templates?: string[];
   signing_checklist: string[];
   post_contract_actions: string[];
   signing_checklist_items: GuidanceActionItemDto[];
@@ -226,6 +257,10 @@ export interface StageGuidanceDto {
   signing_checklist: string[];
   post_contract_actions: string[];
   record_retention: string[];
+  before_contract_actions?: string[];
+  during_contract_actions?: string[];
+  closing_day_actions?: string[];
+  after_contract_actions?: string[];
 }
 
 export interface GenerationResultDto {

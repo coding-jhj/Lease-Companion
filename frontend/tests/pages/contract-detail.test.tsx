@@ -61,7 +61,7 @@ describe("ContractDetailPage", () => {
     expect(completedDetails).toHaveAttribute("open");
     expect(completedPostActionDetails).not.toHaveAttribute("open");
     expect(within(completedSection).getByText(actionText)).toBeInTheDocument();
-    expect(within(completedSection).getByText(/근거 판정 R01 · J01/)).toBeInTheDocument();
+    expect(within(completedSection).getByText(/근거 판정 R01/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "완료된 계약 직후 행동" })).toBeInTheDocument();
     expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /완료 리포트 보기/ })).toHaveAttribute(

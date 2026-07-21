@@ -1,5 +1,86 @@
 {
   "$defs": {
+    "DamagePatternComparison": {
+      "additionalProperties": false,
+      "description": "기존 R/J 판정을 피해 유형 관점으로 결정적으로 묶은 표시용 결과.",
+      "properties": {
+        "limitations": {
+          "minLength": 1,
+          "title": "Limitations",
+          "type": "string"
+        },
+        "official_sources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OfficialSource"
+          },
+          "title": "Official Sources",
+          "type": "array"
+        },
+        "pattern_id": {
+          "pattern": "^DP\\d{2}$",
+          "title": "Pattern Id",
+          "type": "string"
+        },
+        "pattern_name": {
+          "minLength": 1,
+          "title": "Pattern Name",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "reference_cases": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReferenceCase"
+          },
+          "title": "Reference Cases",
+          "type": "array"
+        },
+        "related_judgment_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Related Judgment Ids",
+          "type": "array"
+        },
+        "related_rule_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Related Rule Ids",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/DamagePatternStatus"
+        }
+      },
+      "required": [
+        "pattern_id",
+        "pattern_name",
+        "status",
+        "reason",
+        "limitations"
+      ],
+      "title": "DamagePatternComparison",
+      "type": "object"
+    },
+    "DamagePatternStatus": {
+      "description": "화면용 피해 유형 관련성. 규칙 상태·시급도를 대체하지 않는다.",
+      "enum": [
+        "관련 확인 신호 있음",
+        "제출 자료에서 관련 신호 미확인",
+        "자료 부족으로 확인 불가",
+        "예방 확인 필요"
+      ],
+      "title": "DamagePatternStatus",
+      "type": "string"
+    },
     "JudgmentResult": {
       "additionalProperties": false,
       "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
@@ -151,6 +232,64 @@
         "institution"
       ],
       "title": "OfficialSource",
+      "type": "object"
+    },
+    "ReferenceCase": {
+      "additionalProperties": false,
+      "description": "판정 근거와 분리해 보여주는 검증된 유사 참고 사례.",
+      "properties": {
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        },
+        "publisher": {
+          "minLength": 1,
+          "title": "Publisher",
+          "type": "string"
+        },
+        "reference_case_id": {
+          "minLength": 1,
+          "title": "Reference Case Id",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "verification_scope": {
+          "minLength": 1,
+          "title": "Verification Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference_case_id",
+        "title",
+        "publisher",
+        "source_url",
+        "summary",
+        "verification_scope"
+      ],
+      "title": "ReferenceCase",
       "type": "object"
     },
     "ResultType": {
@@ -308,6 +447,14 @@
       "exclusiveMinimum": 0,
       "title": "Contract Id",
       "type": "integer"
+    },
+    "damage_patterns": {
+      "items": {
+        "$ref": "#/$defs/DamagePatternComparison"
+      },
+      "maxItems": 8,
+      "title": "Damage Patterns",
+      "type": "array"
     },
     "input_snapshot_id": {
       "minLength": 1,

@@ -41,12 +41,13 @@ class GeneratedGuidanceDraft(BaseModel):
 
     explanation: str = Field(min_length=1)
     questions: tuple[str, ...] = ()
+    request_templates: tuple[str, ...] = ()
     signing_checklist: tuple[str, ...] = ()
     post_contract_actions: tuple[str, ...] = ()
     source_ids: tuple[str, ...] = Field(min_length=1)
 
     @field_validator(
-        "questions", "signing_checklist", "post_contract_actions", "source_ids"
+        "questions", "request_templates", "signing_checklist", "post_contract_actions", "source_ids"
     )
     @classmethod
     def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:

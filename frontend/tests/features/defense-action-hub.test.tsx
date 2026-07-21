@@ -103,7 +103,7 @@ describe("DefenseActionHub", () => {
 
     render(<DefenseActionHub results={[]} guidance={[]} stageGuidance={stageGuidance} />);
 
-    const postGroup = screen.getByRole("heading", { name: "계약 직후 행동" }).closest("section")!;
+    const postGroup = screen.getByRole("heading", { name: "계약 후" }).closest("section")!;
     expect(within(postGroup).getAllByRole("listitem")).toHaveLength(2);
     expect(within(postGroup).getByText(/계약 체결일부터 30일 이내/)).toBeInTheDocument();
     expect(within(postGroup).getByText(/실제 입주 후 전입신고·확정일자/)).toBeInTheDocument();

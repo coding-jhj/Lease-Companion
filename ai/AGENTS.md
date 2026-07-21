@@ -14,6 +14,7 @@
      ※ (선택) 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외 (local_model)
   → Python 규칙 엔진 문서 내부 판정·교차검증 (rules)  ← 최종 판정
   → 공식자료 RAG 근거 (rag, gemini-embedding-001+BM25 · Cohere rerank-v4.0-pro)
+  → 피해 유형 비교(risk_patterns) · 검증된 유사 참고 사례(공식 근거와 분리)
   → 저신뢰 결과 상용 LLM 재검토 (routing → providers, Gemini 3.5 Flash)
   → 쉬운 설명·질문·체크리스트·행동 생성 (generation, Gemini 3.5 Flash)
   → guardrail (guardrails)
@@ -63,6 +64,7 @@
 | `classification/` | `local_model` 출력을 조항 유형·명확성 후보 구조로 정리 (판정 안 함) |
 | `rules/` | 문서 내부 판정·문서 교차검증 (최종 판정) |
 | `rag/` | 공식 근거 검색 (판정 안 함) |
+| `risk_patterns/` | R/J 결과를 DP01~DP08 피해 유형 관점으로 결정적으로 묶음. 판정 변경 안 함 |
 | `providers/` | 상용 LLM·임베딩 제공자 어댑터 (추출·재검토·생성·검색 호출) |
 | `generation/` | 쉬운 설명·질문·체크리스트·행동 생성 |
 | `guardrails/` | 단정 표현·근거 없는 출력 제한 |
