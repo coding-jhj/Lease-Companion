@@ -140,7 +140,7 @@ export interface OfficialSourceDto {
   title: string;
   institution: string;
   summary: string | null;
-  // "전체 보기"용 공식자료 전체 원문. 없으면 null(summary 발췌로 폴백).
+  // 참고용 공식자료 전체 원문. summary(이번 판정 관련 검색 발췌)와 구분해 표시한다.
   source_text?: string | null;
   source_url: string | null;
   // 이 근거를 회수한 검색 방식(관찰용). 정적 카탈로그 항목은 null.
@@ -159,6 +159,7 @@ export interface RuleResultDto {
   evidence_sources: OfficialSourceDto[];
   limitations: string;
   completed: boolean;
+  triggers_actions: boolean;
 }
 
 export interface JudgmentResultDto {
@@ -275,6 +276,7 @@ export interface FieldViewModel {
   label: string;
   formattedValue: string;
   editor: "scalar" | "clause-list";
+  guidance: string | null;
   field: ExtractedFieldDto;
 }
 

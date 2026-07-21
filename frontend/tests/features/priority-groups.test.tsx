@@ -24,6 +24,7 @@ const item = (ruleId: string, urgency: Urgency, judgmentId: string | null = "J01
     source_url: null,
   }],
   completed: false,
+  triggers_actions: true,
 });
 
 describe("PriorityGroups", () => {

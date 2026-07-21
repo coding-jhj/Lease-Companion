@@ -44,6 +44,10 @@ function EvidenceSummary({ summary }: { summary: string }) {
 }
 
 function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; index: number }) {
+  const relatedExcerpt = source.summary?.trim() || null;
+  const fullSource = source.source_text?.trim() || null;
+  const hasSeparateFullSource = fullSource !== null && fullSource !== relatedExcerpt;
+
   return (
     <section className="evidence-source-card">
       <div className="evidence-source-card__meta">
@@ -51,13 +55,19 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
         <span>{source.institution}</span>
       </div>
       <h4>{source.title}</h4>
-      {(source.source_text ?? source.summary) ? (
-        <details className="evidence-summary">
-          <summary>공식자료 내용 전체 보기</summary>
-          <EvidenceSummary summary={source.source_text ?? source.summary ?? ""} />
-        </details>
+      {relatedExcerpt ? (
+        <section className="evidence-related" aria-label="이번 판정과 연결된 공식 근거">
+          <strong>이번 판정과 연결된 근거</strong>
+          <EvidenceSummary summary={relatedExcerpt} />
+        </section>
       ) : (
-        <p className="evidence-summary-empty">제공된 요약이 없습니다. 공식 원문에서 내용을 확인해 주세요.</p>
+        <p className="evidence-summary-empty">이번 판정과 연결된 공식자료 발췌가 없습니다.</p>
+      )}
+      {hasSeparateFullSource && (
+        <details className="evidence-summary evidence-full-source">
+          <summary>공식자료 전체 원문 보기</summary>
+          <EvidenceSummary summary={fullSource} />
+        </details>
       )}
       {source.source_url && (
         <a
@@ -98,7 +108,7 @@ export function EvidenceDisclosure({
             <strong id={evidenceTitleId}>공식 근거</strong>
             <p>
               {sources.length > 0
-                ? "어려운 법률 문장 대신 핵심 의미와 생길 수 있는 금전 문제를 먼저 정리했습니다."
+                ? "이번 판정과 연결된 발췌와 참고용 전체 원문을 구분해 제공합니다."
                 : "현재 연결된 공식 근거가 없습니다."}
             </p>
           </div>

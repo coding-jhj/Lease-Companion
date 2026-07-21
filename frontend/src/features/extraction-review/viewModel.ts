@@ -24,6 +24,7 @@ const labels: Record<string, string> = {
   end_date: "계약 종료일",
   estimated_housing_value: "확인된 주택가치",
   guarantee_eligibility_confirmed: "전세보증 가입 요건 확인",
+  ground_right_present: "지상권 존재",
   is_joint_ownership: "공동소유 여부",
   issue_date: "등기 발급일",
   landlord_name: "임대인 이름",
@@ -54,6 +55,22 @@ const labels: Record<string, string> = {
   violation_building: "위반건축물 표시",
 };
 
+const reviewGuidance: Record<string, string> = {
+  account_holder: "계좌번호만 있고 예금주가 없으면 송금 전에 임대인 본인 명의인지 직접 확인하세요.",
+  agent_relationship: "대리계약일 때만 입력합니다. 임대인이 직접 계약했다면 비워둘 수 있습니다.",
+  proxy_authority_documents: "대리계약일 때 위임장·인감증명서 등 실제 확인한 서류만 입력하세요.",
+  building_use: "계약서의 구조·용도 칸과 최신 건축물대장을 함께 확인하세요.",
+  contract_payment_date: "계약시에 지급으로만 적혀 있다면 계약 체결일과 같은지 확인하세요.",
+  estimated_housing_value: "시세 자료의 금액과 기준일을 직접 확인해 입력하는 항목입니다.",
+  guarantee_eligibility_confirmed: "보증기관의 현재 가입 요건과 신청 기한을 확인한 뒤 입력하세요.",
+  ground_right_present: "등기사항증명서 을구의 지상권설정 여부입니다. 존재 여부만 표시하며 금액으로 환산하지 않습니다.",
+  lessor_sublease_authority_confirmed: "소유권 또는 적법한 전대 동의 서류를 확인한 뒤 입력하세요.",
+  management_fee: "사용량·세대수 비례 관리비는 고정 금액이 없을 수 있으므로 산정 방식과 포함 항목을 확인하세요.",
+  move_in_date: "명시된 입주일이 없으면 임차주택 인도일이 실제 입주일과 같은지 확인하세요.",
+  senior_claim_amount: "채권최고액·실제 채무액과 임차보증금보다 앞서는 순위를 확인한 뒤 입력하세요.",
+  violation_building: "최신 건축물대장의 위반건축물 표시를 직접 확인하는 항목입니다.",
+};
+
 const numericFields = new Set([
   "balance_payment", "contract_payment", "deposit", "estimated_housing_value",
   "management_fee", "monthly_rent", "senior_claim_amount",
@@ -61,6 +78,7 @@ const numericFields = new Set([
 const booleanFields = new Set([
   "guarantee_eligibility_confirmed", "lessor_sublease_authority_confirmed",
   "management_fee_present", "mortgage_present", "provisional_seizure_present",
+  "ground_right_present",
   "rights_change_clause_present", "seizure_present", "special_clauses_present",
   "trust_present", "violation_building",
 ]);
@@ -150,6 +168,7 @@ export function fieldViewModels(documents: DocumentExtractionDto[]): FieldViewMo
       label: labels[field.field_name] ?? "추가 확인 항목",
       formattedValue: formatFieldValue(effectiveValue(field)),
       editor: clauseListFields.has(field.field_name) ? "clause-list" as const : "scalar" as const,
+      guidance: reviewGuidance[field.field_name] ?? null,
       field,
     })),
   );

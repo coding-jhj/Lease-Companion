@@ -207,6 +207,16 @@ def _extract_account_holder(text: str) -> str | None:
 
 def _contract_type(text: str) -> str | None:
     compact = re.sub(r"\s+", "", text)
+    checked_monthly = bool(re.search(r"(?:☑|■|●|✓)월세", compact))
+    if checked_monthly:
+        deposit_line = _money_line(text, r"보\s*증\s*금")
+        return "보증부월세" if (_numeric_money(deposit_line) or 0) > 0 else "일반월세"
+    for marker, value in (
+        ("☑보증금있는월세", "보증부월세"),
+        ("☑전세", "전세"),
+    ):
+        if marker in compact:
+            return value
     for marker in ("보증부월세", "일반월세", "전세"):
         if marker in compact:
             return marker
@@ -238,11 +248,11 @@ def _numeric_money(line: str | None) -> int | None:
     won = re.search(r"₩\s*([\d,]+)", line)
     if won:
         return int(won.group(1).replace(",", ""))
-    amount = re.search(r"(?<![\d,])(\d+(?:\.\d+)?)\s*(억|만)?\s*원", line)
+    amount = re.search(r"(?<![\d,])(\d[\d,]*(?:\.\d+)?)\s*(억|만)?\s*원", line)
     if not amount:
         return None
     multiplier = {None: 1, "만": 10_000, "억": 100_000_000}[amount.group(2)]
-    return int(float(amount.group(1)) * multiplier)
+    return int(float(amount.group(1).replace(",", "")) * multiplier)
 
 
 def _korean_money(line: str | None) -> int | None:
@@ -314,25 +324,91 @@ def _agent_fields(text: str) -> tuple[str | None, str | None, list[str] | None]:
     return agent_name, relationship, documents or None
 
 
+def _building_use(text: str) -> str | None:
+    """임차주택 표시의 구조·용도 행에서 용도만 보수적으로 읽는다."""
+    known_uses = (
+        "다가구주택",
+        "다세대주택",
+        "단독주택",
+        "연립주택",
+        "공동주택",
+        "주거용 오피스텔",
+        "오피스텔",
+        "아파트",
+    )
+    for line in text.splitlines():
+        if not re.search(r"구조\s*[·ㆍ/]?\s*용도|건축물\s*용도", line):
+            continue
+        compact = re.sub(r"\s+", "", line)
+        for usage in known_uses:
+            if re.sub(r"\s+", "", usage) in compact:
+                return usage
+        # PyMuPDF 표 정렬이 '오피스텔' 사이에 다른 열을 끼워 넣는 경우.
+        if "오피스" in compact and compact.rfind("텔") > compact.find("오피스"):
+            return "오피스텔"
+    return None
+
+
+def _contract_execution_date(text: str) -> str | None:
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if re.search(r"계약\s*(?:체결)?일|본\s*계약을\s*증명", line):
+            # 표준 PDF는 서명 문장의 날짜가 폭 때문에 바로 다음 줄로 넘어갈 수 있다.
+            dates = _dates(" ".join(lines[index : index + 2]))
+            if dates:
+                return dates[-1]
+    return None
+
+
+def _move_in_date(text: str) -> str | None:
+    for line in text.splitlines():
+        if re.search(r"입주(?:일)?", line) and not re.search(r"입주일\s*(?:전날|전일|이전)", line):
+            parsed = _parse_date(line)
+            if parsed:
+                return parsed
+    # 표준계약서 제2조는 입주일 대신 임차주택 인도일을 기재한다.
+    for line in text.splitlines():
+        if "인도" in line and "임차인" in line:
+            dates = _dates(line)
+            if dates:
+                return dates[0]
+    return None
+
+
 def _management_fields(
     text: str,
 ) -> tuple[bool | None, int | None, list[str] | None]:
-    line = _line_matching(text, r"관리\s*비")
+    candidates = [line.strip() for line in text.splitlines() if re.search(r"관리\s*비", line)]
+    line = next(
+        (
+            candidate
+            for candidate in candidates
+            if not re.search(r"제\s*\d+\s*조", candidate)
+            and (
+                "없음" in candidate
+                or "원" in candidate
+                or "비례" in candidate
+                or "포함" in candidate
+                or "별도" in candidate
+            )
+        ),
+        candidates[0] if candidates else None,
+    )
     if line is None:
         return False, None, None
     if _unreadable(line):
         return None, None, None
     if "없음" in line or re.search(r"관리\s*비(?:는|가)?\s*없", line):
         return False, None, None
-    item_match = re.search(r"\(([^)]*포함[^)]*)\)", line)
     items: list[str] | None = None
-    if item_match:
-        values = re.sub(r"\s*포함\s*$", "", item_match.group(1))
-        items = [
-            item.strip()
-            for item in re.split(r"[·ㆍ,/]|\s+및\s+", values)
-            if item.strip()
-        ] or None
+    groups = [
+        group
+        for group in re.findall(r"\(([^)]+)\)", line)
+        if "정액이 아닌 경우" not in group and group.strip() != "관리비"
+    ]
+    if groups:
+        values = "·".join(re.sub(r"\s*포함\s*$", "", group) for group in groups)
+        items = [item.strip() for item in re.split(r"[·ㆍ,/]|\s+및\s+", values) if item.strip()] or None
     return True, _numeric_money(line), items
 
 
@@ -638,21 +714,20 @@ def parse_contract(text: str) -> DocumentExtraction:
     tenant_name = _extract_party_name(text, "임차인", r"임\s*대\s*인|중\s*개")
     account_holder = _extract_account_holder(text)
     agent_name, agent_relationship, proxy_documents = _agent_fields(text)
+    building_use = _building_use(text)
     deposit_line = _money_line(text, r"보\s*증\s*금")
     rent_line = _money_line(text, r"(?:월\s*차임|차\s*임|월세)")
     contract_payment_line = _money_line(text, r"계\s*약\s*금")
     balance_payment_line = _money_line(text, r"잔\s*금")
-    contract_date_line = _line_matching(text, r"계약일")
     contract_payment_date = _parse_date(contract_payment_line or "")
     if (
         contract_payment_date is None
         and contract_payment_line is not None
-        and "계약 시" in contract_payment_line
+        and re.search(r"계약\s*시(?:에)?", contract_payment_line)
     ):
-        contract_payment_date = _parse_date(contract_date_line or "")
+        contract_payment_date = _contract_execution_date(text)
     period_line = _line_matching(text, r"(?:존속\s*기간|임대차\s*기간|\]\s*기간)")
     period_dates = _dates(period_line or "")
-    move_in_line = _line_matching(text, r"입주(?:일)?")
     management_present, management_fee, management_items = _management_fields(text)
     return_line = _line_containing(text, "보증금", "반환")
     repair_line = next(
@@ -683,6 +758,7 @@ def parse_contract(text: str) -> DocumentExtraction:
         "agent_relationship": agent_relationship,
         "proxy_authority_documents": proxy_documents,
         "property_address": property_address,
+        "building_use": building_use,
         "deposit": _numeric_money(deposit_line),
         "deposit_korean_amount": _korean_money(deposit_line),
         "monthly_rent": _numeric_money(rent_line),
@@ -693,7 +769,7 @@ def parse_contract(text: str) -> DocumentExtraction:
         "balance_payment_korean_amount": _korean_money(balance_payment_line),
         "contract_payment_date": contract_payment_date,
         "balance_payment_date": _parse_date(balance_payment_line or ""),
-        "move_in_date": _parse_date(move_in_line or ""),
+        "move_in_date": _move_in_date(text),
         "start_date": period_dates[0] if period_dates else None,
         "end_date": period_dates[1] if len(period_dates) > 1 else None,
         "management_fee_present": management_present,
@@ -748,6 +824,7 @@ def parse_registry(text: str) -> DocumentExtraction:
         "seizure_present": bool(re.search(r"(?<!가)압류", active)),
         "provisional_seizure_present": "가압류" in active,
         "trust_present": bool(re.search(r"신탁(?:등기|원부)?", active)),
+        "ground_right_present": bool(re.search(r"지상권(?:설정)?", active)),
     }
     result = _finalize("registry_record", fields)
     result.warnings.extend(ownership_warnings)
@@ -756,7 +833,13 @@ def parse_registry(text: str) -> DocumentExtraction:
     # 개별 필드만 판독불가(예: 소유자만)면 나머지가 읽히므로 플래그 유지(무회귀).
     resolved = result.fields
     if resolved["owner_names"] is None and resolved["property_address"] is None:
-        for key in ("mortgage_present", "seizure_present", "provisional_seizure_present", "trust_present"):
+        for key in (
+            "mortgage_present",
+            "seizure_present",
+            "provisional_seizure_present",
+            "trust_present",
+            "ground_right_present",
+        ):
             if resolved[key] is False:
                 resolved[key] = None
         result.unconfirmed_fields = [key for key, value in resolved.items() if value is None]

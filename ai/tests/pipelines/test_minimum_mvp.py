@@ -290,6 +290,39 @@ def test_gemini_success_shape_also_builds_canonical_document(monkeypatch):
     assert decisions[0].fallback_used is False
 
 
+def test_gemini_registry_null_ownership_is_repaired_when_local_owner_matches(monkeypatch):
+    from lease_companion_ai.pipelines import minimum_mvp as pipe
+
+    monkeypatch.setattr(
+        pipe,
+        "extract_registry_fields",
+        lambda _text: {
+            "owner_names": ["오안심"],
+            "is_joint_ownership": False,
+            "owner_shares": None,
+            "property_address": "가상광역시 이룸구 미래로 6 제1005호",
+            "issue_date": "2026-07-14",
+            "mortgage_present": False,
+            "seizure_present": False,
+            "provisional_seizure_present": False,
+            "trust_present": False,
+            "ground_right_present": None,
+        },
+    )
+    text = """등기사항전부증명서
+갑구 소유권에 관한 사항
+1 소유권이전 소유자 오안심
+을구 소유권 이외의 권리에 관한 사항
+1 지상권설정 목적 건물 소유 범위 토지 전부 지상권자 맑음저축은행
+"""
+
+    result = _structure_unified(text, "registry", document_id="DOC-REGISTRY-REPAIR")
+
+    assert result.fields["owner_shares"].extracted_value == {"오안심": "1/1"}
+    assert result.fields["ground_right_present"].extracted_value is True
+    assert any("결정론적 등기 파서" in warning for warning in result.warnings)
+
+
 def test_verified_legacy_analysis_uses_canonical_result_contract():
     contract = parse_contract(
         (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")

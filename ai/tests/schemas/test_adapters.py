@@ -87,6 +87,21 @@ def test_document_from_legacy_always_has_rule_field_keys():
     assert missing.failure_reason
 
 
+def test_document_from_legacy_marks_external_confirmation_fields_as_not_stated():
+    doc = document_from_legacy(
+        {"document_type": "contract", "fields": {}, "warnings": []},
+        document_id="DOC-DIRECT-CONFIRMATION",
+    )
+
+    housing_value = doc.fields["estimated_housing_value"]
+    assert housing_value.confidence is Confidence.FAILED
+    assert housing_value.issue_code is FieldIssueCode.NOT_STATED
+    assert "직접 확인" in housing_value.failure_reason
+
+    ordinary_missing = doc.fields["account_holder"]
+    assert ordinary_missing.issue_code is FieldIssueCode.UNREADABLE
+
+
 def test_document_from_legacy_always_has_judgment_field_keys_and_issue_codes():
     contract = document_from_legacy(
         {"document_type": "contract", "fields": {"landlord_name": "이정훈"}},

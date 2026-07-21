@@ -25,6 +25,8 @@ schema v1.8.0의 `JudgmentInput`이 사용하는 타입을 고정한다. 모든 
 | 등기사항증명서 | `owner_names` | `string[] | null` |
 | 등기사항증명서 | `is_joint_ownership` | `boolean | null` |
 | 등기사항증명서 | `owner_shares` | `object<string,string> | null` (`소유자명 → 분자/분모`) |
+| 등기사항증명서 | `ground_right_present` | `boolean | null` (활성 지상권설정 존재 여부, 금액 환산 안 함) |
+| 등기사항증명서 | `senior_claim_amount` | `integer | null` (사용자 확인값, 자동 합산하지 않음) |
 | 등기사항증명서 | `property_address` | `string | null` |
 
 ## 계약서 / 특약 (contracts) — 필수 문서
