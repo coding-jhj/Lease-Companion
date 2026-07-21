@@ -7,7 +7,7 @@ import type {
   StageGuidanceDto,
   Urgency,
 } from "../../types/api";
-import { normalizeAction } from "./actionNormalization";
+import { normalizeAction, toPoliteEnding } from "./actionNormalization";
 
 type ResultItem = RuleResultDto | JudgmentResultDto;
 type GuidanceItem = RuleGuidanceDto | JudgmentGuidanceDto;
@@ -130,17 +130,17 @@ export function DefenseActionHub({
     ...unguidedResults.map((item) => ({ text: item.question, rank: rankOf(item.urgency) })),
     ...guidance.flatMap((item) => item.questions.map((text) => ({ text, rank: guidanceRank(item) }))),
     ...(stageGuidance?.before_deposit_questions ?? []).map((text) => ({ text, rank: rankOf("계약 전 확인") })),
-  ]);
+  ]).map(toPoliteEnding);
   const signingActions = prioritized([
     ...unguidedResults.flatMap((item) => item.recommended_actions.map((text) => ({ text, rank: rankOf(item.urgency) }))),
     ...guidance.flatMap((item) => item.signing_checklist_items.map((entry) => ({ text: entry.text, rank: guidanceRank(item) }))),
     ...(stageGuidance?.signing_checklist ?? []).map((text) => ({ text, rank: rankOf("계약 전 확인") })),
-  ]);
+  ]).map(toPoliteEnding);
   const postActions = prioritizedPostActions([
     ...guidance.flatMap((item) => item.post_contract_action_items.map((entry) => ({ text: entry.text, rank: guidanceRank(item) }))),
     ...(stageGuidance?.post_contract_actions ?? []).map((text) => ({ text, rank: rankOf("계약 직후 조치") })),
-  ]);
-  const records = unique(stageGuidance?.record_retention ?? []);
+  ]).map(toPoliteEnding);
+  const records = unique(stageGuidance?.record_retention ?? []).map(toPoliteEnding);
 
   return (
     <section className="action-hub" aria-labelledby="action-hub-title">
