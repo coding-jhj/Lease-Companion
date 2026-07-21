@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.047899,
+    "elapsed_seconds": 0.068188,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.00479
+    "mean_seconds_per_case": 0.006819
   },
   "extraction": {
     "accuracy": 1.0,
@@ -151,23 +151,24 @@
   },
   "generation": {
     "active_judgment_count": 50,
-    "active_rule_count": 27,
+    "active_rule_count": 149,
     "analysis_immutable_count": 10,
     "analysis_immutable_rate": 1.0,
     "case_count": 10,
+    "expected_prompt_version": "v2",
     "grounding_violation_count": 0,
-    "guidance_item_count": 27,
+    "guidance_item_count": 149,
     "judgment_grounding_violation_count": 0,
     "judgment_guidance_item_count": 50,
     "judgment_trigger_coverage_rate": 1.0,
-    "missing_evidence_fallback_count": 0,
+    "missing_evidence_fallback_count": 20,
     "prohibited_claim_count": 0,
     "prompt_version_match_count": 10,
     "provider_call_count": 0,
     "schema_valid_count": 10,
     "schema_valid_rate": 1.0,
     "subjective_quality": "not_measured:no_human_or_independent_judge_labels",
-    "template_fallback_count": 77,
+    "template_fallback_count": 199,
     "trigger_coverage_rate": 1.0
   },
   "guardrail": {
@@ -313,7 +314,7 @@
     "쉬운 설명의 주관 품질은 사람 또는 독립 judge 라벨이 없어 측정하지 않았습니다.",
     "실제 provider latency와 비용은 외부 호출 승인이 없어 측정하지 않았습니다."
   ],
-  "measured_at": "2026-07-20",
+  "measured_at": "2026-07-21",
   "pii": {
     "case_count": 5,
     "restoration_pass_rate": 1.0,
@@ -325,28 +326,27 @@
     "actionable_failure_diagnostics": [],
     "candidate_k": 20,
     "case_count": 10,
-    "citation_count": 100,
-    "complete_citation_count": 100,
+    "citation_count": 101,
+    "complete_citation_count": 101,
     "config_version": "offline-regex-bm25-template-v3",
     "expected_source_count": 39,
-    "expected_source_hit_count": 38,
-    "expected_source_recall": 0.9743589743589743,
+    "expected_source_hit_count": 39,
+    "expected_source_recall": 1.0,
     "failure_reason_counts": {
       "allowlist_filtered": 0,
       "bm25_candidate_miss": 0,
-      "expected_source_not_locally_available": 1,
+      "expected_source_not_locally_available": 0,
       "outside_top_k": 0
     },
-    "locally_available_expected_source_count": 38,
-    "locally_available_expected_source_hit_count": 38,
+    "locally_available_expected_source_count": 39,
+    "locally_available_expected_source_hit_count": 39,
     "locally_available_expected_source_recall": 1.0,
-    "locally_unavailable_expected_source_ids": [
-      "SRC-CONFIRM-FORM"
-    ],
-    "measured_at": "2026-07-20",
+    "locally_unavailable_expected_source_ids": [],
+    "measured_at": "2026-07-21",
     "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {
+      "SRC-CONFIRM-FORM": 1,
       "SRC-HTA-LAW": 9,
       "SRC-MOLIT-CHECKLIST": 69,
       "SRC-STD-LEASE": 22
