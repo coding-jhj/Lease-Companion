@@ -52,6 +52,7 @@ from lease_companion_ai.schemas.unified import (
     DocumentType,
     ExtractedField,
     FieldIssueCode,
+    GENERATION_PROMPT_VERSION,
     GenerationMethod,
     JUDGMENT_INPUT_SPECS,
     JudgmentGuidance,
@@ -160,6 +161,7 @@ class GenerationEvaluationMetrics:
     active_judgment_count: int
     judgment_guidance_item_count: int
     judgment_trigger_coverage_rate: float
+    expected_prompt_version: str
     prompt_version_match_count: int
     analysis_immutable_count: int
     analysis_immutable_rate: float
@@ -608,7 +610,9 @@ def _evaluate_generation(
         immutable += int(analysis.model_dump(mode="json") == before)
         generation.__class__.model_validate(generation.model_dump(mode="json"))
         schema_valid += 1
-        prompt_matches += int(generation.prompt_version == "v1")
+        prompt_matches += int(
+            generation.prompt_version == GENERATION_PROMPT_VERSION
+        )
         rules = {result.rule_id: result for result in analysis.results}
         judgments = {result.judgment_id: result for result in analysis.judgments}
         active += sum(result.triggers_actions for result in analysis.results)
@@ -666,6 +670,7 @@ def _evaluate_generation(
         judgment_trigger_coverage_rate=(
             judgment_guidance_count / active_judgments if active_judgments else 1.0
         ),
+        expected_prompt_version=GENERATION_PROMPT_VERSION,
         prompt_version_match_count=prompt_matches,
         analysis_immutable_count=immutable,
         analysis_immutable_rate=(immutable / case_count if case_count else 1.0),

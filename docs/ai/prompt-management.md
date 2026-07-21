@@ -20,7 +20,7 @@
 
 - 프롬프트마다 버전 식별자와 변경 이력을 남긴다.
 - 추출·생성 프롬프트는 구조화 출력 스키마(`ai/src/lease_companion_ai/schemas/`)와 연동한다.
-- 생성 프롬프트 배치 4는 `questions/checklists/summaries/v1.txt`를 사용한다. 파일 본문에도 용도별 버전 식별자를 기록한다.
+- 신규 생성은 `questions/checklists/summaries/v2.txt`를 사용한다. `GenerationResult.prompt_version`은 과거 저장 결과의 `v1` 읽기 호환과 신규 `v2`를 모두 허용하며, 파일 본문에도 용도별 버전 식별자를 기록한다.
 - 생성 provider 입력은 로컬 PII 토큰화 후 전송한다. 출력은 로컬 복원 후 금지 단정·근거·source ID Guardrail을 통과해야 저장 대상이 된다.
 - canonical v1.6.0부터 prompt set 버전을 provider 요청과 `GenerationResult.prompt_version`에 동일하게 기록한다. 파일 첫 줄의 `버전: {용도}-{버전}`이 설정 버전과 다르면 생성 서비스 시작을 거부한다.
 

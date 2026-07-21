@@ -231,7 +231,8 @@ export interface StageGuidanceDto {
 export interface GenerationResultDto {
   schema_version: SchemaVersion;
   analysis_run_id: string;
-  prompt_version: "v1";
+  // 과거 저장 결과(v1) 읽기 호환 + 신규 생성 결과(v2).
+  prompt_version: "v1" | "v2";
   items: RuleGuidanceDto[];
   judgment_items: JudgmentGuidanceDto[];
   stage_guidance: StageGuidanceDto;

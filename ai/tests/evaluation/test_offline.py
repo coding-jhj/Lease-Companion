@@ -52,6 +52,8 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
     assert report.generation.trigger_coverage_rate == 1.0
     assert report.generation.active_judgment_count > 0
     assert report.generation.judgment_trigger_coverage_rate == 1.0
+    assert report.generation.expected_prompt_version == "v2"
+    assert report.generation.prompt_version_match_count == report.generation.case_count
     assert report.generation.grounding_violation_count == 0
     assert report.generation.judgment_grounding_violation_count == 0
     assert report.generation.prohibited_claim_count == 0
