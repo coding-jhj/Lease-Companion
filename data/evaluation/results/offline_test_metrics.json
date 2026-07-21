@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.063187,
+    "elapsed_seconds": 0.068188,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.006319
+    "mean_seconds_per_case": 0.006819
   },
   "extraction": {
     "accuracy": 1.0,
@@ -326,28 +326,27 @@
     "actionable_failure_diagnostics": [],
     "candidate_k": 20,
     "case_count": 10,
-    "citation_count": 100,
-    "complete_citation_count": 100,
+    "citation_count": 101,
+    "complete_citation_count": 101,
     "config_version": "offline-regex-bm25-template-v3",
     "expected_source_count": 39,
-    "expected_source_hit_count": 38,
-    "expected_source_recall": 0.9743589743589743,
+    "expected_source_hit_count": 39,
+    "expected_source_recall": 1.0,
     "failure_reason_counts": {
       "allowlist_filtered": 0,
       "bm25_candidate_miss": 0,
-      "expected_source_not_locally_available": 1,
+      "expected_source_not_locally_available": 0,
       "outside_top_k": 0
     },
-    "locally_available_expected_source_count": 38,
-    "locally_available_expected_source_hit_count": 38,
+    "locally_available_expected_source_count": 39,
+    "locally_available_expected_source_hit_count": 39,
     "locally_available_expected_source_recall": 1.0,
-    "locally_unavailable_expected_source_ids": [
-      "SRC-CONFIRM-FORM"
-    ],
+    "locally_unavailable_expected_source_ids": [],
     "measured_at": "2026-07-21",
     "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {
+      "SRC-CONFIRM-FORM": 1,
       "SRC-HTA-LAW": 9,
       "SRC-MOLIT-CHECKLIST": 69,
       "SRC-STD-LEASE": 22

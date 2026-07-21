@@ -27,12 +27,12 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
     assert report.judgments.status.accuracy == 1.0
     assert report.judgments.urgency.accuracy == 1.0
     assert report.retrieval.case_count == 10
-    # 2026-07-20 SRC-MOLIT-CHECKLIST 로컬 적재 후: R 기대출처 대부분 로컬 가용(15→38/39)
-    assert report.retrieval.locally_available_expected_source_count == 38
-    assert report.retrieval.locally_available_expected_source_hit_count == 38
+    # 2026-07-21 SRC-CONFIRM-FORM 로컬 적재 후: R 기대출처 전체 로컬 가용(39/39)
+    assert report.retrieval.locally_available_expected_source_count == 39
+    assert report.retrieval.locally_available_expected_source_hit_count == 39
     assert report.retrieval.locally_available_expected_source_recall == 1.0
     assert report.retrieval.failure_reason_counts == {
-        "expected_source_not_locally_available": 1,
+        "expected_source_not_locally_available": 0,
         "allowlist_filtered": 0,
         "bm25_candidate_miss": 0,
         "outside_top_k": 0,

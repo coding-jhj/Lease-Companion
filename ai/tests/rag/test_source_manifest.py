@@ -36,11 +36,12 @@ def test_official_source_manifest_matches_inventory_and_local_hashes():
         "SRC-HTA-DECREE",
         "SRC-STD-LEASE",
         "SRC-MOLIT-CHECKLIST",
+        "SRC-CONFIRM-FORM",
     }
     for record in local_records.values():
         path = ROOT / record["local_path"]
         assert hashlib.sha256(path.read_bytes()).hexdigest() == record["content_sha256"]
     metadata_only = [record for record in records if record["distribution_mode"] == "metadata_only"]
-    assert len(metadata_only) == 5
+    assert len(metadata_only) == 4
     assert all(record["local_path"] is None for record in metadata_only)
     assert all(record["content_sha256"] is None for record in metadata_only)
