@@ -68,6 +68,11 @@ from lease_companion_ai.schemas.unified import (
 )
 
 _SECTIONS = ("contract", "registry")
+_CONDITIONAL_NOT_APPLICABLE_FIELDS = {
+    "agent_name",
+    "agent_relationship",
+    "proxy_authority_documents",
+}
 _CONTRACT_TYPES = {
     "전세": ContractType.JEONSE,
     "보증부월세": ContractType.DEPOSIT_MONTHLY,
@@ -255,9 +260,9 @@ def _offline_extractions(
         contract_text = (base / "contracts" / record["contract_file"]).read_text(
             encoding="utf-8"
         )
-        registry_text = (
-            base / "registry-records" / record["registry_file"]
-        ).read_text(encoding="utf-8")
+        registry_text = (base / "registry-records" / record["registry_file"]).read_text(
+            encoding="utf-8"
+        )
         predictions[record["case_id"]] = {
             "contract": parse_contract(contract_text).fields,
             "registry": parse_registry(registry_text).fields,
@@ -298,9 +303,15 @@ def _evaluate_extraction(
                 if expected is None:
                     unreadable += 1
                     extracted = document.fields[field]
+                    valid_absence = extracted.confidence is Confidence.FAILED or (
+                        section == "contract"
+                        and field in _CONDITIONAL_NOT_APPLICABLE_FIELDS
+                        and extracted.confidence is Confidence.UNCERTAIN
+                        and extracted.issue_code is FieldIssueCode.NOT_APPLICABLE
+                    )
                     unreadable_valid += int(
                         extracted.extracted_value is None
-                        and extracted.confidence is Confidence.FAILED
+                        and valid_absence
                         and bool(extracted.failure_reason)
                     )
     document_count = len(records) * len(_SECTIONS)
@@ -357,9 +368,7 @@ def _evaluate_corrections(root: Path) -> CorrectionEvaluationMetrics:
             correction.field_name
         ]
         corrected = snapshot_fields[correction.document_type][correction.field_name]
-        original_preserved += int(
-            corrected.extracted_value == original.extracted_value
-        )
+        original_preserved += int(corrected.extracted_value == original.extracted_value)
         corrected_applied += int(
             corrected.user_corrected_value == correction.corrected_value
             and corrected.effective_value == correction.corrected_value
@@ -380,9 +389,7 @@ def _evaluate_corrections(root: Path) -> CorrectionEvaluationMetrics:
 
 
 def _evaluate_pii(root: Path) -> PiiEvaluationMetrics:
-    cases = _read_jsonl(
-        root / "data" / "evaluation" / "generation" / "pii_cases.jsonl"
-    )
+    cases = _read_jsonl(root / "data" / "evaluation" / "generation" / "pii_cases.jsonl")
     tokenized_without_raw = 0
     restored_exact = 0
     for case in cases:
@@ -500,9 +507,7 @@ def _evaluate_judgments(root: Path) -> JudgmentEvaluationMetrics:
             statuses.append((expected_status, result.status.value))
             urgencies.append((case["expected_urgency"], result.urgency.value))
             per_judgment[judgment_id][1] += 1
-            per_judgment[judgment_id][0] += int(
-                expected_status == result.status.value
-            )
+            per_judgment[judgment_id][0] += int(expected_status == result.status.value)
     return JudgmentEvaluationMetrics(
         case_count=len(statuses),
         judgment_count=len(records),
@@ -605,9 +610,7 @@ def _evaluate_generation(
         schema_valid += 1
         prompt_matches += int(generation.prompt_version == "v1")
         rules = {result.rule_id: result for result in analysis.results}
-        judgments = {
-            result.judgment_id: result for result in analysis.judgments
-        }
+        judgments = {result.judgment_id: result for result in analysis.judgments}
         active += sum(result.triggers_actions for result in analysis.results)
         active_judgments += sum(
             result.triggers_actions for result in analysis.judgments
@@ -618,12 +621,8 @@ def _evaluate_generation(
             fallbacks += int(
                 rule_item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
             )
-            missing_evidence += int(
-                rule_item.fallback_reason == "missing_evidence"
-            )
-            grounding += len(
-                grounding_violations(rules[rule_item.rule_id], rule_item)
-            )
+            missing_evidence += int(rule_item.fallback_reason == "missing_evidence")
+            grounding += len(grounding_violations(rules[rule_item.rule_id], rule_item))
             prohibited += int(
                 has_prohibited_claim(
                     (
@@ -636,12 +635,9 @@ def _evaluate_generation(
             )
         for judgment_item in generation.judgment_items:
             fallbacks += int(
-                judgment_item.generation_method
-                is GenerationMethod.TEMPLATE_FALLBACK
+                judgment_item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
             )
-            missing_evidence += int(
-                judgment_item.fallback_reason == "missing_evidence"
-            )
+            missing_evidence += int(judgment_item.fallback_reason == "missing_evidence")
             judgment_grounding += len(
                 judgment_grounding_violations(
                     judgments[judgment_item.judgment_id], judgment_item
@@ -668,15 +664,11 @@ def _evaluate_generation(
         active_judgment_count=active_judgments,
         judgment_guidance_item_count=judgment_guidance_count,
         judgment_trigger_coverage_rate=(
-            judgment_guidance_count / active_judgments
-            if active_judgments
-            else 1.0
+            judgment_guidance_count / active_judgments if active_judgments else 1.0
         ),
         prompt_version_match_count=prompt_matches,
         analysis_immutable_count=immutable,
-        analysis_immutable_rate=(
-            immutable / case_count if case_count else 1.0
-        ),
+        analysis_immutable_rate=(immutable / case_count if case_count else 1.0),
         template_fallback_count=fallbacks,
         missing_evidence_fallback_count=missing_evidence,
         grounding_violation_count=grounding,
@@ -720,9 +712,7 @@ def _evaluate_judgment_retrieval(
                     allowed_source_ids=allowed,
                 )
             )
-            retrieved = {
-                hit.chunk.metadata.source_id for hit in result.hits
-            }
+            retrieved = {hit.chunk.metadata.source_id for hit in result.hits}
             retrieved_count += len(retrieved & set(allowed))
             unofficial_count += sum(
                 hit.chunk.metadata.source_status != "official_verified"
@@ -845,18 +835,10 @@ def evaluate_offline_pipeline(
 ) -> OfflineEvaluationReport:
     """잠금 test/goldset으로 외부 호출 없는 기준선을 생성한다."""
     extraction_records = _read_jsonl(
-        root
-        / "data"
-        / "evaluation"
-        / "end-to-end"
-        / "final_testset_extraction.jsonl"
+        root / "data" / "evaluation" / "end-to-end" / "final_testset_extraction.jsonl"
     )
     rule_records = _read_jsonl(
-        root
-        / "data"
-        / "evaluation"
-        / "end-to-end"
-        / "final_testset_rule.jsonl"
+        root / "data" / "evaluation" / "end-to-end" / "final_testset_rule.jsonl"
     )
     if [record["case_id"] for record in extraction_records] != [
         record["case_id"] for record in rule_records
@@ -867,24 +849,14 @@ def evaluate_offline_pipeline(
     predictions = _offline_extractions(root, extraction_records)
     local_chunks = load_local_official_chunks(root)
     service = build_evidence_service(local_chunks)
-    locally_available_source_ids = {
-        chunk.metadata.source_id for chunk in local_chunks
-    }
+    locally_available_source_ids = {chunk.metadata.source_id for chunk in local_chunks}
     analyses = _analyses(rule_records, predictions, service)
     generation = _evaluate_generation(analyses)
     elapsed = perf_counter() - started
 
     rag_cases = load_gold_cases(
-        root
-        / "data"
-        / "evaluation"
-        / "end-to-end"
-        / "final_testset_rag.jsonl",
-        root
-        / "data"
-        / "evaluation"
-        / "end-to-end"
-        / "final_testset_rule.jsonl",
+        root / "data" / "evaluation" / "end-to-end" / "final_testset_rag.jsonl",
+        root / "data" / "evaluation" / "end-to-end" / "final_testset_rule.jsonl",
         root / "data" / "rules" / "rule_spec.csv",
         root / "data" / "rules" / "rule_evidence_map.csv",
     )

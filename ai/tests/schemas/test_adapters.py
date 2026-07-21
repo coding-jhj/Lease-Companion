@@ -37,6 +37,7 @@ from lease_companion_ai.schemas.unified import (
 ROOT = Path(__file__).resolve().parents[3]
 CONFIRMED_AT = datetime(2026, 7, 16, tzinfo=timezone.utc)
 
+
 def _context(contract_id: int = 1) -> ContractContext:
     return ContractContext(
         contract_id=contract_id,
@@ -65,11 +66,19 @@ def _load_case001_goldsets():
 
 def _docs_from_gold(gold_extraction):
     contract = document_from_legacy(
-        {"document_type": "contract", "fields": gold_extraction["contract"], "warnings": []},
+        {
+            "document_type": "contract",
+            "fields": gold_extraction["contract"],
+            "warnings": [],
+        },
         document_id="DOC-C",
     )
     registry = document_from_legacy(
-        {"document_type": "registry_record", "fields": gold_extraction["registry"], "warnings": []},
+        {
+            "document_type": "registry_record",
+            "fields": gold_extraction["registry"],
+            "warnings": [],
+        },
         document_id="DOC-R",
     )
     return confirm_document(contract), confirm_document(registry)
@@ -77,7 +86,11 @@ def _docs_from_gold(gold_extraction):
 
 def test_document_from_legacy_always_has_rule_field_keys():
     doc = document_from_legacy(
-        {"document_type": "contract", "fields": {"landlord_name": "이정훈"}, "warnings": []},
+        {
+            "document_type": "contract",
+            "fields": {"landlord_name": "이정훈"},
+            "warnings": [],
+        },
         document_id="DOC-1",
     )
     assert REQUIRED_CONTRACT_FIELDS <= doc.fields.keys()
@@ -124,12 +137,39 @@ def test_document_from_legacy_always_has_judgment_field_keys_and_issue_codes():
         assert J_FIELD_TYPES_BY_DOCUMENT[document_type].keys() <= doc.fields.keys()
         for name in J_FIELD_TYPES_BY_DOCUMENT[document_type]:
             if doc.fields[name].effective_value is None:
-                assert doc.fields[name].issue_code is FieldIssueCode.UNREADABLE
+                if document_type is DocumentType.CONTRACT and name in {
+                    "agent_name",
+                    "agent_relationship",
+                    "proxy_authority_documents",
+                }:
+                    assert doc.fields[name].issue_code is FieldIssueCode.NOT_APPLICABLE
+                else:
+                    assert doc.fields[name].issue_code is FieldIssueCode.UNREADABLE
+
+
+def test_document_from_legacy_marks_absent_proxy_fields_as_not_applicable():
+    direct_contract = document_from_legacy(
+        {
+            "document_type": "contract",
+            "fields": {"landlord_name": "오안심", "agent_name": None},
+        },
+        document_id="DOC-DIRECT",
+    )
+
+    for name in ("agent_name", "agent_relationship", "proxy_authority_documents"):
+        field = direct_contract.fields[name]
+        assert field.confidence is Confidence.UNCERTAIN
+        assert field.issue_code is FieldIssueCode.NOT_APPLICABLE
+        assert "대리인 계약 표시가 없어" in field.failure_reason
 
 
 def test_document_from_legacy_normalizes_empty_list_to_null():
     doc = document_from_legacy(
-        {"document_type": "registry_record", "fields": {"owner_names": []}, "warnings": []},
+        {
+            "document_type": "registry_record",
+            "fields": {"owner_names": []},
+            "warnings": [],
+        },
         document_id="DOC-1",
     )
     assert doc.fields["owner_names"].extracted_value is None
@@ -139,7 +179,11 @@ def test_document_from_legacy_normalizes_empty_list_to_null():
 def test_document_from_legacy_normalizes_empty_dict_to_null():
     # Gemini가 owner_shares를 빈 객체 {}로 반환하면 ExtractedField가 거부하므로 null로 강등한다.
     doc = document_from_legacy(
-        {"document_type": "registry_record", "fields": {"owner_shares": {}}, "warnings": []},
+        {
+            "document_type": "registry_record",
+            "fields": {"owner_shares": {}},
+            "warnings": [],
+        },
         document_id="DOC-1",
     )
     assert doc.fields["owner_shares"].extracted_value is None
@@ -148,22 +192,30 @@ def test_document_from_legacy_normalizes_empty_dict_to_null():
 
 def test_apply_correction_preserves_extracted_value_and_original():
     doc = document_from_legacy(
-        {"document_type": "contract", "fields": {"landlord_name": "이정문"}, "warnings": []},
+        {
+            "document_type": "contract",
+            "fields": {"landlord_name": "이정문"},
+            "warnings": [],
+        },
         document_id="DOC-1",
     )
     original = doc.fields["landlord_name"]
     corrected = apply_correction(original, "이정훈")
 
-    assert corrected.extracted_value == "이정문"          # 최초 추출값 보존
+    assert corrected.extracted_value == "이정문"  # 최초 추출값 보존
     assert corrected.user_corrected_value == "이정훈"
     assert corrected.verification_status is VerificationStatus.CORRECTED
-    assert original.user_corrected_value is None          # 원본 객체 불변
+    assert original.user_corrected_value is None  # 원본 객체 불변
     assert original.verification_status is VerificationStatus.UNVERIFIED
 
 
 def test_rule_inputs_use_correction_then_normalized():
     doc = document_from_legacy(
-        {"document_type": "contract", "fields": {"landlord_name": "이정문"}, "warnings": []},
+        {
+            "document_type": "contract",
+            "fields": {"landlord_name": "이정문"},
+            "warnings": [],
+        },
         document_id="DOC-1",
     )
     fields = dict(doc.fields)
@@ -171,8 +223,12 @@ def test_rule_inputs_use_correction_then_normalized():
     assert rule_inputs(fields)["landlord_name"] == "이정훈"  # 수정값 우선
 
     normalized = fields["property_address"].model_copy(
-        update={"extracted_value": "서울시  가온구", "normalized_value": "서울특별시 가온구",
-                "confidence": Confidence.EXTRACTED, "failure_reason": None}
+        update={
+            "extracted_value": "서울시  가온구",
+            "normalized_value": "서울특별시 가온구",
+            "confidence": Confidence.EXTRACTED,
+            "failure_reason": None,
+        }
     )
     assert normalized.effective_value == "서울특별시 가온구"  # 수정값 없으면 정규화값
 
@@ -194,7 +250,10 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
     analysis = analyze_snapshot(snapshot, analysis_run_id="RUN-1")
 
     direct = run_rules(
-        {**gold_extraction["contract"], "is_proxy_contract": _context().is_proxy_contract},
+        {
+            **gold_extraction["contract"],
+            "is_proxy_contract": _context().is_proxy_contract,
+        },
         gold_extraction["registry"],
     )
     direct_by_id = {r.rule_id: r for r in direct}
@@ -209,7 +268,9 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
         assert result.reason == legacy.reason
         assert result.recommended_actions == legacy.recommended_actions
         assert legacy.evidence_sources == []
-        assert all(source.source_id.startswith("SRC-") for source in result.evidence_sources)
+        assert all(
+            source.source_id.startswith("SRC-") for source in result.evidence_sources
+        )
         expected_type = (
             ResultType.FACT_FLAG
             if result.rule_id in {"R03", "R04", "R05", "R07", "R10"}
@@ -221,7 +282,9 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
         )
     # CASE-001 rule goldset 유지
     assert {
-        r.rule_id: r.status.value for r in analysis.results if r.rule_id in gold_statuses
+        r.rule_id: r.status.value
+        for r in analysis.results
+        if r.rule_id in gold_statuses
     } == gold_statuses
 
 
@@ -240,8 +303,12 @@ def test_extraction_goldset_values_survive_adapter_round_trip():
 
 def test_regex_parser_output_feeds_adapter_and_rules():
     """실제 파서 출력 → 어댑터 → 규칙 실행이 기존 직접 경로와 동일하다."""
-    contract_text = (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
-    registry_text = (ROOT / "data/sample/registry-records/registry_001.txt").read_text(encoding="utf-8")
+    contract_text = (ROOT / "data/sample/contracts/contract_001.txt").read_text(
+        encoding="utf-8"
+    )
+    registry_text = (ROOT / "data/sample/registry-records/registry_001.txt").read_text(
+        encoding="utf-8"
+    )
     legacy_contract = parse_contract(contract_text).to_dict()
     legacy_registry = parse_registry(registry_text).to_dict()
 
@@ -261,7 +328,10 @@ def test_regex_parser_output_feeds_adapter_and_rules():
     direct = {
         r.rule_id: r.status
         for r in run_rules(
-            {**legacy_contract["fields"], "is_proxy_contract": _context().is_proxy_contract},
+            {
+                **legacy_contract["fields"],
+                "is_proxy_contract": _context().is_proxy_contract,
+            },
             legacy_registry["fields"],
         )
     }
@@ -284,7 +354,9 @@ def test_analysis_statuses_stay_within_rule_spec_allowed_sets():
 
 
 def test_runtime_allowed_statuses_match_rule_spec_exactly():
-    with (ROOT / "data/rules/rule_spec.csv").open(encoding="utf-8", newline="") as handle:
+    with (ROOT / "data/rules/rule_spec.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
         rows = list(csv.DictReader(handle))
     for row in rows:
         expected = set(row["result_status"].split("|"))
@@ -298,13 +370,16 @@ def test_apply_correction_request_rejects_unknown_field():
         contract_id=1,
         corrections=[
             FieldCorrection(
-                document_type=DocumentType.CONTRACT, field_name="no_such_field", corrected_value="x"
+                document_type=DocumentType.CONTRACT,
+                field_name="no_such_field",
+                corrected_value="x",
             )
         ],
     )
     with pytest.raises(KeyError):
         apply_correction_request(
-            {DocumentType.CONTRACT: contract_doc, DocumentType.REGISTRY: registry_doc}, request
+            {DocumentType.CONTRACT: contract_doc, DocumentType.REGISTRY: registry_doc},
+            request,
         )
 
 
@@ -338,6 +413,9 @@ def test_build_snapshot_requires_explicit_confirmation():
     )
     assert all(
         field.verification_status is VerificationStatus.CONFIRMED
-        for fields in (snapshot.confirmed_fields.contract, snapshot.confirmed_fields.registry)
+        for fields in (
+            snapshot.confirmed_fields.contract,
+            snapshot.confirmed_fields.registry,
+        )
         for field in fields.values()
     )

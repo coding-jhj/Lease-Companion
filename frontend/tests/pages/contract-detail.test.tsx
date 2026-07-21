@@ -18,6 +18,8 @@ afterEach(() => {
 
 describe("ContractDetailPage", () => {
   it("combines generated text with saved state and shows histories", async () => {
+    const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
+    const originalTitle = document.title;
     const generation = generationResultFixture as GenerationResultDto;
     const action = generation.items[0].signing_checklist_items[0];
     const actionText = normalizeAction(action.text, "checklist").text;
@@ -66,6 +68,10 @@ describe("ContractDetailPage", () => {
       "href",
       "/contracts/1001/report?analysisRunId=RUN-1001-001",
     );
+    expect(document.querySelector(".checklist-print-sheet")).toHaveTextContent("확인 완료");
+    fireEvent.click(screen.getByRole("button", { name: "체크리스트 PDF 저장" }));
+    expect(print).toHaveBeenCalledOnce();
+    expect(document.title).toBe(originalTitle);
 
     fireEvent.click(within(completedSection).getByRole("button", { name: `${actionText} 확인 취소` }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(1001, "checklist", action.item_key, false));

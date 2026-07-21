@@ -64,9 +64,9 @@ const reviewGuidance: Record<string, string> = {
   building_use: "계약서의 구조·용도 칸과 최신 건축물대장을 함께 확인하세요.",
   contract_payment_date: "계약시에 지급으로만 적혀 있다면 계약 체결일과 같은지 확인하세요.",
   estimated_housing_value: "시세 자료의 금액과 기준일을 직접 확인해 입력하는 항목입니다.",
-  guarantee_eligibility_confirmed: "보증기관의 현재 가입 요건과 신청 기한을 확인한 뒤 입력하세요.",
+  guarantee_eligibility_confirmed: "보증기관의 현재 기준으로 가입 가능 여부를 직접 확인한 결과를 선택하세요.",
   ground_right_present: "등기사항증명서 을구의 지상권설정 여부입니다. 존재 여부만 표시하며 금액으로 환산하지 않습니다.",
-  lessor_sublease_authority_confirmed: "소유권 또는 적법한 전대 동의 서류를 확인한 뒤 입력하세요.",
+  lessor_sublease_authority_confirmed: "직접 소유자와 계약하는지, 전대라면 소유자 동의·권한서류를 확인했는지 선택하세요.",
   management_fee: "사용량·세대수 비례 관리비는 고정 금액이 없을 수 있으므로 산정 방식과 포함 항목을 확인하세요.",
   move_in_date: "명시된 입주일이 없으면 임차주택 인도일이 실제 입주일과 같은지 확인하세요.",
   senior_claim_amount: "채권최고액·실제 채무액과 임차보증금보다 앞서는 순위를 확인한 뒤 입력하세요.",
@@ -107,6 +107,8 @@ const legacyCandidateByClause: Record<string, string> = {
 const clauseByLegacyCandidate = Object.fromEntries(
   Object.entries(legacyCandidateByClause).map(([clause, legacy]) => [legacy, clause]),
 );
+
+const proxyFields = new Set(["agent_name", "agent_relationship", "proxy_authority_documents"]);
 
 function effectiveValue(field: ExtractedFieldDto): FieldValue {
   return field.user_corrected_value ?? field.normalized_value ?? field.extracted_value;
@@ -164,15 +166,31 @@ export function formatFieldValue(value: FieldValue): string {
 
 export function fieldViewModels(documents: DocumentExtractionDto[]): FieldViewModel[] {
   return documents.flatMap((document) =>
-    visibleFields(document).map((field) => ({
-      key: document.document_type + ":" + field.field_name,
-      document_type: document.document_type,
-      label: labels[field.field_name] ?? "추가 확인 항목",
-      formattedValue: formatFieldValue(effectiveValue(field)),
-      editor: clauseListFields.has(field.field_name) ? "clause-list" as const : "scalar" as const,
-      guidance: reviewGuidance[field.field_name] ?? null,
-      field,
-    })),
+    visibleFields(document).map((field) => {
+      const noProxyIndicated = document.document_type === "contract"
+        && [...proxyFields].every((name) => !hasDisplayValue(document.fields[name]));
+      const displayField = noProxyIndicated && proxyFields.has(field.field_name) && effectiveValue(field) === null
+        ? {
+          ...field,
+          confidence: "불확실" as const,
+          issue_code: "not_applicable" as const,
+          failure_reason: "문서에 대리인 계약 표시가 없어 적용되지 않습니다.",
+        }
+        : field;
+      return {
+        key: document.document_type + ":" + field.field_name,
+        document_type: document.document_type,
+        label: labels[field.field_name] ?? "추가 확인 항목",
+        formattedValue: formatFieldValue(effectiveValue(displayField)),
+        editor: field.field_name === "guarantee_eligibility_confirmed"
+          ? "boolean-choice" as const
+          : field.field_name === "lessor_sublease_authority_confirmed"
+            ? "authority-choice" as const
+            : clauseListFields.has(field.field_name) ? "clause-list" as const : "scalar" as const,
+        guidance: reviewGuidance[field.field_name] ?? null,
+        field: displayField,
+      };
+    }),
   );
 }
 
@@ -208,6 +226,9 @@ export function correctionValue(
     );
   }
   if (numericFields.has(field.field_name)) return Number(scalarValue.replaceAll(",", ""));
+  if (field.field_name === "lessor_sublease_authority_confirmed") {
+    return scalarValue === "owner_direct" || scalarValue === "sublease_documents";
+  }
   if (booleanFields.has(field.field_name)) return scalarValue === "있음" || scalarValue === "true" || scalarValue === "예";
   if (listFields.has(field.field_name)) return scalarValue.split(",").map((value) => value.trim()).filter(Boolean);
   // 판독 실패 필드는 canonical field_name으로 타입을 복원한다.

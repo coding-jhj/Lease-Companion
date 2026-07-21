@@ -70,9 +70,17 @@ def document_from_legacy(
     """
     doc_type = _LEGACY_TYPE_MAP[legacy_doc["document_type"]]
     raw_fields: dict[str, Any] = dict(legacy_doc.get("fields") or {})
+    no_proxy_indicated = (
+        doc_type is DocumentType.CONTRACT
+        and not raw_fields.get("agent_name")
+        and not raw_fields.get("agent_relationship")
+        and not raw_fields.get("proxy_authority_documents")
+    )
 
-    field_names = set(raw_fields) | set(REQUIRED_FIELDS_BY_TYPE[doc_type]) | set(
-        CANONICAL_FIELD_TYPES_BY_DOCUMENT[doc_type]
+    field_names = (
+        set(raw_fields)
+        | set(REQUIRED_FIELDS_BY_TYPE[doc_type])
+        | set(CANONICAL_FIELD_TYPES_BY_DOCUMENT[doc_type])
     )
     fields: dict[str, ExtractedField] = {}
     for name in sorted(field_names):
@@ -82,6 +90,18 @@ def document_from_legacy(
         if isinstance(value, (list, dict)) and not value:
             value = None
         if value is None:
+            if no_proxy_indicated and name in {
+                "agent_name",
+                "agent_relationship",
+                "proxy_authority_documents",
+            }:
+                fields[name] = ExtractedField(
+                    field_name=name,
+                    confidence=Confidence.UNCERTAIN,
+                    failure_reason="문서에 대리인 계약 표시가 없어 적용되지 않습니다.",
+                    issue_code=FieldIssueCode.NOT_APPLICABLE,
+                )
+                continue
             # 예금주는 계좌번호·은행명만 적는 계약서가 흔하다. null을 "판독 실패"가 아니라
             # "미기재"로 표시해 사용자가 추출 오류로 오해하지 않게 한다(계좌번호·은행명은 별도 필드).
             if name == "account_holder" and doc_type is DocumentType.CONTRACT:
@@ -117,7 +137,9 @@ def document_from_legacy(
     )
 
 
-def apply_correction(field: ExtractedField, corrected_value: FieldValue) -> ExtractedField:
+def apply_correction(
+    field: ExtractedField, corrected_value: FieldValue
+) -> ExtractedField:
     """사용자 수정 적용 — extracted_value는 절대 덮어쓰지 않고 새 객체를 반환한다."""
     updated = field.model_copy(
         update={
@@ -134,7 +156,9 @@ def confirm_field(field: ExtractedField) -> ExtractedField:
     """수정 없이 값 확인 완료 표시. 이미 corrected인 필드는 그대로 둔다."""
     if field.verification_status is VerificationStatus.CORRECTED:
         return field
-    return field.model_copy(update={"verification_status": VerificationStatus.CONFIRMED})
+    return field.model_copy(
+        update={"verification_status": VerificationStatus.CONFIRMED}
+    )
 
 
 def confirm_document(document: DocumentExtraction) -> DocumentExtraction:
@@ -149,14 +173,19 @@ def confirm_document(document: DocumentExtraction) -> DocumentExtraction:
 
 def document_to_legacy(document: DocumentExtraction) -> dict[str, Any]:
     """통합 추출 결과를 기존 minimum MVP API 응답 모양으로 변환한다."""
-    label = "contract" if document.document_type is DocumentType.CONTRACT else "registry_record"
+    label = (
+        "contract"
+        if document.document_type is DocumentType.CONTRACT
+        else "registry_record"
+    )
     return {
         "document_type": label,
         "fields": {
             name: field.extracted_value for name, field in document.fields.items()
         },
         "unconfirmed_fields": [
-            name for name, field in document.fields.items()
+            name
+            for name, field in document.fields.items()
             if field.extracted_value is None
         ],
         "warnings": list(document.warnings),
@@ -167,9 +196,7 @@ def apply_correction_request(
     documents: dict[DocumentType, DocumentExtraction], request: CorrectionRequest
 ) -> dict[DocumentType, DocumentExtraction]:
     """CorrectionRequest를 문서별 추출 결과에 적용한 새 사본을 반환한다."""
-    fields_by_type = {
-        doc_type: dict(doc.fields) for doc_type, doc in documents.items()
-    }
+    fields_by_type = {doc_type: dict(doc.fields) for doc_type, doc in documents.items()}
     for correction in request.corrections:
         doc_fields = fields_by_type.get(correction.document_type)
         if doc_fields is None or correction.field_name not in doc_fields:
