@@ -24,10 +24,20 @@ const CANONICAL_ACTIONS: Array<{
   { identity: "broker-disclosure", kind: "checklist", pattern: /중개대상물.*(?:확인|설명)|확인.?설명서/, text: "서명 전에 중개대상물 확인·설명서의 내용을 확인하고 사본을 교부받으세요." },
 ];
 
+// 생성 원문이 '~한다'체(하대)로 오는 경우가 있어 표시 직전에 부드러운 존대로 교정한다.
+// 절 끝(마침표·공백·문장 끝) 앞의 하다/받다 서술형만 바꿔 '~한다면/~한다는' 같은 중간 표현은 건드리지 않는다.
+// ponytail: 하다·받다 종결형만 처리. 다른 동사형('있다' 등)이 나오면 규칙을 추가한다.
+export function toPoliteEnding(text: string): string {
+  return text
+    .replace(/하십시오(?=[.。!?\s]|$)/g, "하세요")
+    .replace(/받는다(?=[.。!?\s]|$)/g, "받으세요")
+    .replace(/한다(?=[.。!?\s]|$)/g, "하세요");
+}
+
 export function normalizeAction(text: string, fallbackKind: ChecklistItemKind): NormalizedAction {
   const trimmed = text.trim();
   const compact = trimmed.replace(/\s+/g, "");
   const canonical = CANONICAL_ACTIONS.find((candidate) => candidate.pattern.test(compact));
   if (canonical) return { identity: canonical.identity, kind: canonical.kind, text: canonical.text };
-  return { identity: compact, kind: fallbackKind, text: trimmed };
+  return { identity: compact, kind: fallbackKind, text: toPoliteEnding(trimmed) };
 }
