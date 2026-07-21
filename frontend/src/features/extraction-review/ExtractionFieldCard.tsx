@@ -9,6 +9,16 @@ const verificationLabels: Record<VerificationStatus, string> = {
   corrected: "수정됨",
 };
 
+// issue_code가 있으면 칩 문구를 정확한 상태로 교체한다(요소 추가 없이 confidence 칩 텍스트만 바꿈).
+// 색은 confidence 클래스로 유지 — 미기재/판독 실패를 같은 "실패"로 뭉뚱그리지 않는다.
+const issueStateLabels: Record<string, string> = {
+  not_stated: "미기재",
+  unreadable: "판독 실패",
+  ambiguous: "모호",
+  parse_failed: "형식 오류",
+  not_applicable: "적용 제외",
+};
+
 export function ExtractionFieldCard({
   view,
   draft,
@@ -79,7 +89,9 @@ export function ExtractionFieldCard({
     <article className="field-card">
       <div className="field-card__meta">
         <strong>{view.label}</strong>
-        <span className={`confidence confidence--${view.field.confidence}`}>{view.field.confidence}</span>
+        <span className={`confidence confidence--${view.field.confidence}`}>
+          {view.field.issue_code ? issueStateLabels[view.field.issue_code] ?? view.field.confidence : view.field.confidence}
+        </span>
         <span className={`verification verification--${verification}`}>{verificationLabels[verification]}</span>
       </div>
       {isLongClauseList ? (
