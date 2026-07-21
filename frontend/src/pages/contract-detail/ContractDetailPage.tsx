@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { normalizeAction } from "../../features/question-cards/actionNormalization";
+import { plainGuideById, plainJudgmentGuides } from "../../features/judgment-results/plainGuides";
 import { mvpService } from "../../services/mvpService";
 import type {
   AnalysisRunSummaryDto,
@@ -34,6 +35,8 @@ export function ContractDetailPage() {
   const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
   const [items, setItems] = useState<ChecklistViewItem[]>([]);
+  // 규칙/판정 id → 연결된 판정 id(J). 체크리스트 항목의 쉬운 설명·금전 문제 가이드를 찾는 데 쓴다.
+  const [judgmentByResultId, setJudgmentByResultId] = useState<Record<string, string | null>>({});
   const [analysisRuns, setAnalysisRuns] = useState<AnalysisRunSummaryDto[]>([]);
   const [documents, setDocuments] = useState<DocumentDto[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -53,6 +56,10 @@ export function ContractDetailPage() {
         mvpService.getAnalysisRuns(contractId),
         mvpService.getDocuments(contractId),
       ]);
+      const resultToJudgment: Record<string, string | null> = {};
+      for (const rule of detail?.result?.results ?? []) resultToJudgment[rule.rule_id] = rule.judgment_id;
+      for (const judgment of detail?.result?.judgments ?? []) resultToJudgment[judgment.judgment_id] = judgment.judgment_id;
+      setJudgmentByResultId(resultToJudgment);
       const stateByKey = new Map(states.map((item) => [item.kind + ":" + item.item_key, item]));
       const rawGeneratedItems: Array<GuidanceActionItemDto & { kind: ChecklistItemKind; resultId: string }> =
         detail?.generation_result
@@ -155,6 +162,14 @@ export function ContractDetailPage() {
   const completedPostActions = postActions.filter((item) => item.done);
   const hasCompletedItems = completedChecklistItems.length > 0 || completedPostActions.length > 0;
 
+  function guideForItem(item: ChecklistViewItem) {
+    for (const id of item.resultIds) {
+      const judgmentId = id.startsWith("J") ? id : judgmentByResultId[id] ?? null;
+      if (judgmentId && judgmentId in plainJudgmentGuides) return plainGuideById(judgmentId);
+    }
+    return plainGuideById(null);
+  }
+
   function renderActionItems({
     title,
     entries,
@@ -176,6 +191,7 @@ export function ContractDetailPage() {
         {entries.map((item) => {
           const label = item.done ? completedActionLabel : actionLabel;
           const saving = savingItemKey === item.item_key;
+          const guide = guideForItem(item);
           return (
             <div className={`check-item check-item--button${item.done ? " check-item--complete" : ""}`} key={item.kind + ":" + item.item_key}>
               <span className="check-item__text">
@@ -193,6 +209,15 @@ export function ContractDetailPage() {
                   {saving ? "저장 중" : label}
                 </button>
                 : <span className="check-item__status">변경 불가</span>}
+              <details className="check-item__guide">
+                <summary>쉽게 보기 · 왜 확인해야 하나요</summary>
+                <div className="check-item__guide-body">
+                  <p>{guide.explanation}</p>
+                  <p className="check-item__guide-money">
+                    <strong>확인하지 않으면</strong> {guide.financialImpact}
+                  </p>
+                </div>
+              </details>
             </div>
           );
         })}
