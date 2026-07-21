@@ -139,4 +139,25 @@ describe("J structured field values", () => {
       "인감증명서",
     ]);
   });
+
+  it("distinguishes direct-confirmation fields from ordinary extraction failures", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-GUIDANCE",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        violation_building: extractedField("violation_building", null),
+        account_holder: extractedField("account_holder", null),
+        senior_claim_amount: extractedField("senior_claim_amount", null),
+        ground_right_present: extractedField("ground_right_present", true),
+      },
+    };
+
+    const views = fieldViewModels([document]);
+    expect(views.find((view) => view.field.field_name === "violation_building")?.guidance).toContain("건축물대장");
+    expect(views.find((view) => view.field.field_name === "account_holder")?.guidance).toContain("예금주");
+    expect(views.find((view) => view.field.field_name === "senior_claim_amount")?.guidance).toContain("채권최고액");
+    expect(views.find((view) => view.field.field_name === "ground_right_present")?.label).toBe("지상권 존재");
+  });
 });

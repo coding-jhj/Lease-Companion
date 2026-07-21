@@ -89,6 +89,7 @@ export function ExtractionFieldCard({
         </details>
       ) : editor}
       {view.field.failure_reason && <p className="field-error">{view.field.failure_reason}</p>}
+      {view.guidance && <small>{view.guidance}</small>}
       {hasEvidence && <small>{`${view.field.source_evidence.page}쪽 · ${view.field.source_evidence.text}`}</small>}
       <button className="text-button" type="button" disabled={verification !== "unverified" || failedWithoutInput} onClick={onConfirm}>
         이 값 확인

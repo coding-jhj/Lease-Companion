@@ -43,6 +43,13 @@ from lease_companion_ai.schemas.unified import (
 )
 
 _READ_FAILURE_REASON = "문서에서 값을 읽지 못했습니다."
+_DIRECT_CONFIRMATION_REASONS = {
+    "estimated_housing_value": "계약서 자동추출값이 아닙니다. 주택가치 자료와 기준일을 직접 확인해 입력하세요.",
+    "violation_building": "계약서 자동추출값이 아닙니다. 최신 건축물대장의 위반건축물 표시를 확인하세요.",
+    "guarantee_eligibility_confirmed": "계약서 자동추출값이 아닙니다. 보증기관의 현재 가입 요건을 직접 확인하세요.",
+    "lessor_sublease_authority_confirmed": "계약서 문구만으로 확정할 수 없습니다. 소유권 또는 전대 동의 서류를 확인하세요.",
+    "senior_claim_amount": "등기사항증명서의 권리 종류·금액·순위만으로 자동 확정하지 않습니다. 채권최고액과 실제 채무 자료를 직접 확인하세요.",
+}
 
 # 기존 코드의 document_type 라벨(pipelines._structure의 "registry_record" 등) → 통합 enum.
 _LEGACY_TYPE_MAP = {
@@ -75,11 +82,16 @@ def document_from_legacy(
         if isinstance(value, (list, dict)) and not value:
             value = None
         if value is None:
+            direct_confirmation_reason = _DIRECT_CONFIRMATION_REASONS.get(name)
             fields[name] = ExtractedField(
                 field_name=name,
                 confidence=Confidence.FAILED,
-                failure_reason=_READ_FAILURE_REASON,
-                issue_code=FieldIssueCode.UNREADABLE,
+                failure_reason=direct_confirmation_reason or _READ_FAILURE_REASON,
+                issue_code=(
+                    FieldIssueCode.NOT_STATED
+                    if direct_confirmation_reason
+                    else FieldIssueCode.UNREADABLE
+                ),
             )
         else:
             fields[name] = ExtractedField(

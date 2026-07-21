@@ -39,6 +39,49 @@ from lease_companion_ai.schemas.unified import (
 _KIND_LABELS = {"contract": "계약서", "registry": "등기사항증명서"}
 
 
+def _repair_registry_provider_fields(
+    fields: dict[str, Any], text: str
+) -> tuple[dict[str, Any], list[str]]:
+    """Gemini의 부분 null을 결정론적 등기 파서로 제한적으로 보완한다.
+
+    현재 소유자 목록이 서로 충돌하면 지분은 합성하지 않는다. 지상권은 명시적인
+    활성 등기 탐지만 보완하며 금액이나 법적 효력은 계산하지 않는다.
+    """
+    repaired = dict(fields)
+    local = parse_registry(text)
+    local_names = local.fields.get("owner_names")
+    provider_names = repaired.get("owner_names")
+    names_compatible = (
+        local_names is not None
+        and (
+            provider_names is None
+            or set(provider_names) == set(local_names)
+        )
+    )
+    repaired_names: list[str] = []
+    if names_compatible:
+        for name in ("owner_names", "is_joint_ownership", "owner_shares"):
+            if repaired.get(name) is None and local.fields.get(name) is not None:
+                repaired[name] = local.fields[name]
+                repaired_names.append(name)
+
+    local_ground_right = local.fields.get("ground_right_present")
+    if local_ground_right is True and repaired.get("ground_right_present") is not True:
+        repaired["ground_right_present"] = True
+        repaired_names.append("ground_right_present")
+    elif repaired.get("ground_right_present") is None and local_ground_right is False:
+        repaired["ground_right_present"] = False
+        repaired_names.append("ground_right_present")
+
+    warnings = list(local.warnings)
+    if repaired_names:
+        warnings.append(
+            "Gemini 미확인 필드를 결정론적 등기 파서로 보완했습니다: "
+            + ", ".join(repaired_names)
+        )
+    return repaired, warnings
+
+
 def _detect_doc_kind(text: str) -> str | None:
     """문서 종류 추정. 확신 있는 구조 표지가 있을 때만 판정하고, 애매하면 None."""
     # PDF 텍스트 레이어는 제목이 "등 기 사 항 …"처럼 글자 간 공백으로 나온다 — 공백 제거 후 판정.
@@ -68,8 +111,11 @@ def _structure_unified(
             if doc_type == "contract"
             else extract_registry_fields(text)
         )
+        warnings: list[str] = []
+        if doc_type == "registry":
+            fields, warnings = _repair_registry_provider_fields(fields, text)
         unconfirmed = [key for key, value in fields.items() if value is None]
-        return LegacyDocumentExtraction(label, fields, unconfirmed)
+        return LegacyDocumentExtraction(label, fields, unconfirmed, warnings)
 
     def local_extraction() -> LegacyDocumentExtraction:
         parser = parse_contract if doc_type == "contract" else parse_registry

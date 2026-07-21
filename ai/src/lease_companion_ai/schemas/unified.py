@@ -285,6 +285,7 @@ R_FIELD_TYPES_BY_DOCUMENT: dict[DocumentType, dict[str, type]] = {
         "provisional_seizure_present": bool,
         "trust_present": bool,
         "senior_claim_amount": int,
+        "ground_right_present": bool,
     },
 }
 

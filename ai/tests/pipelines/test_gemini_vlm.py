@@ -16,6 +16,7 @@ def _contract_fields() -> gemini.ContractFields:
         tenant_name="임차인",
         agent_name=None,
         property_address="가상시 안전구 1",
+        building_use="아파트",
         deposit=100_000_000,
         monthly_rent=None,
         contract_payment=10_000_000,
@@ -47,6 +48,7 @@ def test_scanned_contract_uses_one_structured_call(monkeypatch):
     )
 
     assert result["landlord_name"] == "임대인"
+    assert result["building_use"] == "아파트"
     assert len(calls) == 1
     # response_schema는 Gemini가 거부하는 키를 제거한 정리된 스키마(dict)로 전달된다.
     assert calls[0]["config"].response_schema["properties"]["contract_type"]
@@ -168,6 +170,7 @@ def test_registry_response_schema_has_no_additional_properties(monkeypatch):
                 owner_names=["박성우"], is_joint_ownership=False, property_address=None,
                 issue_date=None, mortgage_present=None, seizure_present=None,
                 provisional_seizure_present=None, trust_present=None, owner_shares=None,
+                ground_right_present=None,
             )
             return SimpleNamespace(parsed=fields, text=None)
 

@@ -11,8 +11,9 @@
 - seizure_present: 갑구에 말소되지 않은 **압류**가 있으면 true, 없음이 확인되면 false.
 - provisional_seizure_present: 말소되지 않은 **가압류**가 있으면 true, 없음이 확인되면 false.
 - trust_present: 말소되지 않은 **신탁등기**가 있으면 true, 없음이 확인되면 false.
+- ground_right_present: 을구에 말소되지 않은 **지상권설정** 등기가 있으면 true, 없음이 확인되면 false. 지상권을 채권 금액으로 환산하지 않는다.
 
-**중요(안전)**: 위 4개 true/false 플래그는 "없음"을 **확정할 수 있을 때만 false**로 한다.
+**중요(안전)**: 위 5개 true/false 플래그는 "없음"을 **확정할 수 있을 때만 false**로 한다.
 문서가 판독 불가하거나 해당 구(갑구·을구)를 읽을 수 없으면 false가 아니라 **null**로 둔다.
 (판독 불가를 "없음"으로 단정하면 안 된다.)
 

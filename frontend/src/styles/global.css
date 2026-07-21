@@ -162,6 +162,9 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .evidence-source-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: #667067; font-size: 13px; }
 .evidence-source-badge { padding: 3px 7px; border-radius: 999px; background: #edf3ee; color: #31583d; font-weight: 800; }
 .evidence-source-card h4 { margin: 10px 0 4px; font-size: 16px; line-height: 1.45; }
+.evidence-related { display: grid; gap: 6px; margin-top: 10px; padding: 12px; border-radius: 9px; background: #eef5ef; }
+.evidence-related > strong { color: #245c38; font-size: 14px; }
+.evidence-related .evidence-summary__content { padding: 4px 0 0; background: transparent; }
 .evidence-summary { width: 100%; min-width: 0; margin-top: 8px; border-radius: 9px; background: #f7f5ef; }
 .evidence-summary summary { padding: 10px 12px; color: #355a40; font-size: 14px; }
 .evidence-summary[open] summary { border-bottom: 1px solid #e3ded2; }

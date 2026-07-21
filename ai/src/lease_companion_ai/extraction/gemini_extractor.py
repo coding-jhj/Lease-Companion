@@ -49,6 +49,7 @@ class ContractFields(BaseModel):
     tenant_name: Optional[str]
     agent_name: Optional[str]
     property_address: Optional[str]
+    building_use: Optional[str] = None
     deposit: Optional[int]
     monthly_rent: Optional[int]
     contract_payment: Optional[int]
@@ -88,6 +89,7 @@ class RegistryFields(BaseModel):
     provisional_seizure_present: Optional[bool]
     trust_present: Optional[bool]
     owner_shares: Optional[dict[str, str]] = None
+    ground_right_present: Optional[bool] = None
 
 
 class GeminiExtractError(ProviderError):

@@ -117,6 +117,21 @@ def test_flat_registry_extracts_single_owner_share_and_clean_address():
     assert fields["trust_present"] is True
 
 
+def test_registry_extracts_active_ground_right_without_monetary_conversion():
+    fields = parse_registry(
+        """등기사항전부증명서
+갑구 소유권에 관한 사항
+1 소유권이전 소유자 오안심
+을구 소유권 이외의 권리에 관한 사항
+1 지상권설정 목적 건물 소유 범위 토지 전부 지상권자 맑음저축은행
+"""
+    ).fields
+
+    assert fields["owner_shares"] == {"오안심": "1/1"}
+    assert fields["ground_right_present"] is True
+    assert "senior_claim_amount" not in fields
+
+
 def test_missing_values_keep_every_j_field_without_guessing():
     fields = parse_contract("주택임대차계약서").fields
 
@@ -169,6 +184,31 @@ def test_korean_only_amount_and_explicit_absence_are_preserved():
     assert fields["management_fee_present"] is False
     assert fields["special_clauses_present"] is False
     assert fields["special_clauses"] is None
+
+
+def test_standard_monthly_form_extracts_use_handover_contract_date_and_variable_fee_items():
+    fields = parse_contract(
+        """주택임대차표준계약서
+☐ 전세 ☑ 월세
+구조·용도 철골구조 오피스 건 물 면적 2,336.02 ㎡ 텔
+보 증 금 금 10,000,000 원정 (₩ 10,000,000)
+계 약 금 금 2,000,000 원정 (₩ 2,000,000)은 계약시에 지불하고 영수함.
+차임(월세) 금 740,000 원정은 매월 10일에 지불한다.
+관 리 비 (정액이 아닌 경우) 세대별 사용량 비례(전기·수도·가스), 세대수 비례(공용관리비)
+제2조 임대인은 임차주택을 사용·수익할 수 있는 상태로 2026년 10월 2일까지 임차인에게 인도한다.
+수리 완료 시기: 입주일 전날(2026년 10월 1일)까지
+본 계약을 증명하기 위하여 서명한다.
+2026년 10월 1일
+"""
+    ).fields
+
+    assert fields["contract_type"] == "보증부월세"
+    assert fields["building_use"] == "오피스텔"
+    assert fields["monthly_rent"] == 740_000
+    assert fields["contract_payment_date"] == "2026-10-01"
+    assert fields["move_in_date"] == "2026-10-02"
+    assert fields["management_fee"] is None
+    assert fields["management_fee_items"] == ["전기", "수도", "가스", "공용관리비"]
 
 
 def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
