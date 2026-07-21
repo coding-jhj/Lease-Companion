@@ -328,6 +328,40 @@ def test_provider_failure_falls_back_and_analysis_completes(
     assert result["candidates"] == []
 
 
+def test_generation_provider_total_failure_falls_back_and_checklist_survives(
+    client, alice, contract_id, monkeypatch
+):
+    """생성 provider가 ProviderError가 아닌 예외로 통째 실패해도(설정·SDK·SSL 등)
+    템플릿 폴백으로 체크리스트가 보장된다 — 8번 행동 화면이 비지 않도록."""
+    import app.workers.analysis as worker
+
+    class _BoomProvider:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("provider init boom")  # ProviderError 아님
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(worker, "GeminiGenerationProvider", _BoomProvider)
+    monkeypatch.setattr(worker, "_classification_provider", lambda: None)
+
+    run_id = client.post(
+        f"/api/contracts/{contract_id}/analysis-runs", headers=alice
+    ).json()["analysis_run_id"]
+    detail = client.get(
+        f"/api/contracts/{contract_id}/analysis-runs/{run_id}", headers=alice
+    ).json()
+
+    assert detail["status"] == "completed", detail.get("error")
+    assert detail["generation_status"] == "completed"  # 폴백으로 완료
+    gen = detail["generation_result"]
+    assert gen is not None
+    checklist_items = [
+        item
+        for group in (gen["items"] + gen["judgment_items"])
+        for item in group["signing_checklist_items"]
+    ]
+    assert checklist_items  # 최소 1개 체크리스트 보장
+
+
 def test_analysis_requires_confirmed_snapshot(client, alice):
     cid = client.post("/api/contracts", json={"title": "스냅샷 없음"}, headers=alice).json()["id"]
     res = client.post(f"/api/contracts/{cid}/analysis-runs", headers=alice)
