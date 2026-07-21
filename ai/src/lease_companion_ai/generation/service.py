@@ -364,9 +364,9 @@ class GenerationService:
             minimal = RuleGuidance(
                 rule_id=result.rule_id,
                 explanation=(
-                    "이 항목은 연결된 공식 근거와 함께 직접 확인하십시오."
+                    "이 항목은 연결된 공식 근거와 함께 직접 확인해 주세요."
                     if has_evidence
-                    else "이 항목은 공식 근거 확인이 필요합니다. 직접 확인하십시오."
+                    else "이 항목은 공식 근거 확인이 필요합니다. 직접 확인해 주세요."
                 ),
                 source_ids=tuple(
                     source.source_id for source in result.evidence_sources
@@ -460,9 +460,9 @@ class GenerationService:
             minimal = JudgmentGuidance(
                 judgment_id=result.judgment_id,
                 explanation=(
-                    "이 항목은 연결된 공식 근거와 함께 직접 확인하십시오."
+                    "이 항목은 연결된 공식 근거와 함께 직접 확인해 주세요."
                     if has_evidence
-                    else "이 항목은 공식 근거 확인이 필요합니다. 직접 확인하십시오."
+                    else "이 항목은 공식 근거 확인이 필요합니다. 직접 확인해 주세요."
                 ),
                 source_ids=tuple(
                     source.source_id for source in result.evidence_sources
@@ -481,9 +481,9 @@ class GenerationService:
         return RuleGuidance(
             rule_id=result.rule_id,
             explanation=(
-                f"{result.rule_name}: {result.reason} 공식 근거와 함께 확인하십시오."
+                f"{result.rule_name}: {result.reason} 공식 근거와 함께 확인해 주세요."
                 if has_evidence
-                else f"{result.rule_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오."
+                else f"{result.rule_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요."
             ),
             questions=questions,
             signing_checklist=signing_checklist,
@@ -505,9 +505,9 @@ class GenerationService:
         return JudgmentGuidance(
             judgment_id=result.judgment_id,
             explanation=(
-                f"{result.judgment_name}: {result.reason} 공식 근거와 함께 확인하십시오."
+                f"{result.judgment_name}: {result.reason} 공식 근거와 함께 확인해 주세요."
                 if has_evidence
-                else f"{result.judgment_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인하십시오."
+                else f"{result.judgment_name}: 공식 근거 확인이 필요합니다. 관련 내용을 직접 확인해 주세요."
             ),
             questions=questions,
             signing_checklist=signing_checklist,

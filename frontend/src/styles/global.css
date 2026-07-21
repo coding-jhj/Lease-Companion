@@ -105,6 +105,12 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .check-item__button { width: auto; min-width: 72px; padding: 10px 14px; }
 .check-item--complete .check-item__button { background: #e5eee7; color: #245236; }
 .check-item__status { color: #667269; font-size: 13px; font-weight: 700; }
+.check-item__guide { grid-column: 1 / -1; margin-top: 2px; }
+.check-item__guide > summary { cursor: pointer; color: #2f6b47; font-size: 13px; font-weight: 700; list-style: none; }
+.check-item__guide > summary::before { content: "▸ "; }
+.check-item__guide[open] > summary::before { content: "▾ "; }
+.check-item__guide-body { margin-top: 8px; padding: 12px 14px; background: #f5faf6; border-radius: 10px; display: grid; gap: 8px; line-height: 1.55; }
+.check-item__guide-money { color: #7a4f22; }
 .helper-banner { padding: 18px 20px; border-radius: 16px; background: #1f5133; color: #fff; }
 .helper-banner strong { font-size: 18px; }
 .helper-banner p { margin: 6px 0 0; color: #e2eee5; line-height: 1.5; }

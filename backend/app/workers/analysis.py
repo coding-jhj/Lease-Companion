@@ -176,7 +176,17 @@ def _run_generation(
         run.generation_error = None
     except Exception:
         logger.exception("생성 실행 실패 (analysis_run_id=%s)", run.analysis_run_id)
-        run.generation_result = None
-        run.generation_status = STATUS_FAILED
-        # 내부 예외 문구는 로그에만 — 사용자 노출용 안전 문구만 저장
-        run.generation_error = "안내 생성에 실패했습니다. 규칙 판정 결과는 정상입니다."
+        # provider 경로가 통째로 실패해도(설정·네트워크·SDK 예외 등) 규칙 recommended_actions 기반
+        # 템플릿 폴백으로 최소 체크리스트는 보장한다 — 8번 행동 화면이 비지 않도록.
+        try:
+            generation = GenerationService(provider=None).generate(analysis, contract_context)
+            validate_generation_result_for_analysis(analysis, generation)
+            run.generation_result = generation.model_dump(mode="json")
+            run.generation_status = STATUS_COMPLETED
+            run.generation_error = None
+        except Exception:
+            logger.exception("템플릿 폴백 생성도 실패 (analysis_run_id=%s)", run.analysis_run_id)
+            run.generation_result = None
+            run.generation_status = STATUS_FAILED
+            # 내부 예외 문구는 로그에만 — 사용자 노출용 안전 문구만 저장
+            run.generation_error = "안내 생성에 실패했습니다. 규칙 판정 결과는 정상입니다."

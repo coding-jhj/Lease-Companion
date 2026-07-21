@@ -355,7 +355,7 @@ def test_provider_unavailable_fallback_is_guarded_again():
     item = generated.items[0]
     assert item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
     assert item.fallback_reason == "guardrail_blocked_fallback:prohibited_claim"
-    assert item.explanation == "이 항목은 연결된 공식 근거와 함께 직접 확인하십시오."
+    assert item.explanation == "이 항목은 연결된 공식 근거와 함께 직접 확인해 주세요."
     assert item.questions == ()
     assert item.signing_checklist == ()
 
