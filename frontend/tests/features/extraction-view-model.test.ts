@@ -200,4 +200,23 @@ describe("J structured field values", () => {
     expect(proxyViews.every((view) => view.field.confidence === "불확실")).toBe(true);
     expect(proxyViews[1].field.failure_reason).toContain("대리인 계약 표시가 없어");
   });
+
+  it("shows variable management fees as not stated instead of unreadable", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-VARIABLE-FEE",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        management_fee: extractedField("management_fee", null),
+        management_fee_present: extractedField("management_fee_present", true),
+        management_fee_items: extractedField("management_fee_items", ["전기", "수도", "공용관리비"]),
+      },
+    };
+
+    const fee = fieldViewModels([document]).find((view) => view.field.field_name === "management_fee")!;
+    expect(fee.field.issue_code).toBe("not_stated");
+    expect(fee.field.confidence).toBe("불확실");
+    expect(fee.field.failure_reason).toContain("고정 관리비 금액이 없습니다");
+  });
 });

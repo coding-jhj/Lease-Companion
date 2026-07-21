@@ -66,6 +66,8 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .field-choice { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid #d6e0d7; border-radius: 10px; background: #fbfdfb; cursor: pointer; }
 .field-choice:has(input:checked) { border-color: #39734d; background: #eaf4ec; color: #1f5734; font-weight: 800; }
 .field-choice input { width: 18px; height: 18px; margin: 0; accent-color: #245c38; }
+.field-direct-confirm-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.field-direct-confirm-row button { width: auto; min-height: 48px; }
 .clause-list-editor { display: grid; gap: 10px; }
 .clause-details { border-radius: 10px; background: #f7faf7; }
 .clause-details summary { padding: 12px; color: #245236; font-weight: 800; cursor: pointer; }
@@ -329,13 +331,14 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   .checklist-active-grid, .checklist-completed-grid { grid-template-columns: 1fr; }
   .checklist-export-toolbar { align-items: stretch; flex-direction: column; }
   .checklist-export-toolbar button { width: 100%; }
+  .field-direct-confirm-row { grid-template-columns: 1fr; }
+  .field-direct-confirm-row button { width: 100%; }
 }
 
 @media print {
   @page { size: A4; margin: 15mm; }
-  body * { visibility: hidden !important; }
-  .checklist-print-sheet, .checklist-print-sheet * { visibility: visible !important; }
-  .checklist-print-sheet { display: block; position: absolute; inset: 0; width: 100%; color: #111; background: #fff; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  body > *:not(.checklist-print-sheet) { display: none !important; }
+  .checklist-print-sheet { display: block; width: 100%; color: #111; background: #fff; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
   .checklist-print-sheet header { padding-bottom: 14px; border-bottom: 2px solid #245c38; }
   .checklist-print-sheet header > p, .checklist-print-sheet h1 { margin: 0; }
   .checklist-print-sheet header > p { color: #245c38; font-size: 11px; font-weight: 800; }

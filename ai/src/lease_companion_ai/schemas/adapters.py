@@ -102,6 +102,19 @@ def document_from_legacy(
                     issue_code=FieldIssueCode.NOT_APPLICABLE,
                 )
                 continue
+            if (
+                doc_type is DocumentType.CONTRACT
+                and name == "management_fee"
+                and raw_fields.get("management_fee_present") is True
+                and raw_fields.get("management_fee_items")
+            ):
+                fields[name] = ExtractedField(
+                    field_name=name,
+                    confidence=Confidence.UNCERTAIN,
+                    failure_reason="사용량·세대수 등에 따라 산정되어 문서에 고정 관리비 금액이 없습니다.",
+                    issue_code=FieldIssueCode.NOT_STATED,
+                )
+                continue
             # 예금주는 계좌번호·은행명만 적는 계약서가 흔하다. null을 "판독 실패"가 아니라
             # "미기재"로 표시해 사용자가 추출 오류로 오해하지 않게 한다(계좌번호·은행명은 별도 필드).
             if name == "account_holder" and doc_type is DocumentType.CONTRACT:

@@ -23,6 +23,7 @@ export function ExtractionFieldCard({
   view,
   draft,
   verification,
+  reviewed,
   onValueChange,
   onClauseChange,
   onConfirm,
@@ -30,6 +31,7 @@ export function ExtractionFieldCard({
   view: FieldViewModel;
   draft?: DraftValue;
   verification: VerificationStatus;
+  reviewed: boolean;
   onValueChange: (value: string) => void;
   onClauseChange: (values: string[]) => void;
   onConfirm: () => void;
@@ -38,10 +40,13 @@ export function ExtractionFieldCard({
   const hasDraftInput = Array.isArray(draft)
     ? draft.some((item) => item.trim().length > 0)
     : Boolean(draft?.trim());
-  const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput;
+  const canConfirmMissing = view.field.issue_code === "not_stated" || view.field.issue_code === "not_applicable";
+  const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput && !canConfirmMissing;
   const hasEvidence = view.field.source_evidence.page !== null && view.field.source_evidence.text !== null;
   const isLongClauseList = ["main_clauses", "special_clauses"].includes(view.field.field_name);
   const selectedChoice = typeof draft === "string" ? draft : "";
+  const confirmLabel = view.field.issue_code === "not_stated" && !hasDraftInput ? "직접 확인" : "이 값 확인";
+  const showInlineDirectConfirm = confirmLabel === "직접 확인" && view.editor === "scalar";
 
   const choiceEditor = (
     options: Array<{ value: string; label: string }>,
@@ -129,13 +134,34 @@ export function ExtractionFieldCard({
           <summary>{values.length > 0 ? `조항 ${values.length}개 펼쳐서 확인` : "조항을 펼쳐서 입력"}</summary>
           {editor}
         </details>
+      ) : showInlineDirectConfirm ? (
+        <div className="field-direct-confirm-row">
+          {editor}
+          <button
+            aria-label={`${view.label} 직접 확인`}
+            className="secondary"
+            type="button"
+            disabled={reviewed}
+            onClick={onConfirm}
+          >
+            직접 확인
+          </button>
+        </div>
       ) : editor}
       {view.field.failure_reason && <p className="field-error">{view.field.failure_reason}</p>}
       {view.guidance && <small>{view.guidance}</small>}
       {hasEvidence && <small>{`${view.field.source_evidence.page}쪽 · ${view.field.source_evidence.text}`}</small>}
-      <button className="text-button" type="button" disabled={verification !== "unverified" || failedWithoutInput} onClick={onConfirm}>
-        이 값 확인
-      </button>
+      {!showInlineDirectConfirm && (
+        <button
+          aria-label={`${view.label} ${confirmLabel}`}
+          className="text-button"
+          type="button"
+          disabled={reviewed || failedWithoutInput}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
+      )}
     </article>
   );
 }

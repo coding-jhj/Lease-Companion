@@ -169,7 +169,7 @@ export function fieldViewModels(documents: DocumentExtractionDto[]): FieldViewMo
     visibleFields(document).map((field) => {
       const noProxyIndicated = document.document_type === "contract"
         && [...proxyFields].every((name) => !hasDisplayValue(document.fields[name]));
-      const displayField = noProxyIndicated && proxyFields.has(field.field_name) && effectiveValue(field) === null
+      let displayField = noProxyIndicated && proxyFields.has(field.field_name) && effectiveValue(field) === null
         ? {
           ...field,
           confidence: "불확실" as const,
@@ -177,6 +177,20 @@ export function fieldViewModels(documents: DocumentExtractionDto[]): FieldViewMo
           failure_reason: "문서에 대리인 계약 표시가 없어 적용되지 않습니다.",
         }
         : field;
+      if (
+        field.field_name === "management_fee"
+        && effectiveValue(field) === null
+        && document.fields.management_fee_present !== undefined
+        && effectiveValue(document.fields.management_fee_present) === true
+        && hasDisplayValue(document.fields.management_fee_items)
+      ) {
+        displayField = {
+          ...field,
+          confidence: "불확실" as const,
+          issue_code: "not_stated" as const,
+          failure_reason: "사용량·세대수 등에 따라 산정되어 문서에 고정 관리비 금액이 없습니다.",
+        };
+      }
       return {
         key: document.document_type + ":" + field.field_name,
         document_type: document.document_type,

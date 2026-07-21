@@ -80,6 +80,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getAllByText("확인됨").length).toBeGreaterThan(0);
     expect(screen.getByText("수정됨")).toBeInTheDocument();
     expect(screen.getByText("저장되지 않은 수정 1건")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
     const analyzeButton = screen.getByRole("button", { name: "확인 완료하고 분석하기" });
     expect(analyzeButton).toBeEnabled();
     fireEvent.click(analyzeButton);
@@ -143,6 +144,7 @@ describe("ExtractionReviewPage", () => {
     fireEvent.change(screen.getByLabelText("계약서 본문 주요 조항 2 값"), {
       target: { value: "둘째 조항은 유지하고, 쉼표도 보존한다." },
     });
+    fireEvent.click(screen.getByRole("button", { name: "계약서 본문 주요 조항 이 값 확인" }));
     fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 분석하기" }));
 
     await waitFor(() => {
@@ -198,9 +200,11 @@ describe("ExtractionReviewPage", () => {
 
     const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 분석하기" });
     expect(analyzeButton).toBeDisabled();
-    expect(screen.getAllByText("직접 확인")).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /직접 확인$/ })).toHaveLength(2);
     fireEvent.click(screen.getByRole("radio", { name: "가입 가능" }));
     fireEvent.click(screen.getByRole("radio", { name: "등기 소유자와 직접 계약" }));
+    fireEvent.click(screen.getByRole("button", { name: "전세보증 가입 요건 확인 이 값 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "임대·전대 권한 확인 이 값 확인" }));
     expect(analyzeButton).toBeEnabled();
     fireEvent.click(analyzeButton);
 
@@ -220,6 +224,42 @@ describe("ExtractionReviewPage", () => {
         },
       ],
     }));
+  });
+
+  it("moves a not-stated field to confirmed items through direct confirmation", async () => {
+    const contract: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-NOT-STATED",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        account_holder: {
+          field_name: "account_holder",
+          extracted_value: null,
+          normalized_value: null,
+          user_corrected_value: null,
+          verification_status: "unverified",
+          confidence: "불확실",
+          source_evidence: { page: null, text: null },
+          issue_code: "not_stated",
+          failure_reason: "문서에 예금주가 기재되어 있지 않습니다.",
+        },
+      },
+    };
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue({
+      id: 21,
+      status: "completed",
+      error: null,
+      contract_doc: contract,
+      registry_doc: null,
+      created_at: "2026-07-21T00:00:00Z",
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "입금 계좌 예금주 직접 확인" }));
+    expect(screen.getByText("확인된 항목 1개")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeEnabled();
   });
 
   it("sends the user back to upload when extraction cannot be loaded", async () => {
@@ -266,6 +306,7 @@ describe("ExtractionReviewPage", () => {
     fireEvent.change(screen.getByLabelText("입금 계좌 예금주 값"), {
       target: { value: "이정훈" },
     });
+    fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
 
     fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 분석하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(

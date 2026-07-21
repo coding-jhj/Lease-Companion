@@ -68,7 +68,9 @@ describe("ContractDetailPage", () => {
       "href",
       "/contracts/1001/report?analysisRunId=RUN-1001-001",
     );
-    expect(document.querySelector(".checklist-print-sheet")).toHaveTextContent("확인 완료");
+    const printSheet = document.querySelector(".checklist-print-sheet");
+    expect(printSheet).toHaveTextContent("확인 완료");
+    expect(printSheet?.parentElement).toBe(document.body);
     fireEvent.click(screen.getByRole("button", { name: "체크리스트 PDF 저장" }));
     expect(print).toHaveBeenCalledOnce();
     expect(document.title).toBe(originalTitle);
