@@ -160,4 +160,44 @@ describe("J structured field values", () => {
     expect(views.find((view) => view.field.field_name === "senior_claim_amount")?.guidance).toContain("채권최고액");
     expect(views.find((view) => view.field.field_name === "ground_right_present")?.label).toBe("지상권 존재");
   });
+
+  it("uses choices for guarantee eligibility and sublease authority confirmations", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-CHOICES",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        guarantee_eligibility_confirmed: extractedField("guarantee_eligibility_confirmed", null),
+        lessor_sublease_authority_confirmed: extractedField("lessor_sublease_authority_confirmed", null),
+      },
+    };
+
+    const views = fieldViewModels([document]);
+    expect(views.map((view) => view.editor)).toEqual(["boolean-choice", "authority-choice"]);
+    expect(correctionValue("true", document.fields.guarantee_eligibility_confirmed, "contract")).toBe(true);
+    expect(correctionValue("false", document.fields.guarantee_eligibility_confirmed, "contract")).toBe(false);
+    expect(correctionValue("owner_direct", document.fields.lessor_sublease_authority_confirmed, "contract")).toBe(true);
+    expect(correctionValue("sublease_documents", document.fields.lessor_sublease_authority_confirmed, "contract")).toBe(true);
+    expect(correctionValue("not_confirmed", document.fields.lessor_sublease_authority_confirmed, "contract")).toBe(false);
+  });
+
+  it("shows legacy empty proxy fields as not applicable for a direct contract", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-DIRECT",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        agent_name: extractedField("agent_name", null),
+        agent_relationship: extractedField("agent_relationship", null),
+        proxy_authority_documents: extractedField("proxy_authority_documents", null),
+      },
+    };
+
+    const proxyViews = fieldViewModels([document]);
+    expect(proxyViews.every((view) => view.field.issue_code === "not_applicable")).toBe(true);
+    expect(proxyViews.every((view) => view.field.confidence === "불확실")).toBe(true);
+    expect(proxyViews[1].field.failure_reason).toContain("대리인 계약 표시가 없어");
+  });
 });

@@ -158,6 +158,70 @@ describe("ExtractionReviewPage", () => {
     });
   });
 
+  it("requires choice-based guarantee and sublease authority confirmations", async () => {
+    const failedField = (field_name: string): ExtractedFieldDto => ({
+      field_name,
+      extracted_value: null,
+      normalized_value: null,
+      user_corrected_value: null,
+      verification_status: "unverified",
+      confidence: "실패",
+      source_evidence: { page: null, text: null },
+      issue_code: "not_stated",
+      failure_reason: "사용자가 직접 확인하는 항목입니다.",
+    });
+    const contract: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-CHOICES",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        guarantee_eligibility_confirmed: failedField("guarantee_eligibility_confirmed"),
+        lessor_sublease_authority_confirmed: failedField("lessor_sublease_authority_confirmed"),
+      },
+    };
+    const choiceExtraction: ExtractionStateDto = {
+      id: 20,
+      status: "completed",
+      error: null,
+      contract_doc: contract,
+      registry_doc: null,
+      created_at: "2026-07-21T00:00:00Z",
+    };
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(choiceExtraction);
+    const submit = vi.spyOn(mvpService, "submitCorrections").mockResolvedValue(choiceExtraction);
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
+      { input_snapshot_id: "SNAP-CHOICES", created_at: "2026-07-21T00:00:00Z" },
+    );
+
+    renderPage();
+
+    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 분석하기" });
+    expect(analyzeButton).toBeDisabled();
+    expect(screen.getAllByText("직접 확인")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("radio", { name: "가입 가능" }));
+    fireEvent.click(screen.getByRole("radio", { name: "등기 소유자와 직접 계약" }));
+    expect(analyzeButton).toBeEnabled();
+    fireEvent.click(analyzeButton);
+
+    await waitFor(() => expect(submit).toHaveBeenCalledWith({
+      schema_version: "1.9.0",
+      contract_id: 1001,
+      corrections: [
+        {
+          document_type: "contract",
+          field_name: "guarantee_eligibility_confirmed",
+          corrected_value: true,
+        },
+        {
+          document_type: "contract",
+          field_name: "lessor_sublease_authority_confirmed",
+          corrected_value: true,
+        },
+      ],
+    }));
+  });
+
   it("sends the user back to upload when extraction cannot be loaded", async () => {
     // 잘못된 문서로 추출이 실패하면 재폴링은 같은 실패만 반환하므로,
     // 복구 경로는 문서를 다시 올리는 것뿐이다.

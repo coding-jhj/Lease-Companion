@@ -17,6 +17,11 @@ import { PollTimeoutError, pollUntilTerminal } from "../../utils/pollUntilTermin
 
 type DraftValue = string | string[];
 
+const directConfirmationFields = new Set([
+  "guarantee_eligibility_confirmed",
+  "lessor_sublease_authority_confirmed",
+]);
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -142,7 +147,7 @@ export function ExtractionReviewPage() {
 
   const pendingCorrectionKeys = Object.keys(drafts).filter((key) => !savedDraftKeys.includes(key));
   const hasUnverified = fields.some(
-    (view) => view.field.confidence !== "실패"
+    (view) => (view.field.confidence !== "실패" || directConfirmationFields.has(view.field.field_name))
       && (verificationByKey[view.key] ?? view.field.verification_status) === "unverified",
   );
   const confirmedHighConfidenceFields = fields.filter((view) => (

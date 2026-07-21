@@ -153,7 +153,16 @@ export function ContractDetailPage() {
   const completedChecklistItems = checklistItems.filter((item) => item.done);
   const pendingPostActions = postActions.filter((item) => !item.done);
   const completedPostActions = postActions.filter((item) => item.done);
+  const printableChecklistItems = checklistItems.filter((item) => item.writable);
   const hasCompletedItems = completedChecklistItems.length > 0 || completedPostActions.length > 0;
+  const latestCompletedAnalysis = analysisRuns.find((run) => run.status === "completed");
+
+  function printChecklist() {
+    const previousTitle = document.title;
+    document.title = `서명전_체크리스트_계약_${contractId}`;
+    window.print();
+    document.title = previousTitle;
+  }
 
   function renderActionItems({
     title,
@@ -229,6 +238,36 @@ export function ContractDetailPage() {
         {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="리포트가 생성되면 확인 행동이 여기에 표시됩니다." />}
         {status === "success" && items.length > 0 && (
           <div className="checklist-flow">
+            {printableChecklistItems.length > 0 && (
+              <div className="checklist-export-toolbar">
+                <p>현재 서명 전 체크리스트를 인쇄하거나 PDF 파일로 저장할 수 있습니다.</p>
+                <button className="secondary" type="button" onClick={printChecklist}>체크리스트 PDF 저장</button>
+              </div>
+            )}
+            <article className="checklist-print-sheet" aria-hidden="true">
+              <header>
+                <p>슬기로운 계약생활</p>
+                <h1>서명 전 체크리스트</h1>
+                <dl>
+                  <div><dt>계약 건</dt><dd>#{contractId}</dd></div>
+                  <div><dt>분석 기준</dt><dd>{latestCompletedAnalysis ? new Date(latestCompletedAnalysis.created_at).toLocaleString("ko-KR") : "최신 완료 분석"}</dd></div>
+                  <div><dt>출력일</dt><dd>{new Date().toLocaleDateString("ko-KR")}</dd></div>
+                </dl>
+              </header>
+              <ol>
+                {printableChecklistItems.map((item) => (
+                  <li key={`print:${item.kind}:${item.item_key}`}>
+                    <span className="checklist-print-sheet__mark" aria-hidden="true">{item.done ? "✓" : "□"}</span>
+                    <div>
+                      <strong>{item.text}</strong>
+                      <span>{item.done ? "확인 완료" : "미확인"}</span>
+                      {item.resultIds.length > 0 && <small>근거 판정 {item.resultIds.join(" · ")}</small>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <footer>이 체크리스트는 문서 분석을 바탕으로 확인할 항목을 정리한 자료이며, 계약의 안전성이나 적법성을 확정하지 않습니다.</footer>
+            </article>
             <div className="checklist-active-grid">
               {renderActionItems({
                 title: "서명 전 체크리스트",

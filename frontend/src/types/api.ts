@@ -275,7 +275,7 @@ export interface FieldViewModel {
   document_type: DocumentType;
   label: string;
   formattedValue: string;
-  editor: "scalar" | "clause-list";
+  editor: "scalar" | "clause-list" | "boolean-choice" | "authority-choice";
   guidance: string | null;
   field: ExtractedFieldDto;
 }

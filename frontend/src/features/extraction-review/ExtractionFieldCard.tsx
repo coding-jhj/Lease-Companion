@@ -41,8 +41,36 @@ export function ExtractionFieldCard({
   const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput;
   const hasEvidence = view.field.source_evidence.page !== null && view.field.source_evidence.text !== null;
   const isLongClauseList = ["main_clauses", "special_clauses"].includes(view.field.field_name);
+  const selectedChoice = typeof draft === "string" ? draft : "";
 
-  const editor = view.editor === "clause-list" ? (
+  const choiceEditor = (
+    options: Array<{ value: string; label: string }>,
+  ) => (
+    <fieldset className="field-choice-group">
+      <legend className="sr-only">{view.label}</legend>
+      {options.map((option) => (
+        <label className="field-choice" key={option.value}>
+          <input
+            type="radio"
+            name={`${view.key}-choice`}
+            value={option.value}
+            checked={selectedChoice === option.value}
+            onChange={(event) => onValueChange(event.target.value)}
+          />
+          <span>{option.label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+
+  const editor = view.editor === "boolean-choice" ? choiceEditor([
+    { value: "true", label: "가입 가능" },
+    { value: "false", label: "가입 불가" },
+  ]) : view.editor === "authority-choice" ? choiceEditor([
+    { value: "owner_direct", label: "등기 소유자와 직접 계약" },
+    { value: "sublease_documents", label: "소유자 동의·전대 권한서류 확인" },
+    { value: "not_confirmed", label: "아직 확인하지 못함" },
+  ]) : view.editor === "clause-list" ? (
     <div className="clause-list-editor">
       {(values.length > 0 ? values : [""]).map((value, index) => (
         <div className="clause-list-editor__item" key={`${view.key}:${index}`}>
@@ -90,7 +118,9 @@ export function ExtractionFieldCard({
       <div className="field-card__meta">
         <strong>{view.label}</strong>
         <span className={`confidence confidence--${view.field.confidence}`}>
-          {view.field.issue_code ? issueStateLabels[view.field.issue_code] ?? view.field.confidence : view.field.confidence}
+          {["guarantee_eligibility_confirmed", "lessor_sublease_authority_confirmed"].includes(view.field.field_name)
+            ? "직접 확인"
+            : view.field.issue_code ? issueStateLabels[view.field.issue_code] ?? view.field.confidence : view.field.confidence}
         </span>
         <span className={`verification verification--${verification}`}>{verificationLabels[verification]}</span>
       </div>
