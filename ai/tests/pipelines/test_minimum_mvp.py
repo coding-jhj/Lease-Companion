@@ -540,6 +540,20 @@ def test_table_labels_extract_requested_contract_and_registry_fields():
     assert registry_fields["property_address"] == "가상광역시 맑음구 새싹로 136"
 
 
+def test_account_number_and_bank_extracted_without_account_holder():
+    # 예금주 없이 계좌번호·은행명만 적힌 계약서 — 예금주 null이어도 나머지는 추출된다.
+    contract = """주택임대차계약서
+임 대 인
+성 명 안이름
+입금 계좌
+신한은행 110-234-567890
+"""
+    fields = parse_contract(contract).fields
+    assert fields["account_number"] == "110-234-567890"
+    assert fields["bank_name"] == "신한은행"
+    assert fields["account_holder"] is None
+
+
 def test_registry_address_excludes_adjacent_building_details_and_notes():
     registry = """등기사항전부증명서
 [표제부]

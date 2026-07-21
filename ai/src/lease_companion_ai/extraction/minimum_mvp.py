@@ -205,6 +205,30 @@ def _extract_account_holder(text: str) -> str | None:
     )
 
 
+def _extract_bank_name(text: str) -> str | None:
+    # 예금주와 독립. 은행명은 계좌·입금 문맥 유무와 무관하게 은행 어휘 자체로 잡는다.
+    return _first(
+        (
+            r"([가-힣]{2,10}(?:은행|농협|수협|신협|새마을금고))",
+            r"(카카오뱅크|케이뱅크|토스뱅크)",
+        ),
+        text,
+    )
+
+
+def _extract_account_number(text: str) -> str | None:
+    # 예금주 미기재라도 계좌번호는 따로 추출한다. 내부 공백은 제거하고 하이픈은 보존.
+    raw = _first(
+        (
+            r"계\s*좌\s*(?:번호)?\s*[:：]?\s*((?:\d[\d\-\s]{7,})\d)",
+            r"입금\s*계좌\s*[:：]?\s*(?:[가-힣]{2,10}은행\s*)?((?:\d[\d\-\s]{7,})\d)",
+            r"(\d{2,6}-\d{2,6}-\d{2,7})",
+        ),
+        text,
+    )
+    return re.sub(r"\s+", "", raw) if raw else None
+
+
 def _contract_type(text: str) -> str | None:
     compact = re.sub(r"\s+", "", text)
     checked_monthly = bool(re.search(r"(?:☑|■|●|✓)월세", compact))
@@ -713,6 +737,8 @@ def parse_contract(text: str) -> DocumentExtraction:
     landlord_name = _extract_party_name(text, "임대인", r"임\s*차\s*인|중\s*개")
     tenant_name = _extract_party_name(text, "임차인", r"임\s*대\s*인|중\s*개")
     account_holder = _extract_account_holder(text)
+    account_number = _extract_account_number(text)
+    bank_name = _extract_bank_name(text)
     agent_name, agent_relationship, proxy_documents = _agent_fields(text)
     building_use = _building_use(text)
     deposit_line = _money_line(text, r"보\s*증\s*금")
@@ -776,6 +802,8 @@ def parse_contract(text: str) -> DocumentExtraction:
         "management_fee": management_fee,
         "management_fee_items": management_items,
         "account_holder": account_holder,
+        "account_number": account_number,
+        "bank_name": bank_name,
         "deposit_return_condition": _clause_status(return_line),
         "deposit_return_clause": return_line,
         "repair_responsibility": _clause_status(repair_line, responsibility=True),

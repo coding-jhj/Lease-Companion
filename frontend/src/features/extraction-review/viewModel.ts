@@ -8,6 +8,8 @@ import type {
 
 const labels: Record<string, string> = {
   account_holder: "입금 계좌 예금주",
+  account_number: "입금 계좌번호",
+  bank_name: "입금 은행",
   agent_name: "대리인 이름",
   agent_relationship: "대리인과 임대인의 관계",
   balance_payment: "잔금",

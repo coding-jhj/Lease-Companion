@@ -133,6 +133,26 @@ def test_delete(client, alice):
     assert client.get(f"/api/contracts/{cid}", headers=alice).status_code == 404
 
 
+def test_delete_removes_child_rows(client, alice):
+    """자식 행이 있는 계약도 삭제되고 자식도 함께 지워진다 (Postgres FK 거부 재현 방지)."""
+    from sqlalchemy import select
+
+    from app.core.db import SessionLocal
+    from app.models.checklist import ChecklistItemState
+
+    cid = client.post("/api/contracts", json={"title": "자식있음"}, headers=alice).json()["id"]
+    with SessionLocal() as db:
+        db.add(ChecklistItemState(contract_id=cid, kind="checklist", item_key="k1", done=True))
+        db.commit()
+
+    assert client.delete(f"/api/contracts/{cid}", headers=alice).status_code == 204
+    with SessionLocal() as db:
+        rows = db.execute(
+            select(ChecklistItemState).where(ChecklistItemState.contract_id == cid)
+        ).all()
+    assert rows == []
+
+
 def test_dashboard_action_status_reflects_checklist_completion(client, alice):
     from app.core.db import SessionLocal
     from app.models.analysis import STATUS_COMPLETED, AnalysisRun

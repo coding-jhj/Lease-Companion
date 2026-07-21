@@ -33,6 +33,8 @@ export function ExtractionReviewPage() {
   const [submitting, setSubmitting] = useState(false);
   const activePoll = useRef<AbortController | null>(null);
   const fields = fieldViewModels(documents);
+  const contractWarnings = documents.find((document) => document.document_type === "contract")?.warnings ?? [];
+  const registryWarnings = documents.find((document) => document.document_type === "registry")?.warnings ?? [];
   const schemaVersion: SchemaVersion = documents.find(
     (document) => document.document_type === "contract",
   )?.schema_version ?? documents[0]?.schema_version ?? "1.8.0";
@@ -216,6 +218,9 @@ export function ExtractionReviewPage() {
             <section className="document-review-panel" aria-labelledby="contract-fields-title">
               <h2 id="contract-fields-title">계약서 추출값</h2>
               <p className="section-description">불확실하거나 아직 확인하지 않은 값을 먼저 보여드립니다.</p>
+              {contractWarnings.map((warning, index) => (
+                <p className="notice" role="status" key={`contract-warning-${index}`}>{warning}</p>
+              ))}
               <div className="stack">
                 {attentionFields.some((view) => view.document_type === "contract")
                   ? attentionFields.filter((view) => view.document_type === "contract").map(renderFieldCard)
@@ -225,6 +230,9 @@ export function ExtractionReviewPage() {
             <section className="document-review-panel" aria-labelledby="registry-fields-title">
               <h2 id="registry-fields-title">등기사항증명서 추출값</h2>
               <p className="section-description">불확실하거나 아직 확인하지 않은 값을 먼저 보여드립니다.</p>
+              {registryWarnings.map((warning, index) => (
+                <p className="notice" role="status" key={`registry-warning-${index}`}>{warning}</p>
+              ))}
               <div className="stack">
                 {attentionFields.some((view) => view.document_type === "registry")
                   ? attentionFields.filter((view) => view.document_type === "registry").map(renderFieldCard)

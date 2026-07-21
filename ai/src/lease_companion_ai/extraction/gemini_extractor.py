@@ -55,6 +55,9 @@ class ContractFields(BaseModel):
     contract_payment: Optional[int]
     balance_payment: Optional[int]
     account_holder: Optional[str]
+    # 입금 계좌 표시용(판정 미사용). 예금주 미기재라도 계좌번호·은행명은 따로 보존한다.
+    account_number: Optional[str] = None
+    bank_name: Optional[str] = None
     start_date: Optional[str]
     end_date: Optional[str]
     move_in_date: Optional[str]

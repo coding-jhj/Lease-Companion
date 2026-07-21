@@ -82,17 +82,27 @@ def document_from_legacy(
         if isinstance(value, (list, dict)) and not value:
             value = None
         if value is None:
-            direct_confirmation_reason = _DIRECT_CONFIRMATION_REASONS.get(name)
-            fields[name] = ExtractedField(
-                field_name=name,
-                confidence=Confidence.FAILED,
-                failure_reason=direct_confirmation_reason or _READ_FAILURE_REASON,
-                issue_code=(
-                    FieldIssueCode.NOT_STATED
-                    if direct_confirmation_reason
-                    else FieldIssueCode.UNREADABLE
-                ),
-            )
+            # 예금주는 계좌번호·은행명만 적는 계약서가 흔하다. null을 "판독 실패"가 아니라
+            # "미기재"로 표시해 사용자가 추출 오류로 오해하지 않게 한다(계좌번호·은행명은 별도 필드).
+            if name == "account_holder" and doc_type is DocumentType.CONTRACT:
+                fields[name] = ExtractedField(
+                    field_name=name,
+                    confidence=Confidence.UNCERTAIN,
+                    failure_reason="문서에 예금주가 기재되어 있지 않습니다. (미기재)",
+                    issue_code=FieldIssueCode.NOT_STATED,
+                )
+            else:
+                direct_confirmation_reason = _DIRECT_CONFIRMATION_REASONS.get(name)
+                fields[name] = ExtractedField(
+                    field_name=name,
+                    confidence=Confidence.FAILED,
+                    failure_reason=direct_confirmation_reason or _READ_FAILURE_REASON,
+                    issue_code=(
+                        FieldIssueCode.NOT_STATED
+                        if direct_confirmation_reason
+                        else FieldIssueCode.UNREADABLE
+                    ),
+                )
         else:
             fields[name] = ExtractedField(
                 field_name=name,

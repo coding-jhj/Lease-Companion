@@ -4,14 +4,22 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from lease_companion_ai.schemas.unified import ContractContext
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_current_user
 from app.core.db import get_db
-from app.models.analysis import STATUS_COMPLETED, AnalysisRun
+from app.models.analysis import (
+    STATUS_COMPLETED,
+    AnalysisRun,
+    CorrectionRecord,
+    ExtractionRun,
+    InputSnapshotRecord,
+)
 from app.models.checklist import ChecklistItemState
 from app.models.contract import ContractProject
+from app.models.document import Document
+from app.models.feedback import UserFeedback
 from app.models.user import User
 from app.schemas.contract import ContractCreateRequest, ContractResponse, SituationRequest
 from app.schemas.document import RegistryLinkRequest
@@ -223,5 +231,18 @@ def delete_contract(
     db: Session = Depends(get_db),
 ) -> None:
     contract = _get_owned_contract(contract_id, user, db)
+    # FK 자식 행을 먼저 지운다 (cascade 미설정 — Postgres는 남은 자식이 있으면 삭제 거부).
+    # correction_records 는 extraction_runs 를 참조하므로 그보다 먼저.
+    # ponytail: 앱 코드로 처리. 테이블이 더 늘면 FK ON DELETE CASCADE 마이그레이션으로 승격.
+    for model in (
+        CorrectionRecord,
+        Document,
+        ExtractionRun,
+        InputSnapshotRecord,
+        AnalysisRun,
+        ChecklistItemState,
+        UserFeedback,
+    ):
+        db.execute(delete(model).where(model.contract_id == contract_id))
     db.delete(contract)
     db.commit()
