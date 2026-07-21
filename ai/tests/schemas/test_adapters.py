@@ -81,10 +81,16 @@ def test_document_from_legacy_always_has_rule_field_keys():
         document_id="DOC-1",
     )
     assert REQUIRED_CONTRACT_FIELDS <= doc.fields.keys()
-    missing = doc.fields["account_holder"]
+    # 일반 미기재 필드: 판독 실패로 표현.
+    missing = doc.fields["property_address"]
     assert missing.extracted_value is None
     assert missing.confidence is Confidence.FAILED
     assert missing.failure_reason
+    # 예금주는 예외: 미기재(불확실 + not_stated)로 표현해 판독 실패로 오해하지 않게 한다.
+    holder = doc.fields["account_holder"]
+    assert holder.extracted_value is None
+    assert holder.confidence is Confidence.UNCERTAIN
+    assert holder.issue_code is FieldIssueCode.NOT_STATED
 
 
 def test_document_from_legacy_always_has_judgment_field_keys_and_issue_codes():

@@ -7,6 +7,7 @@
 - 날짜(start_date·end_date·move_in_date·contract_payment_date·balance_payment_date)는 **YYYY-MM-DD**. 없으면 null.
 - contract_type: 전세 / 보증부월세 / 일반월세 중 문서에 해당하는 것. 판단 불가면 null.
 - landlord_name·tenant_name·account_holder: 성명(또는 법인명) 그대로. 대리인이 없으면 agent_name·agent_relationship·proxy_authority_documents는 null.
+- account_number·bank_name: 입금(보증금·월세) 계좌의 계좌번호와 은행명을 각각 읽은 그대로. 예금주(account_holder)가 없어도 계좌번호·은행명은 독립적으로 추출한다. 문서에 없으면 각각 null.
 - proxy_authority_documents: 계약서에 언급된 대리 권한 자료명(위임장·인감증명서 등) 목록. 실제 언급만 추출한다.
 - property_address: 임차 목적물(부동산) 소재지 전체. 표준계약서처럼 소재지와 임차할부분(동·층·호)이 다른 칸에 나뉘어 있으면 둘을 이어붙여 하나의 주소로 낸다. 예: 소재지 "가상시 가온구 나래로 12" + 임차할부분 "3층 302호" → "가상시 가온구 나래로 12 3층 302호".
 - deposit_return_condition: 보증금 반환 시점·조건 문구의 명확성.
