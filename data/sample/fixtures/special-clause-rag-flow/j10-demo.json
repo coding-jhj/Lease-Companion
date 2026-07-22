@@ -1,0 +1,20 @@
+{
+  "fixture_version": "1.0.0",
+  "cases": [
+    {
+      "case_id": "J10-DEMO-TENANT",
+      "future_event": "신규 임차인 입주",
+      "text": "보증금은 후속 임차인이 입주한 다음 반환한다."
+    },
+    {
+      "case_id": "J10-DEMO-SALE",
+      "future_event": "주택 매각",
+      "text": "주택이 매각된 후 보증금을 반환한다."
+    },
+    {
+      "case_id": "J10-DEMO-FUNDS",
+      "future_event": "임대인 자금 사정",
+      "text": "임대인의 자금 사정이 해결된 후 보증금을 반환한다."
+    }
+  ]
+}

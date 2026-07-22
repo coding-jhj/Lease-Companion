@@ -13,3 +13,12 @@
 - dev: 로컬 가용 recall `90/90(100%) → 184/184(100%)`, 전체 recall `94.85%`, 미가용 기대 source `10`, 비공식 노출 0. (2026-07-20 `SRC-MOLIT-CHECKLIST` 적재 반영)
 - test: 로컬 가용 recall `15/15(100%) → 38/38(100%)`, 전체 recall `15/39(38.46%) → 38/39(97.44%)`, top-5 정답 포함 `10/27 → 27/27(100%)`, 비공식 노출 0. (2026-07-20 `SRC-MOLIT-CHECKLIST` 적재 반영)
 - 공통: 비공식 출처 노출 `0` 유지, R/J 상태·시급도와 locked test/goldset 변경 없음.
+
+## 2026-07-22 특약 Task 10 오프라인 측정
+
+- 설정: 결정론적 6유형 카탈로그 + BM25 + template fallback. 외부 provider 호출 0회.
+- 잠긴 특약 retrieval test 7건: 기대 source Top-3 `13/15(86.67%)`, 기대 section Top-3 `10/15(66.67%)`.
+- 비공식 출처 노출 `0`, 공식 근거 없음 빈 배열 처리 `1/1`.
+- 같은 J10이라도 미래 사건 3종은 검색 질의가 달라진다. 허용 source·section 경계가 같으므로 section 결과를 억지로 다르게 만들지 않는다.
+- 결과: `data/evaluation/results/offline_test_metrics.json`의 `special_clauses`.
+- 이 값은 `draft_pending_human_review` 회귀 기준이다. 실제 Gemini embedding·Cohere rerank 검증은 보류 상태다.

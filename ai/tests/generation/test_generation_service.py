@@ -740,7 +740,25 @@ def test_compound_special_clause_fallback_keeps_each_catalog_guidance():
         with_evidence=True,
     )
     review = analysis.special_clause_reviews[0].model_copy(
-        update={"catalog_ids": ("SC-REPAIR-SCOPE", "SC-RESTORATION-SCOPE")}
+        update={
+            "catalog_ids": ("SC-REPAIR-SCOPE", "SC-RESTORATION-SCOPE"),
+            "evidence_sources": (
+                OfficialSource(
+                    source_id="SRC-SPECIAL",
+                    article_or_section="제1조",
+                    title="공식 특약 확인 자료",
+                    institution="공공기관",
+                    summary="수리 책임 근거",
+                ),
+                OfficialSource(
+                    source_id="SRC-SPECIAL",
+                    article_or_section="제2조",
+                    title="공식 특약 확인 자료",
+                    institution="공공기관",
+                    summary="원상복구 책임 근거",
+                ),
+            ),
+        }
     )
     analysis = AnalysisRunResult.model_validate(
         analysis.model_copy(update={"special_clause_reviews": [review]}).model_dump()
@@ -752,6 +770,29 @@ def test_compound_special_clause_fallback_keeps_each_catalog_guidance():
     assert len(item.revision_requests) == 2
     assert "수리" in item.plain_explanation
     assert "원상복구" in item.plain_explanation
+    assert item.source_ids == ("SRC-SPECIAL",)
+
+
+@pytest.mark.parametrize(
+    ("text", "event"),
+    (
+        ("보증금은 후속 임차인이 입주한 다음 반환한다.", "신규 임차인 입주"),
+        ("주택이 매각된 후 보증금을 반환한다.", "주택 매각"),
+        ("임대인의 자금 사정이 해결된 후 보증금을 반환한다.", "임대인 자금 사정"),
+    ),
+)
+def test_deferred_refund_fallback_uses_the_detected_future_event(text, event):
+    analysis = _analysis_with_special_clause(
+        text=text,
+        catalog_id="SC-DEFERRED-REFUND",
+        with_evidence=True,
+    )
+
+    item = GenerationService().generate(analysis, _context()).special_clause_items[0]
+
+    assert event in item.plain_explanation
+    assert event in item.confirmation_questions[0]
+    assert event in item.revision_requests[0]
 
 
 @pytest.mark.parametrize(

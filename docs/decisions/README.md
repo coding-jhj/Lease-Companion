@@ -23,6 +23,7 @@
 - Classification 경계: extraction은 사실·조항 원문, 별도 classification은 조항 유형·명확성 후보 → [`2026-07-18-classification-boundary.md`](2026-07-18-classification-boundary.md)
 - 계약 연습 시뮬레이션: 실전 계약과 데이터 분리 / 승인된 합성 시나리오 / 행동 평가와 계약 판정 분리 / Gemini 기준 이미지·사전 제작 영상 → [`2026-07-20-practice-simulation-boundary.md`](2026-07-20-practice-simulation-boundary.md)
 - 특약 R/J 책임 경계: 기존 R08·R09 의미 유지 / R10 문구 확인과 R19 실제 권리변동 분리 / J10·J11·J12 Python 최종 판정 / 신규 R25 미추가 → [`2026-07-22-special-clause-rule-judgment-boundary.md`](2026-07-22-special-clause-rule-judgment-boundary.md)
+- 특약 공식근거 RAG: 결정론적 후보→Python R/J→허용 source/section Top-3→grounded 생성 / 근거 없음 질문 전용 / 실제 provider·운영 활성화 보류 → [`2026-07-22-special-clause-evidence-rag.md`](2026-07-22-special-clause-evidence-rag.md)
 
 ## 현재 미정 (결정 대기)
 

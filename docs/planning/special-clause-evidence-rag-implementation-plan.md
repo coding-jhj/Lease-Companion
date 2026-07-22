@@ -349,6 +349,8 @@
 
 ### Task 8: Frontend 특약 카드와 리포트 통합
 
+> 2026-07-22 완료. 혼자 작업 계획의 `작업 9`에 해당한다.
+
 **Files:**
 - Modify: `frontend/src/types/api.ts`
 - Create: `frontend/src/features/special-clause-reviews/SpecialClauseReviewSection.tsx`
@@ -390,6 +392,8 @@
 
 ### Task 9: 전체 검증·문서·데모 증거 완성
 
+> 2026-07-22 완료. 혼자 작업 계획의 `작업 10`에 해당한다. 실제 provider·독립 검토·운영 활성화는 후속 작업 11이다.
+
 **Files:**
 - Modify: `docs/planning/user-flow.md`
 - Modify: `docs/planning/mvp-scope.md`
@@ -401,11 +405,11 @@
 **Interfaces:**
 - Produces: 구현 상태, 측정 결과, 한계, 데모 시나리오가 일치하는 최종 인수 자료.
 
-- [ ] **Step 1: 평가 지표 실행 및 실측 기록**
+- [x] **Step 1: 평가 지표 실행 및 실측 기록**
 
   catalog exact match, 유형별 precision/recall, 정상 특약 오탐, source Top-3 recall, section Top-3 recall, 비공식 출처 노출, 금지 단정 표현, source grounding 위반을 각각 기록한다. 목표 수치는 측정 전에 만들지 않는다.
 
-- [ ] **Step 2: 전체 테스트 실행**
+- [x] **Step 2: 전체 테스트 실행**
 
   Run: `cd ai; python -m pytest -q`
   Expected: PASS.
@@ -416,15 +420,15 @@
   Run: `cd frontend; npm test -- --run`
   Expected: PASS.
 
-- [ ] **Step 3: 데모 시나리오 검증**
+- [x] **Step 3: 데모 시나리오 검증**
 
-  동일 J10에 연결되는 서로 다른 특약 3개가 서로 다른 검색 질의·근거 section·요청 문구를 내는지 보여준다. 근거 없는 문장에서는 빈 근거와 제한 안내가 나오는지 함께 보여 RAG가 판정을 대신하지 않음을 증명한다.
+  동일 J10에 연결되는 서로 다른 특약 3개가 서로 다른 검색 질의·요청 문구를 내는지 보여준다. 적용 법적 경계가 같으면 근거 section을 인위적으로 다르게 만들지 않는다. 근거 없는 문장에서는 빈 근거와 제한 안내가 나오는지 함께 보여 RAG가 판정을 대신하지 않음을 증명한다.
 
-- [ ] **Step 4: 문서와 실제 구현 상태 동기화**
+- [x] **Step 4: 문서와 실제 구현 상태 동기화**
 
   구현되지 않은 유료 provider 실측은 완료로 쓰지 않는다. 기존 R/J와 DP 축, 특약 카탈로그의 후보 역할, RAG의 근거 역할을 ADR에 명확히 분리한다.
 
-- [ ] **Step 5: 최종 작업트리 점검**
+- [x] **Step 5: 최종 작업트리 점검**
 
   Run: `git status --short`
   Expected: only intended source, test, fixture, generated schema, OpenAPI, and documentation files are changed; no Chroma index, real contract, secrets, or unrelated generated files.

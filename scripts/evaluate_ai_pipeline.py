@@ -23,6 +23,12 @@ def main() -> None:
     print(
         "A offline evaluation: "
         f"e2e={report.end_to_end.completed_case_count}/{report.end_to_end.case_count} "
+        f"special_catalog={report.special_clauses.catalog_exact_match_count}/"
+        f"{report.special_clauses.catalog_case_count} "
+        f"special_source_top3={report.special_clauses.source_top3_hit_count}/"
+        f"{report.special_clauses.expected_source_count} "
+        f"special_section_top3={report.special_clauses.section_top3_hit_count}/"
+        f"{report.special_clauses.expected_section_count} "
         f"output={OUTPUT}"
     )
 

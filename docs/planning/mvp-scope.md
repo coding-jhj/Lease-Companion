@@ -40,9 +40,10 @@
 - 상용 LLM(Gemini 3.5 Flash) 조항 유형·명확성 후보 구조화 (선택: 로컬 7B 성능비교 실험 — MVP 크리티컬 패스 제외)
 - Python 규칙 엔진 문서 내부 판정과 문서 교차검증 (12개 판정)
 - 등기사항증명서 교차검증
-- 공식 법령·공공자료 RAG
-- 상용 LLM 쉬운 설명·질문·행동 생성 및 저신뢰 결과 재검토
-- 판정·원문 증거·공식 근거·질문·행동 리포트
+- 사용자 확인 특약의 결정론적 6유형 후보 매칭과 Python J10~J12 최종 판정
+- 특약 원문·R/J 상태·허용 source/section 기반 공식 법령·공공자료 Top-3 RAG
+- 상용 LLM 쉬운 설명·확인 질문·수정 요청·행동 생성 및 저신뢰 결과 재검토
+- 판정·원문 증거·공식 근거·질문·행동·특약 확인 카드·전체 리포트 PDF
 - 결과 저장·재조회
 - 서명 전 체크리스트 상태 저장
 - 계약 직후 행동 상태 저장
@@ -74,5 +75,6 @@ J01–J12. 상세와 상태·시급도 매핑: [../data/judgment-spec.md](../dat
 
 - 플랫폼 확정(2026-07-16, → [`../decisions/2026-07-16-mvp-platform-stack.md`](../decisions/2026-07-16-mvp-platform-stack.md)): DB **PostgreSQL**, 인증 **JWT Bearer(Python: PyJWT + Passlib-bcrypt)**, 프론트엔드 **React + Vite + TypeScript**, Vector DB **Chroma 로컬 모드**. refresh token·운영 키 정책과 운영 배포 플랫폼은 TODO다.
 - 통합 스키마는 `ai/src/lease_companion_ai/schemas/` Pydantic 단일 원본(→ [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md)).
+- 특약 RAG는 API 키 없는 오프라인 구현·자동 검증까지 완료했다. 잠긴 평가셋 독립 검토와 실제 Gemini·Cohere 검증 전에는 `human_reviewed`·운영 검증 완료로 표시하지 않는다.
 - OCR은 상용 LLM Gemini 3.5 Flash VLM 통합(디지털 PDF는 PyMuPDF·PDF.js), 조항 구조화·필드 추출과 설명·질문·행동 생성은 Gemini 3.5 Flash, 임베딩·검색은 gemini-embedding-001+BM25, 리랭커는 Cohere rerank-v4.0-pro로 확정. VLM은 Gemini에 통합되어 별도 OCR·VLM 단계 없음(2026-07-14 변경, → [`../decisions/2026-07-14-ocr-gemini-integration.md`](../decisions/2026-07-14-ocr-gemini-integration.md)). PaddleOCR-VL은 (선택) 비교실험. 벡터 DB는 Chroma 로컬 모드로 확정(2026-07-16).
 - 파인튜닝 로컬 7B 베이스 모델은 상용 vs 로컬 성능비교 병렬 실험(선택)으로만 유지하며 MVP 크리티컬 패스에서 제외한다.

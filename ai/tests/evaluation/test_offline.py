@@ -65,6 +65,34 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
     assert report.pii.case_count == 5
     assert report.pii.tokenization_pass_rate == 1.0
     assert report.pii.restoration_pass_rate == 1.0
+    assert report.special_clauses.catalog_case_count == 30
+    assert report.special_clauses.catalog_exact_match_rate == 1.0
+    assert report.special_clauses.normal_negative_false_positive_count == 0
+    assert set(report.special_clauses.per_catalog) == {
+        "SC-DEFERRED-REFUND",
+        "SC-MAIN-SPECIAL-CONFLICT",
+        "SC-MANAGEMENT-FEE",
+        "SC-REPAIR-SCOPE",
+        "SC-RESTORATION-SCOPE",
+        "SC-RIGHTS-CHANGE",
+    }
+    assert report.special_clauses.retrieval_case_count == 7
+    assert report.special_clauses.unofficial_source_exposure_count == 0
+    assert report.special_clauses.empty_evidence_pass_count == 1
+    assert report.special_clauses.generation_case_count == 7
+    assert report.special_clauses.generation_schema_valid_rate == 1.0
+    assert report.special_clauses.grounding_violation_count == 0
+    assert report.special_clauses.prohibited_claim_count == 0
+    assert report.special_clauses.no_evidence_question_only_count == 1
+    assert report.special_clauses.end_to_end_fixture_count == 5
+    assert report.special_clauses.end_to_end_review_match_count == 5
+    assert report.special_clauses.end_to_end_evidence_match_count == 5
+    assert report.special_clauses.end_to_end_guidance_coverage_count == 5
+    assert report.special_clauses.j10_demo_case_count == 3
+    assert report.special_clauses.j10_demo_distinct_query_count == 3
+    assert report.special_clauses.j10_demo_distinct_section_set_count == 1
+    assert report.special_clauses.j10_demo_distinct_revision_request_count == 3
+    assert report.special_clauses.external_provider_call_count == 0
     assert report.end_to_end.completion_rate == 1.0
     assert report.end_to_end.external_provider_call_count == 0
     assert report.end_to_end.external_provider_cost_krw == 0

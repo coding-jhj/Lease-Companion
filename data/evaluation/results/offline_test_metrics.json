@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.068188,
+    "elapsed_seconds": 0.105287,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.006819
+    "mean_seconds_per_case": 0.010529
   },
   "extraction": {
     "accuracy": 1.0,
@@ -151,13 +151,13 @@
   },
   "generation": {
     "active_judgment_count": 50,
-    "active_rule_count": 149,
+    "active_rule_count": 154,
     "analysis_immutable_count": 10,
     "analysis_immutable_rate": 1.0,
     "case_count": 10,
     "expected_prompt_version": "v2",
     "grounding_violation_count": 0,
-    "guidance_item_count": 149,
+    "guidance_item_count": 154,
     "judgment_grounding_violation_count": 0,
     "judgment_guidance_item_count": 50,
     "judgment_trigger_coverage_rate": 1.0,
@@ -168,7 +168,7 @@
     "schema_valid_count": 10,
     "schema_valid_rate": 1.0,
     "subjective_quality": "not_measured:no_human_or_independent_judge_labels",
-    "template_fallback_count": 199,
+    "template_fallback_count": 204,
     "trigger_coverage_rate": 1.0
   },
   "guardrail": {
@@ -314,7 +314,7 @@
     "쉬운 설명의 주관 품질은 사람 또는 독립 judge 라벨이 없어 측정하지 않았습니다.",
     "실제 provider latency와 비용은 외부 호출 승인이 없어 측정하지 않았습니다."
   ],
-  "measured_at": "2026-07-21",
+  "measured_at": "2026-07-22",
   "pii": {
     "case_count": 5,
     "restoration_pass_rate": 1.0,
@@ -342,7 +342,7 @@
     "locally_available_expected_source_hit_count": 39,
     "locally_available_expected_source_recall": 1.0,
     "locally_unavailable_expected_source_ids": [],
-    "measured_at": "2026-07-21",
+    "measured_at": "2026-07-22",
     "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {
@@ -404,6 +404,84 @@
       "item_count": 27,
       "matched_count": 27
     }
+  },
+  "special_clauses": {
+    "catalog_case_count": 30,
+    "catalog_exact_match_count": 30,
+    "catalog_exact_match_rate": 1.0,
+    "empty_evidence_case_count": 1,
+    "empty_evidence_pass_count": 1,
+    "end_to_end_evidence_match_count": 5,
+    "end_to_end_fixture_count": 5,
+    "end_to_end_guidance_coverage_count": 5,
+    "end_to_end_review_match_count": 5,
+    "expected_section_count": 15,
+    "expected_source_count": 15,
+    "external_provider_call_count": 0,
+    "generation_case_count": 7,
+    "generation_output_count": 7,
+    "generation_schema_valid_rate": 1.0,
+    "grounding_violation_count": 0,
+    "j10_demo_case_count": 3,
+    "j10_demo_distinct_query_count": 3,
+    "j10_demo_distinct_revision_request_count": 3,
+    "j10_demo_distinct_section_set_count": 1,
+    "no_evidence_generation_count": 1,
+    "no_evidence_question_only_count": 1,
+    "normal_negative_case_count": 6,
+    "normal_negative_false_positive_count": 0,
+    "normal_negative_false_positive_rate": 0.0,
+    "per_catalog": {
+      "SC-DEFERRED-REFUND": {
+        "false_negative": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_positive": 3
+      },
+      "SC-MAIN-SPECIAL-CONFLICT": {
+        "false_negative": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_positive": 3
+      },
+      "SC-MANAGEMENT-FEE": {
+        "false_negative": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "SC-REPAIR-SCOPE": {
+        "false_negative": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "SC-RESTORATION-SCOPE": {
+        "false_negative": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_positive": 2
+      },
+      "SC-RIGHTS-CHANGE": {
+        "false_negative": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_positive": 2
+      }
+    },
+    "prohibited_claim_count": 0,
+    "retrieval_case_count": 7,
+    "section_top3_hit_count": 10,
+    "section_top3_recall": 0.6666666666666666,
+    "source_top3_hit_count": 13,
+    "source_top3_recall": 0.8666666666666667,
+    "unofficial_source_exposure_count": 0
   },
   "split": "test"
 }

@@ -21,6 +21,10 @@ from lease_companion_ai.generation.service import (
     GenerationService,
     rule_results_requiring_guidance,
 )
+from lease_companion_ai.evaluation.special_clauses import (
+    SpecialClauseOfflineMetrics,
+    evaluate_special_clause_pipeline,
+)
 from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
 from lease_companion_ai.guardrails.grounding import (
     grounding_violations,
@@ -213,6 +217,7 @@ class OfflineEvaluationReport:
     generation: GenerationEvaluationMetrics
     guardrail: GuardrailEvaluationMetrics
     pii: PiiEvaluationMetrics
+    special_clauses: SpecialClauseOfflineMetrics
     end_to_end: EndToEndMetrics
     limitations: tuple[str, ...]
 
@@ -891,6 +896,7 @@ def evaluate_offline_pipeline(
         generation=generation,
         guardrail=_evaluate_guardrail(root),
         pii=_evaluate_pii(root),
+        special_clauses=evaluate_special_clause_pipeline(root),
         end_to_end=EndToEndMetrics(
             case_count=case_count,
             completed_case_count=len(analyses),

@@ -33,6 +33,18 @@
 - 평가 데이터는 train/validation/test를 분리해 `data/evaluation/` 하위에서 참조한다.
 - 종합 판정(안전/위험/사기 점수)은 측정 대상이 아니다(사용하지 않음).
 
+## 2026-07-22 특약 오프라인 실측
+
+- 설정: `offline-regex-bm25-template-v3`, 잠긴 `test`, API 키·외부 provider 호출 0회.
+- 카탈로그: exact match `30/30`, 일반 정상문 오탐 `0/6`, 6유형별 precision·recall 각 `1.0`.
+- 검색 Top-3: 기대 source `13/15` 포함(`86.67%`), 기대 section `10/15` 포함(`66.67%`), 비공식 출처 노출 `0`, 근거 없음 처리 `1/1`.
+- 생성: schema `7/7`, 허용되지 않은 source ID `0`, 금지 단정 `0`, 근거 없음 질문 전용 처리 `1/1`.
+- 종단 fixture: 5종 모두 특약 카드·근거·안내 기대 결과 통과.
+- J10 데모: 신규 임차인·주택 매각·임대인 자금 사정 3종 모두 서로 다른 검색 질의·수정 요청 생성. 허용 법적 근거 경계가 같아 section 집합은 1종이다.
+- 원본 결과: `data/evaluation/results/offline_test_metrics.json`의 `special_clauses`.
+
+> 이 값은 `draft_pending_human_review` 평가셋을 혼자 잠근 회귀 기준이다. 독립 평가·실제 Gemini embedding·Cohere rerank·Gemini 생성 성능이 아니다. 특히 section Top-3 `10/15`는 후속 실제 provider 검증에서 확인할 검색 품질 공백이다.
+
 ## 미정 (TODO)
 
 - 각 지표의 목표치·허용 하한 (실제 측정·합의 후)

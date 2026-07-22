@@ -182,6 +182,30 @@ _SPECIAL_CLAUSE_FALLBACKS = MappingProxyType(
 )
 
 
+def _deferred_refund_event(text: str) -> str:
+    if any(term in text for term in ("신규 임차인", "후속 임차인", "다음 임차인", "새 임차인", "새 세입자", "다음 세입자")):
+        return "신규 임차인 입주"
+    if any(term in text for term in ("매각", "매매", "처분")):
+        return "주택 매각"
+    if "자금 사정" in text or "보증금 마련" in text:
+        return "임대인 자금 사정"
+    return "미래 사건"
+
+
+def _special_clause_fallback_content(
+    catalog_id: str, original_text: str
+) -> tuple[str, str, str] | None:
+    content = _SPECIAL_CLAUSE_FALLBACKS.get(catalog_id)
+    if content is None or catalog_id != "SC-DEFERRED-REFUND":
+        return content
+    event = _deferred_refund_event(original_text)
+    return (
+        f"보증금 반환 시점이 {event}에 연결되어 있는지 확인해야 합니다.",
+        f"{event}와 관계없이 계약 종료 시 보증금을 반환받는 조건이 적혀 있나요?",
+        f"{event}와 관계없이 계약 종료 시 보증금을 반환하도록 구체적으로 적어 주세요.",
+    )
+
+
 def rule_results_requiring_guidance(
     analysis: AnalysisRunResult,
 ) -> tuple[RuleResult, ...]:
@@ -330,9 +354,11 @@ class GenerationService:
             return self._guardrails.enforce_special_clause(review, guidance)
 
         fallback_contents = tuple(
-            _SPECIAL_CLAUSE_FALLBACKS[catalog_id]
+            content
             for catalog_id in review.catalog_ids
-            if catalog_id in _SPECIAL_CLAUSE_FALLBACKS
+            if (content := _special_clause_fallback_content(
+                catalog_id, review.original_text
+            )) is not None
         )
         if not fallback_contents:
             fallback_contents = (
@@ -353,7 +379,7 @@ class GenerationService:
             revision_requests=self._unique(
                 content[2] for content in fallback_contents
             ),
-            source_ids=tuple(
+            source_ids=self._unique(
                 source.source_id for source in review.evidence_sources
             ),
             generation_method=GenerationMethod.TEMPLATE_FALLBACK,
