@@ -34,6 +34,30 @@ AnswerCategory = Literal[
     "no_response",
     "needs_review",
 ]
+
+# 진행이 목표문장 완전 충족(appropriate_check)에만 묶이면 연습이 되지 않는다.
+# 회피·무응답·검토불가만 같은 턴에 고정하고, 부분 충족·모호한 시도는 계약 상황에 맞으면
+# 진행(success)할 수 있게 허용해 평가(LLM)가 상황에 맞게 선택한다.
+_ADVANCE_ONLY_CATEGORIES = frozenset({"appropriate_check"})
+_RETRY_ONLY_CATEGORIES = frozenset({"avoidance", "no_response", "needs_review"})
+
+
+def allowed_next_dialogue_states(
+    answer_category: "AnswerCategory", success_next_state: str, retry_state: str
+) -> frozenset[str]:
+    """답변 분류별 허용 다음 대화 상태.
+
+    appropriate_check → 진행만, 회피·무응답·검토불가 → 재시도만,
+    partial_check·ambiguous_answer → 진행/재시도 모두 허용(평가가 상황에 맞게 선택).
+    목표문장을 그대로 말하지 않아도 합리적인 답변이면 진행할 수 있게 한다.
+    """
+    if answer_category in _ADVANCE_ONLY_CATEGORIES:
+        return frozenset({success_next_state})
+    if answer_category in _RETRY_ONLY_CATEGORIES:
+        return frozenset({retry_state})
+    return frozenset({success_next_state, retry_state})
+
+
 SelectedAction = Literal["진행", "추가 확인", "특약 수정 요구", "보류", "중단"]
 ActionEffect = Literal[
     "document_or_clause_request",

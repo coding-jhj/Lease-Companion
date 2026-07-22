@@ -8,7 +8,10 @@ from typing import Final, Literal, Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lease_companion_ai.providers.errors import ProviderResponseValidationError
-from lease_companion_ai.schemas.simulation import PracticeTurnEvaluation
+from lease_companion_ai.schemas.simulation import (
+    PracticeTurnEvaluation,
+    allowed_next_dialogue_states,
+)
 from lease_companion_ai.schemas.unified import RuleStatus, Urgency
 
 
@@ -87,10 +90,13 @@ def validate_provider_result(
         if validated.answer_category == "appropriate_check":
             if validated.confirmed_action_ids != [request.goal_action_id]:
                 raise ValueError("goal_action_id 불일치")
-            if validated.next_dialogue_state != request.success_next_state:
-                raise ValueError("success next state 불일치")
-        elif validated.next_dialogue_state != request.retry_state:
-            raise ValueError("retry state 불일치")
+        allowed = allowed_next_dialogue_states(
+            validated.answer_category,
+            request.success_next_state,
+            request.retry_state,
+        )
+        if validated.next_dialogue_state not in allowed:
+            raise ValueError("허용되지 않는 다음 대화 상태")
         return validated
     except (AttributeError, TypeError, ValueError, ValidationError):
         raise ProviderResponseValidationError(
