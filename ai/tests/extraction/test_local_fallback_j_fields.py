@@ -236,6 +236,88 @@ def test_wrapped_period_and_bullet_special_clauses_are_joined():
     ]
 
 
+def test_standard_form_table_amounts_and_bulletless_special_clauses():
+    """2026 표준계약서 PDF: 금액 라벨과 값이 다른 줄에 오고, 특약이 불릿 없는 평문.
+
+    - 제1조 표는 '보 증 금'/'잔 금' 라벨 줄 다음 줄에 '금 ... 원정 (₩...)' 값을 둔다.
+    - 제4조 본문의 '특약사항에 따름 - ... 없음' 프로즈가 진짜 [특약사항] 헤더보다 먼저 나온다.
+    - 진짜 특약은 불릿 없는 평문이며 첫 특약은 금액 줄바꿈으로 두 줄에 걸친다.
+    """
+    fields = parse_contract(
+        """주택임대차표준계약서
+☑ 전세 ☐ 월세
+제1조(보증금과 차임 및 관리비) 위 부동산의 임대차에 관하여 합의에 의하여 아래와 같이 지불하기로 한다.
+보 증 금
+금 220,000,000 원정 (₩ 220,000,000)
+계 약 금
+금 22,000,000 원정 (₩ 22,000,000)은 계약시에 지불하고 영수함.
+중 도 금
+금 66,000,000 원정 (₩ 66,000,000)은 2026년 8월 10일
+에 지불하며
+잔 금
+금 132,000,000 원정 (₩ 132,000,000)은 2026년 9월 5일
+에 지불한다
+차임(월세)
+금 해당없음 원정은 매월 - 일에 지불한다
+제3조(입주 전 수리) 임대인과 임차인은 다음과 같이 합의한다.
+임대인부담
+(본 계약은 특약사항에 따름 - 임대인부담 없음)
+임차인부담
+(본 계약은 특약사항에 따름 - 수리비 전액 임차인 부담)
+제4조 임차인이 수선비용을 지출한 때에는 상환을 청구할 수 있다.
+[특약사항]
+임대차계약을 체결한 임차인은 사전에 고지하지 않은 선순위 임대차 정보가 있거나 미납한 국세‧지방세가
+10,000,000 원을 초과하는 것을 확인한 경우 임대차기간이 시작하는 날까지 계약금 등을 포기하지 않고 임대차계약을 해제할 수 있다.
+계약금은 어떠한 사유로도 임차인에게 반환하지 아니한다.
+임대인은 새로운 임차인의 입주가 완료된 이후에 보증금을 반환한다.
+※ 위 [특약사항] 중 일부는 임차인에게 불리한 불공정 조항의 예시로, 법적 효력이 없습니
+다.
+가상 계약서 · 교육·실습용 · TOXIC / 30
+"""
+    ).fields
+
+    assert fields["deposit"] == 220_000_000
+    assert fields["contract_payment"] == 22_000_000
+    assert fields["balance_payment"] == 132_000_000
+    assert fields["balance_payment_date"] == "2026-09-05"
+    assert fields["monthly_rent"] is None  # '해당없음' → 금액 아님
+
+    assert fields["special_clauses_present"] is True
+    clauses = fields["special_clauses"]
+    assert clauses[0].startswith("임대차계약을 체결한 임차인은")
+    assert clauses[0].endswith("해제할 수 있다.")  # 줄바꿈된 첫 특약이 하나로 합쳐짐
+    assert "계약금은 어떠한 사유로도 임차인에게 반환하지 아니한다." in clauses
+    assert "임대인은 새로운 임차인의 입주가 완료된 이후에 보증금을 반환한다." in clauses
+    assert not any("※" in c or "가상 계약서" in c for c in clauses)  # 고지문·워터마크 제외
+
+
+def test_sorted_pdf_scrambled_payment_table_reads_balance_amount_and_date():
+    """sort=True PDF 추출은 제1조 표의 중도금·잔금 금액과 라벨을 한 줄로 뒤섞는다.
+
+    라벨('잔 금')이 금액보다 뒤에 와서 라벨 기반 매칭이 실패하므로, 제1조 안의
+    마지막 '금 N원정 (₩N)은 [날짜]'(구조상 최종 지급 = 잔금)로 보완한다.
+    """
+    fields = parse_contract(
+        """주택임대차표준계약서
+☑ 전세 ☐ 월세
+제1조(보증금과 차임 및 관리비) 위 부동산의 임대차에 관하여 합의에 의하여 아래와 같이 지불하기로 한다.
+보 증 금 금 220,000,000 원정 (₩ 220,000,000)
+계 약 금 금 22,000,000 원정 (₩ 22,000,000)은 계약시에 지불하고 영수함. 영수자 ( 서두식 인)
+금 66,000,000 원정 (₩ 66,000,000)은 2026년 8월 10일 금 132,000,000 원정 (₩ 132,000,000)은 2026년 9월 5일 중 도 금 잔 금 에 지불하며 에 지불한다
+차임(월세) 금 해당없음 원정은 매월 - 일에 지불한다 (입금계좌: - )
+(정액인 경우) 총액 금 90,000 원정 (₩ 90,000)
+관 리 비 1.일반관리비 금 20,000원 2.전기료 실비 정산
+제2조(임대차기간) 임대인은 2026년 9월 5일까지 인도하고, 임대차기간은 인도일로부터 2028년 9월 5일까지로 한다.
+"""
+    ).fields
+
+    assert fields["deposit"] == 220_000_000
+    assert fields["contract_payment"] == 22_000_000
+    assert fields["balance_payment"] == 132_000_000  # 마지막 날짜부 금액
+    assert fields["balance_payment_date"] == "2026-09-05"
+    assert fields["monthly_rent"] is None
+
+
 def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
     contract_fields = _contract("contract_002.txt")
     registry_text = (

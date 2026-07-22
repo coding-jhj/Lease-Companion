@@ -63,7 +63,9 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .review-focus__card p { color: #5c685f; font-size: 13px; line-height: 1.55; }
 .review-focus__card--manual { border-color: #d9cfba; background: #fffcf5; }
 .review-focus__card--manual > span { background: #f2ead8; color: #725920; }
-.review-focus__card--clause { border-color: #c5d8c8; background: #f7fbf7; }
+.review-focus__card--clause { border-color: #e0a5a0; background: #fdf3f2; }
+.review-focus__card--clause > span { background: #f6d5d1; color: #a1281f; }
+.review-focus__card--clause > strong { color: #b3261e; }
 .review-progress { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border: 1px solid #cbd9ce; border-radius: 18px; background: #f4f9f5; }
 .review-progress p, .review-progress h2 { margin: 0; }
 .review-progress p { margin-bottom: 5px; color: #52705b; font-size: 12px; font-weight: 800; }
