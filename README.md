@@ -201,6 +201,10 @@ python -m pip install -r requirements-minimum-mvp.txt
 
 ## 현재 프로젝트 상태
 
-구조·설계 문서·평가 데이터에 더해 **MVP 브라우저 앱**이 구현되어 있다. 디지털 PDF/TXT 추출, 스캔·사진 PDF OCR(Gemini VLM), 상용 LLM(Gemini 3.5 Flash) 구조화(실패 시 정규식 폴백), 사용자 추출값 확인·수정, R01~R24 규칙 실행, DP01~DP08 피해 유형 비교, 항목별 질문·수정 요청 문구·4단계 행동·공식 근거·전체 리포트 PDF 표시까지 동작한다. 유사 참고 사례는 공식 근거와 분리되며 검증된 사례 corpus가 연결되기 전에는 빈 상태로 표시한다.
+- **실전 계약 점검**: 회원가입부터 계약 생성, 문서 업로드, 추출값 확인·수정, R01~R24·J01~J12 분석, DP01~DP08 비교, 특약별 공식 근거·질문·수정 요청·행동 안내, PDF, 체크리스트 저장·재조회까지 Backend·Frontend에 연결됐다.
+- **특약 RAG**: 6개 특약 유형의 결정적 매칭, 공식 source·section 검색, 생성·Guardrail, Backend 저장, Frontend 카드·PDF가 연결됐다. 오프라인 잠금 평가에서 카탈로그 `30/30`, source Top-3 `13/15`, section Top-3 `10/15`, 금지 단정 `0`을 기록했다. 독립 검토와 실제 Gemini·Cohere 품질 검증은 미완료다.
+- **계약 연습**: 조건부 보증금 반환, 제3자 계좌 송금, 대리인 권한 미확인 3개 합성 시나리오가 AI 답변 평가, Backend 세션·턴·결과 저장, Frontend 텍스트 대화·복기와 연결됐다. 미디어·음성은 후속 범위다.
+- **검증 경계**: 실제 FastAPI·PostgreSQL 브라우저 E2E와 API 키 없는 fallback 흐름은 검증 기록이 있다. 실제 Gemini·Cohere 네트워크 응답 품질·비용은 아직 검증하지 않았다.
+- **현재 제한**: R20~R22 외부 데이터 자동 연결, 운영 배포·보안 정책, 실제 provider 품질 평가, 독립 평가셋 검토는 후속이다.
 
-RAG 배치 1~3으로 공식 출처 manifest, 이용조건이 확인된 공식 원문 3개, 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid 검색·규칙 근거 enrichment·retrieval 평가가 구현됐다. 외부 Gemini·Cohere 실호출은 수행하지 않았으며 현재 로컬 공식 원문이 3개라 retrieval 실측 범위는 여전히 제한적이다. 생성 배치 4~5와 A10 offline 작업으로 내부 생성 계약·fake provider·안전 fallback·PII 토큰화·Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계가 구현됐다. 실제 유료 Gemini smoke는 미수행이다. 회원·계약·문서·추출 스냅샷·R01~R24·J01~J12 분석 결과·단계별 안내·체크리스트 상태 저장 API와 정식 프론트엔드 연결이 구현됐다. 2026-07-20에는 PostgreSQL·실제 Backend·MSW 비활성 Frontend를 연결한 320px·360px Playwright E2E를 통과했다. 실행 기준은 위 실행 절과 [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md)를 따른다.
+실행 기준은 위 로컬 실행 절, [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md), [`docs/testing/practice-real-api-validation.md`](docs/testing/practice-real-api-validation.md)를 따른다.

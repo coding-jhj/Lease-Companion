@@ -17,6 +17,7 @@
 - 백엔드 API 스키마와 프론트엔드 타입(`src/types`)을 동기화한다. Backend/OpenAPI 스키마가 타입의 원천이며, **mock 데이터와 실제 API 응답은 같은 타입을 사용한다** — mock으로 먼저 개발해도 연결 시 타입이 달라지지 않게 한다.
 - 추출값 확인·수정 화면의 데이터 형태는 canonical Pydantic 스키마 계약을 따른다. (`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text` → [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
 - **화면 확인 우선순위 3단계 매핑**(사용자 화면 전용 — 내부 상태 9개·시급도 5개를 대체하지 않음): `즉시 확인`·`분석 불가` → **반드시 확인** / `계약 전 확인`·`계약 직후 조치` → **확인 권장** / `참고` → **일반 확인**. 색상만이 아니라 문구·아이콘을 함께 제공한다.
+- 계약 연습은 `/practice` 아래 별도 모드다. 실제 계약 화면·식별자와 섞지 않고 현재 TURN만 공개한다. answer key·숨은 신호·미래 TURN을 bundle·화면·API 응답에 포함하지 않는다.
 
 ## 기술 스택 (2026-07-16 확정)
 
@@ -36,6 +37,7 @@
 | 페이지 | 흐름 단계 | 책임 |
 |--------|-----------|------|
 | `auth` | 1 | 회원가입·로그인 |
+| `mode-select` | 병렬 진입 | 실전 계약 점검과 계약 연습 선택 |
 | `dashboard` | 2 | 계약 대시보드, 계약 건 목록·생성 진입 |
 | `contract-create` | 2·3 | 계약 건 생성, 계약 상황 입력 |
 | `document-upload` | 4 | 계약서·등기 등 문서 업로드 |
@@ -43,14 +45,15 @@
 | `analysis-progress` | 6 | 분석 진행 상태 표시 |
 | `result-report` | 7 | 판정·원문 증거·공식 근거·피해 유형 비교·질문·수정 요청·단계별 행동·전체 PDF 리포트 |
 | `contract-detail` | 8 | 계약 건 상세, 저장된 체크리스트·계약 직후 행동 관리 |
+| `practice` | 병렬 확장 | 시나리오 목록·소개·현재 TURN 대화·최종 행동·복기·세션 복원 |
 
 세부 목록은 [`src/pages/README.md`](src/pages/README.md).
 
 ## Feature 책임 (`src/features/*`)
 
-`auth`, `contracts`, `contract-stage`, `document-upload`, `extraction-review`, `judgment-results`, `evidence-sources`, `question-cards`, `signing-checklist`, `post-contract-actions`, `result-feedback`.
+현재 구현 feature: `analysis-progress`, `damage-patterns`, `document-upload`, `evidence-sources`, `extraction-review`, `judgment-results`, `question-cards`, `result-feedback`, `result-report`, `special-clauses`.
 
-기존 `verification-items`, `result-report` feature 디렉터리는 유지하되 최신 목록과의 관계는 [`src/features/README.md`](src/features/README.md) 참조. **임의로 삭제하지 않는다.**
+실제 추적 중인 feature 목록과 책임은 [`src/features/README.md`](src/features/README.md)를 기준으로 확인한다.
 
 ## 그 외 폴더 의미
 

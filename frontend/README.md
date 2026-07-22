@@ -101,7 +101,7 @@ npm run test:e2e:practice:real
 - 체크리스트·계약 직후 행동은 안정 `item_key`로 실제 문구와 저장 상태를 결합한다.
 - 피드백 등록·이력, 과거 완료 리포트 링크, 문서 이력, 계약 삭제 API를 화면에 연결했다.
 - 계약 연습은 `/practice` 아래 목록·상황·현재 대화·최종 복기 화면을 제공한다. 세 시나리오는 동일한 서비스와 화면 흐름을 사용하며 실제 계약 건과 데이터를 분리한다.
-- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-22 기준 Vitest `22`개 파일·`94`개 테스트가 통과했으며, 이 중 계약 연습 전용 테스트는 `3`개 파일·`19`개다. 기존 계약 분석 MSW E2E는 별도 Playwright 테스트로 유지한다.
+- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-23 기준 Vitest `25`개 파일·`110`개 테스트가 통과했다. 기존 계약 분석 MSW E2E는 별도 Playwright 테스트로 유지한다.
 - 계약 연습 전용 `practice-flow.spec.ts`는 목록·상황·미응답 재시도·3턴·세션 복원·최종 행동·복기 저장을 검증한다. MSW 브라우저 사전검증은 `9 passed`이며, 실제 PostgreSQL/API 검증은 같은 파일을 `test:e2e:practice:real`로 실행한다.
 - `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

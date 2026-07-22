@@ -21,12 +21,12 @@
 
 ## 병렬 확장 모드: 계약 연습 시뮬레이션
 
-> 상태: 2026-07-20 제품 규칙·경계 확정, 구현 전. 기존 실전 계약 점검 8단계를 대체하지 않는다.
+> 상태: 2026-07-22 승인된 합성 시나리오 3개가 AI 답변 평가, Backend 세션·턴·결과 저장 API, Frontend 텍스트 대화·복기 화면과 연결됐다. 실제 Gemini 네트워크 품질과 아바타 미디어는 미검증·후속 범위다. 기존 실전 계약 점검 8단계를 대체하지 않는다.
 
 - 승인된 합성 계약 상황에서 가상 임대인·공인중개사와 확인 대화를 연습한다.
 - 계약 규칙·공식자료 RAG·Guardrail은 재사용하되, 실제 계약 `contract_id`와 연습 세션·행동 평가는 분리한다.
-- 첫 세로 흐름은 `공인중개사의 즉시 계약 압박` 한 개이며 텍스트 답변·사전 제작 영상·행동 기반 복기를 사용한다.
-- 캐릭터 기준 이미지는 Gemini로 생성한다. image-to-video·음성합성 제공자는 TODO다.
+- 현재 텍스트 세로 흐름은 조건부 보증금 반환, 제3자 계좌 송금, 대리인 권한 미확인 3개 시나리오다. 행동 기반 복기와 공식 근거를 제공한다.
+- 사전 제작 영상·캐릭터 이미지·image-to-video·음성합성은 현재 구현 범위 밖이며 제공자는 TODO다.
 - 상세: [`practice-simulation-product-rules.md`](practice-simulation-product-rules.md), [`../decisions/2026-07-20-practice-simulation-boundary.md`](../decisions/2026-07-20-practice-simulation-boundary.md)
 
 ## 포함 범위
