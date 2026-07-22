@@ -57,7 +57,7 @@ export function PracticeScenarioPage() {
                 <div><dt>보증금</dt><dd>{money.format(scenario.synthetic_contract.deposit)}원</dd></div>
                 <div><dt>계약 단계</dt><dd>{scenario.contract_stage}</dd></div>
                 <div><dt>대화 상대</dt><dd>{scenario.role}</dd></div>
-                <div className="practice-facts__wide"><dt>주택 주소</dt><dd>{scenario.synthetic_contract.property_address}</dd></div>
+                <div className="practice-facts__wide practice-facts__wide--aligned"><dt>주택 주소</dt><dd className="practice-facts__address">{scenario.synthetic_contract.property_address}</dd></div>
                 <div><dt>등기상 소유자</dt><dd>{scenario.synthetic_contract.owner_names.join(", ")}</dd></div>
                 <div><dt>입금 계좌 명의</dt><dd>{scenario.synthetic_contract.account_holder}</dd></div>
               </dl>

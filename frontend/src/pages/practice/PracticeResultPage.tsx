@@ -4,6 +4,7 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { practiceService } from "../../services/practiceService";
 import type { PracticeResultDto } from "../../types/api";
+import { getOfficialSourceDisplayNames } from "../../utils/officialSourceNames";
 
 function ResultList({ title, items, emptyText }: { title: string; items: string[]; emptyText: string }) {
   return (
@@ -19,6 +20,9 @@ export function PracticeResultPage() {
   const [result, setResult] = useState<PracticeResultDto | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const officialSourceNames = result
+    ? getOfficialSourceDisplayNames(result.official_source_ids)
+    : [];
 
   async function loadResult() {
     setStatus("loading");
@@ -53,9 +57,9 @@ export function PracticeResultPage() {
             </div>
             <section className="practice-source-card">
               <h2>연결된 공식 근거</h2>
-              <p>현재 API는 공식자료 식별자를 제공합니다. 실제 자료 제목과 원문 링크 연결은 후속 작업에서 보강합니다.</p>
-              {result.official_source_ids.length > 0 ? (
-                <ul>{result.official_source_ids.map((sourceId) => <li key={sourceId}>{sourceId}</li>)}</ul>
+              <p>이번 연습의 확인 행동과 연결된 법령·공식자료입니다.</p>
+              {officialSourceNames.length > 0 ? (
+                <ul>{officialSourceNames.map((sourceName) => <li key={sourceName}>{sourceName}</li>)}</ul>
               ) : <p>연결된 공식 근거가 없습니다.</p>}
             </section>
             <div className="page-actions">

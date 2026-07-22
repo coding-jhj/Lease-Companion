@@ -142,7 +142,12 @@ function renderSession() {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
+
+function mockDesktopKeyboard(matches: boolean) {
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches }));
+}
 
 describe("Practice scenario pages", () => {
   it("shows all three approved synthetic scenarios without answer data", async () => {
@@ -167,7 +172,10 @@ describe("Practice scenario pages", () => {
     renderScenario(scenarioId);
 
     expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
-    expect(screen.getByText("서울특별시 가온구 연습로 1")).toBeInTheDocument();
+    const address = screen.getByText("서울특별시 가온구 연습로 1");
+    expect(address).toHaveClass("practice-facts__address");
+    expect(address.parentElement).toHaveClass("practice-facts__wide", "practice-facts__wide--aligned");
+    expect(address.parentElement).not.toHaveAttribute("style");
     expect(screen.getByText(clause)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "대화 연습 시작" }));
 
@@ -193,8 +201,57 @@ describe("PracticeSessionPage", () => {
     })));
     expect(await screen.findByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
     expect(screen.getByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
-    expect(screen.getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
+    expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(2);
+    expect(screen.queryByText("확인 요청을 반영했습니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
+  });
+
+  it("submits a non-empty answer with Enter on a PC keyboard", async () => {
+    mockDesktopKeyboard(true);
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    const submit = vi.spyOn(practiceService, "submitTurn").mockResolvedValue(turnResponse(session({ current_state: "TURN-02", current_turn: dialogueTurn("TURN-02") })));
+    renderSession();
+
+    const textarea = await screen.findByLabelText("내 답변");
+    fireEvent.change(textarea, { target: { value: "계약 조건을 확인하겠습니다." } });
+    expect(screen.getByText("Enter로 보내기 · Shift+Enter로 줄바꿈")).toHaveClass("practice-answer-shortcut");
+    fireEvent.keyDown(textarea, { key: "Enter" });
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit).toHaveBeenCalledWith("session-001", expect.objectContaining({ user_answer: "계약 조건을 확인하겠습니다." }));
+  });
+
+  it.each([
+    ["Shift+Enter", true, { key: "Enter", shiftKey: true }],
+    ["IME composition Enter", true, { key: "Enter", isComposing: true }],
+    ["mobile Enter", false, { key: "Enter" }],
+  ])("does not submit with %s", async (_label, desktopKeyboard, keyboardEvent) => {
+    mockDesktopKeyboard(desktopKeyboard);
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    const submit = vi.spyOn(practiceService, "submitTurn");
+    renderSession();
+
+    const textarea = await screen.findByLabelText("내 답변");
+    fireEvent.change(textarea, { target: { value: "계약 조건을 확인하겠습니다." } });
+    fireEvent.keyDown(textarea, keyboardEvent);
+
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("does not submit an empty answer or submit twice while a PC request is pending", async () => {
+    mockDesktopKeyboard(true);
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    const submit = vi.spyOn(practiceService, "submitTurn").mockReturnValue(new Promise(() => {}));
+    renderSession();
+
+    const textarea = await screen.findByLabelText("내 답변");
+    fireEvent.keyDown(textarea, { key: "Enter" });
+    expect(submit).not.toHaveBeenCalled();
+
+    fireEvent.change(textarea, { target: { value: "계약 조건을 확인하겠습니다." } });
+    fireEvent.keyDown(textarea, { key: "Enter" });
+    fireEvent.keyDown(textarea, { key: "Enter" });
+    expect(submit).toHaveBeenCalledTimes(1);
   });
 
   it("submits a timeout without answer text and keeps the same turn", async () => {
@@ -221,9 +278,10 @@ describe("PracticeSessionPage", () => {
     fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
     fireEvent.click(screen.getByRole("button", { name: "답변 보내기" }));
 
-    expect(await screen.findByText("답변을 다시 말씀해 주세요.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
+    expect(screen.getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
+    expect(screen.queryByText("답변을 다시 말씀해 주세요.")).not.toBeInTheDocument();
     expect(screen.queryByText("답변을 자동으로 평가하지 못했습니다. 같은 턴에서 다시 답해 주세요.")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
     const retryAnswer = screen.getByLabelText("내 답변");
     expect(retryAnswer).toBeEnabled();
     expect(retryAnswer).toHaveValue("");
@@ -291,7 +349,7 @@ describe("PracticeSessionPage", () => {
 });
 
 describe("PracticeResultPage", () => {
-  it("renders the score-free debrief, official source IDs, and replay links", async () => {
+  it("renders user-facing official source names without exposing internal IDs", async () => {
     const result: PracticeResultDto = {
       schema_version: "1.9.0",
       session_id: "session-001",
@@ -304,7 +362,7 @@ describe("PracticeResultPage", () => {
       missed_signals: ["구두 약속만으로 진행하지 않기"],
       recommended_phrases: ["반환 조건을 특약에 적어 주세요."],
       next_actions: ["수정된 특약을 다시 확인합니다."],
-      official_source_ids: ["SRC-STD-LEASE"],
+      official_source_ids: ["SRC-STD-LEASE", "SRC-HTA-LAW", "SRC-UNKNOWN", "SRC-UNKNOWN"],
     };
     vi.spyOn(practiceService, "getResult").mockResolvedValue({ result });
     render(
@@ -318,7 +376,10 @@ describe("PracticeResultPage", () => {
     expect(screen.getByText("구두 약속만으로 진행하지 않기")).toBeInTheDocument();
     expect(screen.getByText("반환 조건을 특약에 적어 주세요.")).toBeInTheDocument();
     expect(screen.getByText("수정된 특약을 다시 확인합니다.")).toBeInTheDocument();
-    expect(screen.getByText("SRC-STD-LEASE")).toBeInTheDocument();
+    expect(screen.getByText("주택임대차 표준계약서")).toBeInTheDocument();
+    expect(screen.getByText("주택임대차보호법")).toBeInTheDocument();
+    expect(screen.getAllByText("공식 자료")).toHaveLength(1);
+    expect(screen.queryByText(/^SRC-/)).not.toBeInTheDocument();
     expect(screen.queryByText(/안전 점수|위험 점수|사기 가능성/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "같은 상황 다시 연습" })).toHaveAttribute("href", "/practice/scenarios/PRACTICE-DEFERRED-REFUND-001");
   });
