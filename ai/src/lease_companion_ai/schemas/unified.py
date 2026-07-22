@@ -1086,6 +1086,7 @@ class OfficialSource(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source_id: str = Field(min_length=1)
+    article_or_section: str | None = None
     title: str
     institution: str
     # 현행 source_inventory.csv에 요약이 비어 있는 항목이 있어 null 허용.

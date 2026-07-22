@@ -8,6 +8,7 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 
 from lease_companion_ai.rag.models import (
+    ClauseRetrievalQuery,
     EvidenceQuery,
     RagChunk,
     RetrievalHit,
@@ -87,12 +88,23 @@ class BM25Index:
         if not query_terms:
             return []
 
+        allowed_pairs = (
+            set(query.allowed_section_pairs)
+            if isinstance(query, ClauseRetrievalQuery)
+            else None
+        )
         scored = [
             (self._score(index, query_terms), chunk)
             for index, chunk in enumerate(self._chunks)
+            if allowed_pairs is None
+            or (chunk.metadata.source_id, chunk.section) in allowed_pairs
         ]
         ranked = sorted(
-            ((score, chunk) for score, chunk in scored if score > 0),
+            (
+                (score, chunk)
+                for score, chunk in scored
+                if score > 0 or allowed_pairs is not None
+            ),
             key=lambda item: (-item[0], item[1].chunk_id),
         )[:top_k]
         return [

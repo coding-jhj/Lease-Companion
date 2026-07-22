@@ -9,10 +9,88 @@ from collections.abc import Sequence
 from lease_companion_ai.rag.models import RagChunk, RagSourceMetadata
 
 
+_ARTICLE_HEADING = re.compile(r"^(제\d+조(?:의\d+)?)(?:\([^)]*\))?")
+_BRACKET_HEADING = re.compile(r"^(\[[^\]]+\]|【[^】]+】)")
+_CIRCLED_PARAGRAPHS = {"제1항": "①", "제2항": "②", "제3항": "③", "제4항": "④"}
+
+
 def normalize_source_text(text: str) -> str:
     """줄바꿈과 줄 내부 공백을 정규화하되 section 문단 경계는 보존한다."""
     lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
     return "\n".join(line for line in lines if line).strip()
+
+
+def _article_blocks(text: str) -> dict[str, list[str]]:
+    blocks: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in normalize_source_text(text).splitlines():
+        match = _ARTICLE_HEADING.match(line)
+        if match:
+            current = match.group(1)
+            blocks[current] = [line]
+        elif current is not None and _BRACKET_HEADING.match(line) is None:
+            blocks[current].append(line)
+        elif _BRACKET_HEADING.match(line):
+            current = None
+    return blocks
+
+
+def _bracket_block(text: str, heading: str) -> list[str]:
+    lines = normalize_source_text(text).splitlines()
+    collected: list[str] = []
+    active = False
+    for line in lines:
+        match = _BRACKET_HEADING.match(line)
+        if match:
+            if active:
+                break
+            active = match.group(1) == heading
+        if active:
+            collected.append(line)
+    return collected
+
+
+def extract_named_section(text: str, article_or_section: str) -> str:
+    """카탈로그의 조·항 이름으로 공식 원문 범위를 결정적으로 추출한다."""
+
+    normalized = normalize_source_text(text)
+    article_ids = tuple(dict.fromkeys(re.findall(r"제\d+조(?:의\d+)?", article_or_section)))
+    if article_ids:
+        blocks = _article_blocks(normalized)
+        selected: list[str] = []
+        for article_id in article_ids:
+            selected.extend(blocks.get(article_id, ()))
+        paragraph_match = re.search(r"제([1-4])항(?:~제([1-4])항)?", article_or_section)
+        if paragraph_match and selected:
+            start = int(paragraph_match.group(1))
+            end = int(paragraph_match.group(2) or paragraph_match.group(1))
+            markers = {_CIRCLED_PARAGRAPHS[f"제{number}항"] for number in range(start, end + 1)}
+            selected = [selected[0], *(line for line in selected[1:] if line[:1] in markers)]
+        result = normalize_source_text("\n".join(selected))
+        if result:
+            return result
+
+    bracket = re.match(r"(\[[^\]]+\]|【[^】]+】)", article_or_section)
+    if bracket:
+        selected = _bracket_block(normalized, bracket.group(1))
+        suffix = article_or_section[bracket.end() :].strip()
+        if suffix and selected:
+            keywords = [token for token in re.findall(r"[0-9A-Za-z가-힣]+", suffix) if len(token) >= 2]
+            matching = [line for line in selected[1:] if any(keyword in line for keyword in keywords)]
+            selected = [selected[0], *matching] if matching else selected
+        result = normalize_source_text("\n".join(selected))
+        if result:
+            return result
+
+    phrase_aliases = {
+        "잔금 지급 전 권리관계 재확인": "권리관계 재확인",
+        "담보권 설정 특약 이행 여부 확인": "특약 이행 여부 확인(담보권 설정",
+    }
+    needle = phrase_aliases.get(article_or_section, article_or_section)
+    matching_lines = [line for line in normalized.splitlines() if needle in line]
+    if matching_lines:
+        return normalize_source_text("\n".join(matching_lines))
+    raise ValueError(f"공식 원문에서 section을 찾을 수 없습니다: {article_or_section}")
 
 
 def build_chunk_id(

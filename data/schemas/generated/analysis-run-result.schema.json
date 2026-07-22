@@ -158,6 +158,18 @@
       "additionalProperties": false,
       "description": "공식 근거 참조(정적 카탈로그 항목). 원문 증거(SourceEvidence)와 구분.",
       "properties": {
+        "article_or_section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Article Or Section"
+        },
         "institution": {
           "title": "Institution",
           "type": "string"

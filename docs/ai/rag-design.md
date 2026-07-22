@@ -72,9 +72,19 @@
 - `SRC-STD-LEASE`를 공공누리 제1유형 이용조건에 따라 `local_source`로 승격하고, 서식 입력란을 제외한 법적 본문을 정규화해 적재했다.
 - manifest·source inventory·retrieval 평가를 새 원문 구성에 맞춰 결정적으로 갱신했다. 판정 필드 불변과 비공식 출처 노출 0 기준은 유지한다.
 
+## 특약 전용 검색 구현 상태 (2026-07-22)
+
+- `ClauseRetrievalQuery`는 catalog ID·표시명, 연결 R/J 이름·상태, 비식별 특약 원문, 허용 source·section을 하나의 검색 계약으로 고정한다.
+- `special_clause_evidence_map.csv`에 적힌 조·항만 공식 원문에서 결정적으로 추출한다. 법 조문, 항 범위, 대괄호 섹션, 체크리스트 항목을 보존한다.
+- BM25는 특약 질의에서 허용 source·section 후보만 검색한다. API 키 없이 한국어 n-gram BM25를 사용하고, embedding·rerank provider를 주입하면 기존 Chroma hybrid Top-20·rerank Top-5 경로를 재사용한다.
+- 최종 특약 근거는 동일 source·section 청크를 제거한 Top-3다. 검색 실패·근거 없음은 빈 `evidence_sources`이며 R/J 상태·시급도·사유는 바꾸지 않는다.
+- 실제 Gemini embedding·Cohere 호출은 하지 않았다. 잠긴 retrieval 7건은 Fake reranker로 source·section 순위를 검증했다.
+- 작업 5는 독립 enrichment 서비스를 완성한 범위다. 분석 파이프라인 자동 호출은 작업 7에서 generation·guardrail과 함께 연결한다.
+
 ## 후속 TODO
 
 - 재배포 조건이 명시적으로 허용된 공식 원문의 실제 문서 구조를 확인한 뒤 기본 청킹 크기(`1200`)·중첩(`120`)을 평가
 - metadata-only 공식자료 4개는 적합한 근거 범위와 이용조건을 추가 확인한 뒤 허용 원문만 적재
 - metadata-only 원문 추가 후 J01~J12 판정별 retrieval goldset·source recall 측정
 - 별도 키·비용 승인 후 Gemini·Cohere smoke test와 실측 latency·비용 기록
+- 작업 7에서 `SpecialClauseRetrievalService.enrich()`를 catalog→R/J 뒤, 생성 앞에 연결

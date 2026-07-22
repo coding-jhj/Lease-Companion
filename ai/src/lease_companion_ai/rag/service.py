@@ -26,6 +26,7 @@ from lease_companion_ai.rag.indexing.chroma_index import (
 )
 from lease_companion_ai.rag.indexing.chunker import chunk_sections, normalize_source_text
 from lease_companion_ai.rag.models import (
+    ClauseRetrievalQuery,
     EvidenceQuery,
     JudgmentRetrievalQuery,
     RagChunk,
@@ -34,7 +35,7 @@ from lease_companion_ai.rag.models import (
     RetrievalQuery,
 )
 from lease_companion_ai.rag.reranking.service import RerankingService
-from lease_companion_ai.rag.retrieval.bm25 import BM25Index
+from lease_companion_ai.rag.retrieval.bm25 import BM25Index, Tokenizer
 from lease_companion_ai.rag.retrieval.hybrid import HybridRetriever
 from lease_companion_ai.routing.models import (
     ProcessingStage,
@@ -138,6 +139,18 @@ class EvidenceRetrievalService:
             allowed = set(query.allowed_source_ids)
             hits = [
                 hit for hit in hits if hit.chunk.metadata.source_id in allowed
+            ]
+            hits = [
+                hit.model_copy(update={"rank": rank})
+                for rank, hit in enumerate(hits, start=1)
+            ]
+        if isinstance(query, ClauseRetrievalQuery):
+            allowed_sections = set(query.allowed_section_pairs)
+            hits = [
+                hit
+                for hit in hits
+                if (hit.chunk.metadata.source_id, hit.chunk.section)
+                in allowed_sections
             ]
             hits = [
                 hit.model_copy(update={"rank": rank})
@@ -396,9 +409,14 @@ def build_evidence_service(
     collection_name: str = DEFAULT_COLLECTION_NAME,
     chunking_version: str = DEFAULT_CHUNKING_VERSION,
     rebuild_stale: bool = True,
+    bm25_tokenizer: Tokenizer | None = None,
 ) -> EvidenceRetrievalService:
     """Hybrid runtime을 만들고 외부 provider·인덱스 실패 시 BM25로 축소한다."""
-    bm25 = BM25Index(chunks)
+    bm25 = (
+        BM25Index(chunks, tokenizer=bm25_tokenizer)
+        if bm25_tokenizer is not None
+        else BM25Index(chunks)
+    )
     retriever: Retriever = bm25
     routing_decisions: list[RoutingDecision] = []
     if embedding_provider is not None:

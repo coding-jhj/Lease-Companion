@@ -9,8 +9,9 @@
 - `indexing/` — 공식 자료 청크·임베딩 인덱스 구축 (자료·메타데이터는 `data/rag/`)
 - `retrieval/` — 판정·조항 문맥으로 관련 근거 검색
 - `reranking/` — 검색 결과 재정렬로 근거 정확도 향상
-- `models.py` — 청크·출처 메타데이터·R/J 검색 입출력 계약
-- `service.py` — allowlist 적용, R/J 근거 조립과 기관명·문서명·URL 인용 생성
+- `models.py` — 청크·출처 메타데이터·R/J/특약 검색 입출력 계약
+- `service.py` — 공통 source allowlist 적용, R/J 근거 조립
+- `clause_service.py` — 특약 원문 비식별 질의, source·section 제한, Top-3 근거 조립
 
 ## 입력
 
@@ -32,5 +33,6 @@
 - 구현 완료(배치 6): 법무부 표준 주택임대차계약서 `SRC-STD-LEASE`를 공공누리 제1유형 조건에 따라 로컬 원문으로 승격하고 R/J retrieval 평가를 갱신했다.
 - 구현 완료(배치 8, 2026-07-20): `SRC-MOLIT-CHECKLIST`(안심 전세계약 체크리스트)를 팀 예외 규정으로 로컬 원문 적재. 현재 로컬 원문은 법령 2개·표준계약서 1개·체크리스트 1개다. test R 전체 recall 15/39→38/39, J recall 30/41→33/41.
 - 구현 완료(배치 7): R01~R10 검색 질의에 `rule_evidence_map.csv`의 공식 근거 설명을 개인정보 없는 검색 문맥으로 추가하고, 같은 파일의 source allowlist를 실제 검색 결과에 적용했다. locked goldset 변경 없이 로컬 가용 recall은 dev/test 모두 100%다.
+- 구현 완료(특약 작업 5, 2026-07-22): `ClauseRetrievalQuery`와 조·항 추출기를 추가했다. 특약 catalog가 허용한 source·section 안에서 BM25/hybrid Top-20 → rerank Top-5 → source·section 중복 제거 Top-3으로 근거를 만든다. PII는 검색 전에 토큰화하고 R/J 결과는 보존한다.
 - 실제 Gemini·Cohere 호출은 키·비용 승인 전까지 실행하지 않는다. 현재 어댑터 검증은 주입한 fake SDK client만 사용한다.
 - TODO: metadata-only 공식자료 5개 중 재배포가 허용되는 원문을 추가하고 R/J retrieval을 재평가. 별도 키·비용 승인 후 Gemini·Cohere smoke test.

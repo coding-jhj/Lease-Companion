@@ -119,7 +119,75 @@ class JudgmentRetrievalQuery(BaseModel):
         return " ".join(parts)
 
 
-EvidenceQuery = RetrievalQuery | JudgmentRetrievalQuery
+class SourceSectionFilter(BaseModel):
+    """특약 카탈로그가 허용한 공식 source·section 한 쌍."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source_id: SourceId
+    article_or_section: str = Field(min_length=1)
+
+
+class ClauseRetrievalQuery(BaseModel):
+    """확인 특약 원문과 연결 R/J 문맥을 사용하는 source-bounded 질의."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    clause_id: str = Field(pattern=r"^SC-\d{4}$")
+    catalog_ids: tuple[Annotated[str, Field(pattern=r"^SC-[A-Z0-9-]+$")], ...] = Field(
+        min_length=1
+    )
+    catalog_names: tuple[str, ...] = Field(min_length=1)
+    related_result_contexts: tuple[str, ...] = ()
+    status: RuleStatus
+    allowed_source_sections: tuple[SourceSectionFilter, ...] = Field(min_length=1)
+    deidentified_clause_context: str = Field(min_length=1, max_length=2000)
+
+    @field_validator(
+        "catalog_ids", "catalog_names", "related_result_contexts", mode="after"
+    )
+    @classmethod
+    def _unique_texts(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        if len(values) != len(set(values)):
+            raise ValueError("특약 검색 질의 값은 중복될 수 없습니다.")
+        return values
+
+    @field_validator("allowed_source_sections")
+    @classmethod
+    def _unique_sections(
+        cls, values: tuple[SourceSectionFilter, ...]
+    ) -> tuple[SourceSectionFilter, ...]:
+        pairs = [(item.source_id, item.article_or_section) for item in values]
+        if len(pairs) != len(set(pairs)):
+            raise ValueError("특약 검색 허용 source·section은 중복될 수 없습니다.")
+        return values
+
+    @property
+    def allowed_source_ids(self) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(item.source_id for item in self.allowed_source_sections)
+        )
+
+    @property
+    def allowed_section_pairs(self) -> tuple[tuple[str, str], ...]:
+        return tuple(
+            (item.source_id, item.article_or_section)
+            for item in self.allowed_source_sections
+        )
+
+    def to_search_text(self) -> str:
+        return " ".join(
+            (
+                *self.catalog_ids,
+                *self.catalog_names,
+                *self.related_result_contexts,
+                self.status.value,
+                self.deidentified_clause_context,
+            )
+        )
+
+
+EvidenceQuery = RetrievalQuery | JudgmentRetrievalQuery | ClauseRetrievalQuery
 
 
 def query_to_search_text(query: EvidenceQuery | str) -> str:
