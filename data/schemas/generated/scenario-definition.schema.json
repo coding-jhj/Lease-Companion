@@ -8,6 +8,7 @@
             "enum": [
               "진행",
               "추가 확인",
+              "특약 수정 요구",
               "보류",
               "중단"
             ],
@@ -35,6 +36,67 @@
       ],
       "title": "ActionSelection",
       "type": "object"
+    },
+    "ClarityCandidate": {
+      "enum": [
+        "명확",
+        "불명확",
+        "확인 필요"
+      ],
+      "title": "ClarityCandidate",
+      "type": "string"
+    },
+    "ClauseCandidate": {
+      "additionalProperties": false,
+      "description": "조항 유형·명확성·책임 주체 후보. 규칙 판정 상태를 포함하지 않는다.",
+      "properties": {
+        "clarity_candidate": {
+          "$ref": "#/$defs/ClarityCandidate"
+        },
+        "clause_ref": {
+          "minLength": 1,
+          "title": "Clause Ref",
+          "type": "string"
+        },
+        "clause_type": {
+          "$ref": "#/$defs/ClauseType"
+        },
+        "condition_candidates": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Condition Candidates",
+          "type": "array"
+        },
+        "responsible_party_candidate": {
+          "$ref": "#/$defs/ResponsiblePartyCandidate"
+        },
+        "review_required": {
+          "title": "Review Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "clause_ref",
+        "clause_type",
+        "clarity_candidate",
+        "responsible_party_candidate",
+        "review_required"
+      ],
+      "title": "ClauseCandidate",
+      "type": "object"
+    },
+    "ClauseType": {
+      "description": "LLM이 제안하는 조항 유형 후보. 최종 판정이 아니다.",
+      "enum": [
+        "deposit_return",
+        "repair_restoration",
+        "management_fee",
+        "rights_change",
+        "other"
+      ],
+      "title": "ClauseType",
+      "type": "string"
     },
     "ConfirmationSignal": {
       "additionalProperties": false,
@@ -178,6 +240,16 @@
       "title": "DialogueTurn",
       "type": "object"
     },
+    "ResponsiblePartyCandidate": {
+      "enum": [
+        "임대인",
+        "임차인",
+        "공동",
+        "미지정"
+      ],
+      "title": "ResponsiblePartyCandidate",
+      "type": "string"
+    },
     "SyntheticContractInput": {
       "additionalProperties": false,
       "description": "승인 fixture의 합성 계약 사실. 실제 계약 건과 연결하지 않는다.",
@@ -190,6 +262,30 @@
         "account_number_stored": {
           "title": "Account Number Stored",
           "type": "boolean"
+        },
+        "agent_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent Name"
+        },
+        "agent_relationship": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent Relationship"
         },
         "balance_payment": {
           "minimum": 0,
@@ -240,6 +336,11 @@
         },
         "is_joint_ownership": {
           "title": "Is Joint Ownership",
+          "type": "boolean"
+        },
+        "is_proxy_contract": {
+          "default": false,
+          "title": "Is Proxy Contract",
           "type": "boolean"
         },
         "landlord_name": {
@@ -301,6 +402,13 @@
           "minLength": 1,
           "title": "Property Address",
           "type": "string"
+        },
+        "proxy_authority_documents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Proxy Authority Documents",
+          "type": "array"
         },
         "registry_issue_date": {
           "format": "date",
@@ -461,6 +569,13 @@
       },
       "minItems": 2,
       "title": "Always Show Labels",
+      "type": "array"
+    },
+    "classification_candidates": {
+      "items": {
+        "$ref": "#/$defs/ClauseCandidate"
+      },
+      "title": "Classification Candidates",
       "type": "array"
     },
     "contract_stage": {

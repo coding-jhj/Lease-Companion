@@ -12,7 +12,7 @@ from typing import Annotated, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from .unified import SCHEMA_VERSION, ContractType, SchemaVersion
+from .unified import SCHEMA_VERSION, ClauseCandidate, ContractType, SchemaVersion
 
 
 ScenarioId = Annotated[str, Field(pattern=r"^PRACTICE-[A-Z0-9-]+-\d{3}$")]
@@ -27,7 +27,7 @@ AnswerCategory = Literal[
     "no_response",
     "needs_review",
 ]
-SelectedAction = Literal["진행", "추가 확인", "보류", "중단"]
+SelectedAction = Literal["진행", "추가 확인", "특약 수정 요구", "보류", "중단"]
 
 
 T = TypeVar("T")
@@ -60,6 +60,10 @@ class SyntheticContractInput(BaseModel):
     end_date: date
     landlord_name: str = Field(min_length=1)
     broker_name: str = Field(min_length=1)
+    is_proxy_contract: bool = False
+    agent_name: str | None = None
+    agent_relationship: str | None = None
+    proxy_authority_documents: list[str] = Field(default_factory=list)
     account_holder: str = Field(min_length=1)
     account_number_stored: bool
     registry_issue_date: date
@@ -80,6 +84,12 @@ class SyntheticContractInput(BaseModel):
             raise ValueError("owner_shares는 owner_names와 정확히 일치해야 합니다.")
         if self.is_joint_ownership is not (len(self.owner_names) > 1):
             raise ValueError("is_joint_ownership와 owner_names 수가 일치하지 않습니다.")
+        if not self.is_proxy_contract and any(
+            value is not None for value in (self.agent_name, self.agent_relationship)
+        ):
+            raise ValueError("대리 계약이 아니면 대리인 정보를 넣을 수 없습니다.")
+        if not self.is_proxy_contract and self.proxy_authority_documents:
+            raise ValueError("대리 계약이 아니면 권한 서류를 넣을 수 없습니다.")
         return self
 
 
@@ -195,6 +205,7 @@ class ScenarioDefinition(BaseModel):
     contract_stage: str = Field(min_length=1)
     always_show_labels: list[str] = Field(min_length=2)
     synthetic_contract: SyntheticContractInput
+    classification_candidates: list[ClauseCandidate] = Field(default_factory=list)
     target_actions: list[TargetAction] = Field(min_length=1)
     hidden_confirmation_signals: list[ConfirmationSignal] = Field(min_length=1)
     dialogue_turns: list[DialogueTurn] = Field(min_length=1)
@@ -210,6 +221,10 @@ class ScenarioDefinition(BaseModel):
         _unique(signal_ids, label="signal_id")
         _unique(turn_ids, label="turn_id")
         _unique(self.always_show_labels, label="always_show_labels")
+        _unique(
+            [candidate.clause_ref for candidate in self.classification_candidates],
+            label="classification_candidates clause_ref",
+        )
 
         known_actions = set(action_ids)
         known_signals = set(signal_ids)
@@ -341,6 +356,15 @@ class PracticeTurnEvaluation(BaseModel):
     confirmed_action_ids: list[ActionId] = Field(default_factory=list)
     next_dialogue_state: str = Field(min_length=1)
     fallback_reason: str | None = None
+    evidence_text: str | None = None
+
+    @field_validator("evidence_text")
+    @classmethod
+    def _strip_evidence(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
     @model_validator(mode="after")
     def _check_evaluation(self) -> "PracticeTurnEvaluation":

@@ -1,0 +1,169 @@
+{
+  "fixture_type": "synthetic_practice_scenario",
+  "data_classification": "synthetic",
+  "scenario_id": "PRACTICE-PROXY-AUTHORITY-001",
+  "scenario_version": "1.0.0",
+  "review_status": "approved",
+  "title": "대리인 권한 자료 없는 계약 요구",
+  "role": "공인중개사",
+  "difficulty": "기본",
+  "contract_stage": "계약서 서명·계약금 입금 전",
+  "always_show_labels": [
+    "가상 연습",
+    "합성 시나리오"
+  ],
+  "synthetic_contract": {
+    "contract_type": "전세",
+    "signed": false,
+    "deposit_paid": false,
+    "property_address": "서울특별시 가온구 다온로 18, 102동 503호",
+    "deposit": 210000000,
+    "monthly_rent": null,
+    "contract_payment": 21000000,
+    "balance_payment": 189000000,
+    "requested_provisional_payment": 1000000,
+    "contract_payment_date": "2026-07-22",
+    "balance_payment_date": "2026-08-29",
+    "move_in_date": "2026-08-29",
+    "start_date": "2026-08-29",
+    "end_date": "2028-08-28",
+    "landlord_name": "한서윤",
+    "broker_name": "오지민",
+    "account_holder": "박민준",
+    "account_number_stored": false,
+    "registry_issue_date": "2026-07-21",
+    "registry_property_address": "서울특별시 가온구 다온로 18, 102동 503호",
+    "owner_names": [
+      "한서윤"
+    ],
+    "is_joint_ownership": false,
+    "owner_shares": {
+      "한서윤": "1/1"
+    },
+    "mortgage_present": false,
+    "mortgage_maximum_claim": null,
+    "deposit_return_clause": "임대차 종료일에 목적물을 인도받은 후 보증금을 반환한다.",
+    "rights_change_clause_present": true,
+    "special_clauses": [
+      "계약 체결은 임대인의 대리인이 진행한다."
+    ],
+    "is_proxy_contract": true,
+    "agent_name": "박민준",
+    "agent_relationship": "임대인의 친족",
+    "proxy_authority_documents": []
+  },
+  "classification_candidates": [],
+  "target_actions": [
+    {
+      "action_id": "PA01",
+      "name": "등기상 소유자와 계약 상대 확인",
+      "linked_signal_ids": [
+        "SIG-PROXY-AUTHORITY-MISSING"
+      ]
+    },
+    {
+      "action_id": "PA02",
+      "name": "대리인 권한 서류와 권한 범위 확인",
+      "linked_signal_ids": [
+        "SIG-PROXY-AUTHORITY-MISSING"
+      ]
+    },
+    {
+      "action_id": "PA03",
+      "name": "권한 확인 전 서명·송금 보류",
+      "linked_signal_ids": [
+        "SIG-PROXY-AUTHORITY-MISSING"
+      ]
+    }
+  ],
+  "hidden_confirmation_signals": [
+    {
+      "signal_id": "SIG-PROXY-AUTHORITY-MISSING",
+      "fact": "등기상 소유자가 아닌 가상 대리인이 계약을 진행하지만 위임장·인감증명서 등 권한 자료와 위임 범위가 제시되지 않았다.",
+      "linked_rule_ids": [],
+      "linked_judgment_ids": [
+        "J01",
+        "J04"
+      ],
+      "official_source_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE"
+      ]
+    }
+  ],
+  "dialogue_turns": [
+    {
+      "turn_id": "TURN-01",
+      "goal_action_id": "PA01",
+      "prompt": "등기상 소유자분은 오늘 못 오시고 친족인 박민준 씨가 대신 계약합니다. 가족이니 바로 진행해도 되겠죠?",
+      "wait_sequence": [
+        {
+          "state": "WAIT_BASIC",
+          "from_second": 0,
+          "to_second": 5,
+          "line": null
+        },
+        {
+          "state": "WAIT_PRESSURE",
+          "from_second": 5,
+          "to_second": 10,
+          "line": null
+        },
+        {
+          "state": "PRESSURE_REMINDER",
+          "from_second": 10,
+          "to_second": null,
+          "line": "가족 관계는 확인했으니 소유자분이 직접 오지 않아도 문제없습니다."
+        }
+      ],
+      "responses": {
+        "appropriate_check": "등기상 소유자와 실제 계약 상대를 먼저 확인하겠다는 말씀이군요.",
+        "partial_check": "누구의 신분과 계약 관계를 확인할지 더 구체적으로 말씀해 주세요.",
+        "ambiguous_answer": "그럼 소유자 확인은 나중에 하고 계약 절차부터 진행할까요?",
+        "avoidance": "등기상 소유자와 계약 상대를 확인할지 말씀해 주세요.",
+        "no_response": "가족 관계는 확인했으니 소유자분이 직접 오지 않아도 문제없습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 같은 내용을 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-02"
+    },
+    {
+      "turn_id": "TURN-02",
+      "goal_action_id": "PA02",
+      "prompt": "위임장과 인감증명서는 계약 후에 보내드릴 수 있습니다. 대리인 신분증만 확인하고 서명하시죠.",
+      "responses": {
+        "appropriate_check": "위임장·인감증명서와 계약·수령 권한 범위를 확인하자는 요청이군요.",
+        "partial_check": "어떤 권한 자료와 위임 범위를 확인할지 더 구체적으로 말씀해 주세요.",
+        "ambiguous_answer": "서류는 나중에 받는 것으로 하고 우선 설명을 계속할까요?",
+        "avoidance": "대리인의 권한 자료를 계약 전에 확인할지 말씀해 주세요.",
+        "no_response": "추가 서류 요청이 없다면 대리인 신분증만 확인하고 진행하겠습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-03"
+    },
+    {
+      "turn_id": "TURN-03",
+      "goal_action_id": "PA03",
+      "prompt": "집을 잡으려면 지금 대리인 박민준 씨와 계약서에 서명하고 그분 계좌로 계약금을 보내셔야 합니다. 서류는 뒤에 보완하겠습니다.",
+      "responses": {
+        "appropriate_check": "대리 권한과 계약금 수령 권한을 확인하기 전에는 서명하거나 송금하지 않겠다는 말씀이군요.",
+        "partial_check": "확인 전 서명과 송금을 모두 보류한다는 뜻을 더 분명히 말씀해 주세요.",
+        "ambiguous_answer": "그럼 서류는 추후 보완하는 것으로 하고 계약 의사만 정해 주시겠어요?",
+        "avoidance": "권한 확인 전 서명·송금 여부를 말씀해 주세요.",
+        "no_response": "서명과 송금 여부를 정하지 않은 상태로 연습을 마치겠습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "ACTION-SELECTION"
+    }
+  ],
+  "action_selection": {
+    "state_id": "ACTION-SELECTION",
+    "allowed_actions": [
+      "진행",
+      "추가 확인",
+      "보류",
+      "중단"
+    ],
+    "next_state_id": "DEBRIEF"
+  },
+  "terminal_state_id": "DEBRIEF"
+}

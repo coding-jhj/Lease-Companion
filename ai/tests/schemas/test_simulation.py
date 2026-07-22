@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+from collections import Counter
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +19,12 @@ SCENARIO_PATH = (
     / "practice-scenarios"
     / "PRACTICE-BROKER-PRESSURE-001"
     / "scenario.json"
+)
+SCENARIO_ROOT = ROOT / "data" / "sample" / "practice-scenarios"
+NEW_SCENARIO_IDS = (
+    "PRACTICE-DEFERRED-REFUND-001",
+    "PRACTICE-THIRD-PARTY-PAYMENT-001",
+    "PRACTICE-PROXY-AUTHORITY-001",
 )
 
 
@@ -50,6 +57,66 @@ def test_scenario_id_supports_an_approved_catalog_instead_of_one_hardcoded_id():
     scenario = simulation.ScenarioDefinition.model_validate(payload)
 
     assert scenario.scenario_id == "PRACTICE-LANDLORD-PROXY-001"
+
+
+@pytest.mark.parametrize("scenario_id", NEW_SCENARIO_IDS)
+def test_new_practice_scenario_and_answer_key_load_together(scenario_id):
+    models = importlib.import_module("lease_companion_ai.simulation.models")
+    scenario, answer_key = models.load_practice_assets(
+        SCENARIO_ROOT / scenario_id / "scenario.json",
+        SCENARIO_ROOT / scenario_id / "answer-key.json",
+    )
+
+    assert scenario.scenario_id == scenario_id
+    assert answer_key.scenario_id == scenario_id
+    assert len(scenario.dialogue_turns) == 3
+    assert len(answer_key.action_rubrics) == 3
+    examples_by_turn = {
+        turn.turn_id: [
+            example
+            for example in answer_key.evaluation_examples
+            if example.turn_id == turn.turn_id
+        ]
+        for turn in scenario.dialogue_turns
+    }
+    for turn_id, examples in examples_by_turn.items():
+        counts = Counter(example.expected_status_id for example in examples)
+        assert counts["appropriate_check"] >= 3, turn_id
+        assert counts["partial_check"] >= 3, turn_id
+        assert counts["ambiguous_answer"] >= 2, turn_id
+        assert counts["avoidance"] >= 2, turn_id
+        assert counts["no_response"] >= 1, turn_id
+        assert counts["needs_review"] >= 2, turn_id
+        assert any(example.input_context.provider_error == "timeout" for example in examples)
+
+
+def test_scenario_supports_proxy_facts_fixed_classification_and_clause_revision_action():
+    simulation = _models()
+    payload = _scenario_payload()
+    payload["synthetic_contract"].update(
+        is_proxy_contract=True,
+        agent_name="한가온",
+        agent_relationship="가족",
+        proxy_authority_documents=[],
+    )
+    payload["classification_candidates"] = [
+        {
+            "clause_ref": "deposit_return_clause:0",
+            "clause_type": "deposit_return",
+            "clarity_candidate": "명확",
+            "responsible_party_candidate": "임대인",
+            "condition_candidates": ["신규 임차인 입주 후 반환"],
+            "review_required": False,
+        }
+    ]
+    payload["action_selection"]["allowed_actions"].append("특약 수정 요구")
+
+    scenario = simulation.ScenarioDefinition.model_validate(payload)
+
+    assert scenario.synthetic_contract.is_proxy_contract is True
+    assert scenario.synthetic_contract.agent_name == "한가온"
+    assert scenario.classification_candidates[0].clause_ref == "deposit_return_clause:0"
+    assert "특약 수정 요구" in scenario.action_selection.allowed_actions
 
 
 @pytest.mark.parametrize(
@@ -190,6 +257,20 @@ def test_turn_evaluation_enforces_fallback_and_unique_actions():
             next_dialogue_state="TURN-03",
             fallback_reason="provider_timeout",
         )
+
+
+def test_turn_evaluation_keeps_optional_user_answer_evidence():
+    simulation = _models()
+    evaluation = simulation.PracticeTurnEvaluation(
+        turn_id="TURN-01",
+        answer_category="partial_check",
+        confirmed_action_ids=[],
+        next_dialogue_state="TURN-01",
+        fallback_reason=None,
+        evidence_text="보증금은 언제 돌려주시나요?",
+    )
+
+    assert evaluation.evidence_text == "보증금은 언제 돌려주시나요?"
 
     with pytest.raises(ValidationError, match="중복 confirmed_action_ids"):
         simulation.PracticeTurnEvaluation(

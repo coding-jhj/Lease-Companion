@@ -1,0 +1,474 @@
+{
+  "fixture_type": "synthetic_practice_answer_key",
+  "scenario_id": "PRACTICE-DEFERRED-REFUND-001",
+  "scenario_version": "1.0.0",
+  "answer_key_version": "1.0.0",
+  "review_status": "approved",
+  "answer_statuses": [
+    {
+      "status_id": "appropriate_check",
+      "display_name": "적절한 확인",
+      "meaning": "현재 턴의 필수 의미를 명확하게 표현했다."
+    },
+    {
+      "status_id": "partial_check",
+      "display_name": "부분 확인",
+      "meaning": "확인 의도는 있으나 조건·문서 수정·보류 의미 중 일부가 빠졌다."
+    },
+    {
+      "status_id": "ambiguous_answer",
+      "display_name": "애매한 답변",
+      "meaning": "생각하거나 걱정된다는 표현만 있고 확인 행동이 특정되지 않았다."
+    },
+    {
+      "status_id": "avoidance",
+      "display_name": "회피",
+      "meaning": "조건 확인이나 수정 요청 없이 구두 설명을 받아들이거나 즉시 진행한다."
+    },
+    {
+      "status_id": "no_response",
+      "display_name": "미응답",
+      "meaning": "정해진 대기 시점까지 사용자 입력이 없다."
+    },
+    {
+      "status_id": "needs_review",
+      "display_name": "확인 필요",
+      "meaning": "provider 실패·timeout·형식 오류 또는 상충된 의미로 분류를 확정할 수 없다."
+    }
+  ],
+  "action_rubrics": [
+    {
+      "action_id": "PA01",
+      "turn_id": "TURN-01",
+      "required_semantics": [
+        "보증금 반환이 신규 임차인의 입주를 조건으로 하는지 확인한다.",
+        "임대차 종료와 보증금 반환 시점의 관계를 구체적으로 묻는다."
+      ],
+      "partial_semantics": [
+        "보증금 반환 시점만 묻고 신규 임차인 입주 조건을 특정하지 않는다.",
+        "조건이 걱정된다고 말하지만 무엇을 확인할지 분명하지 않다."
+      ],
+      "not_sufficient": [
+        "보증금은 잘 돌려주시는 거죠?",
+        "다음 세입자는 금방 구해지겠죠?"
+      ]
+    },
+    {
+      "action_id": "PA02",
+      "turn_id": "TURN-02",
+      "required_semantics": [
+        "구두 설명만으로 반환 조건을 받아들이지 않는다.",
+        "신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 특약 수정을 요구한다."
+      ],
+      "partial_semantics": [
+        "특약 수정을 요청하지만 삭제할 조건이나 반환 시점을 특정하지 않는다.",
+        "구두 약속을 문서로 남겨 달라고만 하고 신규 임차인 조건의 수정을 요청하지 않는다."
+      ],
+      "not_sufficient": [
+        "약속만 지켜 주세요.",
+        "새 세입자가 빨리 구해지면 괜찮습니다."
+      ]
+    },
+    {
+      "action_id": "PA03",
+      "turn_id": "TURN-03",
+      "required_semantics": [
+        "특약 수정 문구를 확인하기 전에는 계약을 진행하지 않는다.",
+        "수정되지 않으면 계약을 보류하거나 중단하겠다고 밝힌다."
+      ],
+      "partial_semantics": [
+        "계약을 미루겠다고 하지만 특약 수정 확인과 연결하지 않는다.",
+        "특약 수정은 요청하지만 확인 전 계약 보류 의사를 밝히지 않는다."
+      ],
+      "not_sufficient": [
+        "일단 서명하고 나중에 고쳐 주세요.",
+        "조금 더 생각해 보겠습니다."
+      ]
+    }
+  ],
+  "evaluation_examples": [
+    {
+      "example_id": "EX-001",
+      "turn_id": "TURN-01",
+      "user_input": "보증금 반환이 계약 종료가 아니라 새 임차인 입주를 조건으로 하는 것인가요?",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA01"],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-002",
+      "turn_id": "TURN-01",
+      "user_input": "보증금은 언제 돌려주시나요?",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-003",
+      "turn_id": "TURN-01",
+      "user_input": "조금 걱정되네요.",
+      "input_context": {},
+      "expected_status_id": "ambiguous_answer",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-004",
+      "turn_id": "TURN-01",
+      "user_input": "네, 다음 세입자는 금방 구해질 테니 괜찮습니다.",
+      "input_context": {},
+      "expected_status_id": "avoidance",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-005",
+      "turn_id": "TURN-01",
+      "user_input": null,
+      "input_context": {"elapsed_seconds": 10},
+      "expected_status_id": "no_response",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-006",
+      "turn_id": "TURN-01",
+      "user_input": "조건이 괜찮은 것 같지만 아닌 것 같기도 합니다.",
+      "input_context": {},
+      "expected_status_id": "needs_review",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-007",
+      "turn_id": "TURN-02",
+      "user_input": "구두 약속이 아니라 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 특약을 수정해 주세요.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA02"],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-008",
+      "turn_id": "TURN-02",
+      "user_input": "그 약속을 계약서에 적어 주세요.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-009",
+      "turn_id": "TURN-02",
+      "user_input": "정말 금방 구해질까요?",
+      "input_context": {},
+      "expected_status_id": "ambiguous_answer",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-010",
+      "turn_id": "TURN-02",
+      "user_input": "임대인께서 약속하셨으니 기존 문구로 진행하겠습니다.",
+      "input_context": {},
+      "expected_status_id": "avoidance",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-011",
+      "turn_id": "TURN-02",
+      "user_input": null,
+      "input_context": {"elapsed_seconds": 10},
+      "expected_status_id": "no_response",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-012",
+      "turn_id": "TURN-02",
+      "user_input": "특약은 고쳐 주세요. 아니요, 그냥 약속만 해 주셔도 됩니다.",
+      "input_context": {},
+      "expected_status_id": "needs_review",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-013",
+      "turn_id": "TURN-03",
+      "user_input": "신규 임차인 조건을 삭제한 특약 문구를 확인하기 전에는 계약을 진행하지 않겠습니다.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA03"],
+      "expected_next_turn_id": "ACTION-SELECTION"
+    },
+    {
+      "example_id": "EX-014",
+      "turn_id": "TURN-03",
+      "user_input": "오늘은 계약하지 않겠습니다.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-015",
+      "turn_id": "TURN-03",
+      "user_input": "조금 더 생각해 보겠습니다.",
+      "input_context": {},
+      "expected_status_id": "ambiguous_answer",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-016",
+      "turn_id": "TURN-03",
+      "user_input": "일단 서명하고 특약은 나중에 고쳐 주세요.",
+      "input_context": {},
+      "expected_status_id": "avoidance",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-017",
+      "turn_id": "TURN-03",
+      "user_input": null,
+      "input_context": {"elapsed_seconds": 10},
+      "expected_status_id": "no_response",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-018",
+      "turn_id": "TURN-03",
+      "user_input": "수정 전에는 보류하겠습니다. 하지만 지금 서명해도 괜찮을 것 같습니다.",
+      "input_context": {},
+      "expected_status_id": "needs_review",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-019",
+      "turn_id": "TURN-01",
+      "user_input": "계약이 끝나도 새 임차인이 들어오지 않으면 보증금을 돌려받지 못하는 조건인가요?",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA01"],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-020",
+      "turn_id": "TURN-01",
+      "user_input": "임대차 종료일과 관계없이 신규 임차인이 입주해야만 반환한다는 뜻인지 확인해 주세요.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA01"],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-021",
+      "turn_id": "TURN-01",
+      "user_input": "계약이 끝나면 바로 반환되는 것인지 알려 주세요.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-022",
+      "turn_id": "TURN-01",
+      "user_input": "새 세입자와 관련된 조건을 좀 더 설명해 주세요.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-023",
+      "turn_id": "TURN-01",
+      "user_input": "이런 조건은 처음 봐서 고민해 보겠습니다.",
+      "input_context": {},
+      "expected_status_id": "ambiguous_answer",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-024",
+      "turn_id": "TURN-01",
+      "user_input": "보통 쓰는 문구라면 그대로 진행하겠습니다.",
+      "input_context": {},
+      "expected_status_id": "avoidance",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-025",
+      "turn_id": "TURN-01",
+      "user_input": "새 임차인이 들어와야 반환한다는 뜻인지 확인하겠습니다.",
+      "input_context": {"provider_error": "timeout"},
+      "expected_status_id": "needs_review",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-01"
+    },
+    {
+      "example_id": "EX-026",
+      "turn_id": "TURN-02",
+      "user_input": "새 임차인이 구해질 것이라는 설명만으로는 동의할 수 없으니 계약 종료 시 반환하도록 특약을 고쳐 주세요.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA02"],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-027",
+      "turn_id": "TURN-02",
+      "user_input": "구두 약속 대신 신규 임차인 입주 조건을 삭제하고 반환일을 계약서에 명확히 적어 주세요.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA02"],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-028",
+      "turn_id": "TURN-02",
+      "user_input": "보증금 반환 특약을 좀 더 명확하게 고쳐 주세요.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-029",
+      "turn_id": "TURN-02",
+      "user_input": "말로만 약속하지 말고 문서에 남겨 주세요.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-030",
+      "turn_id": "TURN-02",
+      "user_input": "그 약속을 믿어도 되는지 조금 더 생각해 보겠습니다.",
+      "input_context": {},
+      "expected_status_id": "ambiguous_answer",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-031",
+      "turn_id": "TURN-02",
+      "user_input": "확실히 약속하신다면 특약은 고치지 않아도 됩니다.",
+      "input_context": {},
+      "expected_status_id": "avoidance",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-032",
+      "turn_id": "TURN-02",
+      "user_input": "신규 임차인과 무관하게 종료 시 반환하도록 특약을 수정해 주세요.",
+      "input_context": {"provider_error": "timeout"},
+      "expected_status_id": "needs_review",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-02"
+    },
+    {
+      "example_id": "EX-033",
+      "turn_id": "TURN-03",
+      "user_input": "반환 조건을 수정한 계약서를 먼저 확인하겠습니다. 그전에는 서명하거나 진행하지 않겠습니다.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA03"],
+      "expected_next_turn_id": "ACTION-SELECTION"
+    },
+    {
+      "example_id": "EX-034",
+      "turn_id": "TURN-03",
+      "user_input": "신규 임차인 조건이 삭제된 것을 확인해야 진행할 수 있고, 수정되지 않으면 계약을 중단하겠습니다.",
+      "input_context": {},
+      "expected_status_id": "appropriate_check",
+      "expected_confirmed_action_ids": ["PA03"],
+      "expected_next_turn_id": "ACTION-SELECTION"
+    },
+    {
+      "example_id": "EX-035",
+      "turn_id": "TURN-03",
+      "user_input": "특약을 먼저 수정해 주시면 좋겠습니다.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-036",
+      "turn_id": "TURN-03",
+      "user_input": "수정될 때까지 계약 일정을 미루겠습니다.",
+      "input_context": {},
+      "expected_status_id": "partial_check",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-037",
+      "turn_id": "TURN-03",
+      "user_input": "오늘 서명할지는 조금 더 고민해 보겠습니다.",
+      "input_context": {},
+      "expected_status_id": "ambiguous_answer",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-038",
+      "turn_id": "TURN-03",
+      "user_input": "나중에 수정해 주신다니 지금 계약하겠습니다.",
+      "input_context": {},
+      "expected_status_id": "avoidance",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    },
+    {
+      "example_id": "EX-039",
+      "turn_id": "TURN-03",
+      "user_input": "수정된 문구를 확인하기 전에는 계약을 보류하겠습니다.",
+      "input_context": {"provider_error": "timeout"},
+      "expected_status_id": "needs_review",
+      "expected_confirmed_action_ids": [],
+      "expected_next_turn_id": "TURN-03"
+    }
+  ],
+  "debrief": {
+    "section_order": [
+      "confirmed_actions",
+      "missed_actions",
+      "recommended_phrases",
+      "next_actions",
+      "official_evidence"
+    ],
+    "recommended_phrases": [
+      "보증금 반환이 신규 임차인 입주를 조건으로 하는지 확인하고 싶습니다.",
+      "보증금은 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 특약을 수정해 주세요.",
+      "수정된 특약 문구를 확인하기 전에는 계약을 진행하지 않겠습니다."
+    ],
+    "next_actions": [
+      "신규 임차인 입주에 연동된 반환 조건이 있는지 계약서와 특약을 확인한다.",
+      "반환 시점과 조건을 구두 약속이 아닌 계약서 문구로 남긴다.",
+      "수정된 특약을 확인하고 당사자와 함께 보관한다."
+    ],
+    "official_source_ids": [
+      "SRC-HTA-LAW",
+      "SRC-STD-LEASE"
+    ],
+    "forbidden_conclusions": [
+      "안전한 계약",
+      "위험한 계약",
+      "사기 계약",
+      "적법 확정",
+      "위법 확정",
+      "계약 진행 권고",
+      "계약 거절 권고"
+    ]
+  }
+}

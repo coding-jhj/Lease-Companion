@@ -1,0 +1,198 @@
+{
+  "fixture_type": "synthetic_practice_scenario",
+  "data_classification": "synthetic",
+  "scenario_id": "PRACTICE-THIRD-PARTY-PAYMENT-001",
+  "scenario_version": "1.0.0",
+  "review_status": "approved",
+  "title": "공인중개사 명의 계좌로 가계약금 송금 요구",
+  "role": "공인중개사",
+  "difficulty": "기본",
+  "contract_stage": "가계약금 입금 전",
+  "always_show_labels": [
+    "가상 연습",
+    "합성 시나리오"
+  ],
+  "synthetic_contract": {
+    "contract_type": "전세",
+    "signed": false,
+    "deposit_paid": false,
+    "property_address": "서울특별시 가온구 다솜로 18, 102동 703호",
+    "deposit": 230000000,
+    "monthly_rent": null,
+    "contract_payment": 23000000,
+    "balance_payment": 207000000,
+    "requested_provisional_payment": 1000000,
+    "contract_payment_date": "2026-07-25",
+    "balance_payment_date": "2026-08-29",
+    "move_in_date": "2026-08-29",
+    "start_date": "2026-08-29",
+    "end_date": "2028-08-28",
+    "landlord_name": "박서연",
+    "broker_name": "이도윤",
+    "account_holder": "이도윤",
+    "account_number_stored": false,
+    "registry_issue_date": "2026-07-22",
+    "registry_property_address": "서울특별시 가온구 다솜로 18, 102동 703호",
+    "owner_names": [
+      "박서연"
+    ],
+    "is_joint_ownership": false,
+    "owner_shares": {
+      "박서연": "1/1"
+    },
+    "mortgage_present": false,
+    "mortgage_maximum_claim": null,
+    "deposit_return_clause": "임대차 종료일에 임차목적물 인도와 동시에 보증금을 반환한다.",
+    "rights_change_clause_present": true,
+    "special_clauses": [
+      "계약 후 잔금 지급일까지 임차인의 권리를 해치는 새로운 권리를 설정하지 않는다."
+    ],
+    "is_proxy_contract": false,
+    "agent_name": null,
+    "agent_relationship": null,
+    "proxy_authority_documents": []
+  },
+  "classification_candidates": [],
+  "target_actions": [
+    {
+      "action_id": "PA01",
+      "name": "입금 명의와 계약 상대 불일치 확인",
+      "linked_signal_ids": [
+        "SIG-PAYEE-MISMATCH"
+      ]
+    },
+    {
+      "action_id": "PA02",
+      "name": "제3자 수령 관계와 권한 자료 확인",
+      "linked_signal_ids": [
+        "SIG-PAYEE-AUTHORITY-UNVERIFIED"
+      ]
+    },
+    {
+      "action_id": "PA03",
+      "name": "확인 완료 전 가계약금 송금 보류",
+      "linked_signal_ids": [
+        "SIG-PAYMENT-BEFORE-CHECK"
+      ]
+    }
+  ],
+  "hidden_confirmation_signals": [
+    {
+      "signal_id": "SIG-PAYEE-MISMATCH",
+      "fact": "안내된 입금 명의는 가상 공인중개사이며 임대인·등기상 소유자와 다르다.",
+      "linked_rule_ids": [
+        "R06"
+      ],
+      "linked_judgment_ids": [
+        "J05"
+      ],
+      "official_source_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "signal_id": "SIG-PAYEE-AUTHORITY-UNVERIFIED",
+      "fact": "공인중개사가 임대인을 대신해 가계약금을 받을 관계와 권한 자료가 제시되지 않았다.",
+      "linked_rule_ids": [
+        "R06"
+      ],
+      "linked_judgment_ids": [
+        "J05"
+      ],
+      "official_source_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "signal_id": "SIG-PAYMENT-BEFORE-CHECK",
+      "fact": "입금 명의와 수령 권한을 확인하기 전에 가계약금 송금을 요구받았다.",
+      "linked_rule_ids": [
+        "R06"
+      ],
+      "linked_judgment_ids": [
+        "J05"
+      ],
+      "official_source_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    }
+  ],
+  "dialogue_turns": [
+    {
+      "turn_id": "TURN-01",
+      "goal_action_id": "PA01",
+      "prompt": "임대인께서 바쁘셔서 제 명의 계좌로 가계약금 100만 원을 받기로 했습니다. 바로 보내 주시겠어요?",
+      "responses": {
+        "appropriate_check": "입금 명의가 임대인·등기상 소유자와 다른 점을 확인하셨군요.",
+        "partial_check": "누구의 계좌인지뿐 아니라 계약 상대와 명의가 일치하는지도 구체적으로 확인해 주세요.",
+        "ambiguous_answer": "그럼 송금 여부를 조금 뒤에 정하시겠어요?",
+        "avoidance": "송금 전에 입금 명의와 계약 상대가 같은지 확인해 주세요.",
+        "no_response": "입금 명의를 확인하지 않은 상태입니다. 송금 여부를 말씀해 주세요.",
+        "needs_review": "답변의 확인 의도를 정확히 판단하지 못했습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-02"
+    },
+    {
+      "turn_id": "TURN-02",
+      "goal_action_id": "PA02",
+      "prompt": "중개사 계좌로 받는 경우도 많고 제가 영수증을 드리면 됩니다. 별도 서류까지 필요할까요?",
+      "responses": {
+        "appropriate_check": "임대인과 제 관계 및 가계약금 수령 권한 자료를 확인하겠다는 말씀이군요.",
+        "partial_check": "관계만 묻지 말고 가계약금을 받을 권한을 증명하는 자료도 함께 요청해 주세요.",
+        "ambiguous_answer": "영수증을 드리면 진행할 수 있을까요?",
+        "avoidance": "제3자가 돈을 받을 관계와 권한 자료를 확인할지 말씀해 주세요.",
+        "no_response": "수령 권한 자료 확인 여부가 정해지지 않았습니다.",
+        "needs_review": "답변을 정확히 확인하지 못했습니다. 같은 내용을 다시 말씀해 주세요."
+      },
+      "next_turn_id": "TURN-03"
+    },
+    {
+      "turn_id": "TURN-03",
+      "goal_action_id": "PA03",
+      "prompt": "다른 분도 계약하려고 해서 지금 100만 원을 보내야 집을 잡아 둘 수 있습니다. 확인 자료는 송금 뒤에 드리겠습니다.",
+      "wait_sequence": [
+        {
+          "state": "WAIT_BASIC",
+          "from_second": 0,
+          "to_second": 5,
+          "line": null
+        },
+        {
+          "state": "WAIT_PRESSURE",
+          "from_second": 5,
+          "to_second": 10,
+          "line": null
+        },
+        {
+          "state": "PRESSURE_REMINDER",
+          "from_second": 10,
+          "to_second": null,
+          "line": "지금 보내지 않으면 다른 분에게 넘어갈 수 있습니다."
+        }
+      ],
+      "responses": {
+        "appropriate_check": "입금 명의와 수령 권한을 확인하기 전에는 송금하지 않겠다는 말씀이군요.",
+        "partial_check": "송금을 미루는 이유로 확인할 명의와 권한을 함께 말씀해 주세요.",
+        "ambiguous_answer": "그럼 잠시 뒤에 다시 송금 여부를 여쭤보겠습니다.",
+        "avoidance": "압박과 관계없이 확인 완료 전 송금을 보류할지 말씀해 주세요.",
+        "no_response": "송금 여부를 정하지 않은 상태로 연습을 마치겠습니다.",
+        "needs_review": "송금 여부가 서로 상충해 판단할 수 없습니다. 다시 말씀해 주세요."
+      },
+      "next_turn_id": "ACTION-SELECTION"
+    }
+  ],
+  "action_selection": {
+    "state_id": "ACTION-SELECTION",
+    "allowed_actions": [
+      "진행",
+      "추가 확인",
+      "보류",
+      "중단"
+    ],
+    "next_state_id": "DEBRIEF"
+  },
+  "terminal_state_id": "DEBRIEF"
+}

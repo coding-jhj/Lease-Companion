@@ -23,6 +23,18 @@
       "title": "Confirmed Action Ids",
       "type": "array"
     },
+    "evidence_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Evidence Text"
+    },
     "fallback_reason": {
       "anyOf": [
         {
