@@ -106,7 +106,7 @@ export function PracticeSessionPage() {
         {status === "error" && <ErrorState title="대화를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadSession()} />}
         {status === "success" && session && (
           <>
-            <div className="practice-progress" aria-label="연습 진행 상태">
+            <div className="practice-progress" role="status" aria-label="연습 진행 상태" aria-live="polite">
               <span>현재 단계 <strong>{isActionSelection ? "최종 행동 선택" : session.current_turn?.turn_id}</strong></span>
               <span>확인한 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
             </div>

@@ -16,10 +16,15 @@
 
 .PARAMETER SkipMigrate
   alembic upgrade head 를 건너뛴다.
+
+.PARAMETER PracticeValidation
+  계약 연습 수동 검증 모드. Gemini 키와 MSW를 끄고 Fake provider를 사용하며,
+  서버 준비 후 회원가입 화면을 기본 브라우저로 연다.
 #>
 param(
     [switch]$Force,
-    [switch]$SkipMigrate
+    [switch]$SkipMigrate,
+    [switch]$PracticeValidation
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,6 +32,18 @@ $root     = Split-Path -Parent $PSScriptRoot
 $backend  = Join-Path $root 'backend'
 $frontend = Join-Path $root 'frontend'
 $compose  = Join-Path $root 'docker-compose.yml'
+
+if ($PracticeValidation) {
+    $env:GEMINI_API_KEY = ''
+    $env:GOOGLE_API_KEY = ''
+    $env:PRACTICE_OFFLINE_MODE = 'true'
+    $env:VITE_ENABLE_MSW = ''
+
+    $envFile = Join-Path $backend '.env'
+    if (-not (Test-Path $envFile)) {
+        Copy-Item -LiteralPath (Join-Path $backend '.env.example') -Destination $envFile
+    }
+}
 
 $logDir = Join-Path $env:TEMP 'lease-dev-logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
@@ -66,6 +83,11 @@ Ok 'backend/.env · DATABASE_URL 확인'
 
 # 3) 포트 8000·5173
 foreach ($p in 8000, 5173) {
+    if ($PracticeValidation) {
+        $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
+        if ($listeners.Port -contains $p) { Fail "포트 $p 사용 중. 기존 서버를 직접 종료한 뒤 다시 실행하세요." }
+        continue
+    }
     $conn = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($conn) {
         if ($Force) {
@@ -99,6 +121,33 @@ $fe = Start-Process -FilePath 'npm.cmd' `
     -RedirectStandardOutput $logs['FE-out'] -RedirectStandardError $logs['FE-err'] `
     -PassThru -NoNewWindow
 Ok "백엔드 PID $($be.Id) / 프론트 PID $($fe.Id)"
+
+if ($PracticeValidation) {
+    Write-Host '[대기] 검증 화면 준비 중' -ForegroundColor Cyan
+    $deadline = (Get-Date).AddSeconds(60)
+    do {
+        try {
+            $backendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:8000/health' -TimeoutSec 2).StatusCode -eq 200
+            $frontendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:5173/signup' -TimeoutSec 2).StatusCode -eq 200
+        }
+        catch {
+            $backendReady = $false
+            $frontendReady = $false
+        }
+        if (-not ($backendReady -and $frontendReady)) { Start-Sleep -Milliseconds 500 }
+    } while (-not ($backendReady -and $frontendReady) -and (Get-Date) -lt $deadline)
+
+    if ($backendReady -and $frontendReady) {
+        $validationUrl = 'http://127.0.0.1:5173/signup'
+        Start-Process $validationUrl
+        Ok "검증 화면 열림: $validationUrl"
+        Write-Host '회원가입 → 로그인 → 내 계약의 [가상 계약 대화 연습]을 선택하세요.' -ForegroundColor Cyan
+    }
+    else {
+        Write-Host '! 60초 안에 검증 화면이 준비되지 않았습니다. 아래 [BE]·[FE] 로그를 확인하세요.' -ForegroundColor Yellow
+    }
+}
+
 Write-Host '로그 병합 출력 시작 — Ctrl+C 로 전부 종료. 터널은 별도 터미널에서 실행.' -ForegroundColor Cyan
 Write-Host ('-' * 64)
 

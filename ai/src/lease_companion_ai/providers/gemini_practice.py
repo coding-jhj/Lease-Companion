@@ -41,6 +41,94 @@ _PRACTICE_RESPONSE_SCHEMA = _clean_response_schema(
 )
 
 
+_OFFLINE_REQUIRED_KEYWORDS: dict[
+    tuple[str, str], tuple[tuple[str, ...], ...]
+] = {
+    ("PRACTICE-DEFERRED-REFUND-001", "TURN-01"): (
+        ("신규임차인", "새임차인", "다음임차인", "후임임차인", "새세입자", "다음세입자", "후임세입자"),
+        ("보증금", "반환", "돌려받", "돌려주"),
+        ("조건", "입주", "계약종료", "계약끝", "끝나"),
+    ),
+    ("PRACTICE-DEFERRED-REFUND-001", "TURN-02"): (
+        ("신규임차인", "새임차인", "다음임차인", "후임임차인", "새세입자", "다음세입자", "후임세입자"),
+        ("특약", "문구", "반환조건"),
+        ("수정", "고쳐", "삭제", "바꿔", "제거"),
+        ("계약종료", "종료일", "계약끝", "만료", "반환"),
+    ),
+    ("PRACTICE-DEFERRED-REFUND-001", "TURN-03"): (
+        ("특약", "반환조건", "문구"),
+        ("수정", "고쳐", "삭제", "변경"),
+        ("서명하지", "진행하지", "계약하지", "보류", "중단", "안하", "못하"),
+    ),
+    ("PRACTICE-THIRD-PARTY-PAYMENT-001", "TURN-01"): (
+        ("계좌", "입금명의", "예금주", "명의"),
+        ("중개사", "공인중개사"),
+        ("임대인", "소유자"),
+        ("다르", "아니", "불일치", "이유", "확인"),
+    ),
+    ("PRACTICE-THIRD-PARTY-PAYMENT-001", "TURN-02"): (
+        ("중개사", "공인중개사"),
+        ("임대인", "소유자"),
+        ("관계", "누구", "어떤사이"),
+        ("권한", "위임", "대신받"),
+        ("서류", "자료", "증명", "위임장"),
+    ),
+    ("PRACTICE-THIRD-PARTY-PAYMENT-001", "TURN-03"): (
+        ("명의", "계좌", "예금주"),
+        ("권한", "위임", "수령"),
+        ("송금하지", "입금하지", "보내지", "송금보류", "입금보류"),
+    ),
+    ("PRACTICE-PROXY-AUTHORITY-001", "TURN-01"): (
+        ("등기상소유자", "등기소유자", "소유자"),
+        ("대리인", "대리계약", "대신계약"),
+        ("관계", "대조", "확인", "누구"),
+    ),
+    ("PRACTICE-PROXY-AUTHORITY-001", "TURN-02"): (
+        ("위임장", "인감증명서", "권한서류", "권한자료"),
+        ("권한", "위임범위", "대리권"),
+        ("계약체결", "계약권한", "서명"),
+        ("계약금수령", "수령권한", "돈받", "입금명의"),
+    ),
+    ("PRACTICE-PROXY-AUTHORITY-001", "TURN-03"): (
+        ("대리권", "위임", "권한"),
+        ("서명하지", "계약하지", "서명보류", "계약보류"),
+        ("송금하지", "입금하지", "보내지", "송금보류", "입금보류"),
+    ),
+}
+
+_OFFLINE_BLOCKING_KEYWORDS = (
+    "그대로두",
+    "나중에확인",
+    "일단서명",
+    "먼저서명",
+    "일단송금",
+    "먼저송금",
+    "일단입금",
+    "먼저입금",
+    "송금하겠습니다",
+    "입금하겠습니다",
+    "보내겠습니다",
+    "진행하겠습니다",
+)
+
+
+def _normalize_offline_answer(value: str) -> str:
+    return "".join(character for character in value.casefold() if character.isalnum())
+
+
+def _matches_required_offline_intent(request: PracticeEvaluationRequest) -> bool:
+    groups = _OFFLINE_REQUIRED_KEYWORDS.get((request.scenario_id, request.turn_id))
+    if groups is None:
+        return False
+    answer = _normalize_offline_answer(request.user_answer)
+    if any(keyword in answer for keyword in _OFFLINE_BLOCKING_KEYWORDS):
+        return False
+    return all(
+        any(_normalize_offline_answer(keyword) in answer for keyword in group)
+        for group in groups
+    )
+
+
 class GeminiPracticeProvider:
     """사용자 답변 의미만 구조화하고 R/J 판정은 변경하지 않는다."""
 
@@ -170,9 +258,9 @@ class GeminiPracticeProvider:
 
 
 class FakePracticeProvider:
-    """승인 answer key 예시만 재생하는 네트워크 없는 provider."""
+    """승인 예시와 제한된 필수 의미를 판별하는 네트워크 없는 provider."""
 
-    model_name = "fake-practice-answer-key-v1"
+    model_name = "fake-practice-answer-key-v2"
 
     def __init__(
         self,
@@ -207,6 +295,15 @@ class FakePracticeProvider:
             None,
         )
         if example is None:
+            if _matches_required_offline_intent(request):
+                return PracticeTurnEvaluation(
+                    turn_id=request.turn_id,
+                    answer_category="appropriate_check",
+                    confirmed_action_ids=[request.goal_action_id],
+                    next_dialogue_state=request.success_next_state,
+                    fallback_reason=None,
+                    evidence_text=request.user_answer,
+                )
             return PracticeTurnEvaluation(
                 turn_id=request.turn_id,
                 answer_category="needs_review",

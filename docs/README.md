@@ -43,4 +43,4 @@ testing/        실제 API·브라우저 통합 검증 실행 절차
 
 - 위 지도 문서 전부 작성됨. 미정 항목은 각 문서에서 TODO로 표시.
 - 판정 단일 기준: `data/judgment-spec.md`. 모델 라우팅 확정표: `ai/model-routing.md`. 최소 MVP 실행 기준: `planning/minimum-mvp-runbook.md`.
-- 계약 연습 실제 API 검증: `testing/practice-real-api-validation.md`. 현재 전용 Playwright spec은 작업 9 미구현 상태다.
+- 계약 연습 실제 API 검증: `testing/practice-real-api-validation.md`. 전용 Playwright spec과 MSW 사전검증은 준비됐으며 실제 API 실행 절차를 설명한다.

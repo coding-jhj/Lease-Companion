@@ -245,6 +245,132 @@ def test_offline_fake_does_not_guess_unapproved_free_form_answer(monkeypatch):
     assert result.next_dialogue_state == "TURN-01"
 
 
+OFFLINE_FREE_FORM_EXAMPLES = (
+    (
+        "PRACTICE-DEFERRED-REFUND-001",
+        "TURN-01",
+        "다음 세입자가 안 들어오면 계약이 끝나도 보증금을 못 돌려받는 조건인지 확인할게요.",
+        "PA01",
+        "TURN-02",
+    ),
+    (
+        "PRACTICE-DEFERRED-REFUND-001",
+        "TURN-02",
+        "새 임차인 입주 조건은 삭제하고 계약 종료일에 반환하도록 특약을 고쳐 주세요.",
+        "PA02",
+        "TURN-03",
+    ),
+    (
+        "PRACTICE-DEFERRED-REFUND-001",
+        "TURN-03",
+        "반환 특약이 수정된 것을 확인하기 전에는 서명하지 않고 계약을 보류할게요.",
+        "PA03",
+        "ACTION-SELECTION",
+    ),
+    (
+        "PRACTICE-THIRD-PARTY-PAYMENT-001",
+        "TURN-01",
+        "계좌 명의가 소유자인 임대인이 아니라 중개사인 이유를 확인할게요.",
+        "PA01",
+        "TURN-02",
+    ),
+    (
+        "PRACTICE-THIRD-PARTY-PAYMENT-001",
+        "TURN-02",
+        "중개사와 임대인의 관계와 돈을 대신 받을 권한 서류를 보여 주세요.",
+        "PA02",
+        "TURN-03",
+    ),
+    (
+        "PRACTICE-THIRD-PARTY-PAYMENT-001",
+        "TURN-03",
+        "입금 명의와 수령 권한을 확인할 때까지 가계약금은 송금하지 않겠습니다.",
+        "PA03",
+        "ACTION-SELECTION",
+    ),
+    (
+        "PRACTICE-PROXY-AUTHORITY-001",
+        "TURN-01",
+        "등기상 소유자와 지금 나온 대리인이 어떤 관계인지 확인하겠습니다.",
+        "PA01",
+        "TURN-02",
+    ),
+    (
+        "PRACTICE-PROXY-AUTHORITY-001",
+        "TURN-02",
+        "위임장과 인감증명서에 계약 체결과 계약금 수령 권한까지 있는지 확인할게요.",
+        "PA02",
+        "TURN-03",
+    ),
+    (
+        "PRACTICE-PROXY-AUTHORITY-001",
+        "TURN-03",
+        "대리권을 확인하기 전에는 계약서에 서명하지 않고 계약금도 송금하지 않겠습니다.",
+        "PA03",
+        "ACTION-SELECTION",
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "scenario_id,turn_id,answer,action_id,next_state",
+    OFFLINE_FREE_FORM_EXAMPLES,
+)
+def test_offline_fake_accepts_natural_answers_with_required_intent(
+    monkeypatch, scenario_id, turn_id, answer, action_id, next_state
+):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    scenario, answer_key = _assets(scenario_id)
+    provider = build_practice_provider(scenario, answer_key, offline_mode=True)
+    assert isinstance(provider, FakePracticeProvider)
+    service = PracticeEvaluationService(scenario, answer_key, provider)
+
+    result = service.evaluate(_turn_input(turn_id, answer))
+
+    assert result.answer_category == "appropriate_check"
+    assert result.confirmed_action_ids == [action_id]
+    assert result.next_dialogue_state == next_state
+    assert result.fallback_reason is None
+
+
+@pytest.mark.parametrize(
+    "scenario_id,turn_id,answer",
+    (
+        (
+            "PRACTICE-DEFERRED-REFUND-001",
+            "TURN-02",
+            "새 임차인 입주 조건은 그대로 두고 특약 문구만 수정한 뒤 진행하겠습니다.",
+        ),
+        (
+            "PRACTICE-THIRD-PARTY-PAYMENT-001",
+            "TURN-03",
+            "입금 명의와 수령 권한은 나중에 확인하고 가계약금을 먼저 송금하겠습니다.",
+        ),
+        (
+            "PRACTICE-PROXY-AUTHORITY-001",
+            "TURN-03",
+            "대리권은 나중에 확인하고 일단 계약서에 서명한 뒤 계약금을 보내겠습니다.",
+        ),
+    ),
+)
+def test_offline_fake_does_not_accept_conflicting_free_form_answer(
+    monkeypatch, scenario_id, turn_id, answer
+):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    scenario, answer_key = _assets(scenario_id)
+    provider = build_practice_provider(scenario, answer_key, offline_mode=True)
+    assert isinstance(provider, FakePracticeProvider)
+    service = PracticeEvaluationService(scenario, answer_key, provider)
+
+    result = service.evaluate(_turn_input(turn_id, answer))
+
+    assert result.answer_category == "needs_review"
+    assert result.confirmed_action_ids == []
+    assert result.next_dialogue_state == turn_id
+
+
 FAKE_EXAMPLES = []
 for _scenario_id in SCENARIO_IDS:
     _scenario, _answer_key = _assets(_scenario_id)

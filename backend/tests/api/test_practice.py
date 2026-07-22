@@ -22,6 +22,21 @@ from app.services.practice import (
 
 _users = count(1)
 
+FREE_FORM_TURN_ONE = (
+    (
+        "PRACTICE-DEFERRED-REFUND-001",
+        "다음 세입자가 안 들어오면 계약이 끝나도 보증금을 못 돌려받는 조건인지 확인할게요.",
+    ),
+    (
+        "PRACTICE-THIRD-PARTY-PAYMENT-001",
+        "계좌 명의가 소유자인 임대인이 아니라 중개사인 이유를 확인할게요.",
+    ),
+    (
+        "PRACTICE-PROXY-AUTHORITY-001",
+        "등기상 소유자와 지금 나온 대리인이 어떤 관계인지 확인하겠습니다.",
+    ),
+)
+
 
 @pytest.fixture(scope="module")
 def client():
@@ -230,6 +245,32 @@ def test_timed_out_turn_is_saved_as_no_response_and_can_retry(client: TestClient
     assert payload["evaluation"]["answer_category"] == "no_response"
     assert payload["session"]["current_state"] == "TURN-01"
     assert payload["session"]["confirmed_action_ids"] == []
+
+
+@pytest.mark.parametrize("scenario_id,user_answer", FREE_FORM_TURN_ONE)
+def test_offline_practice_accepts_natural_turn_answer(
+    client: TestClient, scenario_id: str, user_answer: str
+):
+    headers = _headers(client)
+    session = _create_session(client, headers, scenario_id)
+    session_id = session["practice_session_id"]
+
+    response = client.post(
+        f"/api/practice-sessions/{session_id}/turns",
+        headers=headers,
+        json={
+            "request_id": f"free-form-{scenario_id}",
+            "turn_id": "TURN-01",
+            "user_answer": user_answer,
+            "response_time_seconds": 2,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["evaluation"]["answer_category"] == "appropriate_check"
+    assert payload["evaluation"]["fallback_reason"] is None
+    assert payload["session"]["current_turn"]["turn_id"] == "TURN-02"
 
 
 @pytest.mark.parametrize("scenario_id", APPROVED_SCENARIO_IDS)

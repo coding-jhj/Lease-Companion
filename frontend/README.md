@@ -57,11 +57,13 @@ npm run dev
 npm test
 npm run test:e2e
 npm run test:e2e:real
+npm run test:e2e:practice
+npm run test:e2e:practice:real
 ```
 
 `npm run test:e2e`는 Playwright Chromium 320px·360px 모바일과 1440×900 PC viewport에서 MSW 기반 8단계 사용자 흐름과 핵심 키보드 탐색 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
 
-계약 연습 실제 API E2E는 아직 `frontend/e2e/practice-flow.spec.ts`가 없어 위 전체 명령에 포함되지 않는다. 수동 실제 API 확인과 작업 9에서 추가할 자동 검증 절차는 [`docs/testing/practice-real-api-validation.md`](../docs/testing/practice-real-api-validation.md)를 따른다.
+계약 연습 전용 명령은 세 시나리오를 각각 320px·360px·1440px에서 실행한다. MSW 사전검증은 `npm run test:e2e:practice`, PostgreSQL·Backend·MSW 비활성 Frontend 실제 연결 검증은 `npm run test:e2e:practice:real`을 사용한다. 서버 준비 절차는 [`docs/testing/practice-real-api-validation.md`](../docs/testing/practice-real-api-validation.md)를 따른다.
 
 리포트의 피해 유형 비교는 종합 안전·사기 판정이 아니라 **현재 제출 자료에서 확인되는 신호와 확인 한계**를 표시한다. 유사 피해사례는 검증된 사례 데이터가 연결된 경우에만 노출하며, 빈 상태를 임의의 사례로 채우지 않는다.
 
@@ -100,6 +102,6 @@ npm run test:e2e:real
 - 피드백 등록·이력, 과거 완료 리포트 링크, 문서 이력, 계약 삭제 API를 화면에 연결했다.
 - 계약 연습은 `/practice` 아래 목록·상황·현재 대화·최종 복기 화면을 제공한다. 세 시나리오는 동일한 서비스와 화면 흐름을 사용하며 실제 계약 건과 데이터를 분리한다.
 - MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-22 기준 Vitest `22`개 파일·`94`개 테스트가 통과했으며, 이 중 계약 연습 전용 테스트는 `3`개 파일·`19`개다. 기존 계약 분석 MSW E2E는 별도 Playwright 테스트로 유지한다.
-- 계약 연습 실제 PostgreSQL/API E2E는 작업 9다. 실제 API 설정 파일은 있지만 전용 `practice-flow.spec.ts`는 아직 없으므로 완료로 표시하지 않는다.
+- 계약 연습 전용 `practice-flow.spec.ts`는 목록·상황·미응답 재시도·3턴·세션 복원·최종 행동·복기 저장을 검증한다. MSW 브라우저 사전검증은 `9 passed`이며, 실제 PostgreSQL/API 검증은 같은 파일을 `test:e2e:practice:real`로 실행한다.
 - `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

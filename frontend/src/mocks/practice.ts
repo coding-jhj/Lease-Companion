@@ -183,6 +183,34 @@ const scenarios: MockScenario[] = [
 ];
 
 const sessions = new Map<string, MockSession>();
+const sessionStoragePrefix = "lease-companion:practice-session:";
+
+function getStoredSession(id: string): MockSession | undefined {
+  const existing = sessions.get(id);
+  if (existing) return existing;
+  try {
+    const stored = globalThis.localStorage?.getItem(`${sessionStoragePrefix}${id}`);
+    if (!stored) return undefined;
+    const parsed = JSON.parse(stored) as Omit<MockSession, "requestIds"> & { requestIds: string[] };
+    const restored = { ...parsed, requestIds: new Set(parsed.requestIds) };
+    sessions.set(id, restored);
+    return restored;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeSession(id: string, session: MockSession) {
+  sessions.set(id, session);
+  try {
+    globalThis.localStorage?.setItem(`${sessionStoragePrefix}${id}`, JSON.stringify({
+      ...session,
+      requestIds: [...session.requestIds],
+    }));
+  } catch {
+    // Node 기반 단위 테스트처럼 브라우저 저장소가 없는 환경에서는 메모리 상태만 사용한다.
+  }
+}
 
 function findScenario(id: string) {
   return scenarios.find((scenario) => scenario.scenario_id === id);
@@ -200,7 +228,7 @@ function error(code: string, message: string, status: number) {
 function evaluate(turnId: string, answer: string | null, timedOut: boolean, actionId: string): PracticeTurnEvaluationDto {
   const category: PracticeAnswerCategory = timedOut
     ? "no_response"
-    : /확인|요청|보류|송금하지|서명하지/.test(answer ?? "")
+    : /확인|요청|수정|고쳐|보류|송금하지|서명하지/.test(answer ?? "")
       ? "appropriate_check"
       : "partial_check";
   return {
@@ -239,15 +267,16 @@ export const practiceHandlers = [
       started_at: now,
       completed_at: null,
     };
-    sessions.set(id, { response, turnIndex: 0, result: null, requestIds: new Set() });
+    storeSession(id, { response, turnIndex: 0, result: null, requestIds: new Set() });
     return HttpResponse.json(response, { status: 201 });
   }),
   http.get("/api/practice-sessions/:sessionId", ({ params }) => {
-    const session = sessions.get(String(params.sessionId));
+    const session = getStoredSession(String(params.sessionId));
     return session ? HttpResponse.json(session.response) : error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
   }),
   http.post("/api/practice-sessions/:sessionId/turns", async ({ params, request }) => {
-    const session = sessions.get(String(params.sessionId));
+    const sessionId = String(params.sessionId);
+    const session = getStoredSession(sessionId);
     if (!session) return error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
     const body = (await request.json()) as { request_id: string; turn_id: string; user_answer: string | null; timed_out: boolean };
     if (session.requestIds.has(body.request_id)) return error("duplicate_practice_request", "이미 처리된 연습 요청입니다.", 409);
@@ -271,10 +300,12 @@ export const practiceHandlers = [
       dialogue_response: body.timed_out ? "답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요." : "말씀하신 확인 내용을 반영했습니다. 다음 상황으로 넘어가겠습니다.",
       session: session.response,
     };
+    storeSession(sessionId, session);
     return HttpResponse.json(response);
   }),
   http.post("/api/practice-sessions/:sessionId/final-action", async ({ params, request }) => {
-    const session = sessions.get(String(params.sessionId));
+    const sessionId = String(params.sessionId);
+    const session = getStoredSession(sessionId);
     if (!session) return error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
     const body = (await request.json()) as { request_id: string; selected_action: PracticeSelectedAction };
     if (session.response.current_state !== "ACTION-SELECTION" || !finalActions.includes(body.selected_action)) return error("invalid_practice_transition", "현재 선택할 수 없는 최종 행동입니다.", 409);
@@ -295,10 +326,11 @@ export const practiceHandlers = [
       next_actions: scenario.nextActions,
       official_source_ids: scenario.officialSourceIds,
     };
+    storeSession(sessionId, session);
     return HttpResponse.json({ practice_turn_id: crypto.randomUUID().replaceAll("-", ""), attempt_no: 1, evaluation: null, dialogue_response: null, session: session.response } satisfies PracticeTurnResponseDto);
   }),
   http.get("/api/practice-sessions/:sessionId/result", ({ params }) => {
-    const session = sessions.get(String(params.sessionId));
+    const session = getStoredSession(String(params.sessionId));
     if (!session) return error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
     return session.result ? HttpResponse.json({ result: session.result }) : error("practice_result_not_ready", "아직 연습 결과가 생성되지 않았습니다.", 409);
   }),
