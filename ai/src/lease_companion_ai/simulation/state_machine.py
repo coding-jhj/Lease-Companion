@@ -11,6 +11,7 @@ from lease_companion_ai.schemas.simulation import (
     ScenarioDefinition,
     VerbalReliance,
     VerbalRelianceObservation,
+    allowed_next_dialogue_states,
 )
 
 
@@ -59,13 +60,15 @@ def advance_dialogue(
     )
     if turn is None or evaluation.turn_id != turn.turn_id:
         raise ValueError("평가 turn_id가 현재 대화 상태와 일치하지 않습니다.")
-    expected_state = (
-        turn.next_turn_id
-        if evaluation.answer_category == "appropriate_check"
-        else turn.turn_id
+    # 진행 여부는 분류별 허용 전이 안에서 평가(LLM)가 상황에 맞게 정한다.
+    # appropriate_check는 진행 고정, 회피·무응답·검토불가는 재시도 고정,
+    # partial_check·ambiguous_answer는 진행/재시도 모두 허용한다.
+    allowed = allowed_next_dialogue_states(
+        evaluation.answer_category, turn.next_turn_id, turn.turn_id
     )
-    if evaluation.next_dialogue_state != expected_state:
-        raise ValueError("평가의 다음 상태가 시나리오 전이와 일치하지 않습니다.")
+    if evaluation.next_dialogue_state not in allowed:
+        raise ValueError("평가의 다음 상태가 허용된 전이가 아닙니다.")
+    expected_state = evaluation.next_dialogue_state
 
     action_by_id = {action.action_id: action for action in scenario.target_actions}
     confirmed_action_ids = list(

@@ -266,3 +266,59 @@ def test_action_selection_is_rejected_before_dialogue_completion():
             ),
             occurred_at=STARTED_AT,
         )
+
+
+# --- 진행 정책: 목표문장이 아니어도 상황에 맞으면 진행 (LLM 판단) ---
+
+from lease_companion_ai.schemas.simulation import allowed_next_dialogue_states
+from lease_companion_ai.simulation.state_machine import (
+    advance_dialogue,
+    start_practice_session,
+)
+
+
+def _first_turn_eval(scenario, category, *, advance: bool):
+    turn = scenario.dialogue_turns[0]
+    return turn, PracticeTurnEvaluation(
+        turn_id=turn.turn_id,
+        answer_category=category,
+        confirmed_action_ids=[],
+        next_dialogue_state=turn.next_turn_id if advance else turn.turn_id,
+    )
+
+
+def test_policy_allows_partial_and_ambiguous_to_advance_or_retry():
+    assert allowed_next_dialogue_states("appropriate_check", "TURN-02", "TURN-01") == {"TURN-02"}
+    assert allowed_next_dialogue_states("avoidance", "TURN-02", "TURN-01") == {"TURN-01"}
+    assert allowed_next_dialogue_states("no_response", "TURN-02", "TURN-01") == {"TURN-01"}
+    assert allowed_next_dialogue_states("partial_check", "TURN-02", "TURN-01") == {"TURN-01", "TURN-02"}
+    assert allowed_next_dialogue_states("ambiguous_answer", "TURN-02", "TURN-01") == {"TURN-01", "TURN-02"}
+
+
+def test_partial_check_can_advance_to_next_turn():
+    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
+    session = start_practice_session(scenario, "S-ADV", 1, STARTED_AT)
+    turn, evaluation = _first_turn_eval(scenario, "partial_check", advance=True)
+
+    advanced = advance_dialogue(session, scenario, evaluation)
+
+    assert advanced.current_state == turn.next_turn_id  # 목표문장 없어도 진행
+
+
+def test_partial_check_may_still_retry_same_turn():
+    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
+    session = start_practice_session(scenario, "S-RETRY", 1, STARTED_AT)
+    turn, evaluation = _first_turn_eval(scenario, "partial_check", advance=False)
+
+    advanced = advance_dialogue(session, scenario, evaluation)
+
+    assert advanced.current_state == turn.turn_id
+
+
+def test_avoidance_cannot_advance_even_if_requested():
+    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
+    session = start_practice_session(scenario, "S-AVOID", 1, STARTED_AT)
+    _, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
+
+    with pytest.raises(ValueError, match="허용된 전이"):
+        advance_dialogue(session, scenario, evaluation)

@@ -12,5 +12,9 @@
 - 즉시 동의하거나 질문을 피하면 avoidance입니다.
 - 의미가 상충하거나 확정할 수 없으면 needs_review이며 fallback_reason은 conflicting_semantics입니다.
 - appropriate_check일 때만 goal_action_id를 confirmed_action_ids에 넣습니다.
+- next_dialogue_state는 allowed_next_states 중에서 고릅니다.
+  - appropriate_check는 success_next_state(진행)로 둡니다.
+  - avoidance, no_response, needs_review는 retry_state(같은 턴 재시도)로 둡니다.
+  - partial_check, ambiguous_answer는 사용자가 목표 문장을 그대로 말하지 않았더라도 계약 상황에 비추어 합리적인 확인·요청이면 success_next_state로 진행합니다. 확인이 명백히 더 필요할 때만 retry_state로 같은 턴에 머무릅니다.
 - 구두 설명을 그대로 믿으면 verbal_reliance는 relied, 문서 확인을 요구하며 거부하면 rejected, 관찰되지 않으면 not_observed입니다.
 - evidence_text는 사용자 답변 원문 범위를 벗어나 작성하지 않습니다. 서비스가 최종적으로 실제 사용자 원문을 저장합니다.
