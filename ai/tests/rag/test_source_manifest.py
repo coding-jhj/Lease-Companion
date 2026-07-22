@@ -37,6 +37,7 @@ def test_official_source_manifest_matches_inventory_and_local_hashes():
         "SRC-STD-LEASE",
         "SRC-MOLIT-CHECKLIST",
         "SRC-CONFIRM-FORM",
+        "SRC-CIVIL-LEASE",
     }
     for record in local_records.values():
         path = ROOT / record["local_path"]
