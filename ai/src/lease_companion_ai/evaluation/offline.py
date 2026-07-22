@@ -17,7 +17,10 @@ from lease_companion_ai.evaluation.retrieval import (
     load_gold_cases,
 )
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
-from lease_companion_ai.generation.service import GenerationService
+from lease_companion_ai.generation.service import (
+    CANONICAL_CLARITY_JUDGMENTS,
+    GenerationService,
+)
 from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
 from lease_companion_ai.guardrails.grounding import (
     grounding_violations,
@@ -615,7 +618,15 @@ def _evaluate_generation(
         )
         rules = {result.rule_id: result for result in analysis.results}
         judgments = {result.judgment_id: result for result in analysis.judgments}
-        active += sum(result.triggers_actions for result in analysis.results)
+        available_judgments = {
+            result.judgment_id for result in analysis.judgments
+        }
+        active += sum(
+            result.triggers_actions
+            and CANONICAL_CLARITY_JUDGMENTS.get(result.rule_id)
+            not in available_judgments
+            for result in analysis.results
+        )
         active_judgments += sum(
             result.triggers_actions for result in analysis.judgments
         )

@@ -13,6 +13,8 @@ from lease_companion_ai.schemas.unified import (
     RuleStatus,
 )
 
+from .reference_cases import search_reference_cases
+
 
 def _sources(results: Iterable[RuleResult]) -> tuple[OfficialSource, ...]:
     unique: dict[str, OfficialSource] = {}
@@ -41,8 +43,13 @@ def _comparison(
         related_judgment_ids=judgment_ids,
         limitations=limitations,
         official_sources=_sources(rules),
-        # 검증된 사례 corpus가 연결되기 전에는 비워 둔다. 유사 사례를 생성하지 않는다.
-        reference_cases=(),
+        # 참고 사례는 표시 상태가 실제 확인 대상으로 남은 경우에만 붙이며,
+        # 판정·시급도·공식 근거·행동 생성에는 사용하지 않는다.
+        reference_cases=(
+            search_reference_cases(pattern_id)
+            if status is not DamagePatternStatus.NO_SIGNAL_IN_SUBMITTED_DOCS
+            else ()
+        ),
     )
 
 
