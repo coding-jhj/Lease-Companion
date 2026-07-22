@@ -7,7 +7,7 @@ type PracticeScenario = {
   clause: string;
   answers: [string, string, string];
   confirmedActions: [string, string, string];
-  officialSourceIds: string[];
+  officialSourceNames: string[];
 };
 
 const scenarios: PracticeScenario[] = [
@@ -26,7 +26,7 @@ const scenarios: PracticeScenario[] = [
       "구두 설명 대신 반환 특약 수정 요구",
       "특약 수정 확인 전 계약 진행 보류",
     ],
-    officialSourceIds: ["SRC-HTA-LAW", "SRC-STD-LEASE"],
+    officialSourceNames: ["주택임대차보호법", "주택임대차 표준계약서"],
   },
   {
     id: "PRACTICE-THIRD-PARTY-PAYMENT-001",
@@ -43,7 +43,7 @@ const scenarios: PracticeScenario[] = [
       "제3자 수령 관계와 권한 자료 확인",
       "확인 완료 전 가계약금 송금 보류",
     ],
-    officialSourceIds: ["SRC-STD-LEASE", "SRC-MOLIT-CHECKLIST"],
+    officialSourceNames: ["주택임대차 표준계약서", "안심 전세계약 체크리스트"],
   },
   {
     id: "PRACTICE-PROXY-AUTHORITY-001",
@@ -60,7 +60,7 @@ const scenarios: PracticeScenario[] = [
       "대리인 권한 서류와 권한 범위 확인",
       "권한 확인 전 서명·송금 보류",
     ],
-    officialSourceIds: ["SRC-MOLIT-CHECKLIST", "SRC-STD-LEASE"],
+    officialSourceNames: ["안심 전세계약 체크리스트", "주택임대차 표준계약서"],
   },
 ];
 
@@ -105,13 +105,14 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   const card = catalog.locator("article").filter({ has: page.getByRole("heading", { name: scenario.title }) });
   await card.getByRole("link", { name: "상황 먼저 보기" }).click();
   await expect(page).toHaveURL(new RegExp(`/practice/scenarios/${scenario.id}$`));
-  await expect(page.getByRole("heading", { name: scenario.title })).toBeVisible();
-  await expect(page.getByRole("region", { name: "계약서 특약" })).toContainText(scenario.clause);
-  await expect(page.getByText("가상 연습", { exact: true })).toBeVisible();
-  await expect(page.getByText("합성 시나리오", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "주택임대차계약서 확인" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "주택임대차계약서" })).toContainText(scenario.clause);
+  await expect(page.getByRole("heading", { name: scenario.title })).toHaveCount(0);
+  await expect(page.getByText("가상 연습", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("합성 시나리오", { exact: true })).toHaveCount(0);
 
   if (testInfo.project.name.startsWith("real-api")) {
-    await expect(page.getByRole("button", { name: "대화 연습 시작" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "계약서 확인 완료 · 대화 시작" })).toBeEnabled();
   }
 }
 
@@ -126,9 +127,10 @@ test.describe("세 가지 계약 대화 연습", () => {
   for (const scenario of scenarios) {
     test(`${scenario.title}: 시작부터 저장된 복기까지 완료한다`, async ({ page }, testInfo) => {
       await signUpAndOpenPractice(page, scenario, testInfo);
-      await page.getByRole("button", { name: "대화 연습 시작" }).click();
+      await page.getByRole("button", { name: "계약서 확인 완료 · 대화 시작" }).click();
       await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+$/);
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
+      await expect(page.locator("video[src='/practice/avatar/speaking.mp4']")).toBeVisible();
 
       await page.getByRole("button", { name: "답변하지 못했어요" }).click();
       await expect(page.getByText("답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요.")).toBeVisible();
@@ -153,7 +155,7 @@ test.describe("세 가지 계약 대화 연습", () => {
       for (const action of scenario.confirmedActions) await expect(confirmed).toContainText(action);
       await expect(page.getByText("이번 연습에서 놓친 확인 신호가 없습니다.")).toBeVisible();
       const sources = page.getByRole("heading", { name: "연결된 공식 근거" }).locator("xpath=parent::section");
-      for (const sourceId of scenario.officialSourceIds) await expect(sources).toContainText(sourceId);
+      for (const sourceName of scenario.officialSourceNames) await expect(sources).toContainText(sourceName);
 
       await page.reload();
       await expect(page.getByRole("heading", { name: "연습 결과 복기" })).toBeVisible();

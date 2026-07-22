@@ -29,7 +29,7 @@ function summary(scenarioId: string, title: string): PracticeScenarioSummaryDto 
     scenario_id: scenarioId,
     scenario_version: "1.0.0",
     title,
-    role: scenarioId.includes("DEFERRED") ? "임대인" : "공인중개사",
+    role: "공인중개사",
     difficulty: "기본",
     contract_stage: "서명 전",
     always_show_labels: ["가상 연습", "합성 시나리오"],
@@ -190,6 +190,19 @@ describe("Practice scenario pages", () => {
 });
 
 describe("PracticeSessionPage", () => {
+  it("moves the shared broker avatar from speaking to listening", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    const view = renderSession();
+
+    expect(await screen.findByText("공인중개사가 말하고 있습니다")).toBeInTheDocument();
+    const speakingVideo = view.container.querySelector("video");
+    expect(speakingVideo).toHaveAttribute("src", "/practice/avatar/speaking.mp4");
+
+    fireEvent.ended(speakingVideo!);
+    expect(await screen.findByText("답변을 듣고 있습니다")).toBeInTheDocument();
+    expect(view.container.querySelector("video")).toHaveAttribute("src", "/practice/avatar/listening.mp4");
+  });
+
   it("shows the scenario contract and lets the user collapse it during the dialogue", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     vi.spyOn(practiceService, "getScenario").mockResolvedValue(
