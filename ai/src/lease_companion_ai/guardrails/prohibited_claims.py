@@ -20,3 +20,25 @@ _PROHIBITED_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 def has_prohibited_claim(texts: tuple[str, ...]) -> bool:
     return any(pattern.search(text) for text in texts for pattern in _PROHIBITED_PATTERNS)
+
+
+_SPECIAL_CLAUSE_PROHIBITED_TERMS = (
+    "무효",
+    "위법",
+    "안전",
+    "사기",
+    "법적으로 문제없음",
+    "보증금이 보호됨",
+    "반드시 돌려받을 수 있음",
+    "계약해도 됨",
+    "계약하면 안 됨",
+    "임대인의 범죄",
+)
+
+
+def has_prohibited_special_clause_claim(texts: tuple[str, ...]) -> bool:
+    """잠긴 특약 생성 평가셋의 단정 표현까지 엄격하게 차단한다."""
+
+    return has_prohibited_claim(texts) or any(
+        term in text for text in texts for term in _SPECIAL_CLAUSE_PROHIBITED_TERMS
+    )

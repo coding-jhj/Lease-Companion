@@ -8,10 +8,20 @@ from lease_companion_ai.generation.models import JudgmentGuidance, RuleGuidance
 from lease_companion_ai.guardrails.grounding import (
     grounding_violations,
     judgment_grounding_violations,
+    special_clause_grounding_violations,
 )
 from lease_companion_ai.guardrails.immutable_rules import changed_rule_fields
-from lease_companion_ai.guardrails.prohibited_claims import has_prohibited_claim
-from lease_companion_ai.schemas.unified import JudgmentResult, RuleResult, StageGuidance
+from lease_companion_ai.guardrails.prohibited_claims import (
+    has_prohibited_claim,
+    has_prohibited_special_clause_claim,
+)
+from lease_companion_ai.schemas.unified import (
+    JudgmentResult,
+    RuleResult,
+    SpecialClauseGuidance,
+    SpecialClauseReview,
+    StageGuidance,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +97,29 @@ class GuardrailService:
                 },
             )
             raise GuardrailBlocked(judgment.judgment_id, unique_reasons)
+        return guidance
+
+    def enforce_special_clause(
+        self, review: SpecialClauseReview, guidance: SpecialClauseGuidance
+    ) -> SpecialClauseGuidance:
+        texts = (
+            guidance.plain_explanation,
+            *guidance.confirmation_questions,
+            *guidance.revision_requests,
+        )
+        reasons = list(special_clause_grounding_violations(review, guidance))
+        if has_prohibited_special_clause_claim(texts):
+            reasons.append("prohibited_claim")
+        unique_reasons = tuple(dict.fromkeys(reasons))
+        if unique_reasons:
+            logger.warning(
+                "special_clause_generation_guardrail_blocked",
+                extra={
+                    "clause_id": review.clause_id,
+                    "reason_codes": unique_reasons,
+                },
+            )
+            raise GuardrailBlocked(review.clause_id, unique_reasons)
         return guidance
 
     def enforce_rule_immutability(

@@ -22,7 +22,7 @@ class GenerationEvidence:
 
 @dataclass(frozen=True, slots=True)
 class GenerationRequest:
-    """R 규칙 또는 J 판정 하나를 생성 provider에 전달하는 내부 요청."""
+    """R/J 또는 특약 카드 하나를 생성 provider에 전달하는 내부 요청."""
 
     prompt_version: GenerationPromptVersion
     # 기존 provider wire 호환을 위해 이름은 rule_id/rule_name을 유지하며 J ID도 허용한다.
@@ -34,6 +34,8 @@ class GenerationRequest:
     limitations: str
     evidence: tuple[GenerationEvidence, ...]
     prompts: Mapping[str, str]
+    # 특약 생성에서만 사용한다. 서비스가 비식별화한 뒤 provider에 전달한다.
+    deidentified_clause_text: str | None = None
 
 
 @runtime_checkable

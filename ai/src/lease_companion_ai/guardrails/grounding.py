@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from lease_companion_ai.generation.models import JudgmentGuidance, RuleGuidance
-from lease_companion_ai.schemas.unified import JudgmentResult, RuleResult
+from lease_companion_ai.schemas.unified import (
+    JudgmentResult,
+    RuleResult,
+    SpecialClauseGuidance,
+    SpecialClauseReview,
+)
 
 
 def grounding_violations(
@@ -32,5 +37,20 @@ def judgment_grounding_violations(
         if guidance.signing_checklist or guidance.post_contract_actions:
             violations.append("ungrounded_action")
         if "공식 근거 확인이 필요" not in guidance.explanation:
+            violations.append("ungrounded_explanation")
+    return tuple(violations)
+
+
+def special_clause_grounding_violations(
+    review: SpecialClauseReview, guidance: SpecialClauseGuidance
+) -> tuple[str, ...]:
+    allowed = {source.source_id for source in review.evidence_sources}
+    violations: list[str] = []
+    if not set(guidance.source_ids).issubset(allowed):
+        violations.append("invalid_source_id")
+    if not guidance.source_ids:
+        if guidance.revision_requests:
+            violations.append("ungrounded_revision")
+        if "공식 근거를 확인하지 못했습니다" not in guidance.plain_explanation:
             violations.append("ungrounded_explanation")
     return tuple(violations)

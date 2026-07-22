@@ -7,8 +7,8 @@ AI 출력이 서비스 원칙을 벗어나지 않게 차단한다. 단정 표현
 ## 하위 구조
 
 - `pii.py`: 이름·주소·계좌·주민번호·전화·이메일의 로컬 결정론 토큰화와 복원
-- `prohibited_claims.py`: 안전·위험·사기·적법성·계약 체결에 관한 단정 표현 탐지
-- `grounding.py`: 공식 근거 없음·허용되지 않은 source ID·근거 없는 행동 차단
+- `prohibited_claims.py`: 안전·위험·사기·적법성·계약 체결 단정과 특약 생성 잠금 금지어 탐지
+- `grounding.py`: 공식 근거 없음·허용되지 않은 source ID·근거 없는 행동·특약 수정 요청 차단
 - `immutable_rules.py`: `status`·`urgency`·`reason` 불변 검사
 - `service.py`: 검사 통합, 안전한 차단 코드와 비민감 로그
 
@@ -20,7 +20,8 @@ AI 출력이 서비스 원칙을 벗어나지 않게 차단한다. 단정 표현
 
 - 통과한 `GenerationResult`만 `guardrail_passed=true`로 반환한다.
 - provider 출력이 차단되면 `GenerationService`가 항목 단위 안전 템플릿으로 교체하고 그 템플릿도 다시 검사한다.
-- 로그에는 생성 본문·규칙 이유·개인정보 없이 `rule_id`와 차단 사유 코드만 남긴다.
+- 로그에는 생성 본문·규칙 이유·개인정보 없이 `rule_id` 또는 `clause_id`와 차단 사유 코드만 남긴다.
+- 특약 카드 근거가 없으면 확인 질문만 허용한다. 수정 요청과 법률 결론은 차단한다.
 
 ## 개인정보 경계
 

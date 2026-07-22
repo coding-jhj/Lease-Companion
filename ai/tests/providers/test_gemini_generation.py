@@ -129,6 +129,26 @@ def test_gemini_provider_rejects_request_without_official_evidence():
         provider.generate(request)
 
 
+def test_gemini_provider_serializes_deidentified_special_clause_text():
+    request = _request()
+    request = GenerationRequest(
+        prompt_version=request.prompt_version,
+        rule_id="CLAUSE-001",
+        rule_name="SC-DEFERRED-REFUND",
+        status=request.status,
+        urgency=request.urgency,
+        reason=request.reason,
+        limitations=request.limitations,
+        evidence=request.evidence,
+        prompts=request.prompts,
+        deidentified_clause_text="[PERSON_1]과 반환 조건을 확인한다.",
+    )
+
+    payload = json.loads(GeminiGenerationProvider._serialize_request(request))
+
+    assert payload["deidentified_clause_text"] == "[PERSON_1]과 반환 조건을 확인한다."
+
+
 def test_gemini_provider_does_not_require_sdk_without_key(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import pytest
 
@@ -12,6 +13,7 @@ from lease_companion_ai.generation.models import (
 from lease_companion_ai.generation.service import (
     GenerationService,
     load_generation_prompts,
+    load_special_clause_prompt,
 )
 from lease_companion_ai.providers.generation import FakeGenerationProvider
 from lease_companion_ai.schemas.unified import (
@@ -19,6 +21,7 @@ from lease_companion_ai.schemas.unified import (
     ContractContext,
     JudgmentResult,
     OfficialSource,
+    SpecialClauseReview,
 )
 
 # CWD와 무관하게 repo 루트 기준으로 fixture를 찾는다(다른 테스트와 동일한 앵커).
@@ -153,6 +156,59 @@ def _analysis_with_judgments(*, with_j01_evidence: bool = True) -> AnalysisRunRe
     ]
     return AnalysisRunResult.model_validate(
         analysis.model_copy(update={"judgments": judgments}).model_dump()
+    )
+
+
+def _analysis_with_special_clause(
+    *,
+    text: str,
+    catalog_id: str | None,
+    with_evidence: bool,
+) -> AnalysisRunResult:
+    analysis = _analysis_with_judgments()
+    judgments = [
+        judgment.model_copy(
+            update={
+                "status": judgment.status.__class__.CHECK_NEEDED,
+                "urgency": judgment.urgency.__class__.BEFORE_CONTRACT,
+                "triggers_actions": True,
+                "question": "특약의 조건과 적용 범위를 확인했습니까?",
+                "recommended_actions": ["특약 조건을 서면으로 확인하십시오."],
+            }
+        )
+        if judgment.judgment_id == "J10"
+        else judgment
+        for judgment in analysis.judgments
+    ]
+    review = SpecialClauseReview(
+        clause_id="CLAUSE-GEN-001",
+        original_text=text,
+        catalog_ids=(catalog_id,) if catalog_id else (),
+        match_method="catalog_pattern" if catalog_id else "unmatched",
+        related_judgment_ids=("J10",),
+        status="확인 필요",
+        urgency="계약 전 확인",
+        reason="특약의 조건과 적용 범위를 확인해야 합니다.",
+        triggers_actions=True,
+        evidence_sources=(
+            (
+                OfficialSource(
+                    source_id="SRC-SPECIAL",
+                    article_or_section="제1조",
+                    title="공식 특약 확인 자료",
+                    institution="공공기관",
+                    summary="특약의 조건과 책임 범위를 확인하는 공식 근거",
+                ),
+            )
+            if with_evidence
+            else ()
+        ),
+        limitations="제공된 특약과 공식 근거 범위에서만 설명합니다.",
+    )
+    return AnalysisRunResult.model_validate(
+        analysis.model_copy(
+            update={"judgments": judgments, "special_clause_reviews": [review]}
+        ).model_dump()
     )
 
 
@@ -583,3 +639,175 @@ def test_unknown_judgment_provider_source_id_uses_fallback():
     assert item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
     assert item.fallback_reason == "invalid_source_id"
     assert item.source_ids == ("SRC-J01",)
+
+
+LOCKED_SPECIAL_GENERATION_CASES = tuple(
+    json.loads(line)
+    for line in (
+        ROOT / "data/evaluation/special-clauses/generation_cases.jsonl"
+    ).read_text(encoding="utf-8").splitlines()
+    if line.strip()
+)
+
+
+@pytest.mark.parametrize(
+    "case",
+    tuple(case for case in LOCKED_SPECIAL_GENERATION_CASES if case["expect_evidence"]),
+    ids=lambda case: case["case_id"],
+)
+def test_special_clause_provider_guidance_follows_locked_generation_contract(case):
+    analysis = _analysis_with_special_clause(
+        text=case["text"],
+        catalog_id=case["target_catalog_id"],
+        with_evidence=True,
+    )
+    provider = FakeGenerationProvider(
+        {
+            "CLAUSE-GEN-001": GeneratedGuidanceDraft(
+                explanation=case["allowed_core_meaning"],
+                questions=("이 특약의 적용 조건과 책임 범위를 확인하셨나요?",),
+                request_templates=("조건과 책임 주체를 구체적으로 적어 주세요.",),
+                source_ids=("SRC-SPECIAL",),
+            )
+        }
+    )
+
+    generated = GenerationService(provider).generate(analysis, _context())
+
+    item = generated.special_clause_items[0]
+    review = analysis.special_clause_reviews[0]
+    texts = (
+        item.plain_explanation,
+        *item.confirmation_questions,
+        *item.revision_requests,
+    )
+    assert item.generation_method is GenerationMethod.PROVIDER
+    assert set(item.source_ids).issubset(
+        {source.source_id for source in review.evidence_sources}
+    )
+    assert not any(term in text for term in case["prohibited_terms"] for text in texts)
+    request = next(call for call in provider.calls if call.rule_id == item.clause_id)
+    assert request.deidentified_clause_text == case["text"]
+    assert "special_clause_guidance" in request.prompts
+
+
+def test_special_clause_without_evidence_returns_question_only_fallback():
+    case = next(
+        case for case in LOCKED_SPECIAL_GENERATION_CASES if not case["expect_evidence"]
+    )
+    analysis = _analysis_with_special_clause(
+        text=case["text"], catalog_id=None, with_evidence=False
+    )
+
+    item = GenerationService().generate(analysis, _context()).special_clause_items[0]
+
+    assert item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
+    assert "공식 근거를 확인하지 못했습니다" in item.plain_explanation
+    assert item.confirmation_questions
+    assert item.revision_requests == ()
+    assert item.source_ids == ()
+    assert not any(
+        term in text
+        for term in case["prohibited_terms"]
+        for text in (item.plain_explanation, *item.confirmation_questions)
+    )
+
+
+def test_special_clause_provider_failure_preserves_analysis_and_uses_fallback():
+    analysis = _analysis_with_special_clause(
+        text="보증금은 다음 임차인 입주 후 반환한다.",
+        catalog_id="SC-DEFERRED-REFUND",
+        with_evidence=True,
+    )
+    before = analysis.model_dump(mode="json")
+    provider = FakeGenerationProvider(
+        {}, failing_rule_ids=frozenset({"CLAUSE-GEN-001"})
+    )
+
+    item = GenerationService(provider).generate(analysis, _context()).special_clause_items[0]
+
+    assert analysis.model_dump(mode="json") == before
+    assert item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
+    assert item.source_ids == ("SRC-SPECIAL",)
+    assert item.confirmation_questions
+    assert item.revision_requests
+
+
+def test_compound_special_clause_fallback_keeps_each_catalog_guidance():
+    analysis = _analysis_with_special_clause(
+        text="수리비는 모두 임차인이 부담하고 퇴거 시 노후 부분도 복구한다.",
+        catalog_id="SC-REPAIR-SCOPE",
+        with_evidence=True,
+    )
+    review = analysis.special_clause_reviews[0].model_copy(
+        update={"catalog_ids": ("SC-REPAIR-SCOPE", "SC-RESTORATION-SCOPE")}
+    )
+    analysis = AnalysisRunResult.model_validate(
+        analysis.model_copy(update={"special_clause_reviews": [review]}).model_dump()
+    )
+
+    item = GenerationService().generate(analysis, _context()).special_clause_items[0]
+
+    assert len(item.confirmation_questions) == 2
+    assert len(item.revision_requests) == 2
+    assert "수리" in item.plain_explanation
+    assert "원상복구" in item.plain_explanation
+
+
+@pytest.mark.parametrize(
+    "draft",
+    (
+        GeneratedGuidanceDraft(
+            explanation="이 특약은 무효입니다.", source_ids=("SRC-SPECIAL",)
+        ),
+        GeneratedGuidanceDraft(
+            explanation="공식 근거를 확인했습니다.",
+            source_ids=("SRC-NOT-PROVIDED",),
+        ),
+    ),
+)
+def test_special_clause_unsafe_or_ungrounded_provider_output_uses_fallback(draft):
+    analysis = _analysis_with_special_clause(
+        text="보증금은 다음 임차인 입주 후 반환한다.",
+        catalog_id="SC-DEFERRED-REFUND",
+        with_evidence=True,
+    )
+    provider = FakeGenerationProvider({"CLAUSE-GEN-001": draft})
+
+    item = GenerationService(provider).generate(analysis, _context()).special_clause_items[0]
+
+    assert item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
+    assert item.source_ids == ("SRC-SPECIAL",)
+    assert "무효" not in item.plain_explanation
+
+
+def test_special_clause_provider_request_tokenizes_original_text():
+    analysis = _analysis_with_special_clause(
+        text="임대인 홍길동에게 010-1234-5678로 연락해 수리 범위를 정한다.",
+        catalog_id="SC-REPAIR-SCOPE",
+        with_evidence=True,
+    )
+    provider = FakeGenerationProvider(
+        {
+            "CLAUSE-GEN-001": GeneratedGuidanceDraft(
+                explanation="[PERSON_1]에게 수리 범위와 책임 주체를 확인해 주세요.",
+                questions=("수리 책임 범위를 확인하셨나요?",),
+                source_ids=("SRC-SPECIAL",),
+            )
+        }
+    )
+
+    generated = GenerationService(provider).generate(analysis, _context())
+
+    request = next(call for call in provider.calls if call.rule_id == "CLAUSE-GEN-001")
+    assert "홍길동" not in request.deidentified_clause_text
+    assert "010-1234-5678" not in request.deidentified_clause_text
+    assert "[PERSON_1]" in request.deidentified_clause_text
+    assert "[PHONE_1]" in request.deidentified_clause_text
+    assert "홍길동" in generated.special_clause_items[0].plain_explanation
+
+
+def test_special_clause_prompt_has_versioned_header():
+    prompt = load_special_clause_prompt()
+
+    assert prompt.splitlines()[0] == "버전: special-clause-guidance-v1"

@@ -16,6 +16,7 @@ from lease_companion_ai.generation.models import (
     GuidanceActionItem,
     JudgmentGuidance,
     RuleGuidance,
+    SpecialClauseGuidance,
 )
 from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
 from lease_companion_ai.guardrails.service import GuardrailBlocked, GuardrailService
@@ -32,11 +33,13 @@ from lease_companion_ai.schemas.unified import (
     GENERATION_PROMPT_VERSION,
     JudgmentResult,
     RuleResult,
+    SpecialClauseReview,
     StageGuidance,
     validate_generation_result_for_analysis,
 )
 
 PROMPT_NAMES = ("questions", "checklists", "summaries")
+SPECIAL_CLAUSE_PROMPT_NAME = "special_clause_guidance"
 logger = logging.getLogger(__name__)
 
 _CANONICAL_CLARITY_JUDGMENTS = MappingProxyType(
@@ -131,6 +134,54 @@ def load_generation_prompts(root: Path | None = None) -> MappingProxyType[str, s
     return MappingProxyType(prompts)
 
 
+def load_special_clause_prompt(root: Path | None = None) -> str:
+    prompt_root = root or Path(__file__).resolve().parents[3] / "prompts"
+    prompt = (prompt_root / "special_clause_guidance_v1.txt").read_text(
+        encoding="utf-8"
+    )
+    if not prompt.strip():
+        raise ValueError("특약 생성 프롬프트는 비어 있을 수 없습니다.")
+    if prompt.splitlines()[0].strip() != "버전: special-clause-guidance-v1":
+        raise ValueError("특약 생성 프롬프트 헤더가 올바르지 않습니다.")
+    return prompt
+
+
+_SPECIAL_CLAUSE_FALLBACKS = MappingProxyType(
+    {
+        "SC-DEFERRED-REFUND": (
+            "보증금 반환 시점이 미래 사건에 연결되어 있는지 확인해야 합니다.",
+            "보증금 반환일과 반환 조건이 계약 종료 시점을 기준으로 명확히 적혀 있나요?",
+            "보증금 반환 시점과 조건을 계약 종료일 기준으로 구체적으로 적어 주세요.",
+        ),
+        "SC-REPAIR-SCOPE": (
+            "계약 기간 중 수리 범위와 비용 부담 주체를 구체적으로 확인해야 합니다.",
+            "설비별 수리 범위와 비용 부담 주체가 구분되어 있나요?",
+            "수리 대상, 원인, 비용 부담 주체를 항목별로 구체적으로 적어 주세요.",
+        ),
+        "SC-RESTORATION-SCOPE": (
+            "계약 종료 시 원상복구 범위와 책임 주체를 구체적으로 확인해야 합니다.",
+            "통상적인 사용으로 생긴 마모와 시설 노후의 처리 기준이 구분되어 있나요?",
+            "원상복구 대상과 제외 범위, 비용 부담 주체를 구체적으로 적어 주세요.",
+        ),
+        "SC-RIGHTS-CHANGE": (
+            "잔금과 입주 전후의 권리변동 조건을 확인해야 합니다.",
+            "잔금과 입주 전후에 새 담보권을 설정하지 않는 조건이 적혀 있나요?",
+            "잔금과 입주 전후의 권리변동 제한과 재확인 시점을 구체적으로 적어 주세요.",
+        ),
+        "SC-MANAGEMENT-FEE": (
+            "관리비의 금액, 포함 항목, 부과 방식을 계약 전에 확인해야 합니다.",
+            "관리비 금액과 포함 항목, 추가 비용의 산정 방식이 적혀 있나요?",
+            "관리비 금액, 포함 항목, 추가 비용의 산정 기준을 구체적으로 적어 주세요.",
+        ),
+        "SC-MAIN-SPECIAL-CONFLICT": (
+            "계약서 본문과 특약에서 다르게 적힌 조건을 특정해 확인해야 합니다.",
+            "본문과 특약 중 서로 다른 날짜, 금액, 조건, 책임 주체가 있나요?",
+            "본문과 특약이 같은 뜻이 되도록 적용 조건과 책임 주체를 하나로 정리해 주세요.",
+        ),
+    }
+)
+
+
 def rule_results_requiring_guidance(
     analysis: AnalysisRunResult,
 ) -> tuple[RuleResult, ...]:
@@ -156,6 +207,7 @@ class GenerationService:
     ) -> None:
         self._provider = provider
         self._prompts = prompts or load_generation_prompts()
+        self._special_clause_prompt = load_special_clause_prompt()
         self._guardrails = guardrails or GuardrailService()
 
     def generate(
@@ -173,6 +225,10 @@ class GenerationService:
             for result in analysis.judgments
             if result.triggers_actions
         )
+        special_clause_items = tuple(
+            self._generate_special_clause(review)
+            for review in analysis.special_clause_reviews
+        )
         if analysis.model_dump(mode="json") != before:
             raise RuntimeError("생성 단계가 규칙 결과를 변경했습니다.")
         items, judgment_items = self._compact_guidance_actions(items, judgment_items)
@@ -181,11 +237,128 @@ class GenerationService:
             prompt_version=GENERATION_PROMPT_VERSION,
             items=items,
             judgment_items=judgment_items,
+            special_clause_items=special_clause_items,
             stage_guidance=self._guardrails.enforce_stage(
                 self._stage_guidance(analysis, contract_context)
             ),
         )
         return validate_generation_result_for_analysis(analysis, generated)
+
+    def _generate_special_clause(
+        self, review: SpecialClauseReview
+    ) -> SpecialClauseGuidance:
+        if not review.evidence_sources:
+            return self._safe_special_clause_fallback(review)
+        if self._provider is None:
+            return self._safe_special_clause_fallback(review)
+
+        tokenizer = PiiTokenizer()
+        request = GenerationRequest(
+            prompt_version=GENERATION_PROMPT_VERSION,
+            rule_id=review.clause_id,
+            rule_name=self._tokenize_required(
+                tokenizer, " / ".join(review.catalog_ids) or "미매칭 특약"
+            ),
+            status=review.status.value,
+            urgency=review.urgency.value,
+            reason=self._tokenize_required(tokenizer, review.reason),
+            limitations=self._tokenize_required(tokenizer, review.limitations),
+            evidence=tuple(
+                GenerationEvidence(
+                    source_id=source.source_id,
+                    title=self._tokenize_required(tokenizer, source.title),
+                    institution=self._tokenize_required(tokenizer, source.institution),
+                    summary=tokenizer.tokenize(source.summary),
+                    source_url=tokenizer.tokenize(source.source_url),
+                )
+                for source in review.evidence_sources
+            ),
+            prompts=MappingProxyType(
+                {
+                    SPECIAL_CLAUSE_PROMPT_NAME: self._tokenize_required(
+                        tokenizer, self._special_clause_prompt
+                    )
+                }
+            ),
+            deidentified_clause_text=self._tokenize_required(
+                tokenizer, review.original_text
+            ),
+        )
+        if self._request_contains_raw_pii(request):
+            logger.warning(
+                "special_clause_generation_pii_gate_blocked",
+                extra={"clause_id": review.clause_id, "reason_codes": ("raw_pii",)},
+            )
+            return self._safe_special_clause_fallback(review)
+
+        try:
+            draft = self._provider.generate(request)
+        except ProviderError:
+            return self._safe_special_clause_fallback(review)
+
+        restored = self._restore_draft(tokenizer, draft)
+        if restored.signing_checklist or restored.post_contract_actions:
+            return self._safe_special_clause_fallback(review)
+        guidance = SpecialClauseGuidance(
+            clause_id=review.clause_id,
+            plain_explanation=restored.explanation,
+            confirmation_questions=restored.questions,
+            revision_requests=restored.request_templates,
+            source_ids=restored.source_ids,
+            generation_method=GenerationMethod.PROVIDER,
+        )
+        try:
+            return self._guardrails.enforce_special_clause(review, guidance)
+        except GuardrailBlocked:
+            return self._safe_special_clause_fallback(review)
+
+    def _safe_special_clause_fallback(
+        self, review: SpecialClauseReview
+    ) -> SpecialClauseGuidance:
+        if not review.evidence_sources:
+            guidance = SpecialClauseGuidance(
+                clause_id=review.clause_id,
+                plain_explanation=(
+                    "공식 근거를 확인하지 못했습니다. 법률 결론을 정하지 않고 "
+                    "특약의 적용 조건을 계약 당사자에게 확인해 주세요."
+                ),
+                confirmation_questions=(
+                    "이 특약이 적용되는 조건과 책임 주체를 구체적으로 확인할 수 있나요?",
+                ),
+                generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+            )
+            return self._guardrails.enforce_special_clause(review, guidance)
+
+        fallback_contents = tuple(
+            _SPECIAL_CLAUSE_FALLBACKS[catalog_id]
+            for catalog_id in review.catalog_ids
+            if catalog_id in _SPECIAL_CLAUSE_FALLBACKS
+        )
+        if not fallback_contents:
+            fallback_contents = (
+                (
+                    "특약의 적용 조건과 책임 주체를 공식 근거와 함께 확인해야 합니다.",
+                    "이 특약의 적용 조건과 책임 주체가 구체적으로 적혀 있나요?",
+                    "적용 조건과 책임 주체를 구체적으로 적어 주세요.",
+                ),
+            )
+        guidance = SpecialClauseGuidance(
+            clause_id=review.clause_id,
+            plain_explanation=" ".join(
+                dict.fromkeys(content[0] for content in fallback_contents)
+            ),
+            confirmation_questions=self._unique(
+                content[1] for content in fallback_contents
+            ),
+            revision_requests=self._unique(
+                content[2] for content in fallback_contents
+            ),
+            source_ids=tuple(
+                source.source_id for source in review.evidence_sources
+            ),
+            generation_method=GenerationMethod.TEMPLATE_FALLBACK,
+        )
+        return self._guardrails.enforce_special_clause(review, guidance)
 
     @staticmethod
     def _normalize_action(text: str, fallback_kind: str) -> tuple[str, str, str]:
@@ -661,6 +834,8 @@ class GenerationService:
             request.limitations,
             *request.prompts.values(),
         ]
+        if request.deidentified_clause_text is not None:
+            values.append(request.deidentified_clause_text)
         for evidence in request.evidence:
             values.extend(
                 value

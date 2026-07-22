@@ -10,6 +10,7 @@ from lease_companion_ai.schemas.unified import (
     GenerationResult,
     JudgmentGuidance,
     RuleGuidance,
+    SpecialClauseGuidance,
     StageGuidance,
 )
 
@@ -20,6 +21,7 @@ __all__ = [
     "GuidanceActionItem",
     "JudgmentGuidance",
     "RuleGuidance",
+    "SpecialClauseGuidance",
     "StageGuidance",
 ]
 

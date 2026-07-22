@@ -100,7 +100,8 @@ class GeminiGenerationProvider:
                     contents=[
                         (
                             "공식 근거에 한정해 임차인이 직접 확인할 설명, 질문, "
-                            "체크리스트와 행동을 작성하십시오. 규칙 판정을 변경하지 마십시오."
+                            "수정 요청 또는 체크리스트와 행동을 작성하십시오. "
+                            "규칙 판정을 변경하거나 법률 결론을 단정하지 마십시오."
                         ),
                         self._serialize_request(request),
                     ],
@@ -154,5 +155,6 @@ class GeminiGenerationProvider:
                 for evidence in request.evidence
             ],
             "prompts": dict(request.prompts),
+            "deidentified_clause_text": request.deidentified_clause_text,
         }
         return json.dumps(payload, ensure_ascii=False, sort_keys=True)
