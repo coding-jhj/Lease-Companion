@@ -44,6 +44,23 @@ const financialReviewFields = new Set([
 
 const focusedClauseFields = new Set(["special_clauses"]);
 
+function requiresManualReview(view: FieldViewModel, hasDraft: boolean) {
+  return focusedClauseFields.has(view.field.field_name)
+    || directConfirmationFields.has(view.field.field_name)
+    || hasDraft
+    || ["not_stated", "not_applicable"].includes(view.field.issue_code ?? "")
+    || (
+      financialReviewFields.has(view.field.field_name)
+      && view.field.confidence === "실패"
+    );
+}
+
+function canBulkConfirm(view: FieldViewModel) {
+  return view.field.confidence !== "실패"
+    && !directConfirmationFields.has(view.field.field_name)
+    && !focusedClauseFields.has(view.field.field_name);
+}
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -169,22 +186,14 @@ export function ExtractionReviewPage() {
 
   function confirmReadableFields() {
     const readableKeys = fields
-      .filter((view) => (
-        view.field.confidence !== "실패"
-        && !directConfirmationFields.has(view.field.field_name)
-        && !focusedClauseFields.has(view.field.field_name)
-      ))
+      .filter(canBulkConfirm)
       .map((view) => view.key);
     setReviewedKeys((current) => [...new Set([...current, ...readableKeys])]);
     setVerificationByKey((current) => ({
       ...current,
       ...Object.fromEntries(
         fields
-          .filter((view) => (
-            view.field.confidence !== "실패"
-            && !directConfirmationFields.has(view.field.field_name)
-            && !focusedClauseFields.has(view.field.field_name)
-          ))
+          .filter(canBulkConfirm)
           .map((view) => [view.key, drafts[view.key] === undefined ? "confirmed" : "corrected"]),
       ),
     }));
@@ -195,34 +204,22 @@ export function ExtractionReviewPage() {
     (view) => !reviewedKeys.includes(view.key)
       && (
         view.field.confidence !== "실패"
-        || view.field.issue_code === "not_stated"
-        || view.field.issue_code === "not_applicable"
-        || directConfirmationFields.has(view.field.field_name)
-        || hasDraftInput(view.key)
+        || requiresManualReview(view, hasDraftInput(view.key))
       ),
   );
   const confirmedFields = fields.filter((view) => reviewedKeys.includes(view.key));
   const unreviewedFields = fields.filter((view) => !reviewedKeys.includes(view.key));
   const readableFields = unreviewedFields.filter((view) => (
-    view.field.confidence !== "실패"
-    && !directConfirmationFields.has(view.field.field_name)
-    && !focusedClauseFields.has(view.field.field_name)
+    canBulkConfirm(view)
   ));
   const unresolvedFields = unreviewedFields.filter((view) => !readableFields.includes(view));
   const attentionFields = unresolvedFields.filter((view) => (
-    financialReviewFields.has(view.field.field_name)
-    || focusedClauseFields.has(view.field.field_name)
-    || directConfirmationFields.has(view.field.field_name)
-    || hasDraftInput(view.key)
-    || ["not_stated", "not_applicable"].includes(view.field.issue_code ?? "")
+    requiresManualReview(view, hasDraftInput(view.key))
   ));
   const optionalFailedFields = unresolvedFields.filter((view) => !attentionFields.includes(view));
   const blockingFields = unreviewedFields.filter((view) => (
     view.field.confidence !== "실패"
-    || view.field.issue_code === "not_stated"
-    || view.field.issue_code === "not_applicable"
-    || directConfirmationFields.has(view.field.field_name)
-    || hasDraftInput(view.key)
+    || requiresManualReview(view, hasDraftInput(view.key))
   ));
   const unresolvedFinancialFields = unreviewedFields.filter((view) => (
     financialReviewFields.has(view.field.field_name)
@@ -267,6 +264,8 @@ export function ExtractionReviewPage() {
         draft={drafts[view.key]}
         verification={verificationByKey[view.key] ?? view.field.verification_status}
         reviewed={reviewedKeys.includes(view.key)}
+        allowEmptyConfirmation={financialReviewFields.has(view.field.field_name)
+          && view.field.confidence === "실패"}
         onValueChange={(value) => updateField(view, value)}
         onClauseChange={(values) => updateClauseDraft(view, values)}
         onConfirm={() => confirmField(view)}

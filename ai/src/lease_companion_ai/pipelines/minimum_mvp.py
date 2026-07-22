@@ -74,7 +74,24 @@ def _repair_contract_provider_fields(
     repaired = dict(fields)
     local = parse_contract(text)
     repaired_names: list[str] = []
+    special_replaced = False
+
+    provider_special = repaired.get("special_clauses")
+    local_special = local.fields.get("special_clauses")
+    if (
+        isinstance(provider_special, list)
+        and isinstance(local_special, list)
+        and len(local_special) > len(provider_special)
+    ):
+        # Gemini가 특약 여러 개를 한 문장으로 요약하거나 일부만 반환했더라도,
+        # 결정론적 파서가 원문에서 더 많은 문단을 복원했다면 원문 목록을 우선한다.
+        repaired["special_clauses"] = local_special
+        repaired["special_clauses_present"] = True
+        special_replaced = True
+
     for name in _CONTRACT_PROVIDER_REPAIR_FIELDS:
+        if name == "special_clauses" and special_replaced:
+            continue
         if name in {"management_fee", "management_fee_items"} and repaired.get("management_fee_present") is False:
             continue
         if name == "special_clauses" and repaired.get("special_clauses_present") is False:
@@ -88,6 +105,11 @@ def _repair_contract_provider_fields(
             repaired_names.append(name)
 
     warnings = list(local.warnings)
+    if special_replaced:
+        warnings.append(
+            "Gemini가 일부만 반환한 특약을 결정론적 계약서 파서가 복원한 "
+            "원문 조항 목록으로 교체했습니다."
+        )
     if repaired_names:
         warnings.append(
             "Gemini 미확인 필드를 결정론적 계약서 파서로 보완했습니다: "

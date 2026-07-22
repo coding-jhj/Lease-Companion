@@ -39,6 +39,7 @@ export function ExtractionFieldCard({
   draft,
   verification,
   reviewed,
+  allowEmptyConfirmation = false,
   onValueChange,
   onClauseChange,
   onConfirm,
@@ -47,6 +48,7 @@ export function ExtractionFieldCard({
   draft?: DraftValue;
   verification: VerificationStatus;
   reviewed: boolean;
+  allowEmptyConfirmation?: boolean;
   onValueChange: (value: string) => void;
   onClauseChange: (values: string[]) => void;
   onConfirm: () => void;
@@ -55,12 +57,16 @@ export function ExtractionFieldCard({
   const hasDraftInput = Array.isArray(draft)
     ? draft.some((item) => item.trim().length > 0)
     : Boolean(draft?.trim());
-  const canConfirmMissing = view.field.issue_code === "not_stated" || view.field.issue_code === "not_applicable";
+  const canConfirmMissing = allowEmptyConfirmation
+    || view.field.issue_code === "not_stated"
+    || view.field.issue_code === "not_applicable";
   const failedWithoutInput = view.field.confidence === "실패" && !hasDraftInput && !canConfirmMissing;
   const hasEvidence = view.field.source_evidence.page !== null && view.field.source_evidence.text !== null;
   const isLongClauseList = ["main_clauses", "special_clauses"].includes(view.field.field_name);
   const selectedChoice = typeof draft === "string" ? draft : "";
-  const confirmLabel = view.field.issue_code === "not_stated" && !hasDraftInput ? "직접 확인" : "이 값 확인";
+  const confirmLabel = allowEmptyConfirmation && !hasDraftInput
+    ? "확인할 수 없음으로 저장"
+    : view.field.issue_code === "not_stated" && !hasDraftInput ? "직접 확인" : "이 값 확인";
   const showInlineDirectConfirm = confirmLabel === "직접 확인" && view.editor === "scalar";
   const showTroubleshooting = ["unreadable", "parse_failed"].includes(view.field.issue_code ?? "")
     || (view.field.confidence === "실패" && !canConfirmMissing);

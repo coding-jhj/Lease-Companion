@@ -318,6 +318,44 @@ def test_sorted_pdf_scrambled_payment_table_reads_balance_amount_and_date():
     assert fields["monthly_rent"] is None
 
 
+def test_standard_form_special_clauses_survive_detached_pdf_bullets():
+    # 실제 표준계약서 PDF 텍스트 레이어처럼 조항 문장은 먼저 나오고 불릿 글리프는
+    # 서명 영역 뒤에 따로 추출될 수 있다. 불릿 위치에 의존하지 않고 6개 원문을 보존한다.
+    result = parse_contract(
+        """주택임대차표준계약서
+[특약사항]
+주택을 인도받은 임차인은 2026년 10월 2일까지 주민등록(전입신고)과 확정일자를 받기로 하고, 임대인은 다음날까지 담보권을 설정할 수 없다.
+임대인이 위 특약에 위반하여 담보권을 설정한 경우 임차인은 계약을 해제 또는 해지할 수 있다.
+이 경우 임대인은 특약 위반으로 인한 손해를 배상하여야 한다.
+임대차계약을 체결한 임차인은 사전에 고지하지 않은 선순위 임대차 정보나
+미납 또는 체납한 국세·지방세 40,000,000원을 초과하는 것을 확인한 경우
+계약금을 포기하지 않고 계약을 해제할 수 있다.
+주택임대차계약과 관련하여 분쟁이 있는 경우 먼저 주택임대차분쟁조정위원회에 조정을 신청한다. (□ 동의 ☑ 미동의)
+주택의 철거 또는 재건축에 관한 구체적 계획 (☑ 없음 □ 있음)
+상세주소가 없는 경우 임차인의 상세주소부여 신청에 대한 소유자 동의여부 (☑ 동의 □ 미동의)
+본 계약을 증명하기 위하여 계약 당사자가 서명한다.
+•
+•
+•
+•
+•
+•
+"""
+    )
+
+    clauses = result.fields["special_clauses"]
+    assert result.fields["special_clauses_present"] is True
+    assert len(clauses) == 6
+    assert "2026년 10월 2일" in clauses[0]
+    assert "해제 또는 해지" in clauses[1]
+    assert "이 경우 임대인은" in clauses[1]
+    assert "40,000,000원" in clauses[2]
+    assert "☑ 미동의" in clauses[3]
+    assert "☑ 없음" in clauses[4]
+    assert "☑ 동의" in clauses[5]
+    assert not result.warnings
+
+
 def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
     contract_fields = _contract("contract_002.txt")
     registry_text = (

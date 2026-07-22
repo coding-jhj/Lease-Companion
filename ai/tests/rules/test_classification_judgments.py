@@ -188,6 +188,25 @@ def test_j10_flags_refund_deferred_until_a_new_tenant_moves_in() -> None:
     assert "신규 임차인의 입주에 연동" in result.reason
 
 
+def test_j10_keeps_raw_deferred_refund_signal_without_classification_candidate() -> None:
+    snapshot = _snapshot(
+        field_values={
+            "deposit_return_clause": "신규 임차인이 입주한 후 보증금을 반환한다."
+        }
+    )
+
+    result = run_judgments(
+        build_judgment_input(
+            snapshot,
+            judgment_ids=("J10",),
+            classification_result=_classification(snapshot, []),
+        )
+    )[0]
+
+    assert result.status is RuleStatus.CHECK_NEEDED
+    assert "신규 임차인의 입주에 연동" in result.reason
+
+
 def test_j10_does_not_flag_refund_explicitly_independent_of_a_new_tenant() -> None:
     snapshot = _snapshot(
         field_values={

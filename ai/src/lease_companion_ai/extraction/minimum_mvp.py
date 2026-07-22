@@ -477,50 +477,66 @@ _SPECIAL_HEADER = re.compile(
     r"^\s*(?:\d+\.\s*)?\[?\s*특약\s*사항\s*\]?"
     r"\s*(?:없음|\(없음\)|기재\s*사항\s*없음)?\s*$"
 )
-_CLAUSE_BULLETS = "-·ㆍ•◦▪‣*"
-_CLAUSE_STOP = (
-    "주민등록번호", "서명 또는", "날인", "등록번호", "개업공인중개사", "중개업자",
-    "보관한다", "본 계약", "서명한다", "교육", "실습용",  # 서명 블록·합성 문서 워터마크 경계
+_SPECIAL_BULLETS = "-·ㆍ•◦▪‣*"
+_SPECIAL_STARTS = (
+    "주택을 인도받은 임차인은",
+    "임대인이 위 특약",
+    "임대차계약을 체결한 임차인은",
+    "주택임대차계약과 관련하여",
+    "주택의 철거 또는 재건축",
+    "상세주소가 없는 경우",
 )
-_CLAUSE_END = re.compile(r"(?:다\.?|\))\s*$")
+_SPECIAL_CONTINUATIONS = (
+    "이 경우",
+    "다만",
+    "또한",
+    "그리고",
+    "그러나",
+    "단,",
+    "(",
+    "[",
+    "□",
+    "☐",
+    "☑",
+    "✓",
+    "✔",
+)
 
 
-def _collect_special_clauses(lines: list[str]) -> list[str] | None:
-    """특약 본문을 수집한다. 불릿이 있으면 불릿 단위로, 없으면 문장 종결(…다./괄호)
-    단위로 끊고, PDF 줄바꿈으로 이어진 줄은 같은 특약에 합친다.
-    서명·중개사 블록, 워터마크, ※ 고지문을 만나면 멈춘다.
-    """
-    special: list[str] = []
-    current: list[str] = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped in _CLAUSE_BULLETS:
-            continue
-        if (
-            stripped.startswith("※")
-            or re.match(r"\d+\.\s+", stripped)
-            or any(token in stripped for token in _CLAUSE_STOP)
-        ):
-            break
-        # 체크박스 등 괄호 부속 줄은 직전 특약에 붙인다.
-        if stripped.startswith("(") and not current and special:
-            special[-1] = f"{special[-1]} {stripped}"
-            continue
-        if stripped[0] in _CLAUSE_BULLETS and current:
-            special.append(" ".join(current))
-            current = []
-        current.append(stripped)
-        if _CLAUSE_END.search(stripped):
-            special.append(" ".join(current))
-            current = []
-    if current:
-        special.append(" ".join(current))
-    return special or None
+def _special_stop(line: str) -> bool:
+    """특약 뒤의 서명란·별지·안내 영역을 특약 원문에 섞지 않는다."""
+    if line.startswith("※"):
+        return True
+    if re.match(r"^(?:\[|【)\s*(?:수선비용|별지|법의 보호|대항력)", line):
+        return True
+    if re.match(
+        r"^\d+\.\s*(?:대금\s*지급|입금\s*계좌|계약\s*당사자|서명|중개|목적물)",
+        line,
+    ):
+        return True
+    return any(
+        marker in line
+        for marker in (
+            "본 계약을 증명",
+            "서명 또는 날인",
+            "개업공인중개사",
+            "중개사무소",
+            "교육용",
+            "실습용",
+        )
+    ) or bool(re.match(r"^(?:임대인|임차인)\s*(?:성명|주소|주민등록번호)", line))
+
+
+def _special_marker(line: str) -> re.Match[str] | None:
+    return re.match(
+        rf"^(?:[{re.escape(_SPECIAL_BULLETS)}]\s*|(?:\d+|[①-⑳])\s*[.)]\s+)",
+        line,
+    )
 
 
 def _clause_sections(
     text: str,
-) -> tuple[list[str] | None, bool, list[str] | None]:
+) -> tuple[list[str] | None, bool, list[str] | None, list[str]]:
     lines = text.splitlines()
     special_index = next(
         (index for index, line in enumerate(lines) if _SPECIAL_HEADER.match(line)),
@@ -538,16 +554,66 @@ def _clause_sections(
         )
     ]
     if special_index is None:
-        return main or None, False, None
+        return main or None, False, None, []
     header = lines[special_index]
     following = next(
         (line.strip() for line in lines[special_index + 1 :] if line.strip()),
         "",
     )
     if "없음" in header or following in {"없음", "(없음)", "기재 사항 없음"}:
-        return main or None, False, None
-    special = _collect_special_clauses(lines[special_index + 1 :])
-    return main or None, True, special
+        return main or None, False, None, []
+
+    # PDF 텍스트 레이어에서는 글머리표가 문장과 분리되거나 페이지 아래로 밀릴 수
+    # 있다. 따라서 글머리표만 기다리지 않고 특약 영역의 문단 자체를 보존한다.
+    # 명시적 글머리표·번호, 표준서식의 문단 시작, 완결 문장 뒤의 새 문단을 함께
+    # 경계로 사용한다. 원문을 요약하거나 문장을 새로 만들지는 않는다.
+    special: list[str] = []
+    current: list[str] = []
+    saw_explicit_marker = False
+    for line in lines[special_index + 1 :]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if _special_stop(stripped):
+            break
+
+        marker = _special_marker(stripped)
+        # 내용 없이 따로 추출된 글머리표는 버린다. 앞에서 복원한 문장 수를
+        # 임의로 늘리거나 빈 특약을 만들지 않는다.
+        if marker and not stripped[marker.end() :].strip():
+            continue
+
+        known_start = any(stripped.startswith(prefix) for prefix in _SPECIAL_STARTS)
+        previous_complete = bool(
+            current and re.search(r"(?:다\.|함\.|됨\.|[.!?])(?:\s*[)\]】])?$", current[-1])
+        )
+        continuation = stripped.startswith(_SPECIAL_CONTINUATIONS)
+        inferred_start = bool(
+            current
+            and not saw_explicit_marker
+            and previous_complete
+            and not continuation
+        )
+
+        if marker or known_start or inferred_start:
+            if current:
+                special.append(" ".join(current))
+            current = [stripped]
+            saw_explicit_marker = saw_explicit_marker or marker is not None
+        elif current:
+            current.append(stripped)
+        else:
+            # 특약 제목 다음 첫 문장이 글머리표 없이 시작하는 경우도 보존한다.
+            current = [stripped]
+    if current:
+        special.append(" ".join(current))
+
+    warnings: list[str] = []
+    if not special:
+        warnings.append(
+            "특약 영역은 발견했지만 개별 조항을 복원하지 못했습니다. 특약 원문을 직접 확인하세요."
+        )
+    return main or None, True, special or None, warnings
 
 
 
@@ -875,7 +941,7 @@ def parse_contract(text: str) -> DocumentExtraction:
         ),
         None,
     )
-    main_clauses, special_present, special_clauses = _clause_sections(text)
+    main_clauses, special_present, special_clauses, clause_warnings = _clause_sections(text)
 
     fields = {
         "contract_type": _contract_type(text),
@@ -914,7 +980,9 @@ def parse_contract(text: str) -> DocumentExtraction:
         "special_clauses_present": special_present,
         "special_clauses": special_clauses,
     }
-    return _finalize("contract", fields)
+    result = _finalize("contract", fields)
+    result.warnings.extend(clause_warnings)
+    return result
 
 
 def parse_registry(text: str) -> DocumentExtraction:

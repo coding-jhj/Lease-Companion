@@ -268,6 +268,14 @@ _DEFERRED_RETURN_PARTY = re.compile(r"(?:신규|새|다음|후속)\s*임차인")
 _RETURN_INDEPENDENCE = re.compile(r"(?:관계\s*없이|무관하게|상관\s*없이)")
 
 
+def _has_deferred_return_text(text: str | None) -> bool:
+    return bool(
+        text
+        and _DEFERRED_RETURN_PARTY.search(text)
+        and not _RETURN_INDEPENDENCE.search(text)
+    )
+
+
 def _has_deferred_return_condition(
     candidate: ClauseCandidate, raw_clause: str | None = None
 ) -> bool:
@@ -280,17 +288,18 @@ def _has_deferred_return_condition(
     texts = [*candidate.condition_candidates]
     if raw_clause:
         texts.append(raw_clause)
-    return any(
-        _DEFERRED_RETURN_PARTY.search(text)
-        and not _RETURN_INDEPENDENCE.search(text)
-        for text in texts
-    )
+    return any(_has_deferred_return_text(text) for text in texts)
 
 
 def _j10(data: JudgmentInput) -> RuleStatus:
     raw_state = _raw_clause_state(data, "deposit_return_clause")
     if raw_state is not None:
         return raw_state
+    raw_clause = data.contract_fields["deposit_return_clause"].effective_value
+    # 사용자가 확인한 원문에 좁고 명시적인 반환 연동 조건이 있으면 provider
+    # 후보가 없더라도 확인 신호를 보존한다. 법적 효력·위험도를 판정하지 않는다.
+    if _has_deferred_return_text(raw_clause):
+        return RuleStatus.CHECK_NEEDED
     candidate = _candidate(data, "deposit_return_clause:0")
     if candidate is None or candidate.clause_type is not ClauseType.DEPOSIT_RETURN:
         return RuleStatus.CHECK_NEEDED
@@ -298,7 +307,7 @@ def _j10(data: JudgmentInput) -> RuleStatus:
     if clarity is not RuleStatus.CLEAR:
         return clarity
     if _has_deferred_return_condition(
-        candidate, data.contract_fields["deposit_return_clause"].effective_value
+        candidate, raw_clause
     ):
         return RuleStatus.CHECK_NEEDED
     return (
@@ -464,9 +473,14 @@ def _result(
         if judgment_id == "J10"
         else None
     )
-    if candidate is not None and _has_deferred_return_condition(
-        candidate,
-        judgment_input.contract_fields["deposit_return_clause"].effective_value,
+    raw_return_clause = (
+        judgment_input.contract_fields["deposit_return_clause"].effective_value
+        if judgment_id == "J10"
+        else None
+    )
+    if _has_deferred_return_text(raw_return_clause) or (
+        candidate is not None
+        and _has_deferred_return_condition(candidate, raw_return_clause)
     ):
         reason = (
             "보증금 반환이 신규 임차인의 입주에 연동된 조건이 확인되어 "

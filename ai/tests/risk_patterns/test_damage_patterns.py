@@ -3,7 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from lease_companion_ai.risk_patterns import attach_damage_patterns
+from lease_companion_ai.risk_patterns import (
+    attach_damage_patterns,
+    load_verified_reference_cases,
+    search_reference_cases,
+)
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
     DamagePatternStatus,
@@ -70,8 +74,28 @@ def test_case001_has_complete_ordered_damage_pattern_comparison() -> None:
         f"DP{index:02d}" for index in range(1, 9)
     ]
     assert result.damage_patterns[0].status is DamagePatternStatus.RELATED_SIGNAL
-    assert all(item.reference_cases == () for item in result.damage_patterns)
+    assert all(
+        item.reference_cases
+        for item in result.damage_patterns
+        if item.status is not DamagePatternStatus.NO_SIGNAL_IN_SUBMITTED_DOCS
+    )
+    assert all(
+        item.reference_cases == ()
+        for item in result.damage_patterns
+        if item.status is DamagePatternStatus.NO_SIGNAL_IN_SUBMITTED_DOCS
+    )
     assert all("안전" not in item.reason for item in result.damage_patterns)
+
+
+def test_verified_reference_catalog_covers_all_damage_patterns() -> None:
+    entries = load_verified_reference_cases()
+
+    assert len({entry.reference_case.reference_case_id for entry in entries}) == len(entries)
+    for pattern_id in (f"DP{index:02d}" for index in range(1, 9)):
+        cases = search_reference_cases(pattern_id)
+        assert cases
+        assert all(item.source_url.startswith("https://") for item in cases)
+        assert all(item.verification_scope for item in cases)
 
 
 def test_dp04_separates_detected_mortgage_from_unknown_excessiveness() -> None:
@@ -124,6 +148,10 @@ def test_dp08_maps_deferred_refund_condition_to_related_signal() -> None:
     refund = next(item for item in result.damage_patterns if item.pattern_id == "DP08")
 
     assert refund.status is DamagePatternStatus.RELATED_SIGNAL
+    assert [item.reference_case_id for item in refund.reference_cases] == [
+        "REF-HUG-DEPOSIT-NONRETURN",
+        "REF-REB-ADR-2022-31",
+    ]
 
 
 def test_dp08_keeps_unclassified_refund_clause_as_cannot_assess() -> None:

@@ -69,6 +69,28 @@ def test_contract_provider_explicit_absence_is_not_replaced_with_local_content()
     assert repaired["special_clauses"] is None
 
 
+def test_contract_provider_partial_special_clauses_are_replaced_with_full_local_text():
+    repaired, warnings = _repair_contract_provider_fields(
+        {
+            "special_clauses_present": True,
+            "special_clauses": ["임대인은 담보권을 설정하지 않는다."],
+        },
+        """주택임대차표준계약서
+[특약사항]
+주택을 인도받은 임차인은 확정일자를 받고, 임대인은 다음날까지 담보권을 설정할 수 없다.
+임대인이 위 특약에 위반한 경우 임차인은 계약을 해제 또는 해지할 수 있다.
+주택의 철거 또는 재건축에 관한 구체적 계획 (☑ 없음 □ 있음)
+본 계약을 증명하기 위하여 서명한다.
+""",
+    )
+
+    assert len(repaired["special_clauses"]) == 3
+    assert "확정일자" in repaired["special_clauses"][0]
+    assert "해제 또는 해지" in repaired["special_clauses"][1]
+    assert "☑ 없음" in repaired["special_clauses"][2]
+    assert any("일부만 반환한 특약" in warning for warning in warnings)
+
+
 def test_swapped_documents_are_flagged_with_guidance():
     # 계약서 자리에 등기부, 등기부 자리에 계약서를 넣은 경우 — 빈 추출값 대신 안내를 낸다.
     contract = (ROOT / "data/sample/contracts/contract_001.txt").read_bytes()

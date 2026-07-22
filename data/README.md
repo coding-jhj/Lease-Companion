@@ -21,6 +21,7 @@ processed/               가공 산출물 (Git 제외, 각 README만 커밋)
   extracted-fields/ normalized-documents/ training-records/
 schemas/                 문서 필드 JSON 스키마
 rules/                   문서 비교 규칙 (정의: docs/data/rule-definition.md)
+reference-cases/         DP01~DP08 표시용 검증 공개 사례 메타데이터 (공식 근거와 분리)
 labels/                  (선택) 로컬 7B 성능비교 실험 라벨 체계
   clause-types/ clarity/ responsible-party/ judgment-status/
 datasets/                파인튜닝 데이터셋 (docs/data/training-dataset.md)
@@ -56,6 +57,7 @@ model-metadata/          모델 메타데이터 (가중치 제외)
 - `rules/rule_evidence_map.csv`와 dev/test RAG goldset은 `official_verified` source ID만 허용하도록 계약 검사를 적용했다.
 - 공식 검증 9개 manifest와 로컬 원문 4개(법령 2개·표준계약서 1개·안심 전세계약 체크리스트 1개)·SHA-256이 `rag/metadata`·`rag/sources`에 있다. 체크리스트는 2026-07-20 팀 예외 규정으로 적재했다. 나머지 5개는 원문 재배포 조건 때문에 metadata-only다.
 - `rag/evaluation/`에 분리된 dev/test retrieval 실측 결과가 있다. 로컬 검색 가능한 원문이 3개라는 제한을 함께 기록한다.
+- `reference-cases/verified_reference_cases.json`에 외부 API 호출 없이 표시하는 HUG 유형 안내와 익명 분쟁조정 사례 메타데이터가 있다. 이 목록은 R/J 판정과 공식 근거를 변경하지 않는다.
 - `scripts/evaluate_ai_pipeline.py`가 추출·사용자 수정·R01~R10·J01~J12·R/J template 생성·J 검색 계약·Guardrail·PII·end-to-end의 외부 호출 없는 평가를 실행한다. 최신 결과는 `evaluation/results/offline_test_metrics.json`에 기록한다.
 - TODO: 라벨 정의·경계 사례 문서화 → `labels/`.
 - TODO: 파인튜닝 데이터셋 수집·라벨링·분할 (`docs/data/training-dataset.md` 기준) → `datasets/`.

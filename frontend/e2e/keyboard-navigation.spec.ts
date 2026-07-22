@@ -41,6 +41,23 @@ test("critical upload, review, analysis, and report actions work with the keyboa
   await expect(confirmAll).toBeVisible({ timeout: 60_000 });
   await confirmAll.focus();
   await page.keyboard.press("Enter");
+  const specialClauseConfirm = page.getByRole("button", { name: "특약사항 이 값 확인" });
+  if (await specialClauseConfirm.count()) {
+    await specialClauseConfirm.focus();
+    await page.keyboard.press("Enter");
+  }
+  const accountHolder = page.getByLabel("입금 계좌 예금주 값");
+  if (await accountHolder.count()) {
+    await accountHolder.fill("이정훈");
+    const accountConfirm = page.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" });
+    await accountConfirm.focus();
+    await page.keyboard.press("Enter");
+  }
+  const unavailableConfirm = page.getByRole("button", { name: /확인할 수 없음으로 저장$/ });
+  while (await unavailableConfirm.count()) {
+    await unavailableConfirm.first().focus();
+    await page.keyboard.press("Enter");
+  }
   const confirmedFieldsSummary = page.getByText(/확인된 항목 \d+개/).locator("..");
   await confirmedFieldsSummary.focus();
   await expect(confirmedFieldsSummary).toBeFocused();

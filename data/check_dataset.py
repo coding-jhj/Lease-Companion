@@ -10,7 +10,8 @@
   6) 커버리지: 규칙별 해당≥10·비해당≥10 (R07은 항상 발동 → 보고만)
   7) 누수: dev∩test 문서 본문(case_id 제외) 중복 0
   8) 테스트셋(final_testset) 파싱·문서 존재·근거 유효
-  9) 개인정보: 실제형 주민번호·휴대폰 패턴 0
+  9) 검증된 유사 참고 사례: DP01~DP08 coverage·중복·공식 URL·경계 설명
+  10) 개인정보: 실제형 주민번호·휴대폰 패턴 0
 """
 import csv
 import hashlib
@@ -129,6 +130,35 @@ def main():
             assert row["source_id"] in sources, f"evidence_map 미확인 근거 {row['source_id']}"
             assert row["source_id"] in official_sources, f"evidence_map 비공식 근거 {row['source_id']}"
 
+    # 4-1) 유사 참고 사례는 공식 근거와 분리된 표시용 로컬 corpus다.
+    reference_case_path = os.path.join(
+        BASE, "reference-cases", "verified_reference_cases.json"
+    )
+    with open(reference_case_path, encoding="utf-8") as f:
+        reference_catalog = json.load(f)
+    assert reference_catalog["schema_version"] == "1.0.0"
+    reference_ids = []
+    covered_patterns = set()
+    allowed_reference_hosts = (
+        "https://www.khug.or.kr/",
+        "https://adrhome.reb.or.kr/",
+    )
+    for entry in reference_catalog["cases"]:
+        assert entry["pattern_ids"]
+        assert set(entry["pattern_ids"]) <= {
+            f"DP{index:02d}" for index in range(1, 9)
+        }
+        covered_patterns.update(entry["pattern_ids"])
+        reference = entry["reference_case"]
+        reference_ids.append(reference["reference_case_id"])
+        assert reference["title"].strip()
+        assert reference["publisher"].strip()
+        assert reference["summary"].strip()
+        assert reference["verification_scope"].strip()
+        assert reference["source_url"].startswith(allowed_reference_hosts)
+    assert len(reference_ids) == len(set(reference_ids)), "유사 참고 사례 ID 중복"
+    assert covered_patterns == {f"DP{index:02d}" for index in range(1, 9)}
+
     def assert_no_runtime_contract_ids(value):
         if isinstance(value, dict):
             forbidden_keys = {"contract_id", "analysis_run_id", "practice_session_id"}
@@ -139,7 +169,7 @@ def main():
             for child in value:
                 assert_no_runtime_contract_ids(child)
 
-    # 4-1) 계약 연습 합성 fixture 구조·교차참조·결정성
+    # 4-2) 계약 연습 합성 fixture 구조·교차참조·결정성
     practice_root = os.path.join(SAMPLE, "practice-scenarios")
     practice_dirs = sorted(
         entry.path
