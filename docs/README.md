@@ -22,6 +22,7 @@ ai/             extraction-design.md rule-engine-design.md rag-design.md
                 model-routing.md evaluation-matrix.md
 decisions/      기술·기획 결정 기록
 meetings/       회의록
+testing/        실제 API·브라우저 통합 검증 실행 절차
 ```
 
 ## 저장해야 하는 파일
@@ -42,3 +43,4 @@ meetings/       회의록
 
 - 위 지도 문서 전부 작성됨. 미정 항목은 각 문서에서 TODO로 표시.
 - 판정 단일 기준: `data/judgment-spec.md`. 모델 라우팅 확정표: `ai/model-routing.md`. 최소 MVP 실행 기준: `planning/minimum-mvp-runbook.md`.
+- 계약 연습 실제 API 검증: `testing/practice-real-api-validation.md`. 현재 전용 Playwright spec은 작업 9 미구현 상태다.

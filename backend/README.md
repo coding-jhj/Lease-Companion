@@ -22,6 +22,7 @@
 - 판정·원문 증거·공식 근거·질문·행동 리포트 저장·조회
 - 체크리스트·계약 직후 행동 상태 관리
 - 사용자 피드백 수집
+- 계약 연습 시나리오 목록·세션·턴·최종 행동·복기 저장·재조회
 - 공통 오류 처리
 
 ## 도메인 엔터티
@@ -37,6 +38,8 @@
 `auth`·`contracts`·`documents`·`extractions`·`analysis-runs`·`checklist-items`·`feedback` 경로가 구현되어 있다. 분석 결과는 완료된 `analysis-runs`의 `result`(규칙 판정)·`generation_result`(생성 안내) JSON으로 조회한다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
 
 `auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
+
+계약 연습은 실제 계약 건과 분리된 `practice-scenarios`·`practice-sessions` API를 사용한다. API 키가 있으면 Gemini practice provider, 키가 없고 `PRACTICE_OFFLINE_MODE=true`이면 승인 answer-key 기반 Fake provider를 선택한다. 실제 API 연결 검증 절차는 [`docs/testing/practice-real-api-validation.md`](../docs/testing/practice-real-api-validation.md)를 따른다.
 
 ## 컴포넌트 경계 (오케스트레이션 시 준수)
 
@@ -144,6 +147,7 @@ alembic upgrade head              # 스키마 변경 적용
 - **CASE-001 통합 시나리오 테스트**: `tests/api/test_case001_e2e.py` — 회원가입→로그인→계약 건→상황 입력→업로드+registry-link→추출→수정→확인→분석 폴링→체크리스트→**재로그인 후 재조회**까지 8단계 흐름 1건 (4단계 통합 검증의 백엔드 몫).
 - **주의**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 기존 테이블 변경은 Alembic revision으로 적용한다(위 "DB 구조가 바뀌었어요" 절 참조).
 - **피드백 API 구현 완료**(2026-07-17): `POST/GET /api/contracts/{id}/feedback` — 자유 텍스트(1~2000자) + 선택 평점(1~5), 계약 건 단위 이력(수정·삭제 없음), 본인 소유만. 신규 테이블 `user_feedbacks`는 기동 시 `create_all`이 자동 생성.
+- **계약 연습 API 구현 완료**(2026-07-22): 승인 시나리오 3개 목록·상세, 사용자별 세션 생성·복원, 현재 TURN 제출, 최종 행동, 결과 재조회 API. `practice_sessions`·`practice_turns`에 저장하며 answer-key·숨은 신호·미래 TURN은 응답하지 않는다.
 - **classification 저장 준비**(2026-07-18): `analysis_runs`에 `classification_result` JSONB·`classification_error` TEXT 추가 (revision `c8b3bd1c03c6`). canonical `ClassificationResult` JSON을 provenance 포함 통째 저장하는 계약(BC_HANDOFF B 결정) — API 미노출, worker 연결은 A의 classification 실행 계층 완성 후.
 - **Alembic 도입 완료**(2026-07-18): [`../docs/decisions/2026-07-17-alembic-migration.md`](../docs/decisions/2026-07-17-alembic-migration.md) 합의에 따라 `backend/alembic/` 구성. baseline revision `7adac2280b55`(현행 9개 테이블 전체), 기존 dev DB는 `stamp head`로 기록. 이후 스키마 변경은 revision으로만.
 - **canonical v1.8.0 연결(2026-07-18)**: ① confirm이 계약 상황을 `ContractContext`로 스냅샷에 불변 포함 ② 분석 시작 시 현재 계약 상황과 다르면 422 `contract_context_changed` ③ 워커가 R01~R10과 J01~J12 전체 결과를 저장 ④ 같은 snapshot의 ContractContext를 GenerationService에 전달해 `StageGuidance`와 `prompt_version`을 생성·검증·분리 저장 ⑤ `GenerationResult`가 R `items`와 J `judgment_items`를 분리하고 안정 `item_key`를 저장 ⑥ 생성 실패 시 규칙 결과를 유지한다.
