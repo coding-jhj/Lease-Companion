@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0-draft",
+  "algorithm": "sha256",
+  "review_status": "draft_pending_human_review",
+  "locked_at": "2026-07-22",
+  "files": {
+    "catalog_test.jsonl": "225f3dbf35af011eaa183a449ef9acae518f4ec4aead2285c70b894992c3db6a",
+    "retrieval_test.jsonl": "30f9a0895d2e5736e5aba5dd55c76755492c4b73dc2d55fd141b88f71f9eb5c5",
+    "generation_cases.jsonl": "b7d9e772c317d279898c637d49f948fd17972323bdf699421d5066d4d107232e"
+  }
+}

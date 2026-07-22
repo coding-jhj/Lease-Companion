@@ -9,7 +9,7 @@
 - 근거 범위표: `data/rules/special_clause_evidence_map.csv` (review_status 열: unverified)
 - 평가셋: `data/evaluation/special-clauses/*.jsonl` (draft_pending_human_review)
 
-> 2026-07-22 상태: 인수인계의 게이트 A 지적사항을 카탈로그와 근거 범위표에 반영했다. 혼자 수행한 데이터 반영이므로 독립 재확인 전까지 `unverified`를 유지한다.
+> 2026-07-22 상태: 인수인계의 게이트 A 지적사항을 카탈로그와 근거 범위표에 반영했다. 혼자 수행한 데이터 반영이므로 독립 재확인 전까지 `unverified`를 유지한다. 게이트 B 평가셋은 혼자 작업용으로 잠갔지만 독립 검토 전이므로 `draft_pending_human_review`를 유지한다.
 
 ---
 
@@ -41,21 +41,21 @@
 ### 체크리스트
 - [ ] **라벨 정확성**: 각 문장의 `expected_catalog_ids`가 사람 판단과 일치하는가?
 - [ ] **누출 없음**: `catalog_test`의 문장이 `catalog_dev`와 같지 않은가? (패러프레이즈여야 함)
-- [ ] **5범주 커버**: 유형마다 positive_paraphrase / normal_negative / negation / conditional_exception / compound가 있는가? (현재 초안은 일부 유형만 5범주를 채움 — 부족분 추가)
+- [ ] **5범주 커버**: 유형마다 positive_paraphrase / normal_negative / negation / conditional_exception / compound가 있는가? (혼자 작업용 잠금본은 6유형 × 5범주를 자동 검증함)
 - [ ] **어려운 케이스**: 부정문("~하지 않는다"), 예외("관계없이"), 복합문(한 문장 2논점), 표현 변형이 충분한가? AI가 놓칠 만한 문장을 사람이 추가
 - [ ] **retrieval_test**: 문장별 `expected_source_ids`·`expected_sections`가 근거 범위표와 맞는가? 근거 없음 케이스도 있는가?
 - [ ] **generation_cases**: `allowed_core_meaning`이 근거를 넘어서 단정하지 않는가? 금지 표현 목록이 맞는가?
 
-### 참고: 현재 초안이 아는 약점 (검토 시 이 부분 집중)
-초안 카탈로그를 평가셋에 돌린 sanity 결과, 다음 3건에서 카탈로그 패턴이 약하다(품질 지표 아님, 개선 지점):
-1. 조건 예외("요청하면 먼저 반환")를 반환 연동으로 오탐
-2. 복합문("입주 후 반환 + 원상복구비 부담")에서 두 논점 다 놓침
-3. 권리변동("설정될 근저당…이의 제기")을 미탐
+### 참고: 잠긴 초안 사용 원칙
 
-→ 이건 **Task 3 매칭 서비스에서 패턴을 고칠 몫**이다. 검토자는 **평가셋 라벨이 맞는지**만 판단하고, 카탈로그 패턴을 억지로 평가셋에 맞추지 않는다.
+- `catalog_test.jsonl`은 6유형 × 5범주 30건을 먼저 잠갔다.
+- `retrieval_test.jsonl`과 `generation_cases.jsonl`은 각 6유형과 근거 없음 사례를 잠갔다.
+- SHA256은 `data/evaluation/special-clauses/locked_test_hashes.json`에서 관리한다.
+- 작업 3~10에서는 코드 결과에 맞춰 test 정답을 바꾸지 않는다. 라벨 오류가 확인되면 사유를 기록하고 명시적으로 다시 잠근다.
+- 현재 자동 검증은 구조·분리·근거 범위를 확인할 뿐, 독립적인 라벨 검토나 품질 측정을 대신하지 않는다.
 
 ### 결과 기록
-- 라벨을 고치거나 문장을 추가/교체하고, `README.md`의 `review_status`를 `human_reviewed`로 바꾼다.
+- 독립 검토자가 라벨을 고치거나 문장을 추가·교체하고 검토를 완료한 경우에만 `README.md`의 `review_status`를 `human_reviewed`로 바꾼다.
 - 검토자·검토일을 커밋 메시지에 남긴다.
 
 ---

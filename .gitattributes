@@ -1,2 +1,4 @@
 # 공식 원문 소스는 content_sha256 검증 대상 — CRLF 변환 금지 (Windows autocrlf 대응)
 data/rag/sources/*.txt text eol=lf
+# 잠긴 특약 평가셋은 SHA256 검증 대상 — OS별 줄바꿈 차이 방지
+data/evaluation/special-clauses/*.jsonl text eol=lf
