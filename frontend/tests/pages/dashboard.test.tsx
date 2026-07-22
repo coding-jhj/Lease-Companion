@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardPage } from "../../src/pages/dashboard/DashboardPage";
@@ -17,7 +17,10 @@ function contract(id: number, title: string, action_status: ContractSummaryDto["
   };
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("DashboardPage grouping", () => {
   it("splits contracts into action groups and collapses completed ones", async () => {
@@ -37,5 +40,40 @@ describe("DashboardPage grouping", () => {
     const doneDetails = screen.getByText("행동 완료 계약 1개").closest("details");
     expect(doneDetails).not.toHaveAttribute("open");
     expect(within(doneDetails as HTMLElement).getByText("완료 계약건")).toBeInTheDocument();
+  });
+});
+
+describe("DashboardPage delete", () => {
+  it("deletes a contract after confirmation and reloads the list", async () => {
+    const getContracts = vi
+      .spyOn(mvpService, "getContracts")
+      .mockResolvedValueOnce([contract(7, "행복빌라 302호 전세", "none")])
+      .mockResolvedValueOnce([]);
+    const deleteContract = vi.spyOn(mvpService, "deleteContract").mockResolvedValue(undefined);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+    await screen.findByText("행복빌라 302호 전세");
+
+    fireEvent.click(screen.getByRole("button", { name: "계약 삭제" }));
+
+    await waitFor(() => expect(deleteContract).toHaveBeenCalledWith(7));
+    expect(getContracts).toHaveBeenCalledTimes(2); // 삭제 후 목록 재조회
+    await waitFor(() =>
+      expect(screen.queryByText("행복빌라 302호 전세")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("does not delete when confirmation is cancelled", async () => {
+    vi.spyOn(mvpService, "getContracts").mockResolvedValue([contract(7, "행복빌라 302호 전세", "none")]);
+    const deleteContract = vi.spyOn(mvpService, "deleteContract").mockResolvedValue(undefined);
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+    await screen.findByText("행복빌라 302호 전세");
+
+    fireEvent.click(screen.getByRole("button", { name: "계약 삭제" }));
+
+    expect(deleteContract).not.toHaveBeenCalled();
   });
 });

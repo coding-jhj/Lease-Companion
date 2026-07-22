@@ -27,6 +27,8 @@ from lease_companion_ai.schemas.unified import (
     RuleGuidance,
     RuleResult,
     SnapshotFields,
+    SpecialClauseGuidance,
+    SpecialClauseReview,
     StageGuidance,
     SourceEvidence,
     Urgency,
@@ -842,3 +844,155 @@ def test_judgment_guidance_enforces_id_and_generation_metadata():
             explanation="provider 메타데이터가 부족합니다.",
             generation_method=GenerationMethod.PROVIDER,
         )
+
+
+# --- SpecialClauseReview / SpecialClauseGuidance (Task 2) ---
+
+def _special_source(source_id: str = "SRC-STD-LEASE") -> OfficialSource:
+    return OfficialSource(source_id=source_id, title="표준계약서", institution="법무부")
+
+
+def _special_review(**overrides) -> SpecialClauseReview:
+    payload = {
+        "clause_id": "SC-0001",
+        "original_text": "임대인은 새로운 임차인의 입주가 완료된 이후에 보증금을 반환한다.",
+        "catalog_ids": ("SC-DEFERRED-REFUND",),
+        "match_method": "catalog_pattern",
+        "related_rule_ids": (),
+        "related_judgment_ids": ("J10",),
+        "status": "확인 필요",
+        "urgency": "계약 전 확인",
+        "reason": "보증금 반환이 신규 임차인 입주에 연동된 조건이 확인되었습니다.",
+        "triggers_actions": True,
+        "evidence_sources": (),
+        "limitations": "무효·위법 여부를 확정하지 않습니다.",
+    }
+    payload.update(overrides)
+    return SpecialClauseReview(**payload)
+
+
+def test_special_review_requires_non_empty_original_text():
+    with pytest.raises(ValidationError):
+        _special_review(original_text="")
+
+
+def test_special_review_requires_at_least_one_related_rj():
+    with pytest.raises(ValidationError, match="related"):
+        _special_review(related_rule_ids=(), related_judgment_ids=())
+    assert _special_review(related_rule_ids=("R08",), related_judgment_ids=()).related_rule_ids == ("R08",)
+
+
+def test_special_review_triggers_actions_follows_status():
+    assert _special_review(status="확인 필요", triggers_actions=True).triggers_actions is True
+    with pytest.raises(ValidationError, match="triggers_actions"):
+        _special_review(status="확인 필요", triggers_actions=False)
+
+
+def test_special_review_unmatched_has_no_catalog_but_matched_requires_one():
+    unmatched = _special_review(match_method="unmatched", catalog_ids=(), related_judgment_ids=("J12",))
+    assert unmatched.catalog_ids == ()
+    with pytest.raises(ValidationError, match="unmatched"):
+        _special_review(match_method="unmatched", catalog_ids=("SC-DEFERRED-REFUND",))
+    with pytest.raises(ValidationError, match="catalog"):
+        _special_review(match_method="catalog_pattern", catalog_ids=())
+
+
+def test_special_review_rejects_unknown_status_and_bad_rj_ids():
+    with pytest.raises(ValidationError):
+        _special_review(status="위험", triggers_actions=True)
+    with pytest.raises(ValidationError):
+        _special_review(related_judgment_ids=("J99",))
+    with pytest.raises(ValidationError):
+        _special_review(related_rule_ids=("RULE1",), related_judgment_ids=())
+
+
+def _analysis_with_reviews(reviews) -> AnalysisRunResult:
+    return AnalysisRunResult(
+        analysis_run_id="RUN-1",
+        input_snapshot_id="SNAP-1",
+        contract_id=1,
+        results=_complete_results(),
+        judgments=_complete_judgments(),
+        special_clause_reviews=reviews,
+    )
+
+
+def test_analysis_default_special_reviews_empty_backward_compatible():
+    analysis = AnalysisRunResult(
+        analysis_run_id="RUN-1",
+        input_snapshot_id="SNAP-1",
+        contract_id=1,
+        results=_complete_results(),
+    )
+    assert analysis.special_clause_reviews == []
+
+
+def test_analysis_rejects_duplicate_clause_ids():
+    review = _special_review(status="명확", urgency="참고", triggers_actions=False)
+    with pytest.raises(ValidationError, match="clause_id"):
+        _analysis_with_reviews([review, review.model_copy()])
+
+
+def test_analysis_review_status_must_match_linked_python_result():
+    # J10 판정은 _complete_judgments에서 "명확"(참고). 리뷰가 이를 그대로 반영해야 한다.
+    ok = _special_review(status="명확", urgency="참고", triggers_actions=False)
+    assert _analysis_with_reviews([ok]).special_clause_reviews[0].status.value == "명확"
+    # 연결된 J10과 다른 status를 임의로 넣으면 거부(규칙 엔진만 상태를 정한다).
+    with pytest.raises(ValidationError, match="연결된"):
+        _analysis_with_reviews([_special_review(status="확인 필요", urgency="계약 전 확인", triggers_actions=True)])
+
+
+def test_analysis_review_related_ids_must_exist_in_results():
+    with pytest.raises(ValidationError, match="J10|판정|없"):
+        _analysis_with_reviews([
+            _special_review(related_judgment_ids=(), related_rule_ids=("R11",), status="확인 필요", urgency="계약 전 확인", triggers_actions=True)
+        ])
+
+
+def _special_guidance(**overrides) -> SpecialClauseGuidance:
+    payload = {
+        "clause_id": "SC-0001",
+        "plain_explanation": "다음 세입자가 구해질 때까지 보증금 반환이 늦어질 수 있는 조건입니다.",
+        "confirmation_questions": ("신규 임차인 입주와 무관하게 반환되는지 확인하셨나요?",),
+        "revision_requests": ("보증금은 계약 종료 시 반환하도록 수정해 주세요.",),
+        "source_ids": (),
+        "generation_method": GenerationMethod.TEMPLATE_FALLBACK,
+    }
+    payload.update(overrides)
+    return SpecialClauseGuidance(**payload)
+
+
+def test_special_guidance_rejects_empty_explanation_and_duplicate_lists():
+    with pytest.raises(ValidationError):
+        _special_guidance(plain_explanation="")
+    with pytest.raises(ValidationError):
+        _special_guidance(confirmation_questions=("같은 질문", "같은 질문"))
+
+
+def test_generation_special_items_source_ids_subset_of_card_evidence():
+    review = _special_review(
+        status="명확", urgency="참고", triggers_actions=False,
+        evidence_sources=(_special_source("SRC-STD-LEASE"),),
+    )
+    analysis = _analysis_with_reviews([review])
+    generation = GenerationResult(
+        analysis_run_id="RUN-1",
+        prompt_version="v1",
+        stage_guidance=StageGuidance(contract_context=_context()),
+        items=(),
+        judgment_items=(),
+        special_clause_items=(_special_guidance(source_ids=("SRC-STD-LEASE",)),),
+    )
+    assert validate_generation_result_for_analysis(analysis, generation) is generation
+
+    bad = generation.model_copy(update={
+        "special_clause_items": (_special_guidance(source_ids=("SRC-NOT-IN-CARD",)),),
+    })
+    with pytest.raises(ValueError, match="공식 근거"):
+        validate_generation_result_for_analysis(analysis, bad)
+
+    unknown_clause = generation.model_copy(update={
+        "special_clause_items": (_special_guidance(clause_id="SC-9999"),),
+    })
+    with pytest.raises(ValueError, match="특약|clause"):
+        validate_generation_result_for_analysis(analysis, unknown_clause)

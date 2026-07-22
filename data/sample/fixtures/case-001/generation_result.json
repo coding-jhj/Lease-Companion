@@ -567,5 +567,17 @@
       "모순되거나 누락된 날짜를 계약서에서 정리하세요.",
       "관리비 금액·포함·별도 부과 항목을 문서로 확인하세요."
     ]
-  }
+  },
+  "special_clause_items": [
+    {
+      "clause_id": "SC-CASE001-0001",
+      "plain_explanation": "잔금을 치르기 전에 임대인이 집에 새로운 담보 같은 권리변동을 만들지 않기로 한 특약입니다.",
+      "confirmation_questions": [
+        "잔금 지급일까지 등기부에 새로운 권리변동이 없는지 다시 확인하실 계획인가요?"
+      ],
+      "revision_requests": [],
+      "source_ids": [],
+      "generation_method": "template_fallback"
+    }
+  ]
 }

@@ -1094,5 +1094,25 @@
       "urgency": "즉시 확인"
     }
   ],
-  "schema_version": "1.9.0"
+  "schema_version": "1.9.0",
+  "special_clause_reviews": [
+    {
+      "clause_id": "SC-CASE001-0001",
+      "original_text": "임대인은 잔금 지급 전까지 새로운 권리변동을 발생시키지 않는다.",
+      "catalog_ids": [
+        "SC-RIGHTS-CHANGE"
+      ],
+      "match_method": "catalog_pattern",
+      "related_rule_ids": [
+        "R10"
+      ],
+      "related_judgment_ids": [],
+      "status": "명확",
+      "urgency": "참고",
+      "reason": "잔금 지급 전 권리변동 금지 특약이 확인되어 관련 규칙이 명확으로 판정했습니다.",
+      "triggers_actions": false,
+      "evidence_sources": [],
+      "limitations": "무효·위법 여부를 확정하지 않고, 공식 근거가 연결되지 않은 항목은 직접 확인이 필요합니다."
+    }
+  ]
 }

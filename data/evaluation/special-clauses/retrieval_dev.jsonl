@@ -1,0 +1,6 @@
+{"text": "임대인은 새로운 임차인의 입주가 완료된 이후에 보증금을 반환한다.", "expected_catalog_ids": ["SC-DEFERRED-REFUND"], "expected_judgment_ids": ["J10"], "expected_rule_ids": ["R08"]}
+{"text": "임차주택의 수리에 관한 모든 비용은 그 사유를 불문하고 임차인이 부담한다.", "expected_catalog_ids": ["SC-REPAIR-SCOPE"], "expected_judgment_ids": ["J11"], "expected_rule_ids": ["R09"]}
+{"text": "임차주택의 원상복구 범위는 임대인이 정하는 바에 따르며 임차인은 이에 이의를 제기하지 아니한다.", "expected_catalog_ids": ["SC-RESTORATION-SCOPE"], "expected_judgment_ids": ["J11"], "expected_rule_ids": ["R09"]}
+{"text": "임차인은 임차주택에 대한 경매절차의 진행 또는 보증금의 미반환에 대하여 어떠한 이의도 제기하지 아니한다.", "expected_catalog_ids": ["SC-RIGHTS-CHANGE"], "expected_judgment_ids": [], "expected_rule_ids": ["R10", "R19"]}
+{"text": "관리비의 항목 및 금액은 임대인이 임의로 변경할 수 있으며 임차인은 이에 따른다.", "expected_catalog_ids": ["SC-MANAGEMENT-FEE"], "expected_judgment_ids": ["J09"], "expected_rule_ids": ["R18"]}
+{"text": "임차인은 임차주택의 실제 면적·용도·시설 상태가 이 계약서의 기재 내용과 다르더라도 이를 이의 없이 인정한다.", "expected_catalog_ids": ["SC-MAIN-SPECIAL-CONFLICT"], "expected_judgment_ids": ["J12"], "expected_rule_ids": []}

@@ -1138,6 +1138,52 @@ class DamagePatternComparison(BaseModel):
     reference_cases: tuple[ReferenceCase, ...] = ()
 
 
+_RuleId = Annotated[str, Field(pattern=r"^R\d{2}$")]
+_JudgmentId = Annotated[str, Field(pattern=r"^J(?:0[1-9]|1[0-2])$")]
+
+
+class SpecialClauseReview(BaseModel):
+    """사용자 확인 특약 1개를 기존 R/J 결과에 연결한 카드.
+
+    상태·시급도는 규칙 엔진이 정한 연결 R/J 결과를 그대로 반영하며 새 판정을 만들지 않는다.
+    RAG 근거는 evidence_sources로만 붙고, 없으면 빈 튜플을 유지한다.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    clause_id: str = Field(min_length=1)
+    original_text: str = Field(min_length=1)
+    catalog_ids: tuple[str, ...] = ()
+    match_method: Literal["catalog_exact", "catalog_pattern", "unmatched"]
+    related_rule_ids: tuple[_RuleId, ...] = ()
+    related_judgment_ids: tuple[_JudgmentId, ...] = ()
+    status: RuleStatus
+    urgency: Urgency
+    reason: str = Field(min_length=1)
+    triggers_actions: bool
+    evidence_sources: tuple[OfficialSource, ...] = ()
+    limitations: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check(self) -> "SpecialClauseReview":
+        if not self.related_rule_ids and not self.related_judgment_ids:
+            raise ValueError(
+                "특약 카드는 related_rule_ids나 related_judgment_ids 중 하나 이상을 연결해야 합니다."
+            )
+        expected_trigger = self.status in ACTION_TRIGGER_STATUSES
+        if self.triggers_actions is not expected_trigger:
+            raise ValueError(
+                f"status={self.status.value}의 triggers_actions는 "
+                f"{str(expected_trigger).lower()}이어야 합니다."
+            )
+        if self.match_method == "unmatched":
+            if self.catalog_ids:
+                raise ValueError("match_method가 unmatched이면 catalog_ids는 비어 있어야 합니다.")
+        elif not self.catalog_ids:
+            raise ValueError("catalog 매칭이면 catalog_ids가 하나 이상 있어야 합니다.")
+        return self
+
+
 class RuleResult(BaseModel):
     """규칙 결과 1개. 결과 역할·행동 활성화·상태·시급도를 분리한다."""
 
@@ -1233,6 +1279,8 @@ class AnalysisRunResult(BaseModel):
     judgments: list[JudgmentResult] = Field(default_factory=list, max_length=12)
     # 과거 결과에는 필드가 없으므로 빈 목록을 기본값으로 유지한다.
     damage_patterns: list[DamagePatternComparison] = Field(default_factory=list, max_length=8)
+    # 특약별 근거 카드. 과거 결과에는 없으므로 빈 목록이 기본값(하위 호환).
+    special_clause_reviews: list[SpecialClauseReview] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _check(self) -> "AnalysisRunResult":
@@ -1258,6 +1306,33 @@ class AnalysisRunResult(BaseModel):
             expected_patterns = [f"DP{index:02d}" for index in range(1, 9)]
             if pattern_ids != expected_patterns:
                 raise ValueError("damage_patterns에는 DP01~DP08이 순서대로 각각 정확히 1개씩 있어야 합니다.")
+        if self.special_clause_reviews:
+            clause_ids = [review.clause_id for review in self.special_clause_reviews]
+            if len(clause_ids) != len(set(clause_ids)):
+                raise ValueError("special_clause_reviews에 중복 clause_id가 있습니다.")
+            rule_states = {result.rule_id: (result.status, result.urgency) for result in self.results}
+            judgment_states = {
+                judgment.judgment_id: (judgment.status, judgment.urgency)
+                for judgment in self.judgments
+            }
+            for review in self.special_clause_reviews:
+                linked: list[tuple[RuleStatus, Urgency]] = []
+                for rule_id in review.related_rule_ids:
+                    if rule_id not in rule_states:
+                        raise ValueError(
+                            f"특약 카드가 분석 결과에 없는 rule_id를 연결했습니다: {rule_id}"
+                        )
+                    linked.append(rule_states[rule_id])
+                for judgment_id in review.related_judgment_ids:
+                    if judgment_id not in judgment_states:
+                        raise ValueError(
+                            f"특약 카드가 분석 결과에 없는 judgment_id를 연결했습니다: {judgment_id}"
+                        )
+                    linked.append(judgment_states[judgment_id])
+                if (review.status, review.urgency) not in linked:
+                    raise ValueError(
+                        "특약 카드의 status·urgency가 연결된 Python 규칙/판정 결과와 일치하지 않습니다."
+                    )
         return self
 
 
@@ -1382,6 +1457,28 @@ class JudgmentGuidance(BaseModel):
         return self
 
 
+class SpecialClauseGuidance(BaseModel):
+    """근거가 연결된 특약 1개의 공개 사용자 안내.
+
+    쉬운 설명·확인 질문·수정 요청 문구와, 그 근거로 쓴 source_id만 담는다.
+    새 판정 상태나 위험 점수를 만들지 않고, source_ids는 특약 카드 근거의 부분집합이어야 한다.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    clause_id: str = Field(min_length=1)
+    plain_explanation: str = Field(min_length=1)
+    confirmation_questions: tuple[str, ...] = ()
+    revision_requests: tuple[str, ...] = ()
+    source_ids: tuple[str, ...] = ()
+    generation_method: GenerationMethod
+
+    @field_validator("confirmation_questions", "revision_requests", "source_ids")
+    @classmethod
+    def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _validate_unique_non_empty(values, label="특약 안내")
+
+
 class StageGuidance(BaseModel):
     """ContractContext와 J 판정을 결합한 단계별 사용자 행동 묶음."""
 
@@ -1423,6 +1520,8 @@ class GenerationResult(BaseModel):
     items: tuple[RuleGuidance, ...]
     judgment_items: tuple[JudgmentGuidance, ...]
     stage_guidance: StageGuidance
+    # 특약별 안내. 과거 생성 결과에는 없으므로 빈 튜플이 기본값(하위 호환).
+    special_clause_items: tuple[SpecialClauseGuidance, ...] = ()
     guardrail_passed: Literal[True] = True
 
     @model_validator(mode="after")
@@ -1433,6 +1532,9 @@ class GenerationResult(BaseModel):
         judgment_ids = [item.judgment_id for item in self.judgment_items]
         if len(judgment_ids) != len(set(judgment_ids)):
             raise ValueError("생성 결과에는 중복 judgment_id를 넣을 수 없습니다.")
+        clause_ids = [item.clause_id for item in self.special_clause_items]
+        if len(clause_ids) != len(set(clause_ids)):
+            raise ValueError("생성 결과에는 중복 특약 clause_id를 넣을 수 없습니다.")
         return self
 
 
@@ -1474,6 +1576,20 @@ def validate_generation_result_for_analysis(
         if unknown_source_ids:
             raise ValueError(
                 f"{judgment_guidance.judgment_id}의 공식 근거가 아닌 source_id입니다: "
+                f"{sorted(unknown_source_ids)}"
+            )
+    reviews = {review.clause_id: review for review in analysis.special_clause_reviews}
+    for clause_guidance in generation.special_clause_items:
+        review = reviews.get(clause_guidance.clause_id)
+        if review is None:
+            raise ValueError(
+                f"분석 결과에 없는 특약 clause_id입니다: {clause_guidance.clause_id}"
+            )
+        allowed_source_ids = {source.source_id for source in review.evidence_sources}
+        unknown_source_ids = set(clause_guidance.source_ids) - allowed_source_ids
+        if unknown_source_ids:
+            raise ValueError(
+                f"{clause_guidance.clause_id}의 공식 근거가 아닌 source_id입니다: "
                 f"{sorted(unknown_source_ids)}"
             )
     return generation

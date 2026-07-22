@@ -1,5 +1,15 @@
 import type { DamagePatternComparisonDto, DamagePatternStatus } from "../../types/api";
 import { EvidenceDisclosure } from "../evidence-sources/EvidenceDisclosure";
+import { plainGuideById, plainJudgmentGuides } from "../judgment-results/plainGuides";
+
+// DP는 연결된 판정(J)·규칙(R)의 쉬운 설명을 재사용한다. 판정을 우선하고, 없으면 규칙으로
+// 폴백한다. 큐레이션된 가이드가 있는 첫 id를 골라 일반 안내 폴백을 최소화한다.
+function guideForPattern(item: DamagePatternComparisonDto) {
+  const linkedId = [...item.related_judgment_ids, ...item.related_rule_ids].find(
+    (id) => id in plainJudgmentGuides,
+  );
+  return plainGuideById(linkedId);
+}
 
 const statusClass: Record<DamagePatternStatus, string> = {
   "관련 확인 신호 있음": "signal",
@@ -20,7 +30,9 @@ export function DamagePatternTable({ items }: { items: DamagePatternComparisonDt
         <div className="damage-patterns__row damage-patterns__head" role="row">
           <span role="columnheader">피해 유형</span><span role="columnheader">분석 결과</span><span role="columnheader">판단 근거</span>
         </div>
-        {items.map((item) => (
+        {items.map((item) => {
+          const guide = guideForPattern(item);
+          return (
           <div className="damage-patterns__row" role="row" key={item.pattern_id}>
             <strong role="cell">{item.pattern_name}</strong>
             <span role="cell" className={`damage-patterns__status damage-patterns__status--${statusClass[item.status]}`}>{item.status}</span>
@@ -30,8 +42,8 @@ export function DamagePatternTable({ items }: { items: DamagePatternComparisonDt
                 <EvidenceDisclosure
                   sources={item.official_sources}
                   limitations={item.limitations}
-                  explanation="이 비교는 기존 규칙 판정을 피해 유형 관점으로 다시 묶어 보여줍니다."
-                  financialImpact="관련 신호가 없더라도 향후 권리변동이나 제출되지 않은 자료까지 확인한 것은 아닙니다."
+                  explanation={guide.explanation}
+                  financialImpact={guide.financialImpact}
                   idPrefix={`damage-pattern-${item.pattern_id}`}
                 />
                 {item.reference_cases.length > 0
@@ -53,7 +65,8 @@ export function DamagePatternTable({ items }: { items: DamagePatternComparisonDt
               </details>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

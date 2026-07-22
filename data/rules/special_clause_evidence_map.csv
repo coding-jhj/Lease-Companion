@@ -1,0 +1,17 @@
+catalog_id,source_id,article_or_section,relevance_note,corpus_status,review_status
+SC-DEFERRED-REFUND,SRC-STD-LEASE,제9조(계약의 종료),계약 종료 시 임대인의 보증금 반환 의무(원상복구와 동시이행) 기준,in_corpus,unverified
+SC-DEFERRED-REFUND,SRC-HTA-LAW,제4조(임대차기간 등),최단 존속기간·기간 종료 기준,in_corpus,unverified
+SC-DEFERRED-REFUND,SRC-HTA-LAW,제10조(강행규정),이 법에 위반된 약정으로서 임차인에게 불리한 것은 효력이 없다는 강행규정,in_corpus,unverified
+SC-REPAIR-SCOPE,SRC-STD-LEASE,제3조(입주 전 수리),수리 필요 시설·비용부담·완료 시기 합의 기준,in_corpus,unverified
+SC-REPAIR-SCOPE,SRC-STD-LEASE,제4조(임차주택의 사용·관리·수선),사용·관리·수선 책임 배분 기준,in_corpus,unverified
+SC-REPAIR-SCOPE,SRC-CIVIL-LEASE,제623조(임대인의 의무),주요설비 노후·불량 수선은 임대인 부담이라는 표준계약서 특약해설의 근거 조문,in_corpus,unverified
+SC-RESTORATION-SCOPE,SRC-STD-LEASE,제9조(계약의 종료),원상복구 범위와 노후·통상 파손 제외 단서,in_corpus,unverified
+SC-RESTORATION-SCOPE,SRC-CIVIL-LEASE,제615조·제654조(원상회복 준용),차주 원상회복의무를 임대차에 준용하는 근거(제654조→제615조),in_corpus,unverified
+SC-RESTORATION-SCOPE,SRC-HTA-LAW,제10조(강행규정),임차인에게 불리한 원상복구 약정의 효력 한계 기준,in_corpus,unverified
+SC-RIGHTS-CHANGE,SRC-HTA-LAW,제3조(대항력 등),인도·전입신고에 따른 대항력 발생 기준,in_corpus,unverified
+SC-RIGHTS-CHANGE,SRC-HTA-LAW,제3조의2(보증금의 회수),확정일자에 따른 우선변제권 기준,in_corpus,unverified
+SC-RIGHTS-CHANGE,SRC-MOLIT-CHECKLIST,잔금·입주일 권리변동 재확인,잔금 지급 전후 등기 권리변동 확인 안내,in_corpus,unverified
+SC-MANAGEMENT-FEE,SRC-STD-LEASE,제1조(보증금과 차임 및 관리비),관리비 총액·세부금액·부과 방식 기재 기준,in_corpus,unverified
+SC-MANAGEMENT-FEE,SRC-CONFIRM-FORM,[관리비],관리비 총액·포함 항목·별도 부과 사용료 확인 항목,in_corpus,unverified
+SC-MAIN-SPECIAL-CONFLICT,SRC-STD-LEASE,[계약내용] 제1조~제13조,본문 조항과 특약사항의 상충 여부를 비교하는 기준 본문,in_corpus,unverified
+SC-MAIN-SPECIAL-CONFLICT,SRC-HTA-LAW,제10조(강행규정),본문·특약 상충 시 임차인에게 불리한 약정의 효력 한계 기준,in_corpus,unverified
