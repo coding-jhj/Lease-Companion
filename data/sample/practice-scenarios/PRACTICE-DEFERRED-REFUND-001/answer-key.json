@@ -2,7 +2,7 @@
   "fixture_type": "synthetic_practice_answer_key",
   "scenario_id": "PRACTICE-DEFERRED-REFUND-001",
   "scenario_version": "1.0.0",
-  "answer_key_version": "1.0.0",
+  "answer_key_version": "1.1.0",
   "review_status": "approved",
   "answer_statuses": [
     {
@@ -437,6 +437,41 @@
       "expected_status_id": "needs_review",
       "expected_confirmed_action_ids": [],
       "expected_next_turn_id": "TURN-03"
+    }
+  ],
+  "dialogue_response_variants": [
+    {
+      "variant_id": "DRV-DEFERRED-REVISION",
+      "turn_id": "TURN-01",
+      "keyword_groups": [
+        ["특약", "문구", "조건"],
+        ["삭제", "수정", "고쳐", "바꿔", "변경"]
+      ],
+      "response": "임대인분이 이 조건을 원하고 계십니다. 다른 분도 계약을 고민하고 있어서 오래 기다려드리기는 어렵습니다."
+    },
+    {
+      "variant_id": "DRV-DEFERRED-NO-SUCCESSOR",
+      "turn_id": "TURN-01",
+      "keyword_groups": [
+        ["안 구해", "못 구해", "구해지지", "안 들어오", "들어오지 않", "없으면"]
+      ],
+      "response": "지금까지는 대부분 금방 구해졌습니다. 다음 임차인이 들어오면 받은 보증금으로 바로 돌려드릴 생각입니다."
+    },
+    {
+      "variant_id": "DRV-DEFERRED-RETURN-DATE",
+      "turn_id": "TURN-01",
+      "keyword_groups": [
+        ["반환일", "종료일", "끝나는 날", "언제", "바로 돌려", "바로 반환"]
+      ],
+      "response": "날짜를 확정해서 넣는 것은 조금 어렵습니다. 다음 임차인이 언제 들어올지 모르니까요."
+    },
+    {
+      "variant_id": "DRV-DEFERRED-MEANING",
+      "turn_id": "TURN-01",
+      "keyword_groups": [
+        ["무슨 뜻", "어떤 뜻", "의미", "설명", "3번"]
+      ],
+      "response": "보증금을 돌려드리지 않는다는 뜻은 아니고요. 보통 다음 임차인이 들어오는 일정에 맞춰서 반환한다는 의미입니다."
     }
   ],
   "debrief": {

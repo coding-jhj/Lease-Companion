@@ -438,6 +438,12 @@ export interface PracticeFinalActionRequestDto {
   response_time_seconds: number;
 }
 
+export interface PracticeAdvanceRequestDto {
+  request_id: string;
+  turn_id: string;
+  destination: "next_turn" | "action_selection";
+}
+
 export interface PracticeTurnEvaluationDto {
   schema_version: SchemaVersion;
   turn_id: string;

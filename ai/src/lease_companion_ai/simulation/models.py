@@ -47,6 +47,23 @@ class EvaluationExample(BaseModel):
     expected_next_turn_id: str = Field(min_length=1)
 
 
+class DialogueResponseVariant(BaseModel):
+    """같은 평가 범주 안에서도 질문 의도에 맞는 상대방 반응을 고른다."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    variant_id: str = Field(pattern=r"^DRV-[A-Z0-9-]+$")
+    turn_id: str = Field(pattern=r"^TURN-\d{2}$")
+    keyword_groups: tuple[tuple[str, ...], ...] = Field(min_length=1)
+    response: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check_keywords(self) -> "DialogueResponseVariant":
+        if any(not group or any(not keyword.strip() for keyword in group) for group in self.keyword_groups):
+            raise ValueError("dialogue response keyword_groups에는 빈 그룹·키워드를 넣을 수 없습니다.")
+        return self
+
+
 class DebriefDefinition(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -77,6 +94,7 @@ class PracticeAnswerKey(BaseModel):
     answer_statuses: tuple[AnswerStatusDefinition, ...] = Field(min_length=6)
     action_rubrics: tuple[ActionRubric, ...] = Field(min_length=1)
     evaluation_examples: tuple[EvaluationExample, ...] = Field(min_length=1)
+    dialogue_response_variants: tuple[DialogueResponseVariant, ...] = ()
     debrief: DebriefDefinition
 
     @model_validator(mode="after")
@@ -101,6 +119,11 @@ class PracticeAnswerKey(BaseModel):
         example_ids = [item.example_id for item in self.evaluation_examples]
         if len(example_ids) != len(set(example_ids)):
             raise ValueError("evaluation_examples에 중복 example_id가 있습니다.")
+        variant_ids = [item.variant_id for item in self.dialogue_response_variants]
+        if len(variant_ids) != len(set(variant_ids)):
+            raise ValueError("dialogue_response_variants에 중복 variant_id가 있습니다.")
+        if any(item.turn_id not in set(rubric_turns) for item in self.dialogue_response_variants):
+            raise ValueError("dialogue_response_variants가 정의되지 않은 turn을 참조합니다.")
         return self
 
 

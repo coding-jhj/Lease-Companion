@@ -12,6 +12,7 @@ from app.core.db import get_db
 from app.models.user import User
 from app.schemas.practice import (
     PracticeFinalActionRequest,
+    PracticeAdvanceRequest,
     PracticeResultResponse,
     PracticeScenarioDetail,
     PracticeScenarioSummary,
@@ -29,6 +30,7 @@ from app.services.practice import (
     session_response,
     submit_practice_final_action,
     submit_practice_turn,
+    advance_practice_dialogue,
 )
 
 router = APIRouter(tags=["practice"])
@@ -119,6 +121,36 @@ def submit_turn(
                 else None
             ),
             dialogue_response=turn.dialogue_response,
+            session=session_response(session_row),
+        )
+    except PracticeServiceError as exc:
+        _raise_http(exc)
+
+
+@router.post(
+    "/api/practice-sessions/{practice_session_id}/advance",
+    response_model=PracticeTurnResponse,
+)
+def advance_dialogue(
+    practice_session_id: str,
+    body: PracticeAdvanceRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PracticeTurnResponse:
+    try:
+        session_row = get_owned_practice_session(db, user, practice_session_id)
+        turn = advance_practice_dialogue(
+            db,
+            session_row,
+            request_id=body.request_id,
+            turn_id=body.turn_id,
+            destination=body.destination,
+        )
+        return PracticeTurnResponse(
+            practice_turn_id=turn.practice_turn_id,
+            attempt_no=turn.attempt_no,
+            evaluation=None,
+            dialogue_response=None,
             session=session_response(session_row),
         )
     except PracticeServiceError as exc:

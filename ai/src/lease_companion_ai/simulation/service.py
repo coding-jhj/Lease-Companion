@@ -257,9 +257,40 @@ class PracticeSimulationService:
             for item in self._scenario.dialogue_turns
             if item.turn_id == turn_input.turn_id
         )
-        response = getattr(turn.responses, evaluation.answer_category)
+        response = select_dialogue_response(
+            self._answer_key,
+            turn.turn_id,
+            turn_input.user_answer,
+            getattr(turn.responses, evaluation.answer_category),
+        )
         return PracticeStep(
             session=advanced,
             evaluation=evaluation,
             dialogue_response=response,
         )
+
+
+def select_dialogue_response(
+    answer_key: PracticeAnswerKey,
+    turn_id: str,
+    user_answer: str | None,
+    default_response: str,
+) -> str:
+    """평가 결과는 바꾸지 않고 사용자 질문 의도에 맞는 대사만 선택한다."""
+
+    if not user_answer:
+        return default_response
+    normalized_answer = _normalize_dialogue_text(user_answer)
+    for variant in answer_key.dialogue_response_variants:
+        if variant.turn_id != turn_id:
+            continue
+        if all(
+            any(_normalize_dialogue_text(keyword) in normalized_answer for keyword in group)
+            for group in variant.keyword_groups
+        ):
+            return variant.response
+    return default_response
+
+
+def _normalize_dialogue_text(value: str) -> str:
+    return "".join(character for character in value.casefold() if character.isalnum())

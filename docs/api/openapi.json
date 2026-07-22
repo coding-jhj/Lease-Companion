@@ -1344,6 +1344,63 @@
         }
       }
     },
+    "/api/practice-sessions/{practice_session_id}/advance": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Advance Dialogue",
+        "operationId": "advance_dialogue_api_practice_sessions__practice_session_id__advance_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeAdvanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeTurnResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/practice-sessions/{practice_session_id}/final-action": {
       "post": {
         "tags": [
@@ -2018,6 +2075,35 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "PracticeAdvanceRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,64}$",
+            "title": "Request Id"
+          },
+          "turn_id": {
+            "type": "string",
+            "pattern": "^TURN-\\d{2}$",
+            "title": "Turn Id"
+          },
+          "destination": {
+            "type": "string",
+            "enum": [
+              "next_turn",
+              "action_selection"
+            ],
+            "title": "Destination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "turn_id",
+          "destination"
+        ],
+        "title": "PracticeAdvanceRequest"
       },
       "PracticeDialogueTurnView": {
         "properties": {

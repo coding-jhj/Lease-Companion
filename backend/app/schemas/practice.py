@@ -5,7 +5,7 @@
 """
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
@@ -80,6 +80,12 @@ class PracticeFinalActionRequest(BaseModel):
     request_id: RequestId
     selected_action: SelectedAction
     response_time_seconds: float = Field(default=0, ge=0, le=3_600)
+
+
+class PracticeAdvanceRequest(BaseModel):
+    request_id: RequestId
+    turn_id: str = Field(pattern=r"^TURN-\d{2}$")
+    destination: Literal["next_turn", "action_selection"]
 
 
 class PracticeTurnResponse(BaseModel):

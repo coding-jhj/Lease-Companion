@@ -8,9 +8,15 @@ import pytest
 from lease_companion_ai.schemas.simulation import (
     PracticeTurnEvaluation,
     PracticeTurnInput,
+    allowed_next_dialogue_states,
 )
 from lease_companion_ai.simulation.models import load_practice_assets
 from lease_companion_ai.simulation.service import PracticeSimulationService
+from lease_companion_ai.simulation.state_machine import (
+    advance_dialogue,
+    advance_dialogue_without_confirmation,
+    start_practice_session,
+)
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -270,13 +276,6 @@ def test_action_selection_is_rejected_before_dialogue_completion():
 
 # --- 진행 정책: 목표문장이 아니어도 상황에 맞으면 진행 (LLM 판단) ---
 
-from lease_companion_ai.schemas.simulation import allowed_next_dialogue_states
-from lease_companion_ai.simulation.state_machine import (
-    advance_dialogue,
-    start_practice_session,
-)
-
-
 def _first_turn_eval(scenario, category, *, advance: bool):
     turn = scenario.dialogue_turns[0]
     return turn, PracticeTurnEvaluation(
@@ -322,3 +321,26 @@ def test_avoidance_cannot_advance_even_if_requested():
 
     with pytest.raises(ValueError, match="허용된 전이"):
         advance_dialogue(session, scenario, evaluation)
+
+
+def test_user_can_leave_an_unconfirmed_turn_or_finish_the_dialogue():
+    scenario, answer_key = _assets("PRACTICE-DEFERRED-REFUND-001")
+    service = PracticeSimulationService(scenario, answer_key, TurnProvider())
+    session = service.start_session("practice-session-escape", 12, STARTED_AT)
+
+    next_turn = advance_dialogue_without_confirmation(
+        session,
+        scenario,
+        "TURN-01",
+    )
+    final_choice = advance_dialogue_without_confirmation(
+        session,
+        scenario,
+        "TURN-01",
+        to_action_selection=True,
+    )
+
+    assert next_turn.current_state == "TURN-02"
+    assert final_choice.current_state == "ACTION-SELECTION"
+    assert next_turn.confirmed_action_ids == []
+    assert final_choice.confirmed_action_ids == []
