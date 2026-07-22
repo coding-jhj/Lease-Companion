@@ -346,7 +346,13 @@ def test_three_scenarios_retry_complete_and_remain_immutable(client: TestClient,
     assert partial_response.status_code == 200
     assert partial_response.json()["attempt_no"] == 1
     assert partial_response.json()["evaluation"]["answer_category"] == "partial_check"
-    assert partial_response.json()["session"]["current_state"] == first_turn.turn_id
+    assert partial_response.json()["session"]["current_state"] == partial.expected_next_turn_id
+
+    # partial_check는 평가 데이터에 따라 진행 또는 재시도가 모두 가능하다.
+    # 전체 완료·멱등성 검증은 모든 목표 행동을 확인할 수 있도록 새 세션에서 수행한다.
+    session = _create_session(client, headers, scenario_id)
+    session_id = session["practice_session_id"]
+    turns_endpoint = f"/api/practice-sessions/{session_id}/turns"
 
     timeout = _timeout_example(answer_key, first_turn.turn_id)
     timeout_response = client.post(
@@ -360,7 +366,7 @@ def test_three_scenarios_retry_complete_and_remain_immutable(client: TestClient,
         },
     )
     assert timeout_response.status_code == 200
-    assert timeout_response.json()["attempt_no"] == 2
+    assert timeout_response.json()["attempt_no"] == 1
     assert timeout_response.json()["evaluation"]["answer_category"] == "needs_review"
     assert timeout_response.json()["evaluation"]["fallback_reason"] == "provider_timeout"
     assert timeout_response.json()["session"]["current_state"] == first_turn.turn_id
@@ -381,7 +387,7 @@ def test_three_scenarios_retry_complete_and_remain_immutable(client: TestClient,
         assert response.json()["evaluation"]["evidence_text"] == appropriate.user_input
         request_ids.append((request_id, body))
         if index == 1:
-            assert response.json()["attempt_no"] == 3
+            assert response.json()["attempt_no"] == 2
 
     duplicate = client.post(
         turns_endpoint,
