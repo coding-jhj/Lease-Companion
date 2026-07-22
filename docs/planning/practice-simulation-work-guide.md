@@ -661,4 +661,4 @@ Offline generation 평가의 `trigger_coverage_rate`가 약 `0.979865`로 계산
 | 날짜 | 문서 반영 범위 | 관련 커밋 | 비고 |
 |---|---|---|---|
 | 2026-07-22 | 작업 0~2 | `ffd06fa`, `e28c181`, `5f30026` | 최초 작성 |
-| 2026-07-22 | 작업 3 전 기존 회귀 문제 수정 | 현재 수정 | RAG LF 해시와 generation coverage 기준 정합화 |
+| 2026-07-22 | 작업 3 전 기존 회귀 문제 수정 | `117ebd9` | RAG LF 해시와 generation coverage 기준 정합화 |
