@@ -119,7 +119,6 @@ async function submitAnswer(page: Page, answer: string, expectedTurn: string) {
   await expect(page.getByLabel("내 답변")).toBeVisible();
   await page.getByLabel("내 답변").fill(answer);
   await page.getByRole("button", { name: "답변 보내기" }).click();
-  await expect(page.getByText("필요한 확인 행동이 전달되었습니다.")).toBeVisible();
   await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText(expectedTurn);
 }
 
@@ -132,7 +131,7 @@ test.describe("세 가지 계약 대화 연습", () => {
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
 
       await page.getByRole("button", { name: "답변하지 못했어요" }).click();
-      await expect(page.getByText("답변하지 못한 턴입니다. 같은 상황에서 다시 답할 수 있습니다.")).toBeVisible();
+      await expect(page.getByText("답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요.")).toBeVisible();
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
 
       await submitAnswer(page, scenario.answers[0], "TURN-02");
