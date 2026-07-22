@@ -408,6 +408,97 @@
       "title": "RuleStatus",
       "type": "string"
     },
+    "SpecialClauseReview": {
+      "additionalProperties": false,
+      "description": "사용자 확인 특약 1개를 기존 R/J 결과에 연결한 카드.\n\n상태·시급도는 규칙 엔진이 정한 연결 R/J 결과를 그대로 반영하며 새 판정을 만들지 않는다.\nRAG 근거는 evidence_sources로만 붙고, 없으면 빈 튜플을 유지한다.",
+      "properties": {
+        "catalog_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Catalog Ids",
+          "type": "array"
+        },
+        "clause_id": {
+          "minLength": 1,
+          "title": "Clause Id",
+          "type": "string"
+        },
+        "evidence_sources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OfficialSource"
+          },
+          "title": "Evidence Sources",
+          "type": "array"
+        },
+        "limitations": {
+          "minLength": 1,
+          "title": "Limitations",
+          "type": "string"
+        },
+        "match_method": {
+          "enum": [
+            "catalog_exact",
+            "catalog_pattern",
+            "unmatched"
+          ],
+          "title": "Match Method",
+          "type": "string"
+        },
+        "original_text": {
+          "minLength": 1,
+          "title": "Original Text",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "related_judgment_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^J(?:0[1-9]|1[0-2])$",
+            "type": "string"
+          },
+          "title": "Related Judgment Ids",
+          "type": "array"
+        },
+        "related_rule_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^R\\d{2}$",
+            "type": "string"
+          },
+          "title": "Related Rule Ids",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/RuleStatus"
+        },
+        "triggers_actions": {
+          "title": "Triggers Actions",
+          "type": "boolean"
+        },
+        "urgency": {
+          "$ref": "#/$defs/Urgency"
+        }
+      },
+      "required": [
+        "clause_id",
+        "original_text",
+        "match_method",
+        "status",
+        "urgency",
+        "reason",
+        "triggers_actions",
+        "limitations"
+      ],
+      "title": "SpecialClauseReview",
+      "type": "object"
+    },
     "Urgency": {
       "description": "시급도 5개 — 루트 AGENTS.md 확정 어휘. 판정 상태와 별도 축.",
       "enum": [
@@ -486,6 +577,13 @@
       ],
       "title": "Schema Version",
       "type": "string"
+    },
+    "special_clause_reviews": {
+      "items": {
+        "$ref": "#/$defs/SpecialClauseReview"
+      },
+      "title": "Special Clause Reviews",
+      "type": "array"
     }
   },
   "required": [

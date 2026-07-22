@@ -343,6 +343,56 @@
       "title": "RuleGuidance",
       "type": "object"
     },
+    "SpecialClauseGuidance": {
+      "additionalProperties": false,
+      "description": "근거가 연결된 특약 1개의 공개 사용자 안내.\n\n쉬운 설명·확인 질문·수정 요청 문구와, 그 근거로 쓴 source_id만 담는다.\n새 판정 상태나 위험 점수를 만들지 않고, source_ids는 특약 카드 근거의 부분집합이어야 한다.",
+      "properties": {
+        "clause_id": {
+          "minLength": 1,
+          "title": "Clause Id",
+          "type": "string"
+        },
+        "confirmation_questions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Confirmation Questions",
+          "type": "array"
+        },
+        "generation_method": {
+          "$ref": "#/$defs/GenerationMethod"
+        },
+        "plain_explanation": {
+          "minLength": 1,
+          "title": "Plain Explanation",
+          "type": "string"
+        },
+        "revision_requests": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Revision Requests",
+          "type": "array"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "clause_id",
+        "plain_explanation",
+        "generation_method"
+      ],
+      "title": "SpecialClauseGuidance",
+      "type": "object"
+    },
     "StageGuidance": {
       "additionalProperties": false,
       "description": "ContractContext와 J 판정을 결합한 단계별 사용자 행동 묶음.",
@@ -468,6 +518,14 @@
       ],
       "title": "Schema Version",
       "type": "string"
+    },
+    "special_clause_items": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/SpecialClauseGuidance"
+      },
+      "title": "Special Clause Items",
+      "type": "array"
     },
     "stage_guidance": {
       "$ref": "#/$defs/StageGuidance"
