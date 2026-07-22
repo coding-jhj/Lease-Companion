@@ -286,6 +286,8 @@ def test_case001_fixture_can_use_template_fallback_with_contract_context():
         item.generation_method is GenerationMethod.TEMPLATE_FALLBACK
         for item in generated.items
     )
+    assert "R08" not in {item.rule_id for item in generated.items}
+    assert "R09" not in {item.rule_id for item in generated.items}
 
 
 def test_provider_request_is_tokenized_and_output_is_restored_locally():

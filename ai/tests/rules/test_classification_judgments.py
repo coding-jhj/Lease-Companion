@@ -162,6 +162,56 @@ def test_j10_uses_return_type_clarity_and_conditions() -> None:
     assert missing_conditions is RuleStatus.UNCLEAR
 
 
+def test_j10_flags_refund_deferred_until_a_new_tenant_moves_in() -> None:
+    snapshot = _snapshot(
+        field_values={
+            "deposit_return_clause": "신규 임차인이 입주한 후 보증금을 반환한다."
+        }
+    )
+    candidate = _candidate(
+        "deposit_return_clause:0",
+        clause_type="deposit_return",
+        # Even if the classifier shortens the condition, the confirmed raw clause
+        # must retain the deterministic signal.
+        conditions=["입주 후"],
+    )
+
+    result = run_judgments(
+        build_judgment_input(
+            snapshot,
+            judgment_ids=("J10",),
+            classification_result=_classification(snapshot, [candidate]),
+        )
+    )[0]
+
+    assert result.status is RuleStatus.CHECK_NEEDED
+    assert "신규 임차인의 입주에 연동" in result.reason
+
+
+def test_j10_does_not_flag_refund_explicitly_independent_of_a_new_tenant() -> None:
+    snapshot = _snapshot(
+        field_values={
+            "deposit_return_clause": (
+                "신규 임차인 입주와 관계없이 계약 종료일에 보증금을 반환한다."
+            )
+        }
+    )
+
+    status = _judgment_status(
+        snapshot,
+        "J10",
+        [
+            _candidate(
+                "deposit_return_clause:0",
+                clause_type="deposit_return",
+                conditions=["신규 임차인 입주와 관계없이 계약 종료일"],
+            )
+        ],
+    )
+
+    assert status is RuleStatus.CLEAR
+
+
 def test_j11_requires_repair_type_clarity_and_responsible_party() -> None:
     snapshot = _snapshot(
         field_values={"repair_responsibility_clause": "수리는 임대인이 부담한다."}

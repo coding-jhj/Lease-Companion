@@ -79,6 +79,8 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case00
 
 **결과 역할·행동 규칙**: `result_type`은 R01·R02·R06·R08·R09=`judgment`, R03·R04·R05·R07·R10=`fact_flag`로 고정된다. `triggers_actions`는 현재 status가 `일치`·`명확`·`적용 제외`면 `false`, 그 외(`불일치`·`불명확`·`미기재`·`상충 가능`·`확인 필요`·`확인 불가`)면 `true`다. 모델은 잘못된 조합을 거부한다.
 
+신규 분석에 J01~J12가 포함되면 조항 명확성의 canonical 안내는 J10·J11이 담당하며, legacy R08·R09 생성 안내는 중복 생성하지 않는다. 이전 저장 payload에 두 안내가 함께 있어도 프론트는 J10·J11 안내를 우선한다.
+
 ## 4. 사용자 수정 흐름
 
 ```text

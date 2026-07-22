@@ -130,6 +130,7 @@ describe("ResultReportPage", () => {
     const j10 = screen.getByText("J10").closest("article");
     expect(j10).toHaveTextContent("상태: 명확");
     expect(j10).toHaveTextContent("보증금 반환 시점·조건 명확성");
+    expect(document.body).not.toHaveTextContent("신규 임차인 입주와 관계없이");
   });
 
   it("keeps the report available with user-safe J10-J12 statuses after classification fallback", async () => {

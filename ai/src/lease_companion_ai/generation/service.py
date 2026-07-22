@@ -142,10 +142,17 @@ class GenerationService:
         if analysis.contract_id != contract_context.contract_id:
             raise ValueError("분석 결과와 ContractContext의 contract_id가 다릅니다.")
         before = analysis.model_dump(mode="json")
+        canonical_clarity_judgments = {
+            "R08": "J10",
+            "R09": "J11",
+        }
+        available_judgments = {result.judgment_id for result in analysis.judgments}
         items = tuple(
             self._generate_rule(result)
             for result in analysis.results
             if result.triggers_actions
+            and canonical_clarity_judgments.get(result.rule_id)
+            not in available_judgments
         )
         judgment_items = tuple(
             self._generate_judgment(result)

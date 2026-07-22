@@ -264,6 +264,29 @@ def _candidate_clarity(candidate: ClauseCandidate) -> RuleStatus:
     return RuleStatus.CLEAR
 
 
+_DEFERRED_RETURN_PARTY = re.compile(r"(?:신규|새|다음|후속)\s*임차인")
+_RETURN_INDEPENDENCE = re.compile(r"(?:관계\s*없이|무관하게|상관\s*없이)")
+
+
+def _has_deferred_return_condition(
+    candidate: ClauseCandidate, raw_clause: str | None = None
+) -> bool:
+    """Detect an explicit dependency on finding or admitting a later tenant.
+
+    This is a narrow confirmation signal, not a legal-validity judgment.  Clauses
+    that explicitly say the refund is independent of a later tenant are excluded.
+    """
+
+    texts = [*candidate.condition_candidates]
+    if raw_clause:
+        texts.append(raw_clause)
+    return any(
+        _DEFERRED_RETURN_PARTY.search(text)
+        and not _RETURN_INDEPENDENCE.search(text)
+        for text in texts
+    )
+
+
 def _j10(data: JudgmentInput) -> RuleStatus:
     raw_state = _raw_clause_state(data, "deposit_return_clause")
     if raw_state is not None:
@@ -274,6 +297,10 @@ def _j10(data: JudgmentInput) -> RuleStatus:
     clarity = _candidate_clarity(candidate)
     if clarity is not RuleStatus.CLEAR:
         return clarity
+    if _has_deferred_return_condition(
+        candidate, data.contract_fields["deposit_return_clause"].effective_value
+    ):
+        return RuleStatus.CHECK_NEEDED
     return (
         RuleStatus.CLEAR
         if candidate.condition_candidates
@@ -420,7 +447,9 @@ _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {
 }
 
 
-def _result(judgment_id: str, status: RuleStatus) -> JudgmentResult:
+def _result(
+    judgment_id: str, status: RuleStatus, judgment_input: JudgmentInput
+) -> JudgmentResult:
     definition = _definitions()[judgment_id]
     clean = status in CLEAN_STATUSES
     urgency = (
@@ -430,11 +459,23 @@ def _result(judgment_id: str, status: RuleStatus) -> JudgmentResult:
         if status is RuleStatus.CANNOT_CHECK
         else DEFAULT_JUDGMENT_URGENCY[judgment_id]
     )
-    reason = (
-        f"{definition['report_reason']} 결과: {status.value}."
-        if status is not RuleStatus.CANNOT_CHECK
-        else f"{definition['judgment_name']} 판정에 필요한 값을 확인할 수 없습니다."
+    candidate = (
+        _candidate(judgment_input, "deposit_return_clause:0")
+        if judgment_id == "J10"
+        else None
     )
+    if candidate is not None and _has_deferred_return_condition(
+        candidate,
+        judgment_input.contract_fields["deposit_return_clause"].effective_value,
+    ):
+        reason = (
+            "보증금 반환이 신규 임차인의 입주에 연동된 조건이 확인되어 "
+            "반환 조건의 수정 여부를 확인해야 합니다."
+        )
+    elif status is RuleStatus.CANNOT_CHECK:
+        reason = f"{definition['judgment_name']} 판정에 필요한 값을 확인할 수 없습니다."
+    else:
+        reason = f"{definition['report_reason']} 결과: {status.value}."
     return JudgmentResult(
         judgment_id=judgment_id,
         judgment_name=definition["judgment_name"],
@@ -453,6 +494,10 @@ def run_judgments(judgment_input: JudgmentInput) -> list[JudgmentResult]:
     """요청된 canonical 순서의 J 판정을 실행한다."""
 
     return [
-        _result(judgment_id, _EVALUATORS[judgment_id](judgment_input))
+        _result(
+            judgment_id,
+            _EVALUATORS[judgment_id](judgment_input),
+            judgment_input,
+        )
         for judgment_id in judgment_input.judgment_ids
     ]

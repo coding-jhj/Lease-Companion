@@ -66,7 +66,14 @@ export function ResultReportPage() {
   const allResults = [...items, ...judgments];
   const userFacingResults = judgments.length > 0 ? judgments : items;
   const usesJudgmentSummary = judgments.length > 0;
-  const allGuidance = [...ruleGuidance, ...judgmentGuidance];
+  // v1.9에서 J10/J11이 명확성 판정의 canonical 결과다. 이전 저장 결과에
+  // legacy R08/R09 안내가 함께 있어도 서로 모순된 수정 요청을 다시 노출하지 않는다.
+  const canonicalJudgmentIds = new Set(judgments.map((item) => item.judgment_id));
+  const compatibleRuleGuidance = ruleGuidance.filter((item) => !(
+    (item.rule_id === "R08" && canonicalJudgmentIds.has("J10"))
+    || (item.rule_id === "R09" && canonicalJudgmentIds.has("J11"))
+  ));
+  const allGuidance = [...compatibleRuleGuidance, ...judgmentGuidance];
   // 상단 요약 개수는 하단 그룹과 같은 기준으로 센다: "지금 판단할 수 없는 항목"
   // (확인 불가·적용 제외·외부데이터 미연결)은 우선순위 그룹에서 빠지므로 카운트에서도 제외한다.
   const actionableResults = userFacingResults.filter((item) => !cannotJudgeNow(item));

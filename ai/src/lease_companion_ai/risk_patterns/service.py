@@ -85,17 +85,23 @@ def build_damage_patterns(analysis: AnalysisRunResult) -> list[DamagePatternComp
     # J10은 반환 시점뿐 아니라 조건의 명확성까지 판정하므로, 확장 분석에서는
     # 피해 유형 표시 상태와 이유에 J10 결과를 우선 사용한다.
     refund = judgments.get("J10", refund_rule)
+    deferred_refund_signal = (
+        refund.status is RuleStatus.CHECK_NEEDED
+        and "신규 임차인" in refund.reason
+    )
     refund_status = (
         DamagePatternStatus.NO_SIGNAL_IN_SUBMITTED_DOCS
         if refund.status is RuleStatus.CLEAR
         else DamagePatternStatus.RELATED_SIGNAL
         if refund.status in {RuleStatus.UNCLEAR, RuleStatus.NOT_STATED}
+        or deferred_refund_signal
         else DamagePatternStatus.CANNOT_ASSESS
     )
 
     mortgage = rules["R03"]
     mortgage_reason = (
-        "등기사항증명서에서 근저당권 관련 기재가 확인됐지만, 주택가치와 실제 선순위 금액 자료가 없어 과도 여부는 판단하지 않습니다."
+        "근저당 설정: 관련 확인 신호 발견. 과도한 근저당 여부: 추가 확인 필요. "
+        "이유: 비교할 주택가치와 실제 선순위 금액 자료가 부족합니다."
         if mortgage.status is RuleStatus.CHECK_NEEDED
         else mortgage.reason
     )
@@ -121,7 +127,7 @@ def build_damage_patterns(analysis: AnalysisRunResult) -> list[DamagePatternComp
         ),
         _comparison(
             pattern_id="DP04", pattern_name="근저당·선순위 권리", status=(
-                DamagePatternStatus.CANNOT_ASSESS
+                DamagePatternStatus.RELATED_SIGNAL
                 if mortgage.status is RuleStatus.CHECK_NEEDED
                 else DamagePatternStatus.NO_SIGNAL_IN_SUBMITTED_DOCS
                 if mortgage.status is RuleStatus.NOT_APPLICABLE
