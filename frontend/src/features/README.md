@@ -14,6 +14,7 @@
 | `analysis-progress` | 6 | 실제 분석·안내 생성 상태를 4단계 타임라인으로 표시 |
 | `judgment-results` | 7 | J01~J12를 사용자용 화면 우선순위 3단계로 표시. R01~R24는 질문·행동 생성과 legacy R-only 결과의 fallback에 사용 |
 | `evidence-sources` | 7 | 원문 증거·공식 근거(RAG) 표시 |
+| `special-clauses` | 7 | 확인 특약 원문·판정·공식 근거·질문·수정 요청 표시 |
 | `question-cards` | 7 | 중복을 제거한 질문·체크리스트·직후 행동 방어 허브 |
 | `signing-checklist` | 8 | 서명 전 체크리스트 |
 | `post-contract-actions` | 8 | 계약 직후 권리 확보 행동 관리 |

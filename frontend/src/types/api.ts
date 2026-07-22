@@ -137,6 +137,7 @@ export type Urgency = "즉시 확인" | "계약 전 확인" | "계약 직후 조
 
 export interface OfficialSourceDto {
   source_id: string;
+  article_or_section?: string | null;
   title: string;
   institution: string;
   summary: string | null;
@@ -203,6 +204,21 @@ export interface JudgmentResultDto {
   limitations: string;
 }
 
+export interface SpecialClauseReviewDto {
+  clause_id: string;
+  original_text: string;
+  catalog_ids: string[];
+  match_method: "catalog_exact" | "catalog_pattern" | "unmatched";
+  related_rule_ids: string[];
+  related_judgment_ids: string[];
+  status: RuleStatus;
+  urgency: Urgency;
+  reason: string;
+  triggers_actions: boolean;
+  evidence_sources: OfficialSourceDto[];
+  limitations: string;
+}
+
 export interface AnalysisRunResultDto {
   schema_version: SchemaVersion;
   analysis_run_id: string;
@@ -212,6 +228,7 @@ export interface AnalysisRunResultDto {
   results: RuleResultDto[];
   judgments: JudgmentResultDto[];
   damage_patterns?: DamagePatternComparisonDto[];
+  special_clause_reviews?: SpecialClauseReviewDto[];
 }
 
 export type GenerationMethod = "provider" | "template_fallback";
@@ -251,6 +268,15 @@ export interface JudgmentGuidanceDto {
   fallback_reason: string | null;
 }
 
+export interface SpecialClauseGuidanceDto {
+  clause_id: string;
+  plain_explanation: string;
+  confirmation_questions: string[];
+  revision_requests: string[];
+  source_ids: string[];
+  generation_method: GenerationMethod;
+}
+
 export interface StageGuidanceDto {
   contract_context: ContractContextDto;
   before_deposit_questions: string[];
@@ -270,6 +296,7 @@ export interface GenerationResultDto {
   prompt_version: "v1" | "v2";
   items: RuleGuidanceDto[];
   judgment_items: JudgmentGuidanceDto[];
+  special_clause_items?: SpecialClauseGuidanceDto[];
   stage_guidance: StageGuidanceDto;
   guardrail_passed: true;
 }

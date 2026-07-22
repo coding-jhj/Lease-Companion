@@ -55,6 +55,7 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
         <span>{source.institution}</span>
       </div>
       <h4>{source.title}</h4>
+      {source.article_or_section && <p className="evidence-source-section">{source.article_or_section}</p>}
       {relatedExcerpt ? (
         <section className="evidence-related" aria-label="이번 판정과 연결된 공식 근거">
           <strong>이번 판정과 연결된 근거</strong>
@@ -88,21 +89,24 @@ export function EvidenceDisclosure({
   limitations,
   explanation,
   financialImpact,
+  financialImpactLabel = "생길 수 있는 금전 문제",
   idPrefix,
+  order = "sources-first",
 }: {
   sources: OfficialSourceDto[];
   limitations: string;
   explanation: string;
   financialImpact: string;
+  financialImpactLabel?: string;
   idPrefix: string;
+  order?: "sources-first" | "explanation-first";
 }) {
   const evidenceTitleId = `${idPrefix}-official-evidence-title`;
   const explanationTitleId = `${idPrefix}-plain-explanation-title`;
   const limitationTitleId = `${idPrefix}-limitation-title`;
 
-  return (
-    <div className="evidence-disclosure">
-      <section className="evidence-disclosure__sources" aria-labelledby={evidenceTitleId}>
+  const sourceSection = (
+    <section className="evidence-disclosure__sources" aria-labelledby={evidenceTitleId}>
         <div className="evidence-disclosure__intro">
           <div>
             <strong id={evidenceTitleId}>공식 근거</strong>
@@ -123,8 +127,10 @@ export function EvidenceDisclosure({
         ) : (
           <p className="evidence-empty">공식 근거가 없는 항목은 계약 상대방이나 관련 기관에 직접 확인해 주세요.</p>
         )}
-      </section>
-      <section className="plain-evidence-card" aria-labelledby={explanationTitleId}>
+    </section>
+  );
+  const explanationSection = (
+    <section className="plain-evidence-card" aria-labelledby={explanationTitleId}>
         <div className="plain-evidence-card__explanation">
           <strong id={explanationTitleId}>조항을 쉽게 설명하면</strong>
           <p>{explanation}</p>
@@ -132,11 +138,16 @@ export function EvidenceDisclosure({
         <div className="financial-impact">
           <span className="financial-impact__icon" aria-hidden="true">!</span>
           <div>
-            <strong>생길 수 있는 금전 문제</strong>
+            <strong>{financialImpactLabel}</strong>
             <p>{financialImpact}</p>
           </div>
         </div>
-      </section>
+    </section>
+  );
+
+  return (
+    <div className="evidence-disclosure">
+      {order === "explanation-first" ? <>{explanationSection}{sourceSection}</> : <>{sourceSection}{explanationSection}</>}
       <aside className="limitation-card" aria-labelledby={limitationTitleId}>
         <strong id={limitationTitleId}>이 판정에서 알아둘 점</strong>
         <p>{limitations}</p>

@@ -245,6 +245,24 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .result-support { margin-top: 8px; border-top: 1px solid #e5dfd4; }
 .result-support summary { padding: 12px 0 4px; color: #355a40; font-weight: 800; cursor: pointer; }
 .evidence-disclosure { display: grid; gap: 14px; padding: 12px 0 2px; }
+.special-clause-review-section { display: grid; gap: 16px; scroll-margin-top: 16px; }
+.special-clause-card-list { display: grid; gap: 16px; }
+.special-clause-card { display: grid; gap: 12px; min-width: 0; padding: 18px; border: 1px solid #d4dfd5; border-left: 5px solid #947521; border-radius: 16px; background: #fffdf8; }
+.special-clause-card__header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.special-clause-card__header h3 { margin: 3px 0 0; font-size: 18px; }
+.special-clause-card__index { color: #627067; font-size: 12px; font-weight: 800; }
+.special-clause-card__priority { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: #fff0c7; color: #664d08; font-size: 12px; font-weight: 900; }
+.special-clause-card[data-priority="반드시 확인"] { border-left-color: #b3342d; }
+.special-clause-card[data-priority="반드시 확인"] .special-clause-card__priority { background: #f9dddd; color: #84231e; }
+.special-clause-card[data-priority="일반 확인"] { border-left-color: #52715d; }
+.special-clause-card[data-priority="일반 확인"] .special-clause-card__priority { background: #e5eee7; color: #245236; }
+.special-clause-card blockquote { margin: 0; padding: 14px; border: 1px solid #ddd7ca; border-radius: 12px; background: #fff; }
+.special-clause-card blockquote strong { display: block; margin-bottom: 6px; color: #31583d; font-size: 13px; }
+.special-clause-card blockquote p, .special-clause-card__meta { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.special-clause-card__meta { color: #58645b; font-size: 13px; font-weight: 700; }
+.special-clause-card__guidance { padding-top: 12px; border-top: 1px solid #e2ded5; }
+.special-clause-card__guidance h4 { margin: 0 0 8px; font-size: 15px; }
+.special-clause-card__guidance ul { margin: 0; padding-left: 20px; line-height: 1.65; }
 .evidence-disclosure__sources { display: grid; gap: 10px; }
 .evidence-disclosure__intro { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .evidence-disclosure__intro p { margin: 5px 0 0; color: #626b64; font-size: 14px; line-height: 1.55; }
@@ -254,6 +272,7 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .evidence-source-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: #667067; font-size: 13px; }
 .evidence-source-badge { padding: 3px 7px; border-radius: 999px; background: #edf3ee; color: #31583d; font-weight: 800; }
 .evidence-source-card h4 { margin: 10px 0 4px; font-size: 16px; line-height: 1.45; }
+.evidence-source-section { margin: 0 0 8px; color: #31583d; font-size: 13px; font-weight: 800; }
 .evidence-related { display: grid; gap: 6px; margin-top: 10px; padding: 12px; border-radius: 9px; background: #eef5ef; }
 .evidence-related > strong { color: #245c38; font-size: 14px; }
 .evidence-related .evidence-summary__content { padding: 4px 0 0; background: transparent; }
@@ -538,6 +557,11 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   .report-print-sheet th, .report-print-sheet td { padding: 7px; border: 1px solid #bdc8be; text-align: left; vertical-align: top; }
   .report-print-sheet ul { margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.55; }
   .report-print-sheet footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #bdc8be; color: #566057; font-size: 9px; }
+  .report-print-sheet__clauses { display: grid; gap: 10px; }
+  .report-print-sheet__clause { padding: 9px; border: 1px solid #bdc8be; break-inside: avoid; }
+  .report-print-sheet__clause h3, .report-print-sheet__clause p, .report-print-sheet__clause blockquote { margin: 0 0 6px; }
+  .report-print-sheet__clause h3 { font-size: 12px; }
+  .report-print-sheet__clause blockquote, .report-print-sheet__clause p { font-size: 9px; line-height: 1.5; }
 }
 
 @media (min-width: 768px) {

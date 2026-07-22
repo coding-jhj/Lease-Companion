@@ -12,7 +12,33 @@ import type {
   AnalysisRunDetailDto,
   AnalysisRunResultDto,
   GenerationResultDto,
+  SpecialClauseGuidanceDto,
+  SpecialClauseReviewDto,
 } from "../../src/types/api";
+
+const specialClauseReview: SpecialClauseReviewDto = {
+  clause_id: "CLAUSE-001",
+  original_text: "보증금은 신규 임차인이 입주한 후 반환한다.",
+  catalog_ids: ["SC-DEFERRED-REFUND"],
+  match_method: "catalog_pattern",
+  related_rule_ids: ["R08"],
+  related_judgment_ids: ["J10"],
+  status: "확인 필요",
+  urgency: "즉시 확인",
+  reason: "반환 조건이 신규 임차인 입주에 연결되어 있습니다.",
+  triggers_actions: true,
+  evidence_sources: [],
+  limitations: "공식 근거를 확인하지 못했습니다.",
+};
+
+const specialClauseGuidance: SpecialClauseGuidanceDto = {
+  clause_id: "CLAUSE-001",
+  plain_explanation: "신규 임차인이 없으면 반환이 늦어질 수 있습니다.",
+  confirmation_questions: ["신규 임차인과 관계없이 반환하나요?"],
+  revision_requests: ["계약 종료 시 반환하도록 수정해 주세요."],
+  source_ids: [],
+  generation_method: "template_fallback",
+};
 
 function detail(generationStatus: AnalysisRunDetailDto["generation_status"] = "completed"): AnalysisRunDetailDto {
   return {
@@ -136,6 +162,29 @@ describe("ResultReportPage", () => {
     expect(j10).toHaveTextContent("상태: 명확");
     expect(j10).toHaveTextContent("보증금 반환 시점·조건 명확성");
     expect(document.body).not.toHaveTextContent("신규 임차인 입주와 관계없이");
+    expect(screen.queryByRole("heading", { name: "확인이 필요한 특약" })).not.toBeInTheDocument();
+  });
+
+  it("shows special clause cards and includes them in the printable report", async () => {
+    const run = detail();
+    vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue({
+      ...run,
+      result: run.result ? { ...run.result, special_clause_reviews: [specialClauseReview] } : null,
+      generation_result: run.generation_result
+        ? { ...run.generation_result, special_clause_items: [specialClauseGuidance] }
+        : null,
+    });
+
+    renderPage();
+
+    const section = (await screen.findByRole("heading", { name: "확인이 필요한 특약" })).closest("section")!;
+    expect(within(section).getByText(specialClauseReview.original_text)).toBeInTheDocument();
+    expect(within(section).getByText(specialClauseGuidance.confirmation_questions[0])).toBeInTheDocument();
+    expect(within(section).getByText(specialClauseGuidance.revision_requests[0])).toBeInTheDocument();
+    const printSheet = document.querySelector(".report-print-sheet");
+    expect(printSheet).toHaveTextContent("확인이 필요한 특약");
+    expect(printSheet).toHaveTextContent(specialClauseReview.original_text);
+    expect(printSheet).toHaveTextContent(specialClauseGuidance.confirmation_questions[0]);
   });
 
   it("keeps the report available with user-safe J10-J12 statuses after classification fallback", async () => {

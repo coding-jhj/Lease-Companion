@@ -14,6 +14,7 @@ import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
 import { DamagePatternTable } from "../../features/damage-patterns/DamagePatternTable";
 import { DetectedSignalSection } from "../../features/damage-patterns/DetectedSignalSection";
 import { ReportPrintSheet } from "../../features/result-report/ReportPrintSheet";
+import { SpecialClauseReviewSection } from "../../features/special-clauses/SpecialClauseReviewSection";
 import { mvpService } from "../../services/mvpService";
 import type {
   JudgmentGuidanceDto,
@@ -22,6 +23,8 @@ import type {
   RuleResultDto,
   StageGuidanceDto,
   DamagePatternComparisonDto,
+  SpecialClauseGuidanceDto,
+  SpecialClauseReviewDto,
 } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
 
@@ -39,6 +42,8 @@ export function ResultReportPage() {
   const [judgmentGuidance, setJudgmentGuidance] = useState<JudgmentGuidanceDto[]>([]);
   const [stageGuidance, setStageGuidance] = useState<StageGuidanceDto | null>(null);
   const [damagePatterns, setDamagePatterns] = useState<DamagePatternComparisonDto[]>([]);
+  const [specialClauseReviews, setSpecialClauseReviews] = useState<SpecialClauseReviewDto[]>([]);
+  const [specialClauseGuidance, setSpecialClauseGuidance] = useState<SpecialClauseGuidanceDto[]>([]);
   const [generationFailed, setGenerationFailed] = useState(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -53,6 +58,8 @@ export function ResultReportPage() {
       setJudgmentGuidance(run.generation_result?.judgment_items ?? []);
       setStageGuidance(run.generation_result?.stage_guidance ?? null);
       setDamagePatterns(run.result?.damage_patterns ?? []);
+      setSpecialClauseReviews(run.result?.special_clause_reviews ?? []);
+      setSpecialClauseGuidance(run.generation_result?.special_clause_items ?? []);
       setGenerationFailed(run.generation_status === "failed");
       setStatus("success");
     } catch (error) {
@@ -129,9 +136,7 @@ export function ResultReportPage() {
               <span>자료 부족 {patternCounts.unknown}건</span>
             </section>}
             <div className="report-export-toolbar"><p>비교표·질문·수정 요청·단계별 행동을 함께 저장할 수 있습니다.</p><button className="secondary" type="button" onClick={printReport}>전체 리포트 PDF 저장</button></div>
-            {createPortal(<ReportPrintSheet contractId={contractId} patterns={damagePatterns} guidance={allGuidance} stageGuidance={stageGuidance} />, document.body)}
-            <DetectedSignalSection patterns={damagePatterns} guidance={allGuidance} />
-            <DamagePatternTable items={damagePatterns} />
+            {createPortal(<ReportPrintSheet contractId={contractId} patterns={damagePatterns} guidance={allGuidance} specialClauseReviews={specialClauseReviews} specialClauseGuidance={specialClauseGuidance} stageGuidance={stageGuidance} />, document.body)}
             <div className="report-grid">
               <section className="report-results-column stack" aria-labelledby="all-results-title">
                 <div className="section-heading">
@@ -155,6 +160,9 @@ export function ResultReportPage() {
                 <ResultFeedback contractId={contractId} />
               </aside>
             </div>
+            <SpecialClauseReviewSection reviews={specialClauseReviews} guidance={specialClauseGuidance} generationFailed={generationFailed} />
+            <DetectedSignalSection patterns={damagePatterns} guidance={allGuidance} />
+            <DamagePatternTable items={damagePatterns} />
           </>
         )}
         <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>저장된 체크리스트로 이동</button>
