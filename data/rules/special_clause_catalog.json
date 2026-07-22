@@ -1,11 +1,11 @@
 {
-  "version": "0.1.0-draft",
+  "version": "0.1.1-draft",
   "review_status": "unverified",
-  "note": "법률 검토 전 초안. allowed_source_sections와 표현 경계는 법률 검토자 승인 전 운영 기본값으로 활성화하지 않는다. related_rule_ids/related_judgment_ids는 judgment_spec.csv·rule_spec.csv 기준이며 J09~J12, R08~R10, R18~R19에만 연결한다.",
+  "note": "2026-07-22 인수인계의 법률 검토 지적사항을 반영한 초안. 독립 재확인 전 review_status=unverified와 운영 비활성 상태를 유지한다. allowed_source_sections는 직접 검색 근거만 담고 주택임대차보호법 제10조는 구체적 위반 조항과 임차인 불리성이 모두 확인될 때만 별도 검토한다.",
   "entries": [
     {
       "catalog_id": "SC-DEFERRED-REFUND",
-      "version": "0.1.0-draft",
+      "version": "0.1.1-draft",
       "display_name": "보증금 반환을 신규 임차인 입주에 연동한 조건",
       "related_judgment_ids": ["J10"],
       "related_rule_ids": ["R08"],
@@ -17,15 +17,20 @@
       "exclude_patterns": ["관계\\s*없이", "무관", "상관\\s*없이", "계약\\s*종료(일|\\s*시).*반환"],
       "allowed_source_sections": [
         {"source_id": "SRC-STD-LEASE", "article_or_section": "제9조(계약의 종료)"},
-        {"source_id": "SRC-HTA-LAW", "article_or_section": "제4조(임대차기간 등)"},
-        {"source_id": "SRC-HTA-LAW", "article_or_section": "제10조(강행규정)"}
+        {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제536조(동시이행의 항변권)"},
+        {"source_id": "SRC-HTA-LAW", "article_or_section": "제4조 제2항(보증금 반환 전 임대차관계 존속)"}
       ],
+      "legal_effect_review": {
+        "hta_article_10_applicable": "undetermined",
+        "requires_specific_hta_violation": true,
+        "court_or_expert_review_needed": true
+      },
       "explanation_boundary": {"prohibited_terms": ["무효", "위법", "안전", "사기"]}
     },
     {
       "catalog_id": "SC-REPAIR-SCOPE",
-      "version": "0.1.0-draft",
-      "display_name": "수리·수선 비용을 임차인에게 전가한 조건",
+      "version": "0.1.1-draft",
+      "display_name": "사용·수익에 필요한 수리·수선 비용을 임차인에게 포괄 전가한 조건",
       "related_judgment_ids": ["J11"],
       "related_rule_ids": ["R09"],
       "include_patterns": [
@@ -36,32 +41,38 @@
       "exclude_patterns": ["임대인.*부담", "주요\\s*설비.*임대인"],
       "allowed_source_sections": [
         {"source_id": "SRC-STD-LEASE", "article_or_section": "제3조(입주 전 수리)"},
-        {"source_id": "SRC-STD-LEASE", "article_or_section": "제4조(임차주택의 사용·관리·수선)"},
-        {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제623조(임대인의 의무)"}
+        {"source_id": "SRC-STD-LEASE", "article_or_section": "제4조 제2항~제4항(임차주택의 사용·관리·수선)"},
+        {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제623조(임대인의 의무)"},
+        {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제626조(임차인의 상환청구권)"}
       ],
       "explanation_boundary": {"prohibited_terms": ["무효", "위법", "안전", "사기"]}
     },
     {
       "catalog_id": "SC-RESTORATION-SCOPE",
-      "version": "0.1.0-draft",
-      "display_name": "원상복구 범위를 임대인이 임의로 정하도록 한 조건",
+      "version": "0.1.1-draft",
+      "display_name": "원상복구 범위가 불명확하거나 통상손모·노후까지 포함한 조건",
       "related_judgment_ids": ["J11"],
       "related_rule_ids": ["R09"],
       "include_patterns": [
         "원상복구.*(범위|기준).*임대인.*(정하|따르)",
-        "원상복구.*이의.*제기하지\\s*아니한다"
+        "원상복구.*이의.*제기하지\\s*아니한다",
+        "(통상\\s*손모|노후|자연\\s*마모).*(원상복구|임차인.*부담)"
       ],
-      "exclude_patterns": ["노후|통상\\s*(생길|파손)|자연\\s*마모"],
+      "exclude_patterns": ["(노후|통상\\s*(손모|파손)|자연\\s*마모).*(제외|포함하지\\s*않)", "원상복구.*(노후|통상\\s*(손모|파손)|자연\\s*마모).*(제외|면제)"],
       "allowed_source_sections": [
         {"source_id": "SRC-STD-LEASE", "article_or_section": "제9조(계약의 종료)"},
-        {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제615조·제654조(원상회복 준용)"},
-        {"source_id": "SRC-HTA-LAW", "article_or_section": "제10조(강행규정)"}
+        {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제615조·제654조(원상회복 준용)"}
       ],
+      "legal_effect_review": {
+        "hta_article_10_applicable": "undetermined",
+        "requires_specific_hta_violation": true,
+        "court_or_expert_review_needed": true
+      },
       "explanation_boundary": {"prohibited_terms": ["무효", "위법", "안전", "사기"]}
     },
     {
       "catalog_id": "SC-RIGHTS-CHANGE",
-      "version": "0.1.0-draft",
+      "version": "0.1.1-draft",
       "display_name": "잔금·입주 전후 권리변동(담보 설정 등) 관련 조건",
       "related_judgment_ids": [],
       "related_rule_ids": ["R10", "R19"],
@@ -74,19 +85,24 @@
       "allowed_source_sections": [
         {"source_id": "SRC-HTA-LAW", "article_or_section": "제3조(대항력 등)"},
         {"source_id": "SRC-HTA-LAW", "article_or_section": "제3조의2(보증금의 회수)"},
-        {"source_id": "SRC-MOLIT-CHECKLIST", "article_or_section": "잔금·입주일 권리변동 재확인"}
+        {"source_id": "SRC-STD-LEASE", "article_or_section": "[특약사항] 담보권 설정 금지·위반 시 해제 또는 해지"},
+        {"source_id": "SRC-MOLIT-CHECKLIST", "article_or_section": "특약사항 설정(권장)"},
+        {"source_id": "SRC-MOLIT-CHECKLIST", "article_or_section": "잔금 지급 전 권리관계 재확인"},
+        {"source_id": "SRC-MOLIT-CHECKLIST", "article_or_section": "담보권 설정 특약 이행 여부 확인"}
       ],
       "explanation_boundary": {"prohibited_terms": ["무효", "위법", "안전", "사기"]}
     },
     {
       "catalog_id": "SC-MANAGEMENT-FEE",
-      "version": "0.1.0-draft",
-      "display_name": "관리비 항목·금액을 임대인이 임의로 변경하도록 한 조건",
+      "version": "0.1.1-draft",
+      "display_name": "관리비·추가비용의 항목·금액·부과 방식이 명확하지 않은 조건",
       "related_judgment_ids": ["J09"],
       "related_rule_ids": ["R18"],
       "include_patterns": [
         "관리비.*(항목|금액).*임대인.*(임의|자유).*변경",
-        "관리비.*임대인.*정하는\\s*대로"
+        "관리비.*임대인.*정하는\\s*대로",
+        "(관리비|추가\\s*비용).*(항목|금액|부과\\s*방식).*(추후|별도|미정)",
+        "관리비.*(세부\\s*항목|포함\\s*항목).*(기재하지|정하지)"
       ],
       "exclude_patterns": ["관리비.*(협의|합의).*변경", "관리비\\s*없음"],
       "allowed_source_sections": [
@@ -97,7 +113,7 @@
     },
     {
       "catalog_id": "SC-MAIN-SPECIAL-CONFLICT",
-      "version": "0.1.0-draft",
+      "version": "0.1.1-draft",
       "display_name": "본문 조항과 특약이 상충할 가능성",
       "related_judgment_ids": ["J12"],
       "related_rule_ids": [],
@@ -108,9 +124,26 @@
       ],
       "exclude_patterns": [],
       "allowed_source_sections": [
-        {"source_id": "SRC-STD-LEASE", "article_or_section": "[계약내용] 제1조~제13조"},
-        {"source_id": "SRC-HTA-LAW", "article_or_section": "제10조(강행규정)"}
+        {"topic": "deposit_refund", "source_id": "SRC-STD-LEASE", "article_or_section": "제9조(계약의 종료)"},
+        {"topic": "deposit_refund", "source_id": "SRC-CIVIL-LEASE", "article_or_section": "제536조(동시이행의 항변권)"},
+        {"topic": "repair", "source_id": "SRC-STD-LEASE", "article_or_section": "제3조(입주 전 수리)"},
+        {"topic": "repair", "source_id": "SRC-STD-LEASE", "article_or_section": "제4조 제2항~제4항(임차주택의 사용·관리·수선)"},
+        {"topic": "repair", "source_id": "SRC-CIVIL-LEASE", "article_or_section": "제623조(임대인의 의무)"},
+        {"topic": "restoration", "source_id": "SRC-STD-LEASE", "article_or_section": "제9조(계약의 종료)"},
+        {"topic": "restoration", "source_id": "SRC-CIVIL-LEASE", "article_or_section": "제615조·제654조(원상회복 준용)"},
+        {"topic": "management_fee", "source_id": "SRC-STD-LEASE", "article_or_section": "제1조(보증금과 차임 및 관리비)"},
+        {"topic": "management_fee", "source_id": "SRC-CONFIRM-FORM", "article_or_section": "[관리비]"},
+        {"topic": "lease_period", "source_id": "SRC-STD-LEASE", "article_or_section": "제2조(임대차기간)"},
+        {"topic": "lease_period", "source_id": "SRC-HTA-LAW", "article_or_section": "제4조(임대차기간 등)"},
+        {"topic": "rights_change", "source_id": "SRC-STD-LEASE", "article_or_section": "[특약사항] 담보권 설정 금지·위반 시 해제 또는 해지"},
+        {"topic": "rights_change", "source_id": "SRC-HTA-LAW", "article_or_section": "제3조(대항력 등)"},
+        {"topic": "rights_change", "source_id": "SRC-HTA-LAW", "article_or_section": "제3조의2(보증금의 회수)"}
       ],
+      "legal_effect_review": {
+        "hta_article_10_applicable": "undetermined",
+        "requires_specific_hta_violation": true,
+        "court_or_expert_review_needed": true
+      },
       "explanation_boundary": {"prohibited_terms": ["무효", "위법", "안전", "사기"]}
     }
   ]

@@ -15,6 +15,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 CATALOG = ROOT / "data" / "rules" / "special_clause_catalog.json"
+EVIDENCE_MAP = ROOT / "data" / "rules" / "special_clause_evidence_map.csv"
 
 ALLOWED_JUDGMENT_IDS = {"J09", "J10", "J11", "J12"}
 ALLOWED_RULE_IDS = {"R08", "R09", "R10", "R18", "R19"}
@@ -45,6 +46,15 @@ def _spec_ids(filename: str, id_field: str) -> set[str]:
     path = ROOT / "data" / "rules" / filename
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return {row[id_field] for row in csv.DictReader(handle)}
+
+
+def _entries_by_id(catalog: dict) -> dict[str, dict]:
+    return {entry["catalog_id"]: entry for entry in catalog["entries"]}
+
+
+def _evidence_rows() -> list[dict[str, str]]:
+    with EVIDENCE_MAP.open(encoding="utf-8-sig", newline="") as handle:
+        return list(csv.DictReader(handle))
 
 
 @pytest.fixture(scope="module")
@@ -107,3 +117,90 @@ def test_patterns_are_non_empty_and_compile(catalog):
         assert entry["include_patterns"], f"{entry['catalog_id']} include_patterns가 비어 있습니다."
         for pattern in entry["include_patterns"] + entry["exclude_patterns"]:
             re.compile(pattern)  # 잘못된 정규식이면 여기서 실패
+
+
+def test_reviewed_hta_article_10_is_conditional_not_primary_evidence(catalog):
+    entries = _entries_by_id(catalog)
+    conditional_ids = {
+        "SC-DEFERRED-REFUND",
+        "SC-RESTORATION-SCOPE",
+        "SC-MAIN-SPECIAL-CONFLICT",
+    }
+    for catalog_id in conditional_ids:
+        entry = entries[catalog_id]
+        assert all(
+            not (
+                section["source_id"] == "SRC-HTA-LAW"
+                and section["article_or_section"].startswith("제10조")
+            )
+            for section in entry["allowed_source_sections"]
+        )
+        assert entry["legal_effect_review"] == {
+            "hta_article_10_applicable": "undetermined",
+            "requires_specific_hta_violation": True,
+            "court_or_expert_review_needed": True,
+        }
+
+    assert all(
+        not (row["source_id"] == "SRC-HTA-LAW" and row["article_or_section"].startswith("제10조"))
+        for row in _evidence_rows()
+    )
+
+
+def test_reviewed_evidence_boundaries_are_present(catalog):
+    entries = _entries_by_id(catalog)
+
+    deferred = entries["SC-DEFERRED-REFUND"]["allowed_source_sections"]
+    assert {section["article_or_section"] for section in deferred} >= {
+        "제536조(동시이행의 항변권)",
+        "제4조 제2항(보증금 반환 전 임대차관계 존속)",
+    }
+
+    repair = entries["SC-REPAIR-SCOPE"]["allowed_source_sections"]
+    assert {section["article_or_section"] for section in repair} >= {
+        "제4조 제2항~제4항(임차주택의 사용·관리·수선)",
+        "제626조(임차인의 상환청구권)",
+    }
+
+    restoration = entries["SC-RESTORATION-SCOPE"]["allowed_source_sections"]
+    assert all(section["source_id"] != "SRC-HTA-LAW" for section in restoration)
+
+    rights = entries["SC-RIGHTS-CHANGE"]["allowed_source_sections"]
+    assert {section["article_or_section"] for section in rights} >= {
+        "[특약사항] 담보권 설정 금지·위반 시 해제 또는 해지",
+        "특약사항 설정(권장)",
+        "잔금 지급 전 권리관계 재확인",
+        "담보권 설정 특약 이행 여부 확인",
+    }
+
+    management = entries["SC-MANAGEMENT-FEE"]
+    assert "명확" in management["display_name"]
+
+
+def test_conflict_evidence_is_scoped_by_topic_and_matches_evidence_map(catalog):
+    entries = _entries_by_id(catalog)
+    conflict_sections = entries["SC-MAIN-SPECIAL-CONFLICT"]["allowed_source_sections"]
+    assert {section["topic"] for section in conflict_sections} == {
+        "deposit_refund",
+        "repair",
+        "restoration",
+        "management_fee",
+        "lease_period",
+        "rights_change",
+    }
+
+    catalog_scope = {
+        (
+            entry["catalog_id"],
+            section.get("topic", ""),
+            section["source_id"],
+            section["article_or_section"],
+        )
+        for entry in catalog["entries"]
+        for section in entry["allowed_source_sections"]
+    }
+    evidence_scope = {
+        (row["catalog_id"], row["topic"], row["source_id"], row["article_or_section"])
+        for row in _evidence_rows()
+    }
+    assert evidence_scope == catalog_scope

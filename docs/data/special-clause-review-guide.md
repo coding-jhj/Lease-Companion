@@ -9,6 +9,8 @@
 - 근거 범위표: `data/rules/special_clause_evidence_map.csv` (review_status 열: unverified)
 - 평가셋: `data/evaluation/special-clauses/*.jsonl` (draft_pending_human_review)
 
+> 2026-07-22 상태: 인수인계의 게이트 A 지적사항을 카탈로그와 근거 범위표에 반영했다. 혼자 수행한 데이터 반영이므로 독립 재확인 전까지 `unverified`를 유지한다.
+
 ---
 
 ## 게이트 A — 법률 검토 (카탈로그 + 근거 범위표)
@@ -19,7 +21,7 @@
 ### 체크리스트 (유형 6개 각각)
 - [ ] `related_judgment_ids`·`related_rule_ids`가 그 특약 유형의 논점과 맞는가? (허용 ID: J09~J12, R08~R10, R18~R19)
 - [ ] `allowed_source_sections`의 **조·항이 실제로 그 논점의 근거인가?** 원문 대조:
-  - `data/rag/sources/SRC-HTA-LAW.txt`(주임법), `SRC-STD-LEASE.txt`(표준계약서), `SRC-CIVIL-LEASE.txt`(민법 615/623/654), `SRC-CONFIRM-FORM.txt`(확인설명서), `SRC-MOLIT-CHECKLIST.txt`
+  - `data/rag/sources/SRC-HTA-LAW.txt`(주임법), `SRC-STD-LEASE.txt`(표준계약서), `SRC-CIVIL-LEASE.txt`(민법 536/615/623/626/654), `SRC-CONFIRM-FORM.txt`(확인설명서), `SRC-MOLIT-CHECKLIST.txt`
   - 특히 주임법 **제10조(강행규정)** 인용이 과도하지 않은지(모든 유형에 붙일 근거는 아님)
 - [ ] `explanation_boundary.prohibited_terms`에 `무효/위법/안전/사기`가 있는가? (단정 금지)
 - [ ] 빠진 근거가 있는가? (예: 원상복구에 민법 제615조·제654조 준용 관계가 필요)
