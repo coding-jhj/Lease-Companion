@@ -1,0 +1,46 @@
+{
+  "fixture_version": "1.0.0",
+  "base_input_snapshot": "data/sample/fixtures/case-001/input_snapshot.json",
+  "cases": [
+    {
+      "case_key": "matched_deferred_refund",
+      "text": "보증금은 후속 임차인이 입주한 다음 반환한다.",
+      "expected_clause_id": "SC-0001",
+      "expected_catalog_ids": ["SC-DEFERRED-REFUND"],
+      "expect_review": true,
+      "expect_evidence": true
+    },
+    {
+      "case_key": "normal_protective_clause",
+      "text": "임대인은 잔금 지급 전까지 새로운 권리변동을 발생시키지 않는다.",
+      "expected_clause_id": "SC-0002",
+      "expected_catalog_ids": [],
+      "expect_review": false,
+      "expect_evidence": false
+    },
+    {
+      "case_key": "unmatched_pet_clause",
+      "text": "반려동물 사육 여부는 입주 전에 협의한다.",
+      "expected_clause_id": "SC-0003",
+      "expected_catalog_ids": [],
+      "expect_review": false,
+      "expect_evidence": false
+    },
+    {
+      "case_key": "compound_repair_restoration",
+      "text": "수리비용은 모두 임차인이 부담하고 통상적인 마모도 임차인이 원상복구한다.",
+      "expected_clause_id": "SC-0004",
+      "expected_catalog_ids": ["SC-REPAIR-SCOPE", "SC-RESTORATION-SCOPE"],
+      "expect_review": true,
+      "expect_evidence": true
+    },
+    {
+      "case_key": "matched_without_evidence",
+      "text": "관리비 항목과 금액은 입주 후 임대인이 정하는 대로 납부한다.",
+      "expected_clause_id": "SC-0005",
+      "expected_catalog_ids": ["SC-MANAGEMENT-FEE"],
+      "expect_review": true,
+      "expect_evidence": false
+    }
+  ]
+}

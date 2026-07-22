@@ -2,15 +2,32 @@
 
 from __future__ import annotations
 
+import logging
+from typing import Protocol
+
 from lease_companion_ai.classification.service import ClassificationService
+from lease_companion_ai.generation.service import GenerationService
+from lease_companion_ai.providers.errors import ProviderError
+from lease_companion_ai.rag.clause_service import (
+    build_special_clause_retrieval_service,
+)
 from lease_companion_ai.schemas.adapters import analyze_snapshot
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
     ClassificationResult,
+    GenerationResult,
     InputSnapshot,
+    JudgmentResult,
+    RuleResult,
     SpecialClauseReview,
 )
 from lease_companion_ai.special_clauses import SpecialClauseCandidate, match_special_clauses
+
+logger = logging.getLogger(__name__)
+
+
+class SpecialClauseAnalysisEnricher(Protocol):
+    def enrich(self, analysis: AnalysisRunResult) -> AnalysisRunResult: ...
 
 
 def _confirmed_special_clauses(snapshot: InputSnapshot) -> list[str]:
@@ -39,7 +56,7 @@ def _build_special_clause_reviews(
         )
         related_rules = tuple(rid for rid in candidate.related_rule_ids if rid in rule_by_id)
         # 상태·시급도의 출처: 판정(J) 우선, 없으면 규칙(R).
-        source = None
+        source: JudgmentResult | RuleResult | None = None
         if related_judgments:
             source = judgment_by_id[related_judgments[0]]
         elif related_rules:
@@ -99,3 +116,60 @@ def analyze_with_classification(
     )
     analysis_result = attach_special_clause_reviews(snapshot, analysis_result)
     return classification_result, analysis_result
+
+
+def _enforce_retrieval_immutability(
+    before: AnalysisRunResult, after: AnalysisRunResult
+) -> None:
+    """RAG가 공식 근거 외 분석 필드를 바꾸면 전체 흐름을 중단한다."""
+
+    if before.model_dump(exclude={"special_clause_reviews"}) != after.model_dump(
+        exclude={"special_clause_reviews"}
+    ):
+        raise RuntimeError("특약 RAG가 Python 판정 결과를 변경했습니다.")
+    before_reviews = {review.clause_id: review for review in before.special_clause_reviews}
+    after_reviews = {review.clause_id: review for review in after.special_clause_reviews}
+    if before_reviews.keys() != after_reviews.keys():
+        raise RuntimeError("특약 RAG가 특약 판정 대상을 변경했습니다.")
+    for clause_id, before_review in before_reviews.items():
+        if before_review.model_dump(exclude={"evidence_sources"}) != after_reviews[
+            clause_id
+        ].model_dump(exclude={"evidence_sources"}):
+            raise RuntimeError("특약 RAG가 특약 판정 필드를 변경했습니다.")
+
+
+def analyze_special_clause_flow(
+    snapshot: InputSnapshot,
+    *,
+    analysis_run_id: str,
+    classification_service: ClassificationService,
+    retrieval_service: SpecialClauseAnalysisEnricher | None = None,
+    generation_service: GenerationService | None = None,
+) -> tuple[ClassificationResult, AnalysisRunResult, GenerationResult]:
+    """확인 snapshot부터 특약 근거·안내까지 AI 전용 종단 흐름을 실행한다.
+
+    저장과 실행 상태 전이는 Backend 책임이다. 외부 검색 provider 실패는 근거 없는
+    카드로 흡수하지만, schema 오류와 R/J·특약 판정 변경은 숨기지 않는다.
+    """
+
+    classification, analysis = analyze_with_classification(
+        snapshot,
+        analysis_run_id=analysis_run_id,
+        classification_service=classification_service,
+    )
+    enricher: SpecialClauseAnalysisEnricher = (
+        retrieval_service or build_special_clause_retrieval_service()
+    )
+    try:
+        enriched = enricher.enrich(analysis)
+    except ProviderError:
+        logger.warning(
+            "special_clause_retrieval_provider_failed",
+            extra={"analysis_run_id": analysis_run_id},
+        )
+        enriched = analysis
+    _enforce_retrieval_immutability(analysis, enriched)
+
+    generator = generation_service or GenerationService()
+    generation = generator.generate(enriched, snapshot.contract_context)
+    return classification, enriched, generation

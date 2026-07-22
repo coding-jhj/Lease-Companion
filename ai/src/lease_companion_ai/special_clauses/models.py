@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -30,7 +31,7 @@ class SpecialClauseCandidate:
     clause_id: str
     original_text: str
     catalog_ids: tuple[str, ...]
-    match_method: str  # "catalog_exact" | "catalog_pattern" | "unmatched"
+    match_method: Literal["catalog_exact", "catalog_pattern", "unmatched"]
     related_rule_ids: tuple[str, ...]
     related_judgment_ids: tuple[str, ...]
     allowed_source_sections: tuple[dict[str, str], ...]
