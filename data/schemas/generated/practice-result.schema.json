@@ -72,6 +72,25 @@
       "title": "Schema Version",
       "type": "string"
     },
+    "selected_action": {
+      "anyOf": [
+        {
+          "enum": [
+            "진행",
+            "추가 확인",
+            "특약 수정 요구",
+            "보류",
+            "중단"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Action"
+    },
     "session_id": {
       "minLength": 1,
       "title": "Session Id",

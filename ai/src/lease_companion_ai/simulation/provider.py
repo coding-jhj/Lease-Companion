@@ -25,6 +25,16 @@ class PracticeRuleState(BaseModel):
     urgency: Urgency
 
 
+class PracticeJudgmentState(BaseModel):
+    """Provider가 참고만 할 수 있는 J 판정 불변 스냅샷."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    status: RuleStatus
+    urgency: Urgency
+
+
 class PracticeEvaluationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -42,6 +52,7 @@ class PracticeEvaluationRequest(BaseModel):
     success_next_state: str = Field(min_length=1)
     retry_state: str = Field(pattern=r"^TURN-\d{2}$")
     rule_states: tuple[PracticeRuleState, ...] = Field(min_length=24, max_length=24)
+    judgment_states: tuple[PracticeJudgmentState, ...] = ()
 
 
 def load_practice_prompt(root: Path | None = None) -> str:

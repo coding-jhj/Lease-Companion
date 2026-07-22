@@ -65,6 +65,16 @@
       "pattern": "^TURN-\\d{2}$",
       "title": "Turn Id",
       "type": "string"
+    },
+    "verbal_reliance": {
+      "default": "not_observed",
+      "enum": [
+        "not_observed",
+        "relied",
+        "rejected"
+      ],
+      "title": "Verbal Reliance",
+      "type": "string"
     }
   },
   "required": [

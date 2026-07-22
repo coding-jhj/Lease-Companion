@@ -10,7 +10,14 @@ import re
 from datetime import date, datetime
 from typing import Annotated, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from .unified import SCHEMA_VERSION, ClauseCandidate, ContractType, SchemaVersion
 
@@ -28,6 +35,13 @@ AnswerCategory = Literal[
     "needs_review",
 ]
 SelectedAction = Literal["진행", "추가 확인", "특약 수정 요구", "보류", "중단"]
+ActionEffect = Literal[
+    "document_or_clause_request",
+    "contract_or_signing_hold",
+    "payment_hold",
+]
+VerbalRelianceObservation = Literal["not_observed", "relied", "rejected"]
+VerbalReliance = Literal["not_observed", "relied", "rejected", "mixed"]
 
 
 T = TypeVar("T")
@@ -99,11 +113,14 @@ class TargetAction(BaseModel):
     action_id: ActionId = Field(pattern=r"^PA\d{2}$")
     name: str = Field(min_length=1)
     linked_signal_ids: list[str] = Field(default_factory=list)
+    effect_tags: list[ActionEffect] = Field(default_factory=list)
 
-    @field_validator("linked_signal_ids")
+    @field_validator("linked_signal_ids", "effect_tags")
     @classmethod
-    def _check_signal_ids(cls, values: list[str]) -> list[str]:
-        return _unique(values, label="linked_signal_ids")
+    def _check_action_lists(
+        cls, values: list[str], info: ValidationInfo
+    ) -> list[str]:
+        return _unique(values, label=info.field_name or "action_list")
 
 
 class ConfirmationSignal(BaseModel):
@@ -300,15 +317,62 @@ class PracticeSessionState(BaseModel):
     started_at: datetime
     status: Literal["active", "completed", "abandoned"]
     completed_at: datetime | None = None
+    evaluations: list[PracticeTurnEvaluation] = Field(default_factory=list)
+    confirmed_action_ids: list[ActionId] = Field(default_factory=list)
+    recognized_signal_ids: list[str] = Field(default_factory=list)
+    verbal_reliance: VerbalReliance = "not_observed"
+    document_or_clause_requested: bool = False
+    contract_or_signing_held: bool = False
+    payment_held: bool = False
+    evidence_texts: list[str] = Field(default_factory=list)
+    no_response_counts: dict[TurnId, int] = Field(default_factory=dict)
+    selected_action: SelectedAction | None = None
 
     @model_validator(mode="after")
     def _check_completion(self) -> "PracticeSessionState":
         if self.status == "completed" and self.completed_at is None:
             raise ValueError("completed 상태에는 completed_at이 필요합니다.")
+        if self.status == "completed" and self.selected_action is None:
+            raise ValueError("completed 상태에는 selected_action이 필요합니다.")
         if self.status == "active" and self.completed_at is not None:
             raise ValueError("active 상태에는 completed_at을 넣을 수 없습니다.")
+        if self.status == "active" and self.selected_action is not None:
+            raise ValueError("active 상태에는 selected_action을 넣을 수 없습니다.")
         if self.completed_at is not None and self.completed_at < self.started_at:
             raise ValueError("completed_at은 started_at보다 빠를 수 없습니다.")
+        _unique(self.confirmed_action_ids, label="confirmed_action_ids")
+        _unique(self.recognized_signal_ids, label="recognized_signal_ids")
+        _unique(self.evidence_texts, label="evidence_texts")
+        if any(re.fullmatch(r"PA\d{2}", value) is None for value in self.confirmed_action_ids):
+            raise ValueError("confirmed_action_ids는 PA 번호여야 합니다.")
+        if any(
+            re.fullmatch(r"SIG-[A-Z0-9-]+", value) is None
+            for value in self.recognized_signal_ids
+        ):
+            raise ValueError("recognized_signal_ids는 SIG 식별자여야 합니다.")
+        if any(
+            re.fullmatch(r"TURN-\d{2}", turn_id) is None or count < 1
+            for turn_id, count in self.no_response_counts.items()
+        ):
+            raise ValueError("no_response_counts는 TURN별 1 이상의 횟수여야 합니다.")
+        evaluation_actions = list(
+            dict.fromkeys(
+                action_id
+                for evaluation in self.evaluations
+                for action_id in evaluation.confirmed_action_ids
+            )
+        )
+        if evaluation_actions != self.confirmed_action_ids:
+            raise ValueError("evaluations와 confirmed_action_ids가 일치해야 합니다.")
+        evaluation_evidence = list(
+            dict.fromkeys(
+                evaluation.evidence_text
+                for evaluation in self.evaluations
+                if evaluation.evidence_text is not None
+            )
+        )
+        if evaluation_evidence != self.evidence_texts:
+            raise ValueError("evaluations와 evidence_texts가 일치해야 합니다.")
         return self
 
 
@@ -357,6 +421,7 @@ class PracticeTurnEvaluation(BaseModel):
     next_dialogue_state: str = Field(min_length=1)
     fallback_reason: str | None = None
     evidence_text: str | None = None
+    verbal_reliance: VerbalRelianceObservation = "not_observed"
 
     @field_validator("evidence_text")
     @classmethod
@@ -392,6 +457,7 @@ class PracticeResult(BaseModel):
     session_id: str = Field(min_length=1)
     scenario_id: ScenarioId
     scenario_version: ScenarioVersion = Field(pattern=r"^\d+\.\d+\.\d+$")
+    selected_action: SelectedAction | None = None
     confirmed_action_ids: list[ActionId] = Field(default_factory=list)
     missed_action_ids: list[ActionId] = Field(default_factory=list)
     confirmed_actions: list[str] = Field(default_factory=list)

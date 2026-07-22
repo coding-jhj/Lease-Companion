@@ -54,7 +54,10 @@
     {
       "action_id": "PA01",
       "name": "즉시 결정 유예",
-      "linked_signal_ids": []
+      "linked_signal_ids": [],
+      "effect_tags": [
+        "contract_or_signing_hold"
+      ]
     },
     {
       "action_id": "PA02",
@@ -62,6 +65,9 @@
       "linked_signal_ids": [
         "SIG-JOINT-OWNER",
         "SIG-REGISTRY-CHECK"
+      ],
+      "effect_tags": [
+        "document_or_clause_request"
       ]
     },
     {
@@ -70,6 +76,9 @@
       "linked_signal_ids": [
         "SIG-RETURN-AMBIGUOUS",
         "SIG-NO-RIGHTS-CLAUSE"
+      ],
+      "effect_tags": [
+        "document_or_clause_request"
       ]
     },
     {
@@ -77,6 +86,9 @@
       "name": "확인 전 계약금·가계약금 송금 보류",
       "linked_signal_ids": [
         "SIG-THIRD-PARTY-PAYEE"
+      ],
+      "effect_tags": [
+        "payment_hold"
       ]
     }
   ],

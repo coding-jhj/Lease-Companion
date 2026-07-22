@@ -3,13 +3,15 @@
 from .debrief import PracticeGuardrailBlocked, build_practice_result
 from .models import PracticeAnswerKey, load_practice_assets
 from .provider import PracticeAnswerProvider, PracticeEvaluationRequest
-from .service import PracticeEvaluationService
+from .service import PracticeEvaluationService, PracticeSimulationService, PracticeStep
 
 __all__ = [
     "PracticeAnswerKey",
     "PracticeAnswerProvider",
     "PracticeEvaluationRequest",
     "PracticeEvaluationService",
+    "PracticeSimulationService",
+    "PracticeStep",
     "PracticeGuardrailBlocked",
     "build_practice_result",
     "load_practice_assets",

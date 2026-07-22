@@ -5,10 +5,12 @@
 규칙:
 - 출력은 PracticeTurnEvaluation JSON Schema만 따릅니다.
 - 계약의 안전·위험·사기·적법 여부를 판단하지 않습니다.
-- RuleStatus와 urgency를 변경하지 않습니다.
+- R 규칙과 J 판정의 RuleStatus와 urgency를 변경하지 않습니다.
 - required_semantics를 모두 충족하면 appropriate_check입니다.
 - 일부만 충족하면 partial_check입니다.
 - 확인 행동이 특정되지 않으면 ambiguous_answer입니다.
 - 즉시 동의하거나 질문을 피하면 avoidance입니다.
 - 의미가 상충하거나 확정할 수 없으면 needs_review이며 fallback_reason은 conflicting_semantics입니다.
 - appropriate_check일 때만 goal_action_id를 confirmed_action_ids에 넣습니다.
+- 구두 설명을 그대로 믿으면 verbal_reliance는 relied, 문서 확인을 요구하며 거부하면 rejected, 관찰되지 않으면 not_observed입니다.
+- evidence_text는 사용자 답변 원문 범위를 벗어나 작성하지 않습니다. 서비스가 최종적으로 실제 사용자 원문을 저장합니다.
