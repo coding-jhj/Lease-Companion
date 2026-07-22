@@ -247,22 +247,57 @@ def _contract_type(text: str) -> str | None:
     return None
 
 
+def _line_has_amount(line: str) -> bool:
+    return (
+        "₩" in line
+        or bool(re.search(r"\d+\s*(?:만|억)?\s*원", line))
+        or bool(
+            re.search(r"(?:^|\s)금\s*[일이삼사오육칠팔구십백천만억조]+\s*원", line)
+        )
+    )
+
+
+# sort=True PDF 추출은 제1조 표의 중도금·잔금 라벨을 금액 뒤로 흩뜨려 라벨 매칭이
+# 실패한다. '금 N원정 (₩N)은 [날짜]' 구조로 날짜부 지급액만 짝지어 잡는다.
+_CLAUSE_ONE_DATED_AMOUNT = re.compile(
+    r"금\s*([\d,]+)\s*원정\s*\(₩[^)]*\)\s*은\s*"
+    r"(20\d{2}\s*년\s*\d{1,2}\s*월\s*\d{1,2}\s*일)"
+)
+
+
+def _clause_one_balance(text: str) -> tuple[int | None, str | None]:
+    """제1조 범위의 마지막 날짜부 지급액을 잔금으로 본다(구조상 잔금이 최종 지급).
+
+    라벨('잔 금')이 금액과 분리·역순으로 흩어진 경우의 보완 경로다.
+    계약금('계약시')·보증금(날짜 없음)·관리비(날짜 없음)는 날짜 짝이 없어 제외된다.
+    """
+    region = re.search(r"제\s*1\s*조.*?(?=제\s*2\s*조|\Z)", text, re.DOTALL)
+    scope = region.group(0) if region else text
+    matches = _CLAUSE_ONE_DATED_AMOUNT.findall(scope)
+    if not matches:
+        return None, None
+    amount_text, date_text = matches[-1]
+    return int(amount_text.replace(",", "")), _parse_date(date_text)
+
+
 def _money_line(text: str, pattern: str) -> str | None:
     label = re.compile(pattern)
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
         match = label.search(line)
-        has_amount = (
-            "₩" in line
-            or bool(re.search(r"\d+\s*(?:만|억)?\s*원", line))
-            or bool(
-                re.search(
-                    r"(?:^|\s)금\s*[일이삼사오육칠팔구십백천만억조]+\s*원",
-                    line,
-                )
-            )
-        )
-        if match and has_amount:
-            return line[match.start() :].strip()
+        if not match:
+            continue
+        segment = line[match.start() :]
+        if _line_has_amount(segment):
+            return segment.strip()
+        # 표준계약서 표는 '보 증 금'·'잔 금' 라벨만 있는 줄 다음 줄에 금액을 둔다.
+        # 줄 전체가 라벨뿐일 때만(제1조 프로즈·'☑ 월세' 체크박스 오탐 방지) 다음 줄에서 금액을 잇는다.
+        prefix = re.sub(r"[\s:：]", "", line[: match.start()])
+        tail = re.sub(r"[\s:：]", "", re.sub(r"\([^)]*\)", "", line[match.end() :]))
+        if prefix == "" and tail == "":
+            for following in lines[index + 1 : index + 3]:
+                if _line_has_amount(following):
+                    return following.strip()
     return None
 
 
@@ -436,12 +471,59 @@ def _management_fields(
     return True, _numeric_money(line), items
 
 
+# 진짜 특약 섹션 머리글만 앵커한다. 제4조 본문의 "특약사항에 따름 - … 없음" 같은
+# 프로즈에 "특약사항"이 들어 있어도 머리글로 오인하지 않는다.
+_SPECIAL_HEADER = re.compile(
+    r"^\s*(?:\d+\.\s*)?\[?\s*특약\s*사항\s*\]?"
+    r"\s*(?:없음|\(없음\)|기재\s*사항\s*없음)?\s*$"
+)
+_CLAUSE_BULLETS = "-·ㆍ•◦▪‣*"
+_CLAUSE_STOP = (
+    "주민등록번호", "서명 또는", "날인", "등록번호", "개업공인중개사", "중개업자",
+    "보관한다", "본 계약", "서명한다", "교육", "실습용",  # 서명 블록·합성 문서 워터마크 경계
+)
+_CLAUSE_END = re.compile(r"(?:다\.?|\))\s*$")
+
+
+def _collect_special_clauses(lines: list[str]) -> list[str] | None:
+    """특약 본문을 수집한다. 불릿이 있으면 불릿 단위로, 없으면 문장 종결(…다./괄호)
+    단위로 끊고, PDF 줄바꿈으로 이어진 줄은 같은 특약에 합친다.
+    서명·중개사 블록, 워터마크, ※ 고지문을 만나면 멈춘다.
+    """
+    special: list[str] = []
+    current: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped in _CLAUSE_BULLETS:
+            continue
+        if (
+            stripped.startswith("※")
+            or re.match(r"\d+\.\s+", stripped)
+            or any(token in stripped for token in _CLAUSE_STOP)
+        ):
+            break
+        # 체크박스 등 괄호 부속 줄은 직전 특약에 붙인다.
+        if stripped.startswith("(") and not current and special:
+            special[-1] = f"{special[-1]} {stripped}"
+            continue
+        if stripped[0] in _CLAUSE_BULLETS and current:
+            special.append(" ".join(current))
+            current = []
+        current.append(stripped)
+        if _CLAUSE_END.search(stripped):
+            special.append(" ".join(current))
+            current = []
+    if current:
+        special.append(" ".join(current))
+    return special or None
+
+
 def _clause_sections(
     text: str,
 ) -> tuple[list[str] | None, bool, list[str] | None]:
     lines = text.splitlines()
     special_index = next(
-        (index for index, line in enumerate(lines) if "특약사항" in line),
+        (index for index, line in enumerate(lines) if _SPECIAL_HEADER.match(line)),
         None,
     )
     boundary = special_index if special_index is not None else len(lines)
@@ -464,30 +546,8 @@ def _clause_sections(
     )
     if "없음" in header or following in {"없음", "(없음)", "기재 사항 없음"}:
         return main or None, False, None
-    # 불릿(•·ㆍ- 등)으로 시작하는 특약을 모으고, PDF 줄바꿈으로 이어진 줄은 같은 특약에 합친다.
-    # 서명·중개사 블록을 만나면 특약 영역이 끝난 것으로 보고 멈춘다.
-    _BULLETS = "-·ㆍ•◦▪‣*"
-    _STOP = (
-        "주민등록번호", "서명 또는", "날인", "등록번호", "개업공인중개사", "중개업자",
-        "보관한다", "본 계약", "서명한다", "교육", "실습용",  # 서명 블록·합성 문서 워터마크 경계
-    )
-    special: list[str] = []
-    current: list[str] = []
-    for line in lines[special_index + 1 :]:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if re.match(r"\d+\.\s+", stripped) or any(token in stripped for token in _STOP):
-            break
-        if stripped[0] in _BULLETS:
-            if current:
-                special.append(" ".join(current))
-            current = [stripped]
-        elif current:
-            current.append(stripped)
-    if current:
-        special.append(" ".join(current))
-    return main or None, True, special or None
+    special = _collect_special_clauses(lines[special_index + 1 :])
+    return main or None, True, special
 
 
 
@@ -761,6 +821,15 @@ def parse_contract(text: str) -> DocumentExtraction:
     rent_line = _money_line(text, r"(?:월\s*차임|차\s*임|월세)")
     contract_payment_line = _money_line(text, r"계\s*약\s*금")
     balance_payment_line = _money_line(text, r"잔\s*금")
+    balance_payment = _numeric_money(balance_payment_line)
+    balance_payment_date = _parse_date(balance_payment_line or "")
+    if balance_payment is None:
+        # 라벨이 흩어진 sort=True 표에서는 제1조 마지막 날짜부 지급액으로 보완한다.
+        fallback_balance, fallback_date = _clause_one_balance(text)
+        if fallback_balance is not None:
+            balance_payment = fallback_balance
+            if balance_payment_date is None:
+                balance_payment_date = fallback_date
     contract_payment_date = _parse_date(contract_payment_line or "")
     if (
         contract_payment_date is None
@@ -823,10 +892,10 @@ def parse_contract(text: str) -> DocumentExtraction:
         "monthly_rent_korean_amount": _korean_money(rent_line),
         "contract_payment": _numeric_money(contract_payment_line),
         "contract_payment_korean_amount": _korean_money(contract_payment_line),
-        "balance_payment": _numeric_money(balance_payment_line),
+        "balance_payment": balance_payment,
         "balance_payment_korean_amount": _korean_money(balance_payment_line),
         "contract_payment_date": contract_payment_date,
-        "balance_payment_date": _parse_date(balance_payment_line or ""),
+        "balance_payment_date": balance_payment_date,
         "move_in_date": _move_in_date(text),
         "start_date": period_dates[0] if period_dates else None,
         "end_date": period_dates[1] if len(period_dates) > 1 else None,
