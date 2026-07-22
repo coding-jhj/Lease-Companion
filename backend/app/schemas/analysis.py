@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
+from lease_companion_ai.schemas.unified import AnalysisRunResult, GenerationResult
 
 
 class ExtractionState(BaseModel):
@@ -58,8 +59,8 @@ class AnalysisRunDetail(BaseModel):
     status: str
     error: str | None = None
     created_at: datetime
-    result: dict[str, Any] | None = None
-    generation_result: dict[str, Any] | None = None
+    result: AnalysisRunResult | None = None
+    generation_result: GenerationResult | None = None
     generation_status: str | None = None
     generation_error: str | None = None
 

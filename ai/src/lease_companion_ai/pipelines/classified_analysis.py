@@ -152,6 +152,26 @@ def analyze_special_clause_flow(
     카드로 흡수하지만, schema 오류와 R/J·특약 판정 변경은 숨기지 않는다.
     """
 
+    classification, enriched = analyze_special_clause_evidence(
+        snapshot,
+        analysis_run_id=analysis_run_id,
+        classification_service=classification_service,
+        retrieval_service=retrieval_service,
+    )
+    generator = generation_service or GenerationService()
+    generation = generator.generate(enriched, snapshot.contract_context)
+    return classification, enriched, generation
+
+
+def analyze_special_clause_evidence(
+    snapshot: InputSnapshot,
+    *,
+    analysis_run_id: str,
+    classification_service: ClassificationService,
+    retrieval_service: SpecialClauseAnalysisEnricher | None = None,
+) -> tuple[ClassificationResult, AnalysisRunResult]:
+    """Python 판정과 특약 공식 근거까지 실행해 생성 전 저장 경계를 만든다."""
+
     classification, analysis = analyze_with_classification(
         snapshot,
         analysis_run_id=analysis_run_id,
@@ -169,7 +189,4 @@ def analyze_special_clause_flow(
         )
         enriched = analysis
     _enforce_retrieval_immutability(analysis, enriched)
-
-    generator = generation_service or GenerationService()
-    generation = generator.generate(enriched, snapshot.contract_context)
-    return classification, enriched, generation
+    return classification, enriched

@@ -12,7 +12,9 @@ from sqlalchemy import select
 
 from lease_companion_ai.classification.service import ClassificationService
 from lease_companion_ai.generation.service import GenerationService
-from lease_companion_ai.pipelines.classified_analysis import analyze_with_classification
+from lease_companion_ai.pipelines.classified_analysis import (
+    analyze_special_clause_evidence,
+)
 from lease_companion_ai.pipelines.minimum_mvp import extract_documents
 from lease_companion_ai.providers.gemini_classification import GeminiClassificationProvider
 from lease_companion_ai.providers.gemini_generation import GeminiGenerationProvider
@@ -116,7 +118,7 @@ def run_analysis(analysis_run_pk: int) -> None:
             classification_service = ClassificationService(
                 provider=_classification_provider()
             )
-            classification, analysis = analyze_with_classification(
+            classification, analysis = analyze_special_clause_evidence(
                 snapshot,
                 analysis_run_id=run.analysis_run_id,
                 classification_service=classification_service,

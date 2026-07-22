@@ -173,6 +173,75 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     assert r06.status.value in {"일치", "불일치"}
 
 
+def test_special_clause_analysis_persists_and_reloads_canonical_results(
+    client, alice, caplog
+):
+    """특약 카드·공식 근거·생성 안내가 기존 상세 API에서 함께 왕복한다."""
+    clause_text = "보증금은 후속 임차인이 입주한 다음 반환한다."
+    cid = client.post(
+        "/api/contracts", json={"title": "특약 RAG 저장"}, headers=alice
+    ).json()["id"]
+    assert client.put(
+        f"/api/contracts/{cid}/situation", json=SITUATION, headers=alice
+    ).status_code == 200
+    _upload(client, alice, cid, CONTRACT_TXT, "계약서")
+    _upload(client, alice, cid, REGISTRY_TXT, "등기사항증명서")
+    assert client.post(f"/api/contracts/{cid}/extractions", headers=alice).status_code == 202
+
+    correction = json.loads(CORRECTION_FIXTURE.read_text(encoding="utf-8"))
+    correction["contract_id"] = cid
+    correction["corrections"].append(
+        {
+            "document_type": "contract",
+            "field_name": "special_clauses",
+            "corrected_value": [clause_text],
+        }
+    )
+    assert client.post(
+        f"/api/contracts/{cid}/corrections",
+        json=correction,
+        headers=alice,
+    ).status_code == 201
+    assert client.post(
+        f"/api/contracts/{cid}/extractions/confirm", headers=alice
+    ).status_code == 201
+
+    run_id = client.post(
+        f"/api/contracts/{cid}/analysis-runs", headers=alice
+    ).json()["analysis_run_id"]
+    detail = client.get(
+        f"/api/contracts/{cid}/analysis-runs/{run_id}", headers=alice
+    ).json()
+
+    assert detail["status"] == "completed", detail.get("error")
+    assert detail["generation_status"] == "completed"
+    from lease_companion_ai.schemas.unified import (
+        AnalysisRunResult,
+        GenerationResult,
+        validate_generation_result_for_analysis,
+    )
+
+    analysis = AnalysisRunResult.model_validate(detail["result"])
+    generation = GenerationResult.model_validate(detail["generation_result"])
+    assert validate_generation_result_for_analysis(analysis, generation) is generation
+    assert len(analysis.special_clause_reviews) == 1
+    review = analysis.special_clause_reviews[0]
+    assert review.catalog_ids == ("SC-DEFERRED-REFUND",)
+    assert review.evidence_sources
+    assert len(generation.special_clause_items) == 1
+    guidance = generation.special_clause_items[0]
+    assert guidance.clause_id == review.clause_id
+    assert set(guidance.source_ids).issubset(
+        {source.source_id for source in review.evidence_sources}
+    )
+
+    other = _token(client, "special_clause_other")
+    assert client.get(
+        f"/api/contracts/{cid}/analysis-runs/{run_id}", headers=other
+    ).status_code == 404
+    assert clause_text not in caplog.text
+
+
 def test_rerun_appends_history(client, alice, contract_id):
     first = client.get(f"/api/contracts/{contract_id}/analysis-runs", headers=alice).json()
     assert client.post(f"/api/contracts/{contract_id}/analysis-runs", headers=alice).status_code == 202
@@ -354,6 +423,7 @@ def test_generation_provider_total_failure_falls_back_and_checklist_survives(
     assert detail["generation_status"] == "completed"  # 폴백으로 완료
     gen = detail["generation_result"]
     assert gen is not None
+    assert gen["special_clause_items"] == []
     checklist_items = [
         item
         for group in (gen["items"] + gen["judgment_items"])

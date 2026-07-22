@@ -24,7 +24,7 @@
 - **v1.8.0 안정 action item 계약**: R/J `signing_checklist_items`·`post_contract_action_items`에 `{item_key, text}`를 추가했다. `item_key`는 Python이 `result_id|kind|text`에서 생성하며 Backend가 형식·kind 일치를 검증한다.
 - **v1.9.0 표시용 피해 유형 계약**: `AnalysisRunResult.damage_patterns`에 DP01~DP08 비교를 추가했다. R/J 판정을 변경하지 않으며 상태는 `관련 확인 신호 있음`·`제출 자료에서 관련 신호 미확인`·`자료 부족으로 확인 불가`·`예방 확인 필요`만 사용한다. 검증된 로컬 사례가 있고 현재 비교 상태가 확인 대상이면 `reference_cases`에 연결하며, 없으면 `[]`다.
 - **v1.9.0 행동 안내 확장**: R/J 안내에 `request_templates`, 단계 안내에 `before_contract_actions`·`during_contract_actions`·`closing_day_actions`·`after_contract_actions`를 추가했다. 이전 payload에서 필드가 없으면 기존 체크리스트·계약 직후 행동으로 대체한다.
-- **생성 계약 유지**: `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`StageGuidance`는 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`contract_id`·`rule_id`·`judgment_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
+- **생성 계약 유지**: `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`SpecialClauseGuidance`·`StageGuidance`는 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`contract_id`·`rule_id`·`judgment_id`·`clause_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
 
 ## 2. 설치·검증 명령
 
@@ -69,7 +69,7 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case00
 | `AnalysisRunResult` | 분석 실행 1회 묶음 | analysis_run_id·input_snapshot_id·contract_id·case_id·results[RuleResult]·judgments[JudgmentResult]·damage_patterns[DamagePatternComparison] | `analysis_run_result.json` |
 | `JudgmentGuidance` | J 판정 1개의 생성 안내 | judgment_id·explanation·questions·request_templates·signing_checklist·post_contract_actions·source_ids·generation_method·provider_model·fallback_reason | (GenerationResult 내부) |
 | `StageGuidance` | 계약 상황 기반 단계별 행동 | contract_context·before_deposit_questions·before_contract_actions·during_contract_actions·closing_day_actions·after_contract_actions·record_retention | (GenerationResult 내부) |
-| `GenerationResult` | guardrail 통과 생성 결과 | schema_version·analysis_run_id·prompt_version·items[RuleGuidance]·judgment_items[JudgmentGuidance]·stage_guidance·guardrail_passed | `generation_result.json` |
+| `GenerationResult` | guardrail 통과 생성 결과 | schema_version·analysis_run_id·prompt_version·items[RuleGuidance]·judgment_items[JudgmentGuidance]·special_clause_items[SpecialClauseGuidance]·stage_guidance·guardrail_passed | `generation_result.json` |
 
 **Enum 허용값**: `confidence` = `추출됨`·`불확실`·`실패`(숫자 거부) / `verification_status` = `unverified`·`confirmed`·`corrected` / `issue_code` = `not_stated`·`unreadable`·`ambiguous`·`parse_failed`·`not_applicable` / `result_type` = `judgment`·`fact_flag` / `status` 9개·`urgency` 5개 = 루트 `AGENTS.md` 기준 / `document_type` = `contract`·`registry`.
 
@@ -115,6 +115,9 @@ CorrectionRequest.corrected_value
 - 기존 legacy minimum MVP API(`/api/minimum-mvp/*`)와 새 API 경계를 혼용하지 않는다 — 새 저장 경계는 통합 모델만 사용.
 - `backend/app/schemas/contract.py`는 canonical `ContractType`·`ContractStage`를 직접 import해 요청·응답과 OpenAPI 값을 공유한다.
 - `AnalysisRunResult`를 먼저 저장하고, `GenerationResult`는 `validate_generation_result_for_analysis()` 통과 후 별도 `generation_result`에 저장한다. 생성 실패는 규칙 `result`를 실패로 바꾸지 않는다.
+- 특약 판정은 `AnalysisRun.result.special_clause_reviews`, 특약 안내는 `AnalysisRun.generation_result.special_clause_items`에 저장한다. 별도 테이블·endpoint를 추가하지 않는다.
+- 상세 API의 `result`·`generation_result` 응답 타입은 canonical `AnalysisRunResult`·`GenerationResult`다. 저장 후 재조회 시 두 Pydantic 모델과 `validate_generation_result_for_analysis()`를 다시 통과해야 한다.
+- 특약 RAG 실패는 해당 카드의 `evidence_sources=[]`로 저장한다. 생성 provider 실패는 검증된 `template_fallback`을 우선 사용하며 Python 판정 결과는 유지한다.
 
 ### v1.9 classification worker 연결 계약
 
@@ -135,7 +138,7 @@ import os
 
 from lease_companion_ai.classification.service import ClassificationService
 from lease_companion_ai.pipelines.classified_analysis import (
-    analyze_with_classification,
+    analyze_special_clause_evidence,
 )
 from lease_companion_ai.providers.gemini_classification import (
     GeminiClassificationProvider,
@@ -146,7 +149,7 @@ provider = (
     if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     else None
 )
-classification, analysis = analyze_with_classification(
+classification, analysis = analyze_special_clause_evidence(
     snapshot,
     analysis_run_id=run.analysis_run_id,
     classification_service=ClassificationService(provider),
@@ -228,10 +231,12 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 - [x] 필드명 변경 없이 API 응답 가능(별도 매핑표 불필요 — fixture 9개 모두 직렬화 키 = 원본 키)
 - [x] `result_type` 문자열·`triggers_actions` 불리언 저장 → 조회 왕복 확인 (R01–R10 전건 원형 일치)
 - [x] `ContractContext` 변경에 따라 단계별 질문·체크리스트·계약 직후 행동·보관 대상이 달라지고 저장 → 조회 왕복 확인
-- [x] worker에서 `analyze_with_classification()` 실행
+- [x] worker에서 `analyze_special_clause_evidence()` 실행
 - [x] `classification_result` 저장과 내부 provider 오류 미노출 검증
+- [x] `special_clause_reviews`·`special_clause_items` 저장 → 상세 API 재조회 → canonical 재검증
+- [x] 다른 사용자의 특약 분석 결과 접근 404와 특약 원문 로그 미기록 검증
 
-추가 확인(2026-07-17): 스냅샷 `contract_context` 포함·`contract_id` 일치, `validate_generation_result_for_analysis()` fixture 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 워커 GenerationService·Guardrail 연결(분리 저장).
+추가 확인(2026-07-22): 스냅샷 `contract_context` 포함·`contract_id` 일치, 특약 RAG worker 연결, `validate_generation_result_for_analysis()` 저장·재조회 통과. **Backend 연결 완료** — confirm의 ContractContext 결합(`missing_contract_context` 422), 분석 시작 시 계약 상황 변경 차단(`contract_context_changed` 422), 특약 공식 근거와 GenerationService·Guardrail 분리 저장.
 
 ## 6. C 담당 (Frontend)
 

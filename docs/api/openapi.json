@@ -1564,26 +1564,22 @@
           "result": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/AnalysisRunResult"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Result"
+            ]
           },
           "generation_result": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/GenerationResult"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Generation Result"
+            ]
           },
           "generation_status": {
             "anyOf": [
@@ -1617,6 +1613,87 @@
         ],
         "title": "AnalysisRunDetail",
         "description": "분석 실행 1회 — result는 completed 후 통합 AnalysisRunResult JSON, 그 전엔 null.\n\ngeneration_result는 규칙 판정과 분리된 생성 결과(GenerationResult JSON, 2026-07-17 합의).\n생성 시작 전·guardrail 미통과·생성 실패 시 null — 규칙 result에는 영향 없음."
+      },
+      "AnalysisRunResult": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.8.0",
+              "1.9.0"
+            ],
+            "title": "Schema Version",
+            "default": "1.9.0"
+          },
+          "analysis_run_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Analysis Run Id"
+          },
+          "input_snapshot_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Input Snapshot Id"
+          },
+          "contract_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Contract Id"
+          },
+          "case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Id"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/RuleResult"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "minItems": 10,
+            "title": "Results"
+          },
+          "judgments": {
+            "items": {
+              "$ref": "#/components/schemas/JudgmentResult"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Judgments"
+          },
+          "damage_patterns": {
+            "items": {
+              "$ref": "#/components/schemas/DamagePatternComparison"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Damage Patterns"
+          },
+          "special_clause_reviews": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialClauseReview"
+            },
+            "type": "array",
+            "title": "Special Clause Reviews"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "analysis_run_id",
+          "input_snapshot_id",
+          "contract_id",
+          "results"
+        ],
+        "title": "AnalysisRunResult",
+        "description": "분석 실행 1회의 R 규칙 결과와 J 판정 결과 묶음."
       },
       "AnalysisRunSummary": {
         "properties": {
@@ -1671,6 +1748,84 @@
           "doc_type"
         ],
         "title": "Body_upload_document_api_contracts__contract_id__documents_post"
+      },
+      "ContractContext": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.8.0",
+              "1.9.0"
+            ],
+            "title": "Schema Version",
+            "default": "1.9.0"
+          },
+          "contract_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Contract Id"
+          },
+          "contract_type": {
+            "$ref": "#/components/schemas/ContractType"
+          },
+          "contract_stage": {
+            "$ref": "#/components/schemas/ContractStage"
+          },
+          "deposit_paid": {
+            "type": "boolean",
+            "title": "Deposit Paid"
+          },
+          "signed": {
+            "type": "boolean",
+            "title": "Signed"
+          },
+          "move_in_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move In Date"
+          },
+          "balance_payment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance Payment Date"
+          },
+          "is_proxy_contract": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Proxy Contract"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contract_id",
+          "contract_type",
+          "contract_stage",
+          "deposit_paid",
+          "signed"
+        ],
+        "title": "ContractContext",
+        "description": "계약 상황 입력 — 스냅샷에 포함되는 불변 분석 입력."
       },
       "ContractCreateRequest": {
         "properties": {
@@ -1834,6 +1989,87 @@
           "일반 월세"
         ],
         "title": "ContractType"
+      },
+      "DamagePatternComparison": {
+        "properties": {
+          "pattern_id": {
+            "type": "string",
+            "pattern": "^DP\\d{2}$",
+            "title": "Pattern Id"
+          },
+          "pattern_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Pattern Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DamagePatternStatus"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "related_rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Related Rule Ids",
+            "default": []
+          },
+          "related_judgment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Related Judgment Ids",
+            "default": []
+          },
+          "limitations": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Limitations"
+          },
+          "official_sources": {
+            "items": {
+              "$ref": "#/components/schemas/OfficialSource"
+            },
+            "type": "array",
+            "title": "Official Sources",
+            "default": []
+          },
+          "reference_cases": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceCase"
+            },
+            "type": "array",
+            "title": "Reference Cases",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pattern_id",
+          "pattern_name",
+          "status",
+          "reason",
+          "limitations"
+        ],
+        "title": "DamagePatternComparison",
+        "description": "기존 R/J 판정을 피해 유형 관점으로 결정적으로 묶은 표시용 결과."
+      },
+      "DamagePatternStatus": {
+        "type": "string",
+        "enum": [
+          "관련 확인 신호 있음",
+          "제출 자료에서 관련 신호 미확인",
+          "자료 부족으로 확인 불가",
+          "예방 확인 필요"
+        ],
+        "title": "DamagePatternStatus",
+        "description": "화면용 피해 유형 관련성. 규칙 상태·시급도를 대체하지 않는다."
       },
       "DocumentResponse": {
         "properties": {
@@ -1999,6 +2235,106 @@
         ],
         "title": "FeedbackResponse"
       },
+      "GenerationMethod": {
+        "type": "string",
+        "enum": [
+          "provider",
+          "template_fallback"
+        ],
+        "title": "GenerationMethod",
+        "description": "사용자 안내 생성 방식 — provider와 안전한 template fallback을 구분한다."
+      },
+      "GenerationResult": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.8.0",
+              "1.9.0"
+            ],
+            "title": "Schema Version",
+            "default": "1.9.0"
+          },
+          "analysis_run_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Analysis Run Id"
+          },
+          "prompt_version": {
+            "type": "string",
+            "enum": [
+              "v1",
+              "v2"
+            ],
+            "title": "Prompt Version"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RuleGuidance"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "judgment_items": {
+            "items": {
+              "$ref": "#/components/schemas/JudgmentGuidance"
+            },
+            "type": "array",
+            "title": "Judgment Items"
+          },
+          "stage_guidance": {
+            "$ref": "#/components/schemas/StageGuidance"
+          },
+          "special_clause_items": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialClauseGuidance"
+            },
+            "type": "array",
+            "title": "Special Clause Items",
+            "default": []
+          },
+          "guardrail_passed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Guardrail Passed",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "analysis_run_id",
+          "prompt_version",
+          "items",
+          "judgment_items",
+          "stage_guidance"
+        ],
+        "title": "GenerationResult",
+        "description": "AnalysisRunResult와 분리 저장하는 guardrail 통과 생성 결과."
+      },
+      "GuidanceActionItem": {
+        "properties": {
+          "item_key": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^(?:R\\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+            "title": "Item Key"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_key",
+          "text"
+        ],
+        "title": "GuidanceActionItem",
+        "description": "R/J 생성 체크리스트·계약 직후 행동의 안정 저장 식별자."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2058,6 +2394,182 @@
         ],
         "title": "ItemStateResponse"
       },
+      "JudgmentGuidance": {
+        "properties": {
+          "judgment_id": {
+            "type": "string",
+            "pattern": "^J(?:0[1-9]|1[0-2])$",
+            "title": "Judgment Id"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Explanation"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Questions",
+            "default": []
+          },
+          "request_templates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Request Templates",
+            "default": []
+          },
+          "signing_checklist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Signing Checklist",
+            "default": []
+          },
+          "post_contract_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Post Contract Actions",
+            "default": []
+          },
+          "signing_checklist_items": {
+            "items": {
+              "$ref": "#/components/schemas/GuidanceActionItem"
+            },
+            "type": "array",
+            "title": "Signing Checklist Items",
+            "default": []
+          },
+          "post_contract_action_items": {
+            "items": {
+              "$ref": "#/components/schemas/GuidanceActionItem"
+            },
+            "type": "array",
+            "title": "Post Contract Action Items",
+            "default": []
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Ids",
+            "default": []
+          },
+          "generation_method": {
+            "$ref": "#/components/schemas/GenerationMethod"
+          },
+          "provider_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Model"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "judgment_id",
+          "explanation",
+          "generation_method"
+        ],
+        "title": "JudgmentGuidance",
+        "description": "검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내."
+      },
+      "JudgmentResult": {
+        "properties": {
+          "judgment_id": {
+            "type": "string",
+            "pattern": "^J(?:0[1-9]|1[0-2])$",
+            "title": "Judgment Id"
+          },
+          "judgment_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Judgment Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RuleStatus"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "triggers_actions": {
+            "type": "boolean",
+            "title": "Triggers Actions"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question"
+          },
+          "recommended_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Actions"
+          },
+          "evidence_sources": {
+            "items": {
+              "$ref": "#/components/schemas/OfficialSource"
+            },
+            "type": "array",
+            "title": "Evidence Sources"
+          },
+          "limitations": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "judgment_id",
+          "judgment_name",
+          "status",
+          "urgency",
+          "triggers_actions",
+          "reason",
+          "limitations"
+        ],
+        "title": "JudgmentResult",
+        "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다."
+      },
       "LoginRequest": {
         "properties": {
           "username": {
@@ -2075,6 +2587,93 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "OfficialSource": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "article_or_section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Article Or Section"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "institution": {
+            "type": "string",
+            "title": "Institution"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "source_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Text"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "retrieval_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "bm25",
+                  "vector",
+                  "hybrid",
+                  "rerank"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Method"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "title",
+          "institution"
+        ],
+        "title": "OfficialSource",
+        "description": "공식 근거 참조(정적 카탈로그 항목). 원문 증거(SourceEvidence)와 구분."
       },
       "PracticeAdvanceRequest": {
         "properties": {
@@ -2673,6 +3272,63 @@
         ],
         "title": "PracticeTurnResponse"
       },
+      "ReferenceCase": {
+        "properties": {
+          "reference_case_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reference Case Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publisher"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "verification_scope": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Verification Scope"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reference_case_id",
+          "title",
+          "publisher",
+          "source_url",
+          "summary",
+          "verification_scope"
+        ],
+        "title": "ReferenceCase",
+        "description": "판정 근거와 분리해 보여주는 검증된 유사 참고 사례."
+      },
       "RegistryLinkRequest": {
         "properties": {
           "case_id": {
@@ -2689,6 +3345,224 @@
         ],
         "title": "RegistryLinkRequest",
         "description": "모의 등기 연결 — data/sample/registry-records의 합성 사례 식별자."
+      },
+      "ResultType": {
+        "type": "string",
+        "enum": [
+          "judgment",
+          "fact_flag"
+        ],
+        "title": "ResultType",
+        "description": "규칙 결과의 역할. 행동 활성화 여부와는 별도 축이다."
+      },
+      "RuleGuidance": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "pattern": "^R\\d{2}$",
+            "title": "Rule Id"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Explanation"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Questions",
+            "default": []
+          },
+          "request_templates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Request Templates",
+            "default": []
+          },
+          "signing_checklist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Signing Checklist",
+            "default": []
+          },
+          "post_contract_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Post Contract Actions",
+            "default": []
+          },
+          "signing_checklist_items": {
+            "items": {
+              "$ref": "#/components/schemas/GuidanceActionItem"
+            },
+            "type": "array",
+            "title": "Signing Checklist Items",
+            "default": []
+          },
+          "post_contract_action_items": {
+            "items": {
+              "$ref": "#/components/schemas/GuidanceActionItem"
+            },
+            "type": "array",
+            "title": "Post Contract Action Items",
+            "default": []
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Ids",
+            "default": []
+          },
+          "generation_method": {
+            "$ref": "#/components/schemas/GenerationMethod"
+          },
+          "provider_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Model"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_id",
+          "explanation",
+          "generation_method"
+        ],
+        "title": "RuleGuidance",
+        "description": "검증 또는 fallback을 마친 규칙 1개의 공개 사용자 안내."
+      },
+      "RuleResult": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "pattern": "^R\\d{2}$",
+            "title": "Rule Id"
+          },
+          "rule_name": {
+            "type": "string",
+            "title": "Rule Name"
+          },
+          "judgment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judgment Id"
+          },
+          "result_type": {
+            "$ref": "#/components/schemas/ResultType"
+          },
+          "triggers_actions": {
+            "type": "boolean",
+            "title": "Triggers Actions"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RuleStatus"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question"
+          },
+          "recommended_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Actions"
+          },
+          "evidence_sources": {
+            "items": {
+              "$ref": "#/components/schemas/OfficialSource"
+            },
+            "type": "array",
+            "title": "Evidence Sources"
+          },
+          "limitations": {
+            "type": "string",
+            "title": "Limitations"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_id",
+          "rule_name",
+          "result_type",
+          "triggers_actions",
+          "status",
+          "urgency",
+          "reason",
+          "limitations"
+        ],
+        "title": "RuleResult",
+        "description": "규칙 결과 1개. 결과 역할·행동 활성화·상태·시급도를 분리한다."
+      },
+      "RuleStatus": {
+        "type": "string",
+        "enum": [
+          "일치",
+          "불일치",
+          "명확",
+          "불명확",
+          "미기재",
+          "상충 가능",
+          "확인 필요",
+          "확인 불가",
+          "적용 제외"
+        ],
+        "title": "RuleStatus",
+        "description": "공통 결과 상태 9개 — 루트 AGENTS.md 확정 어휘. 새 상태를 만들지 않는다."
       },
       "SignupRequest": {
         "properties": {
@@ -2818,6 +3692,225 @@
         ],
         "title": "SnapshotResponse",
         "description": "확인 완료로 생성된 불변 스냅샷 — snapshot에 canonical InputSnapshot JSON 전체 포함\n(2026-07-17 A 권장안: contract_context 포함 여부를 클라이언트가 바로 확인 가능)."
+      },
+      "SpecialClauseGuidance": {
+        "properties": {
+          "clause_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Clause Id"
+          },
+          "plain_explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Plain Explanation"
+          },
+          "confirmation_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmation Questions",
+            "default": []
+          },
+          "revision_requests": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Revision Requests",
+            "default": []
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Ids",
+            "default": []
+          },
+          "generation_method": {
+            "$ref": "#/components/schemas/GenerationMethod"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "clause_id",
+          "plain_explanation",
+          "generation_method"
+        ],
+        "title": "SpecialClauseGuidance",
+        "description": "근거가 연결된 특약 1개의 공개 사용자 안내.\n\n쉬운 설명·확인 질문·수정 요청 문구와, 그 근거로 쓴 source_id만 담는다.\n새 판정 상태나 위험 점수를 만들지 않고, source_ids는 특약 카드 근거의 부분집합이어야 한다."
+      },
+      "SpecialClauseReview": {
+        "properties": {
+          "clause_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Clause Id"
+          },
+          "original_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Original Text"
+          },
+          "catalog_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Catalog Ids",
+            "default": []
+          },
+          "match_method": {
+            "type": "string",
+            "enum": [
+              "catalog_exact",
+              "catalog_pattern",
+              "unmatched"
+            ],
+            "title": "Match Method"
+          },
+          "related_rule_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^R\\d{2}$"
+            },
+            "type": "array",
+            "title": "Related Rule Ids",
+            "default": []
+          },
+          "related_judgment_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^J(?:0[1-9]|1[0-2])$"
+            },
+            "type": "array",
+            "title": "Related Judgment Ids",
+            "default": []
+          },
+          "status": {
+            "$ref": "#/components/schemas/RuleStatus"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "triggers_actions": {
+            "type": "boolean",
+            "title": "Triggers Actions"
+          },
+          "evidence_sources": {
+            "items": {
+              "$ref": "#/components/schemas/OfficialSource"
+            },
+            "type": "array",
+            "title": "Evidence Sources",
+            "default": []
+          },
+          "limitations": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "clause_id",
+          "original_text",
+          "match_method",
+          "status",
+          "urgency",
+          "reason",
+          "triggers_actions",
+          "limitations"
+        ],
+        "title": "SpecialClauseReview",
+        "description": "사용자 확인 특약 1개를 기존 R/J 결과에 연결한 카드.\n\n상태·시급도는 규칙 엔진이 정한 연결 R/J 결과를 그대로 반영하며 새 판정을 만들지 않는다.\nRAG 근거는 evidence_sources로만 붙고, 없으면 빈 튜플을 유지한다."
+      },
+      "StageGuidance": {
+        "properties": {
+          "contract_context": {
+            "$ref": "#/components/schemas/ContractContext"
+          },
+          "before_deposit_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Before Deposit Questions",
+            "default": []
+          },
+          "signing_checklist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Signing Checklist",
+            "default": []
+          },
+          "post_contract_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Post Contract Actions",
+            "default": []
+          },
+          "record_retention": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Record Retention",
+            "default": []
+          },
+          "before_contract_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Before Contract Actions",
+            "default": []
+          },
+          "during_contract_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "During Contract Actions",
+            "default": []
+          },
+          "closing_day_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Closing Day Actions",
+            "default": []
+          },
+          "after_contract_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "After Contract Actions",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contract_context"
+        ],
+        "title": "StageGuidance",
+        "description": "ContractContext와 J 판정을 결합한 단계별 사용자 행동 묶음."
       },
       "SyntheticContractInput": {
         "properties": {
@@ -3058,6 +4151,18 @@
           "access_token"
         ],
         "title": "TokenResponse"
+      },
+      "Urgency": {
+        "type": "string",
+        "enum": [
+          "즉시 확인",
+          "계약 전 확인",
+          "계약 직후 조치",
+          "참고",
+          "분석 불가"
+        ],
+        "title": "Urgency",
+        "description": "시급도 5개 — 루트 AGENTS.md 확정 어휘. 판정 상태와 별도 축."
       },
       "UserResponse": {
         "properties": {
