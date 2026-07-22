@@ -337,3 +337,141 @@ export interface FeedbackDto {
   rating: number | null;
   created_at: string;
 }
+
+export type PracticeSelectedAction = "진행" | "추가 확인" | "특약 수정 요구" | "보류" | "중단";
+export type PracticeAnswerCategory =
+  | "appropriate_check"
+  | "partial_check"
+  | "ambiguous_answer"
+  | "avoidance"
+  | "no_response"
+  | "needs_review";
+
+export interface PracticeWaitStepDto {
+  state: "WAIT_BASIC" | "WAIT_PRESSURE" | "PRESSURE_REMINDER";
+  from_second: number;
+  to_second: number | null;
+  line: string | null;
+}
+
+export interface PracticeDialogueTurnDto {
+  turn_id: string;
+  prompt: string;
+  wait_sequence: PracticeWaitStepDto[];
+}
+
+export interface PracticeSyntheticContractDto {
+  contract_type: "전세" | "보증부 월세" | "일반 월세";
+  signed: boolean;
+  deposit_paid: boolean;
+  property_address: string;
+  deposit: number;
+  monthly_rent: number | null;
+  contract_payment: number;
+  balance_payment: number;
+  requested_provisional_payment: number;
+  contract_payment_date: string;
+  balance_payment_date: string;
+  move_in_date: string;
+  start_date: string;
+  end_date: string;
+  landlord_name: string;
+  broker_name: string;
+  is_proxy_contract: boolean;
+  agent_name: string | null;
+  agent_relationship: string | null;
+  proxy_authority_documents: string[];
+  account_holder: string;
+  account_number_stored: boolean;
+  registry_issue_date: string;
+  registry_property_address: string;
+  owner_names: string[];
+  is_joint_ownership: boolean;
+  owner_shares: Record<string, string>;
+  mortgage_present: boolean;
+  mortgage_maximum_claim: number | null;
+  deposit_return_clause: string;
+  rights_change_clause_present: boolean;
+  special_clauses: string[];
+}
+
+export interface PracticeScenarioSummaryDto {
+  scenario_id: string;
+  scenario_version: string;
+  title: string;
+  role: string;
+  difficulty: string;
+  contract_stage: string;
+  always_show_labels: string[];
+}
+
+export interface PracticeScenarioDetailDto extends PracticeScenarioSummaryDto {
+  synthetic_contract: PracticeSyntheticContractDto;
+  initial_turn: PracticeDialogueTurnDto;
+}
+
+export interface PracticeSessionDto {
+  practice_session_id: string;
+  scenario_id: string;
+  scenario_version: string;
+  status: string;
+  current_state: string;
+  current_turn: PracticeDialogueTurnDto | null;
+  confirmed_action_ids: string[];
+  selected_action: PracticeSelectedAction | null;
+  allowed_final_actions: PracticeSelectedAction[];
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface PracticeTurnRequestDto {
+  request_id: string;
+  turn_id: string;
+  user_answer: string | null;
+  timed_out: boolean;
+  response_time_seconds: number;
+}
+
+export interface PracticeFinalActionRequestDto {
+  request_id: string;
+  selected_action: PracticeSelectedAction;
+  response_time_seconds: number;
+}
+
+export interface PracticeTurnEvaluationDto {
+  schema_version: SchemaVersion;
+  turn_id: string;
+  answer_category: PracticeAnswerCategory;
+  confirmed_action_ids: string[];
+  next_dialogue_state: string;
+  fallback_reason: string | null;
+  evidence_text: string | null;
+  verbal_reliance: "not_observed" | "relied" | "rejected";
+}
+
+export interface PracticeTurnResponseDto {
+  practice_turn_id: string;
+  attempt_no: number;
+  evaluation: PracticeTurnEvaluationDto | null;
+  dialogue_response: string | null;
+  session: PracticeSessionDto;
+}
+
+export interface PracticeResultDto {
+  schema_version: SchemaVersion;
+  session_id: string;
+  scenario_id: string;
+  scenario_version: string;
+  selected_action: PracticeSelectedAction | null;
+  confirmed_action_ids: string[];
+  missed_action_ids: string[];
+  confirmed_actions: string[];
+  missed_signals: string[];
+  recommended_phrases: string[];
+  next_actions: string[];
+  official_source_ids: string[];
+}
+
+export interface PracticeResultResponseDto {
+  result: PracticeResultDto;
+}

@@ -21,6 +21,7 @@ import type {
   InputSnapshotDto,
 } from "../types/api";
 import { CASE_001_CONTRACT_ID } from "./mockRoutes";
+import { practiceHandlers } from "./practice";
 
 const now = "2026-07-16T00:00:00Z";
 const mockContract: ContractSummaryDto = {
@@ -74,6 +75,7 @@ const checklist = new Map<string, ChecklistItemStateDto>();
 const feedback: FeedbackDto[] = [];
 
 export const handlers = [
+  ...practiceHandlers,
   http.post("/api/auth/:mode", async ({ params, request }) => {
     const body = (await request.json()) as { username?: string; email?: string; password?: string };
     if (!body.username || !body.password || (params.mode === "signup" && !body.email)) {

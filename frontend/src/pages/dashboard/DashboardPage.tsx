@@ -75,7 +75,10 @@ export function DashboardPage() {
             )}
           </div>
         )}
-        <Link className="button-link" to="/contracts/new">새 계약 만들기</Link>
+        <div className="page-actions">
+          <Link className="button-link" to="/contracts/new">새 계약 만들기</Link>
+          <Link className="text-link" to="/practice">가상 계약 대화 연습</Link>
+        </div>
       </div>
     </PageShell>
   );

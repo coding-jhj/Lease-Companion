@@ -1,0 +1,44 @@
+import type {
+  PracticeFinalActionRequestDto,
+  PracticeResultResponseDto,
+  PracticeScenarioDetailDto,
+  PracticeScenarioSummaryDto,
+  PracticeSessionDto,
+  PracticeTurnRequestDto,
+  PracticeTurnResponseDto,
+} from "../types/api";
+import { apiClient } from "./apiClient";
+
+function jsonOptions(method: "POST", body: unknown): RequestInit {
+  return {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+}
+
+export function createPracticeRequestId(prefix: string) {
+  return `${prefix}-${crypto.randomUUID()}`;
+}
+
+export const practiceService = {
+  listScenarios: () => apiClient<PracticeScenarioSummaryDto[]>("/api/practice-scenarios"),
+  getScenario: (scenarioId: string) =>
+    apiClient<PracticeScenarioDetailDto>(`/api/practice-scenarios/${scenarioId}`),
+  createSession: (scenarioId: string) =>
+    apiClient<PracticeSessionDto>("/api/practice-sessions", jsonOptions("POST", { scenario_id: scenarioId })),
+  getSession: (sessionId: string) =>
+    apiClient<PracticeSessionDto>(`/api/practice-sessions/${sessionId}`),
+  submitTurn: (sessionId: string, body: PracticeTurnRequestDto) =>
+    apiClient<PracticeTurnResponseDto>(
+      `/api/practice-sessions/${sessionId}/turns`,
+      jsonOptions("POST", body),
+    ),
+  submitFinalAction: (sessionId: string, body: PracticeFinalActionRequestDto) =>
+    apiClient<PracticeTurnResponseDto>(
+      `/api/practice-sessions/${sessionId}/final-action`,
+      jsonOptions("POST", body),
+    ),
+  getResult: (sessionId: string) =>
+    apiClient<PracticeResultResponseDto>(`/api/practice-sessions/${sessionId}/result`),
+};

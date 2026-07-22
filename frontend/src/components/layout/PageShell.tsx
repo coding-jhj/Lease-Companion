@@ -8,6 +8,7 @@ interface PageShellProps {
   description: string;
   children: ReactNode;
   showLogout?: boolean;
+  showJourney?: boolean;
   layout?: "auth" | "default" | "workspace" | "report";
 }
 
@@ -19,6 +20,7 @@ export function PageShell({
   description,
   children,
   showLogout = true,
+  showJourney = true,
   layout = "default",
 }: PageShellProps) {
   const navigate = useNavigate();
@@ -38,7 +40,7 @@ export function PageShell({
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>
-      <nav className="journey-map" aria-label="계약 확인 진행 단계">
+      {showJourney && <nav className="journey-map" aria-label="계약 확인 진행 단계">
         {journeySteps.map((label, index) => {
           const number = index + 1;
           const state = number === currentStep ? "current" : number < currentStep ? "complete" : "upcoming";
@@ -49,7 +51,7 @@ export function PageShell({
             </div>
           );
         })}
-      </nav>
+      </nav>}
       <section className="page-card">
         <p className="eyebrow">첫 계약 확인 도우미</p>
         <h1>{title}</h1>
