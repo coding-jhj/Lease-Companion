@@ -71,8 +71,16 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getAllByText("미확인").length).toBe(fieldViewModels(documents).length);
     expect(screen.queryByText("원문 위치 미확인")).not.toBeInTheDocument();
     expect(screen.getByText("입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "이번 단계에서 확인할 내용" })).toBeInTheDocument();
+    expect(screen.getByText("표준계약서 서식")).toBeInTheDocument();
+    expect(screen.getByText("특약 원문")).toBeInTheDocument();
+    expect(screen.getByText("금전피해 관련 핵심값")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /특약·핵심값 확인/ })).toBeInTheDocument();
+    expect(screen.getByText("문서에서 읽힌 값").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("그 밖에 읽지 못한 값").closest("details")).not.toHaveAttribute("open");
 
     fireEvent.click(screen.getByRole("button", { name: "읽힌 값 모두 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "특약사항 이 값 확인" }));
     const confirmedSummary = screen.getByText(/확인된 항목 \d+개/);
     expect(confirmedSummary.closest("details")).not.toHaveAttribute("open");
     fireEvent.change(screen.getByLabelText("입금 계좌 예금주 값"), {
@@ -305,6 +313,7 @@ describe("ExtractionReviewPage", () => {
 
     await screen.findByLabelText("입금 계좌 예금주 값");
     fireEvent.click(screen.getByRole("button", { name: "읽힌 값 모두 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "특약사항 이 값 확인" }));
     fireEvent.change(screen.getByLabelText("입금 계좌 예금주 값"), {
       target: { value: "이정훈" },
     });
