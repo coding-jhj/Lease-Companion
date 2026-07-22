@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -69,7 +69,7 @@ export function PracticeSessionPage() {
         {
           id: response.practice_turn_id,
           userAnswer: timedOut ? "답변하지 못했어요." : answer.trim(),
-          response: response.dialogue_response,
+          response: response.session.current_turn?.prompt ?? response.dialogue_response,
         },
       ]);
       setAnswer("");
@@ -102,6 +102,20 @@ export function PracticeSessionPage() {
   }
 
   function submitAnswer(event: FormEvent) {
+    event.preventDefault();
+    void sendTurn(false);
+  }
+
+  function handleAnswerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    const isDesktopKeyboard = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches ?? false;
+    if (
+      event.key !== "Enter"
+      || event.shiftKey
+      || event.nativeEvent.isComposing
+      || !isDesktopKeyboard
+      || submitting
+      || !answer.trim()
+    ) return;
     event.preventDefault();
     void sendTurn(false);
   }
@@ -157,7 +171,8 @@ export function PracticeSessionPage() {
                 )}
                 <form className="stack" onSubmit={submitAnswer}>
                   <label htmlFor="practice-answer">내 답변</label>
-                  <textarea id="practice-answer" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} placeholder="예: 이 조건을 계약서에서 먼저 확인하고, 확인되기 전에는 진행하지 않겠습니다." disabled={submitting} />
+                  <textarea id="practice-answer" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="예: 이 조건을 계약서에서 먼저 확인하고, 확인되기 전에는 진행하지 않겠습니다." disabled={submitting} />
+                  <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
                   <div className="practice-answer-actions">
                     <button type="button" className="secondary" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
                     <button type="submit" disabled={submitting || !answer.trim()}>{submitting ? "답변 확인 중…" : "답변 보내기"}</button>

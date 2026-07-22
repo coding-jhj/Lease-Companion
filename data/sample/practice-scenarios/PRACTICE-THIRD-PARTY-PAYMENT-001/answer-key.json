@@ -105,7 +105,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-003",
@@ -163,7 +163,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-009",
@@ -221,7 +221,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-015",
@@ -290,7 +290,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-022",
@@ -299,7 +299,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-023",
@@ -359,7 +359,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-029",
@@ -368,7 +368,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-030",
@@ -428,7 +428,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-036",
@@ -437,7 +437,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-037",
