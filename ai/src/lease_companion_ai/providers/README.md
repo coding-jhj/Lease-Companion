@@ -27,5 +27,8 @@
 - 구현 완료(배치 2): `GeminiEmbeddingProvider`와 `CohereRerankProvider`. SDK 예외·응답·입력 원문을 외부 예외 메시지에 노출하지 않는다.
 - 구현 완료: `GeminiGenerationProvider`가 Gemini API의 `gemini-3.5-flash`와 Pydantic Structured Outputs를 사용한다. SDK는 provider 내부에서만 지연 import하며 timeout 30초·재시도 2회·provider 인스턴스당 최대 10회·응답 1,500토큰을 기본 상한으로 둔다.
 - 구현 완료(classification v1): `ClassificationProvider` Protocol과 결정적 Fake provider, `GeminiClassificationProvider`를 분리했다. Gemini adapter는 `classification-v1` prompt와 canonical `ClassificationInput`·`ClassificationResult`만 사용하며, SDK·원문 오류를 외부 예외에 노출하지 않는다.
+- 구현 완료(practice evaluation v1): `GeminiPracticeProvider`가 `practice-evaluation-v1` prompt와 `PracticeTurnEvaluation` Structured Output을 사용한다. R01~R24와 연결된 J 판정은 읽기 전용 요약으로만 전달하며, 최종 상태 전이는 simulation 서비스가 검증한다.
+- `build_practice_provider()`는 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`가 있으면 Gemini, 키가 없고 offline mode면 승인 answer key 기반 Fake, 그 외에는 `None`을 반환한다. 키가 있으면 offline mode보다 Gemini가 우선한다.
 - Gemini·Cohere 유료 실호출은 미수행. 키·비용 승인 후 별도 smoke test가 필요하다.
 - Gemini 유료 실호출은 미수행. `RUN_GEMINI_GENERATION_SMOKE=1`과 승인된 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`가 함께 있을 때만 합성 CASE-001 smoke test가 실행된다.
+- 계약 연습 Gemini 실호출은 미수행. `RUN_GEMINI_PRACTICE_SMOKE=1`과 승인된 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`가 함께 있을 때만 합성 조건부 반환 smoke test가 실행된다.
