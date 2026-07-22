@@ -1,7 +1,7 @@
 # 계약 연습 시뮬레이션 제품 규칙
 
 - 날짜: 2026-07-20
-- 상태: 0단계 기획 확정, 구현 전
+- 상태: 0단계 기획 확정, AI·데이터 기반 및 프론트엔드 상호작용 뼈대 구현
 - 서비스: 슬기로운 계약생활
 - 첫 시나리오: `PRACTICE-BROKER-PRESSURE-001`
 
@@ -185,3 +185,12 @@
 - [x] 제외 범위 확정
 
 1단계 산출물은 [`practice-scenarios/PRACTICE-BROKER-PRESSURE-001.md`](practice-scenarios/PRACTICE-BROKER-PRESSURE-001.md)와 `data/sample/practice-scenarios/PRACTICE-BROKER-PRESSURE-001/`에 둔다. 사용자 내용 승인 후 2단계 공통 스키마의 입력으로 고정한다.
+
+## 14. 2026-07-22 AI·Backend·Frontend 연결
+
+- 로그인 후 `/choose-mode`에서 `실전 계약 점검 모드`와 `계약 연습 시뮬레이션 모드`를 분리해 진입한다. 계약 대시보드에서도 두 모드로 이동할 수 있다.
+- canonical `/practice` 흐름은 시나리오 목록 → 상황·계약서 → Backend 세션 대화 → 최종 행동 → 저장된 복기의 5단계로 동작한다. `/practice/signing`은 첫 시나리오 소개 화면으로 이동하는 호환 경로다.
+- `PRACTICE-DEFERRED-REFUND-001`, `PRACTICE-THIRD-PARTY-PAYMENT-001`, `PRACTICE-PROXY-AUTHORITY-001` 세 시나리오를 같은 API와 화면으로 제공한다. 계약서 확인 단계에서는 숨은 확인 신호와 권장 수정 문구를 노출하지 않는다.
+- 대화 단계는 텍스트 입력과 합성 아바타 미디어 자리표시자를 사용한다. 마이크·STT·실제 영상 provider는 MVP 뼈대에 포함하지 않는다.
+- 복기는 점수나 계약 권고 없이 실제 사용자 발화, 확인한 행동, 놓친 행동, 다음에 사용할 문장을 보여준다.
+- Frontend 서비스는 Practice API 7개를 호출한다. Backend는 세션·턴·최종 결과를 사용자별로 저장하고, Fake 또는 Gemini provider를 통해 AI 평가 흐름을 실행하며 복기에 승인된 공식 근거를 노출한다.

@@ -79,8 +79,8 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
-  await expect(page.getByRole("heading", { name: "내 계약" })).toBeVisible();
-  await page.getByRole("link", { name: "가상 계약 대화 연습" }).click();
+  await expect(page.getByRole("heading", { name: "어떤 방식으로 시작할까요?" })).toBeVisible();
+  await page.getByRole("link", { name: "연습 시뮬레이션 시작" }).click();
   await expect(page.getByRole("heading", { name: "계약 대화 연습" })).toBeVisible();
 
   const catalog = page.getByRole("region", { name: "연습 시나리오 목록" });

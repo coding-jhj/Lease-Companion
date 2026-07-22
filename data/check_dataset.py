@@ -90,7 +90,7 @@ def main():
     # 4) source_inventory / evidence_map
     with open(os.path.join(BASE, "rules/source_inventory.csv"), encoding="utf-8") as f:
         source_rows = list(csv.DictReader(f))
-    assert len(source_rows) == 15, f"source_inventory 행 {len(source_rows)} != 15"
+    assert len(source_rows) == 16, f"source_inventory 행 {len(source_rows)} != 16"
     allowed_source_statuses = {"official_verified", "synthetic_reference", "unverified", "excluded"}
     for row in source_rows:
         assert row["source_status"] in allowed_source_statuses, f"미허용 source_status {row['source_status']}"

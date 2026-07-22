@@ -10,6 +10,7 @@ interface PageShellProps {
   showLogout?: boolean;
   showJourney?: boolean;
   layout?: "auth" | "default" | "workspace" | "report";
+  eyebrow?: string;
 }
 
 const journeySteps = ["시작", "계약", "상황", "문서", "확인", "분석", "리포트", "행동"];
@@ -22,6 +23,7 @@ export function PageShell({
   showLogout = true,
   showJourney = true,
   layout = "default",
+  eyebrow = "첫 계약 확인 도우미",
 }: PageShellProps) {
   const navigate = useNavigate();
   const currentStep = Number(step.split("/")[0].trim());
@@ -53,7 +55,7 @@ export function PageShell({
         })}
       </nav>}
       <section className="page-card">
-        <p className="eyebrow">첫 계약 확인 도우미</p>
+        <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
         <p className="description">{description}</p>
         {children}

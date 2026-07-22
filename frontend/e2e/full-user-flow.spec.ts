@@ -25,13 +25,15 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
+  await expect(page.getByRole("heading", { name: "어떤 방식으로 시작할까요?" })).toBeVisible();
+  await page.getByRole("link", { name: "실전 계약 점검 시작" }).click();
   await expect(page.getByRole("heading", { name: "내 계약" })).toBeVisible();
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--workspace/);
     await expect.poll(async () => (await page.locator("main.app-shell").boundingBox())?.width ?? 0).toBeGreaterThan(1000);
   }
 
-  await page.getByRole("link", { name: "새 계약 만들기" }).click();
+  await page.getByRole("link", { name: "새 계약 점검 시작" }).click();
   await page.getByLabel("계약 이름").fill("E2E 전세 계약");
   await page.getByRole("button", { name: "계약 상황 입력하기" }).click();
   await page.getByLabel("대리 계약 여부").selectOption("no");

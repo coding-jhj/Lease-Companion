@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { DocumentUploadPage } from "./pages/document-upload/DocumentUploadPage";
 import { ExtractionReviewPage } from "./pages/extraction-review/ExtractionReviewPage";
 import { ResultReportPage } from "./pages/result-report/ResultReportPage";
+import { ModeSelectPage } from "./pages/mode-select/ModeSelectPage";
 import { PracticeHomePage } from "./pages/practice/PracticeHomePage";
 import { PracticeResultPage } from "./pages/practice/PracticeResultPage";
 import { PracticeScenarioPage } from "./pages/practice/PracticeScenarioPage";
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
+      { path: "/choose-mode", element: <ModeSelectPage /> },
       { path: "/contracts", element: <DashboardPage /> },
       { path: "/contracts/new", element: <ContractCreatePage /> },
       { path: "/contracts/:contractId/situation", element: <ContractSituationPage /> },
@@ -37,6 +39,10 @@ export const router = createBrowserRouter([
       { path: "/practice/scenarios/:scenarioId", element: <PracticeScenarioPage /> },
       { path: "/practice/sessions/:sessionId", element: <PracticeSessionPage /> },
       { path: "/practice/sessions/:sessionId/result", element: <PracticeResultPage /> },
+      {
+        path: "/practice/signing",
+        element: <Navigate to="/practice/scenarios/PRACTICE-DEFERRED-REFUND-001" replace />,
+      },
     ],
   },
 ]);
