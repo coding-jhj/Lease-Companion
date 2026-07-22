@@ -8,6 +8,7 @@ from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
     DamagePatternComparison,
     DamagePatternStatus,
+    JudgmentResult,
     OfficialSource,
     RuleResult,
     RuleStatus,
@@ -46,9 +47,14 @@ def _comparison(
     )
 
 
-def build_damage_patterns(analysis: AnalysisRunResult) -> list[DamagePatternComparison]:
-    rules = {item.rule_id: item for item in analysis.results}
-    judgments = {item.judgment_id: item for item in analysis.judgments}
+def build_damage_patterns_from_results(
+    rule_results: Iterable[RuleResult],
+    judgment_results: Iterable[JudgmentResult] = (),
+) -> list[DamagePatternComparison]:
+    """저장 실행 식별자 없이 R/J 결과만으로 피해 유형 비교표를 만든다."""
+
+    rules = {item.rule_id: item for item in rule_results}
+    judgments = {item.judgment_id: item for item in judgment_results}
     # v1.8 호환 R01~R10 저장 결과에는 외부자료·확인입력 규칙이 없으므로
     # 불완전한 비교표를 추정해 만들지 않는다.
     if any(f"R{index:02d}" not in rules for index in range(1, 25)):
@@ -162,6 +168,10 @@ def build_damage_patterns(analysis: AnalysisRunResult) -> list[DamagePatternComp
             rules=(refund_rule,), judgment_ids=("J10",),
         ),
     ]
+
+
+def build_damage_patterns(analysis: AnalysisRunResult) -> list[DamagePatternComparison]:
+    return build_damage_patterns_from_results(analysis.results, analysis.judgments)
 
 
 def attach_damage_patterns(analysis: AnalysisRunResult) -> AnalysisRunResult:
