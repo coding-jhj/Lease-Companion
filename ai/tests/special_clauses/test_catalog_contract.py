@@ -31,6 +31,25 @@ REQUIRED_FIELDS = {
     "explanation_boundary",
 }
 PROHIBITED_TERMS = {"무효", "위법", "안전", "사기"}
+EXPECTED_CATALOG_LINKS = {
+    "SC-DEFERRED-REFUND": ({"R08"}, {"J10"}),
+    "SC-REPAIR-SCOPE": ({"R09"}, {"J11"}),
+    "SC-RESTORATION-SCOPE": ({"R09"}, {"J11"}),
+    "SC-RIGHTS-CHANGE": ({"R10", "R19"}, set()),
+    "SC-MANAGEMENT-FEE": ({"R18"}, {"J09"}),
+    "SC-MAIN-SPECIAL-CONFLICT": (set(), {"J12"}),
+}
+EXPECTED_RULE_NAMES = {
+    "R08": "보증금 반환 시점·조건 명확성",
+    "R09": "수리·원상복구 책임 명확성",
+    "R10": "계약 후 권리변동 제한 특약 유무",
+    "R19": "계약 전후 권리변동",
+}
+EXPECTED_JUDGMENT_NAMES = {
+    "J10": "보증금 반환 시점·조건 명확성",
+    "J11": "수리·원상복구 책임 명확성",
+    "J12": "본문·특약 상충 가능성",
+}
 
 
 def _official_source_ids() -> set[str]:
@@ -46,6 +65,12 @@ def _spec_ids(filename: str, id_field: str) -> set[str]:
     path = ROOT / "data" / "rules" / filename
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return {row[id_field] for row in csv.DictReader(handle)}
+
+
+def _spec_names(filename: str, id_field: str, name_field: str) -> dict[str, str]:
+    path = ROOT / "data" / "rules" / filename
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        return {row[id_field]: row[name_field] for row in csv.DictReader(handle)}
 
 
 def _entries_by_id(catalog: dict) -> dict[str, dict]:
@@ -85,6 +110,22 @@ def test_entries_connect_only_to_allowed_rule_and_judgment_ids(catalog):
         assert related_r <= ALLOWED_RULE_IDS, f"{entry['catalog_id']} 허용 밖 rule: {related_r - ALLOWED_RULE_IDS}"
         assert related_j <= judgment_ids, f"{entry['catalog_id']} judgment_spec에 없는 id: {related_j - judgment_ids}"
         assert related_r <= rule_ids, f"{entry['catalog_id']} rule_spec에 없는 id: {related_r - rule_ids}"
+
+
+def test_special_clause_links_and_rj_names_match_decided_boundaries(catalog):
+    entries = _entries_by_id(catalog)
+    assert set(entries) == set(EXPECTED_CATALOG_LINKS)
+    for catalog_id, (rule_ids, judgment_ids) in EXPECTED_CATALOG_LINKS.items():
+        assert set(entries[catalog_id]["related_rule_ids"]) == rule_ids
+        assert set(entries[catalog_id]["related_judgment_ids"]) == judgment_ids
+
+    rule_names = _spec_names("rule_spec.csv", "rule_id", "rule_name")
+    judgment_names = _spec_names("judgment_spec.csv", "judgment_id", "judgment_name")
+    assert {rule_id: rule_names[rule_id] for rule_id in EXPECTED_RULE_NAMES} == EXPECTED_RULE_NAMES
+    assert {
+        judgment_id: judgment_names[judgment_id]
+        for judgment_id in EXPECTED_JUDGMENT_NAMES
+    } == EXPECTED_JUDGMENT_NAMES
 
 
 def test_entries_do_not_reference_damage_pattern_ids(catalog):
