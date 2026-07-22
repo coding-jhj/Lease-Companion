@@ -6,8 +6,17 @@ import json
 import os
 from typing import Any
 
-from lease_companion_ai.generation.models import GeneratedGuidanceDraft
+from lease_companion_ai.generation.models import (
+    GeneratedGuidanceBatch,
+    GeneratedGuidanceDraft,
+)
 from lease_companion_ai.providers.errors import ProviderError
+from lease_companion_ai.providers.gemini_gateway import (
+    GeminiCallPolicy,
+    GeminiGateway,
+    gemini_http_options,
+    get_gemini_gateway,
+)
 from lease_companion_ai.providers.generation import GenerationRequest
 
 
@@ -42,6 +51,7 @@ class GeminiGenerationProvider:
         self,
         *,
         client: Any | None = None,
+        gateway: GeminiGateway | None = None,
         timeout_seconds: float = 30.0,
         max_retries: int = 2,
         max_calls: int = 10,
@@ -56,6 +66,8 @@ class GeminiGenerationProvider:
         if max_output_tokens <= 0:
             raise ValueError("max_output_tokens는 양수여야 합니다.")
         self._client = client
+        self.model_name = os.getenv("GEMINI_MODEL_GENERATION", type(self).model_name)
+        self._gateway = gateway or get_gemini_gateway()
         self._timeout_seconds = timeout_seconds
         self._max_retries = max_retries
         self._max_calls = max_calls
@@ -70,13 +82,10 @@ class GeminiGenerationProvider:
             raise ProviderError("Gemini generation provider 설정이 없습니다.")
         try:
             from google import genai
-            from google.genai import types
 
             self._client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(
-                    timeout=int(self._timeout_seconds * 1_000)
-                ),
+                http_options=gemini_http_options(int(self._timeout_seconds * 1_000)),
             )
         except Exception:
             raise ProviderError(
@@ -91,11 +100,17 @@ class GeminiGenerationProvider:
             raise ProviderError("공식 근거 없는 생성 요청은 허용되지 않습니다.")
 
         self._calls_made += 1
-        for attempt in range(self._max_retries + 1):
-            try:
-                from google.genai import types
+        try:
+            from google.genai import types
 
-                response = self._get_client().models.generate_content(
+            response = self._gateway.call(
+                task="report_generation",
+                model=self.model_name,
+                policy=GeminiCallPolicy(
+                    max_attempts=self._max_retries + 1,
+                    max_total_wait_seconds=15.0,
+                ),
+                operation=lambda: self._get_client().models.generate_content(
                     model=self.model_name,
                     contents=[
                         (
@@ -114,23 +129,79 @@ class GeminiGenerationProvider:
                         # 소진해 답변이 잘리고 비용도 커지므로 구조화 생성에는 thinking을 끈다.
                         thinking_config=types.ThinkingConfig(thinking_budget=0),
                     ),
-                )
-                parsed = getattr(response, "parsed", None)
-                if parsed is not None:
-                    return GeneratedGuidanceDraft.model_validate(parsed)
-                text = getattr(response, "text", None)
-                if text:
-                    return GeneratedGuidanceDraft.model_validate_json(text)
-                raise ValueError("empty structured response")
-            except ProviderError:
-                raise
-            except Exception:
-                if attempt == self._max_retries:
-                    raise ProviderError(
-                        "Gemini generation 호출에 실패했습니다."
-                    ) from None
+                ),
+            )
+        except ProviderError:
+            raise
+        except Exception:
+            raise ProviderError("Gemini generation 호출에 실패했습니다.") from None
+        try:
+            parsed = getattr(response, "parsed", None)
+            if parsed is not None:
+                return GeneratedGuidanceDraft.model_validate(parsed)
+            text = getattr(response, "text", None)
+            if text:
+                return GeneratedGuidanceDraft.model_validate_json(text)
+        except Exception:
+            raise ProviderError("Gemini generation 응답 검증에 실패했습니다.") from None
+        raise ProviderError("Gemini generation 응답이 비어 있습니다.")
 
-        raise ProviderError("Gemini generation 호출에 실패했습니다.")
+    def generate_batch(
+        self, requests: tuple[GenerationRequest, ...]
+    ) -> dict[str, GeneratedGuidanceDraft]:
+        if not requests:
+            return {}
+        if any(not request.evidence for request in requests):
+            raise ProviderError("공식 근거 없는 생성 요청은 허용되지 않습니다.")
+        if self._calls_made >= self._max_calls:
+            raise ProviderError("Gemini generation provider 호출 예산을 초과했습니다.")
+        self._calls_made += 1
+        try:
+            from google.genai import types
+
+            response = self._gateway.call(
+                task="report_generation",
+                model=self.model_name,
+                policy=GeminiCallPolicy(
+                    max_attempts=self._max_retries + 1,
+                    max_total_wait_seconds=15.0,
+                ),
+                operation=lambda: self._get_client().models.generate_content(
+                    model=self.model_name,
+                    contents=[
+                        "각 ID별로 공식 근거에 한정한 안내를 작성하십시오.",
+                        self._serialize_batch(requests),
+                    ],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=_clean_response_schema(
+                            GeneratedGuidanceBatch.model_json_schema()
+                        ),
+                        temperature=0,
+                        max_output_tokens=self._max_output_tokens,
+                        thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    ),
+                ),
+            )
+        except ProviderError:
+            raise
+        except Exception:
+            raise ProviderError("Gemini generation 호출에 실패했습니다.") from None
+        try:
+            parsed = getattr(response, "parsed", None)
+            batch = (
+                GeneratedGuidanceBatch.model_validate(parsed)
+                if parsed is not None
+                else GeneratedGuidanceBatch.model_validate_json(response.text)
+            )
+        except Exception:
+            raise ProviderError("Gemini generation 응답 검증에 실패했습니다.") from None
+        requested_ids = {request.rule_id for request in requests}
+        outputs: dict[str, GeneratedGuidanceDraft] = {}
+        for item in batch.items:
+            if item.item_id in requested_ids and item.item_id not in outputs:
+                outputs[item.item_id] = item.as_draft()
+        return outputs
 
     @staticmethod
     def _serialize_request(request: GenerationRequest) -> str:
@@ -158,3 +229,15 @@ class GeminiGenerationProvider:
             "deidentified_clause_text": request.deidentified_clause_text,
         }
         return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+    @classmethod
+    def _serialize_batch(cls, requests: tuple[GenerationRequest, ...]) -> str:
+        return json.dumps(
+            {
+                "items": [
+                    json.loads(cls._serialize_request(request)) for request in requests
+                ]
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )

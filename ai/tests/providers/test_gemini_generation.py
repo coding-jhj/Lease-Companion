@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from types import MappingProxyType, SimpleNamespace
 
 import pytest
 
-from lease_companion_ai.generation.models import GeneratedGuidanceDraft
+from lease_companion_ai.generation.models import (
+    GeneratedGuidanceBatch,
+    GeneratedGuidanceBatchItem,
+    GeneratedGuidanceDraft,
+)
 from lease_companion_ai.providers.errors import ProviderError
 from lease_companion_ai.providers.gemini_generation import GeminiGenerationProvider
 from lease_companion_ai.providers.generation import (
@@ -43,16 +48,32 @@ def _request() -> GenerationRequest:
 
 
 class FakeModels:
-    def __init__(self, parsed: object, *, failures: int = 0) -> None:
+    def __init__(
+        self,
+        parsed: object,
+        *,
+        failures: int = 0,
+        failure_type: type[Exception] = RuntimeError,
+    ) -> None:
         self.parsed = parsed
         self.failures = failures
+        self.failure_type = failure_type
         self.calls: list[dict[str, object]] = []
 
     def generate_content(self, **kwargs: object) -> object:
         self.calls.append(kwargs)
         if len(self.calls) <= self.failures:
-            raise RuntimeError(f"secret input: {kwargs['contents']}")
+            raise self.failure_type(f"secret input: {kwargs['contents']}")
         return SimpleNamespace(parsed=self.parsed, text=None)
+
+
+class RecordingGateway:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def call(self, **kwargs: object) -> object:
+        self.calls.append(kwargs)
+        return kwargs["operation"]()
 
 
 def test_gemini_provider_uses_fixed_model_structured_output_and_limits():
@@ -92,6 +113,57 @@ def test_gemini_provider_uses_fixed_model_structured_output_and_limits():
     assert payload["rule"]["rule_id"] == "R01"
     assert payload["prompt_version"] == "v1"
     assert payload["official_evidence"][0]["source_id"] == "SRC-HTA-LAW"
+
+
+def test_gemini_generation_routes_transport_through_gateway():
+    draft = GeneratedGuidanceDraft(
+        explanation="직접 확인하십시오.", source_ids=("SRC-HTA-LAW",)
+    )
+    gateway = RecordingGateway()
+    provider = GeminiGenerationProvider(
+        client=SimpleNamespace(models=FakeModels(draft)), gateway=gateway
+    )
+
+    assert provider.generate(_request()) == draft
+    assert len(gateway.calls) == 1
+    assert gateway.calls[0]["task"] == "report_generation"
+    assert gateway.calls[0]["model"] == "gemini-3.5-flash"
+
+
+def test_gemini_generation_model_can_be_configured(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL_GENERATION", "configured-model")
+
+    provider = GeminiGenerationProvider(client=SimpleNamespace())
+
+    assert provider.model_name == "configured-model"
+
+
+def test_gemini_generation_batches_multiple_requests_into_one_sdk_call():
+    batch = GeneratedGuidanceBatch(
+        items=(
+            GeneratedGuidanceBatchItem(
+                item_id="R01",
+                explanation="R01을 확인하세요.",
+                source_ids=("SRC-HTA-LAW",),
+            ),
+            GeneratedGuidanceBatchItem(
+                item_id="R02",
+                explanation="R02를 확인하세요.",
+                source_ids=("SRC-HTA-LAW",),
+            ),
+        )
+    )
+    models = FakeModels(batch)
+    provider = GeminiGenerationProvider(client=SimpleNamespace(models=models))
+    second = replace(_request(), rule_id="R02")
+
+    result = provider.generate_batch((_request(), second))
+
+    assert set(result) == {"R01", "R02"}
+    assert result["R01"].explanation == "R01을 확인하세요."
+    assert len(models.calls) == 1
+    payload = json.loads(str(models.calls[0]["contents"][1]))
+    assert [item["rule"]["rule_id"] for item in payload["items"]] == ["R01", "R02"]
 
 
 def test_gemini_provider_enforces_call_budget():
@@ -161,7 +233,7 @@ def test_gemini_provider_retries_transient_errors():
     draft = GeneratedGuidanceDraft(
         explanation="직접 확인하십시오.", source_ids=("SRC-HTA-LAW",)
     )
-    models = FakeModels(draft, failures=2)
+    models = FakeModels(draft, failures=2, failure_type=TimeoutError)
     provider = GeminiGenerationProvider(
         client=SimpleNamespace(models=models), max_retries=2
     )
@@ -178,5 +250,5 @@ def test_gemini_provider_sanitizes_sdk_errors():
 
     with pytest.raises(ProviderError) as exc_info:
         provider.generate(_request())
-    assert str(exc_info.value) == "Gemini generation 호출에 실패했습니다."
+    assert str(exc_info.value) == "Gemini 호출에 실패했습니다."
     assert "등기 소유자" not in str(exc_info.value)

@@ -28,6 +28,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$env:PYTHONUTF8 = '1'
+$env:PYTHONIOENCODING = 'utf-8'
 $root     = Split-Path -Parent $PSScriptRoot
 $backend  = Join-Path $root 'backend'
 $frontend = Join-Path $root 'frontend'
@@ -52,7 +54,7 @@ $logs = @{
     'BE-out' = Join-Path $logDir 'backend.out';  'BE-err' = Join-Path $logDir 'backend.err'
     'FE-out' = Join-Path $logDir 'frontend.out'; 'FE-err' = Join-Path $logDir 'frontend.err'
 }
-$logs.Values | ForEach-Object { Set-Content -Path $_ -Value '' }
+$logs.Values | ForEach-Object { Set-Content -Path $_ -Value '' -Encoding utf8 }
 
 function Fail($m) { Write-Host "✗ $m" -ForegroundColor Red; exit 1 }
 function Ok($m)   { Write-Host "✓ $m" -ForegroundColor Green }

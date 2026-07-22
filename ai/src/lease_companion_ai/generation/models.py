@@ -15,6 +15,8 @@ from lease_companion_ai.schemas.unified import (
 )
 
 __all__ = [
+    "GeneratedGuidanceBatch",
+    "GeneratedGuidanceBatchItem",
     "GeneratedGuidanceDraft",
     "GenerationMethod",
     "GenerationResult",
@@ -54,3 +56,20 @@ class GeneratedGuidanceDraft(BaseModel):
     @classmethod
     def _unique_non_empty(cls, values: tuple[str, ...]) -> tuple[str, ...]:
         return _validate_unique_non_empty(values, label="생성")
+
+
+class GeneratedGuidanceBatchItem(GeneratedGuidanceDraft):
+    """배치 요청의 correlation ID가 포함된 생성 초안."""
+
+    item_id: str = Field(min_length=1)
+
+    def as_draft(self) -> GeneratedGuidanceDraft:
+        return GeneratedGuidanceDraft.model_validate(
+            self.model_dump(exclude={"item_id"})
+        )
+
+
+class GeneratedGuidanceBatch(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    items: tuple[GeneratedGuidanceBatchItem, ...]

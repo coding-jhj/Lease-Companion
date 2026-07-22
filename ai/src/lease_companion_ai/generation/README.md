@@ -34,7 +34,9 @@
 - 차단된 provider 출력은 안전 템플릿으로 교체한 뒤 다시 검사하며 `guardrail_passed=true` 결과만 반환
 - 생성 입력 전후 `AnalysisRunResult` 동일성을 검사하며 규칙 판정 필드를 변경하지 않음
 - `StageGuidance`는 `contract_stage`·`deposit_paid`·`signed`·입주일·잔금일과 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 생성
-- 실제 provider는 Gemini API `gemini-3.5-flash`의 Pydantic Structured Outputs를 사용하며 호출 제한은 provider 내부에 둠
+- 실제 provider는 Gemini API의 Pydantic Structured Outputs를 사용하며 R/J/특약을 각각 한 배치로 생성함
+- 배치 응답은 R `rule_id`, J `judgment_id`, 특약 `clause_id`로 연결함. 누락·미요청·잘못된 source ID는 해당 항목만 결정적 fallback으로 교체함
+- 호출 속도 제한과 재시도는 provider가 아니라 공용 `GeminiGateway`가 담당함
 - 공개 생성 타입은 canonical v1.9.0의 `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`SpecialClauseGuidance`·`GuidanceActionItem`·`StageGuidance`다. R 안내 `items`, J 안내 `judgment_items`, 특약 안내 `special_clause_items`는 별도 축이다. 세 축 모두 grounding·금지 단정·안전 fallback을 통과한다. `GenerationResult.prompt_version`은 실행에 사용한 prompt set 버전을 기록하고 provider 요청에도 같은 값을 전달한다. Backend worker는 규칙 결과와 생성 결과를 분리 저장한다.
 
 ## 확정 / TODO

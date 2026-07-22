@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from types import MappingProxyType
 
@@ -221,6 +221,54 @@ def rule_results_requiring_guidance(
     )
 
 
+class _RequestCollector:
+    """기존 요청 생성·PII gate를 재사용해 배치 입력만 수집한다."""
+
+    model_name = "request-collector"
+
+    def __init__(self) -> None:
+        self.calls: list[GenerationRequest] = []
+
+    def generate(self, request: GenerationRequest) -> GeneratedGuidanceDraft:
+        self.calls.append(request)
+        return GeneratedGuidanceDraft(
+            explanation="연결된 공식 근거를 확인해 주세요.",
+            source_ids=tuple(evidence.source_id for evidence in request.evidence),
+        )
+
+    def generate_batch(
+        self, requests: tuple[GenerationRequest, ...]
+    ) -> Mapping[str, GeneratedGuidanceDraft]:
+        return {request.rule_id: self.generate(request) for request in requests}
+
+
+class _DraftProvider:
+    """배치 응답을 기존 항목별 검증·Guardrail 경로에 공급한다."""
+
+    def __init__(
+        self,
+        model_name: str,
+        drafts: Mapping[str, GeneratedGuidanceDraft],
+    ) -> None:
+        self.model_name = model_name
+        self._drafts = dict(drafts)
+
+    def generate(self, request: GenerationRequest) -> GeneratedGuidanceDraft:
+        try:
+            return self._drafts[request.rule_id]
+        except KeyError as exc:
+            raise ProviderError("배치 생성 응답에서 항목이 누락되었습니다.") from exc
+
+    def generate_batch(
+        self, requests: tuple[GenerationRequest, ...]
+    ) -> Mapping[str, GeneratedGuidanceDraft]:
+        return {
+            request.rule_id: self.generate(request)
+            for request in requests
+            if request.rule_id in self._drafts
+        }
+
+
 class GenerationService:
     def __init__(
         self,
@@ -240,18 +288,15 @@ class GenerationService:
         if analysis.contract_id != contract_context.contract_id:
             raise ValueError("분석 결과와 ContractContext의 contract_id가 다릅니다.")
         before = analysis.model_dump(mode="json")
-        items = tuple(
-            self._generate_rule(result)
-            for result in rule_results_requiring_guidance(analysis)
+        rule_results = rule_results_requiring_guidance(analysis)
+        judgment_results = tuple(
+            result for result in analysis.judgments if result.triggers_actions
         )
-        judgment_items = tuple(
-            self._generate_judgment(result)
-            for result in analysis.judgments
-            if result.triggers_actions
-        )
-        special_clause_items = tuple(
-            self._generate_special_clause(review)
-            for review in analysis.special_clause_reviews
+        special_clause_reviews = tuple(analysis.special_clause_reviews)
+        items = self._generate_rule_batch(rule_results)
+        judgment_items = self._generate_judgment_batch(judgment_results)
+        special_clause_items = self._generate_special_clause_batch(
+            special_clause_reviews
         )
         if analysis.model_dump(mode="json") != before:
             raise RuntimeError("생성 단계가 규칙 결과를 변경했습니다.")
@@ -267,6 +312,50 @@ class GenerationService:
             ),
         )
         return validate_generation_result_for_analysis(analysis, generated)
+
+    def _batch_service(
+        self,
+        method_name: str,
+        values: tuple[RuleResult | JudgmentResult | SpecialClauseReview, ...],
+    ):
+        if self._provider is None or not callable(
+            getattr(self._provider, "generate_batch", None)
+        ):
+            method = getattr(self, method_name)
+            return tuple(method(value) for value in values)
+
+        collector = _RequestCollector()
+        collector_service = GenerationService(
+            collector, prompts=self._prompts, guardrails=self._guardrails
+        )
+        collect = getattr(collector_service, method_name)
+        for value in values:
+            collect(value)
+        try:
+            drafts = self._provider.generate_batch(tuple(collector.calls))
+        except ProviderError:
+            drafts = {}
+        renderer = _DraftProvider(self._provider.model_name, drafts)
+        render_service = GenerationService(
+            renderer, prompts=self._prompts, guardrails=self._guardrails
+        )
+        render = getattr(render_service, method_name)
+        return tuple(render(value) for value in values)
+
+    def _generate_rule_batch(
+        self, results: tuple[RuleResult, ...]
+    ) -> tuple[RuleGuidance, ...]:
+        return self._batch_service("_generate_rule", results)
+
+    def _generate_judgment_batch(
+        self, results: tuple[JudgmentResult, ...]
+    ) -> tuple[JudgmentGuidance, ...]:
+        return self._batch_service("_generate_judgment", results)
+
+    def _generate_special_clause_batch(
+        self, reviews: tuple[SpecialClauseReview, ...]
+    ) -> tuple[SpecialClauseGuidance, ...]:
+        return self._batch_service("_generate_special_clause", reviews)
 
     def _generate_special_clause(
         self, review: SpecialClauseReview

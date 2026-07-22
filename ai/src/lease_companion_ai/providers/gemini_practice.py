@@ -11,6 +11,14 @@ from pydantic import ValidationError
 from lease_companion_ai.providers.errors import (
     ProviderError,
     ProviderResponseValidationError,
+    ProviderTemporaryError,
+    ProviderTimeoutError,
+)
+from lease_companion_ai.providers.gemini_gateway import (
+    GeminiCallPolicy,
+    GeminiGateway,
+    gemini_http_options,
+    get_gemini_gateway,
 )
 from lease_companion_ai.schemas.simulation import (
     PracticeTurnEvaluation,
@@ -138,6 +146,7 @@ class GeminiPracticeProvider:
         self,
         *,
         client: Any | None = None,
+        gateway: GeminiGateway | None = None,
         api_key: str | None = None,
         prompt: str | None = None,
         timeout_seconds: float = 30.0,
@@ -148,6 +157,13 @@ class GeminiPracticeProvider:
         if max_output_tokens <= 0:
             raise ValueError("max_output_tokens는 양수여야 합니다.")
         self._client = client
+        self.model_name = os.getenv("GEMINI_MODEL_PRACTICE", type(self).model_name)
+        # 확인되지 않은 모델 ID를 기본값으로 두지 않는다(설계 원칙). 검증된 2차
+        # 모델이 있으면 GEMINI_MODEL_PRACTICE_FALLBACK로 주입한다. 빈 값이면 fallback 없음.
+        self.fallback_model_name = os.getenv(
+            "GEMINI_MODEL_PRACTICE_FALLBACK", ""
+        ).strip()
+        self._gateway = gateway or get_gemini_gateway()
         self._api_key = api_key
         self._prompt = prompt or load_practice_prompt()
         self._timeout_seconds = timeout_seconds
@@ -165,13 +181,10 @@ class GeminiPracticeProvider:
             raise ProviderError("Gemini practice provider 설정이 없습니다.")
         try:
             from google import genai
-            from google.genai import types
 
             self._client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(
-                    timeout=int(self._timeout_seconds * 1_000)
-                ),
+                http_options=gemini_http_options(int(self._timeout_seconds * 1_000)),
             )
         except Exception:
             raise ProviderError(
@@ -185,17 +198,27 @@ class GeminiPracticeProvider:
         try:
             from google.genai import types
 
-            response = self._get_client().models.generate_content(
-                model=self.model_name,
-                contents=[self._prompt, self._serialize_request(request)],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=_PRACTICE_RESPONSE_SCHEMA,
-                    temperature=0,
-                    max_output_tokens=self._max_output_tokens,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=_PRACTICE_RESPONSE_SCHEMA,
+                temperature=0,
+                max_output_tokens=self._max_output_tokens,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
+            try:
+                response = self._call_model(self.model_name, request, config)
+            except (ProviderTemporaryError, ProviderTimeoutError):
+                if (
+                    not self.fallback_model_name
+                    or self.fallback_model_name == self.model_name
+                ):
+                    raise
+                response = self._call_model(
+                    self.fallback_model_name,
+                    request,
+                    config,
+                    task="practice_classification_fallback",
+                )
             parsed = getattr(response, "parsed", None)
             if parsed is not None:
                 return PracticeTurnEvaluation.model_validate(parsed)
@@ -217,6 +240,26 @@ class GeminiPracticeProvider:
             raise
         except Exception:
             raise ProviderError("Gemini practice 호출에 실패했습니다.") from None
+
+    def _call_model(
+        self,
+        model: str,
+        request: PracticeEvaluationRequest,
+        config: Any,
+        *,
+        task: str = "practice_classification",
+    ) -> Any:
+        return self._gateway.call(
+            task=task,
+            model=model,
+            # 설계표: 연습 답변 분류 = 최대 2회 / 총 3초. 일시 503·timeout을 1회 재시도.
+            policy=GeminiCallPolicy(max_attempts=2, max_total_wait_seconds=3.0),
+            operation=lambda: self._get_client().models.generate_content(
+                model=model,
+                contents=[self._prompt, self._serialize_request(request)],
+                config=config,
+            ),
+        )
 
     @staticmethod
     def _serialize_request(request: PracticeEvaluationRequest) -> str:
