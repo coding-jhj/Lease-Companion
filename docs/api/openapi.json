@@ -119,7 +119,7 @@
           "contracts"
         ],
         "summary": "List Contracts",
-        "description": "대시보드용 본인 계약 건 목록 (최신 생성 순).",
+        "description": "대시보드용 본인 계약 건 목록 (최신 생성 순, 행동 상태 포함).",
         "operationId": "list_contracts_api_contracts_get",
         "responses": {
           "200": {
@@ -502,7 +502,7 @@
           "extractions"
         ],
         "summary": "Start Extraction",
-        "description": "업로드된 계약서와 선택 등기 문서 또는 모의 등기 연결로 추출을 시작한다.\n\n등기 자료가 없으면 관련 필드를 실패/null로 구성해 판정 단계에서 확인 불가로 처리한다. 즉시 202를 반환하고, 완료 여부는 GET …/extractions/latest 폴링으로 확인한다.",
+        "description": "업로드된 계약서와 선택 등기 문서 또는 모의 등기 연결로 추출을 시작한다.\n\n즉시 202를 반환하고, 완료 여부는 GET …/extractions/latest 폴링으로 확인한다.",
         "operationId": "start_extraction_api_contracts__contract_id__extractions_post",
         "security": [
           {
@@ -1117,6 +1117,337 @@
         }
       }
     },
+    "/api/practice-scenarios": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "List Scenarios",
+        "operationId": "list_scenarios_api_practice_scenarios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PracticeScenarioSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Scenarios Api Practice Scenarios Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/practice-scenarios/{scenario_id}": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Scenario",
+        "operationId": "get_scenario_api_practice_scenarios__scenario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeScenarioDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-sessions": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Start Session",
+        "operationId": "start_session_api_practice_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeSessionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/practice-sessions/{practice_session_id}": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Session",
+        "operationId": "get_session_api_practice_sessions__practice_session_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-sessions/{practice_session_id}/turns": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Submit Turn",
+        "operationId": "submit_turn_api_practice_sessions__practice_session_id__turns_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeTurnRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeTurnResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-sessions/{practice_session_id}/final-action": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Submit Final Action",
+        "operationId": "submit_final_action_api_practice_sessions__practice_session_id__final_action_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeFinalActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeTurnResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-sessions/{practice_session_id}/result": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Result",
+        "operationId": "get_result_api_practice_sessions__practice_session_id__result_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeResultResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1401,6 +1732,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "action_status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "in_progress",
+              "done"
+            ],
+            "title": "Action Status",
+            "default": "none"
           }
         },
         "type": "object",
@@ -1678,6 +2019,574 @@
         ],
         "title": "LoginRequest"
       },
+      "PracticeDialogueTurnView": {
+        "properties": {
+          "turn_id": {
+            "type": "string",
+            "title": "Turn Id"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "wait_sequence": {
+            "items": {
+              "$ref": "#/components/schemas/WaitStep"
+            },
+            "type": "array",
+            "title": "Wait Sequence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "turn_id",
+          "prompt",
+          "wait_sequence"
+        ],
+        "title": "PracticeDialogueTurnView"
+      },
+      "PracticeFinalActionRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,64}$",
+            "title": "Request Id"
+          },
+          "selected_action": {
+            "type": "string",
+            "enum": [
+              "진행",
+              "추가 확인",
+              "특약 수정 요구",
+              "보류",
+              "중단"
+            ],
+            "title": "Selected Action"
+          },
+          "response_time_seconds": {
+            "type": "number",
+            "maximum": 3600.0,
+            "minimum": 0.0,
+            "title": "Response Time Seconds",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "selected_action"
+        ],
+        "title": "PracticeFinalActionRequest"
+      },
+      "PracticeResult": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.8.0",
+              "1.9.0"
+            ],
+            "title": "Schema Version",
+            "default": "1.9.0"
+          },
+          "session_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Session Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+            "title": "Scenario Id"
+          },
+          "scenario_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Scenario Version"
+          },
+          "selected_action": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "진행",
+                  "추가 확인",
+                  "특약 수정 요구",
+                  "보류",
+                  "중단"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Action"
+          },
+          "confirmed_action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmed Action Ids"
+          },
+          "missed_action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missed Action Ids"
+          },
+          "confirmed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmed Actions"
+          },
+          "missed_signals": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missed Signals"
+          },
+          "recommended_phrases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Phrases"
+          },
+          "next_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Next Actions"
+          },
+          "official_source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Official Source Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id",
+          "scenario_id",
+          "scenario_version"
+        ],
+        "title": "PracticeResult",
+        "description": "점수 없이 행동·신호·공식 근거로 구성한 최종 복기."
+      },
+      "PracticeResultResponse": {
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/PracticeResult"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "title": "PracticeResultResponse"
+      },
+      "PracticeScenarioDetail": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+            "title": "Scenario Id"
+          },
+          "scenario_version": {
+            "type": "string",
+            "title": "Scenario Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "difficulty": {
+            "type": "string",
+            "title": "Difficulty"
+          },
+          "contract_stage": {
+            "type": "string",
+            "title": "Contract Stage"
+          },
+          "always_show_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Always Show Labels"
+          },
+          "synthetic_contract": {
+            "$ref": "#/components/schemas/SyntheticContractInput"
+          },
+          "initial_turn": {
+            "$ref": "#/components/schemas/PracticeDialogueTurnView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "scenario_version",
+          "title",
+          "role",
+          "difficulty",
+          "contract_stage",
+          "always_show_labels",
+          "synthetic_contract",
+          "initial_turn"
+        ],
+        "title": "PracticeScenarioDetail"
+      },
+      "PracticeScenarioSummary": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+            "title": "Scenario Id"
+          },
+          "scenario_version": {
+            "type": "string",
+            "title": "Scenario Version"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "difficulty": {
+            "type": "string",
+            "title": "Difficulty"
+          },
+          "contract_stage": {
+            "type": "string",
+            "title": "Contract Stage"
+          },
+          "always_show_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Always Show Labels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "scenario_version",
+          "title",
+          "role",
+          "difficulty",
+          "contract_stage",
+          "always_show_labels"
+        ],
+        "title": "PracticeScenarioSummary"
+      },
+      "PracticeSessionCreateRequest": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+            "title": "Scenario Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scenario_id"
+        ],
+        "title": "PracticeSessionCreateRequest"
+      },
+      "PracticeSessionResponse": {
+        "properties": {
+          "practice_session_id": {
+            "type": "string",
+            "title": "Practice Session Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^PRACTICE-[A-Z0-9-]+-\\d{3}$",
+            "title": "Scenario Id"
+          },
+          "scenario_version": {
+            "type": "string",
+            "title": "Scenario Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_state": {
+            "type": "string",
+            "title": "Current State"
+          },
+          "current_turn": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeDialogueTurnView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmed_action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmed Action Ids"
+          },
+          "selected_action": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "진행",
+                  "추가 확인",
+                  "특약 수정 요구",
+                  "보류",
+                  "중단"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Action"
+          },
+          "allowed_final_actions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "진행",
+                "추가 확인",
+                "특약 수정 요구",
+                "보류",
+                "중단"
+              ]
+            },
+            "type": "array",
+            "title": "Allowed Final Actions"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "practice_session_id",
+          "scenario_id",
+          "scenario_version",
+          "status",
+          "current_state",
+          "current_turn",
+          "confirmed_action_ids",
+          "selected_action",
+          "allowed_final_actions",
+          "started_at"
+        ],
+        "title": "PracticeSessionResponse"
+      },
+      "PracticeTurnEvaluation": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.8.0",
+              "1.9.0"
+            ],
+            "title": "Schema Version",
+            "default": "1.9.0"
+          },
+          "turn_id": {
+            "type": "string",
+            "pattern": "^TURN-\\d{2}$",
+            "title": "Turn Id"
+          },
+          "answer_category": {
+            "type": "string",
+            "enum": [
+              "appropriate_check",
+              "partial_check",
+              "ambiguous_answer",
+              "avoidance",
+              "no_response",
+              "needs_review"
+            ],
+            "title": "Answer Category"
+          },
+          "confirmed_action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmed Action Ids"
+          },
+          "next_dialogue_state": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Next Dialogue State"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          },
+          "evidence_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Text"
+          },
+          "verbal_reliance": {
+            "type": "string",
+            "enum": [
+              "not_observed",
+              "relied",
+              "rejected"
+            ],
+            "title": "Verbal Reliance",
+            "default": "not_observed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "turn_id",
+          "answer_category",
+          "next_dialogue_state"
+        ],
+        "title": "PracticeTurnEvaluation",
+        "description": "연습 행동 평가 결과. 계약 규칙 상태와 분리한다."
+      },
+      "PracticeTurnRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,64}$",
+            "title": "Request Id"
+          },
+          "turn_id": {
+            "type": "string",
+            "pattern": "^TURN-\\d{2}$",
+            "title": "Turn Id"
+          },
+          "user_answer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Answer"
+          },
+          "timed_out": {
+            "type": "boolean",
+            "title": "Timed Out",
+            "default": false
+          },
+          "response_time_seconds": {
+            "type": "number",
+            "maximum": 3600.0,
+            "minimum": 0.0,
+            "title": "Response Time Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "turn_id",
+          "response_time_seconds"
+        ],
+        "title": "PracticeTurnRequest"
+      },
+      "PracticeTurnResponse": {
+        "properties": {
+          "practice_turn_id": {
+            "type": "string",
+            "title": "Practice Turn Id"
+          },
+          "attempt_no": {
+            "type": "integer",
+            "title": "Attempt No"
+          },
+          "evaluation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeTurnEvaluation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dialogue_response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialogue Response"
+          },
+          "session": {
+            "$ref": "#/components/schemas/PracticeSessionResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "practice_turn_id",
+          "attempt_no",
+          "evaluation",
+          "dialogue_response",
+          "session"
+        ],
+        "title": "PracticeTurnResponse"
+      },
       "RegistryLinkRequest": {
         "properties": {
           "case_id": {
@@ -1824,6 +2733,228 @@
         "title": "SnapshotResponse",
         "description": "확인 완료로 생성된 불변 스냅샷 — snapshot에 canonical InputSnapshot JSON 전체 포함\n(2026-07-17 A 권장안: contract_context 포함 여부를 클라이언트가 바로 확인 가능)."
       },
+      "SyntheticContractInput": {
+        "properties": {
+          "contract_type": {
+            "$ref": "#/components/schemas/ContractType"
+          },
+          "signed": {
+            "type": "boolean",
+            "title": "Signed"
+          },
+          "deposit_paid": {
+            "type": "boolean",
+            "title": "Deposit Paid"
+          },
+          "property_address": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Property Address"
+          },
+          "deposit": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Deposit"
+          },
+          "monthly_rent": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Rent"
+          },
+          "contract_payment": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Contract Payment"
+          },
+          "balance_payment": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Balance Payment"
+          },
+          "requested_provisional_payment": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Requested Provisional Payment"
+          },
+          "contract_payment_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Contract Payment Date"
+          },
+          "balance_payment_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Balance Payment Date"
+          },
+          "move_in_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Move In Date"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "landlord_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Landlord Name"
+          },
+          "broker_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Broker Name"
+          },
+          "is_proxy_contract": {
+            "type": "boolean",
+            "title": "Is Proxy Contract",
+            "default": false
+          },
+          "agent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Name"
+          },
+          "agent_relationship": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Relationship"
+          },
+          "proxy_authority_documents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Proxy Authority Documents"
+          },
+          "account_holder": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Account Holder"
+          },
+          "account_number_stored": {
+            "type": "boolean",
+            "title": "Account Number Stored"
+          },
+          "registry_issue_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Registry Issue Date"
+          },
+          "registry_property_address": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Registry Property Address"
+          },
+          "owner_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Owner Names"
+          },
+          "is_joint_ownership": {
+            "type": "boolean",
+            "title": "Is Joint Ownership"
+          },
+          "owner_shares": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Owner Shares"
+          },
+          "mortgage_present": {
+            "type": "boolean",
+            "title": "Mortgage Present"
+          },
+          "mortgage_maximum_claim": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mortgage Maximum Claim"
+          },
+          "deposit_return_clause": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Deposit Return Clause"
+          },
+          "rights_change_clause_present": {
+            "type": "boolean",
+            "title": "Rights Change Clause Present"
+          },
+          "special_clauses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Special Clauses"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contract_type",
+          "signed",
+          "deposit_paid",
+          "property_address",
+          "deposit",
+          "contract_payment",
+          "balance_payment",
+          "requested_provisional_payment",
+          "contract_payment_date",
+          "balance_payment_date",
+          "move_in_date",
+          "start_date",
+          "end_date",
+          "landlord_name",
+          "broker_name",
+          "account_holder",
+          "account_number_stored",
+          "registry_issue_date",
+          "registry_property_address",
+          "owner_names",
+          "is_joint_ownership",
+          "owner_shares",
+          "mortgage_present",
+          "deposit_return_clause",
+          "rights_change_clause_present"
+        ],
+        "title": "SyntheticContractInput",
+        "description": "승인 fixture의 합성 계약 사실. 실제 계약 건과 연결하지 않는다."
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -1905,6 +3036,54 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WaitStep": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "WAIT_BASIC",
+              "WAIT_PRESSURE",
+              "PRESSURE_REMINDER"
+            ],
+            "title": "State"
+          },
+          "from_second": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "From Second"
+          },
+          "to_second": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Second"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "from_second"
+        ],
+        "title": "WaitStep"
       }
     },
     "securitySchemes": {

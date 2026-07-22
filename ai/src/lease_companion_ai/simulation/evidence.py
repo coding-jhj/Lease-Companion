@@ -6,9 +6,8 @@ from collections.abc import Sequence
 
 from lease_companion_ai.rag.models import RetrievalQuery
 from lease_companion_ai.rag.service import EvidenceRetrievalService
-from lease_companion_ai.schemas.minimum_mvp import RuleResult
 from lease_companion_ai.schemas.simulation import ScenarioDefinition
-from lease_companion_ai.schemas.unified import OfficialSource, RuleStatus
+from lease_companion_ai.schemas.unified import OfficialSource, RuleResult, RuleStatus
 
 
 def retrieve_action_evidence(
@@ -25,14 +24,10 @@ def retrieve_action_evidence(
     )
     if action is None:
         raise ValueError("시나리오에 없는 action_id입니다.")
-    signals = {
-        item.signal_id: item for item in scenario.hidden_confirmation_signals
-    }
+    signals = {item.signal_id: item for item in scenario.hidden_confirmation_signals}
     allowed_source_ids = tuple(
         dict.fromkeys(
-            source_id
-            for signal_id in action.linked_signal_ids
-            for source_id in signals[signal_id].official_source_ids
+            source_id for signal_id in action.linked_signal_ids for source_id in signals[signal_id].official_source_ids
         )
     )
     if not allowed_source_ids:

@@ -24,6 +24,7 @@ import app.models.checklist  # noqa: E402,F401
 import app.models.contract  # noqa: E402,F401
 import app.models.document  # noqa: E402,F401
 import app.models.feedback  # noqa: E402,F401
+import app.models.practice  # noqa: E402,F401
 import app.models.user  # noqa: E402,F401
 
 config = context.config

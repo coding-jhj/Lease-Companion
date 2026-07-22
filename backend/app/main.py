@@ -16,10 +16,19 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
-from app.api.routes import analyses, auth, checklists, contracts, documents, extractions, feedback
-from app.core.db import Base, engine
-from app.core.errors import register_error_handlers
-from app.workers.analysis import fail_stale_runs
+from app.api.routes import (  # noqa: E402
+    analyses,
+    auth,
+    checklists,
+    contracts,
+    documents,
+    extractions,
+    feedback,
+    practice,
+)
+from app.core.db import Base, engine  # noqa: E402
+from app.core.errors import register_error_handlers  # noqa: E402
+from app.workers.analysis import fail_stale_runs  # noqa: E402
 
 
 @asynccontextmanager
@@ -42,6 +51,7 @@ app.include_router(extractions.router)
 app.include_router(analyses.router)
 app.include_router(checklists.router)
 app.include_router(feedback.router)
+app.include_router(practice.router)
 
 
 @app.get("/health")

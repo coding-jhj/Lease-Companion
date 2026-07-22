@@ -3,10 +3,10 @@
 > 이 문서는 계약 연습 시뮬레이션을 처음 보는 사람도 현재 구현 상태와 파일 연결 관계를 이해할 수 있도록 설명합니다. 작업이 하나 끝날 때마다 같은 형식으로 갱신합니다.
 
 - 마지막 갱신: 2026-07-22
-- 현재 완료 범위: 작업 0~4
+- 현재 완료 범위: 작업 0~5
 - 현재 브랜치: `main`
-- 마지막 기능 커밋: 작업 4 커밋 `feat(simulation): add Gemini practice provider`
-- 다음 작업: 작업 5 — Backend 연습 세션·턴·결과 API
+- 마지막 기능 커밋: 작업 5 커밋 `feat(practice): add backend session API`
+- 다음 작업: 작업 6 — 세 시나리오 Backend API 자동화 테스트
 
 ## 1. 이 기능은 무엇인가
 
@@ -31,7 +31,7 @@
 | 사용자의 계약 상태를 확인 | 사용자의 질문·확인 행동을 연습 |
 | 계약별 결과 리포트를 제공 | 연습 대화와 최종 복기를 제공할 예정 |
 
-현재는 **시나리오 3개, 기존 R/J/DP 연결, 사용자 답변 평가, 누적 상태 머신, Gemini/Fake provider 선택까지 완성한 상태**입니다. Backend·Frontend 연결과 실제 Gemini 네트워크 smoke는 아직 완료되지 않았습니다.
+현재는 **시나리오 3개, 기존 R/J/DP 연결, 사용자 답변 평가, 누적 상태 머신, Gemini/Fake provider 선택, Backend 세션·턴·결과 저장 API까지 완성한 상태**입니다. Frontend 연결과 실제 Gemini 네트워크 smoke는 아직 완료되지 않았습니다.
 
 ## 2. 현재 진행상황
 
@@ -42,7 +42,8 @@
 | 작업 2 | 세 시나리오를 기존 R/J/DP 엔진에 연결 | 완료 | `5f30026` |
 | 작업 3 | 사용자 답변 평가와 상태 머신 | 완료 | 작업 3 관련 `154 passed` |
 | 작업 4 | Gemini practice provider | 완료 | provider `128 passed, 1 skipped` |
-| 작업 5 이후 | Backend·Frontend·E2E 연결 | 예정 | 미구현 |
+| 작업 5 | Backend 세션·턴·결과 DB·API | 완료 | Backend `66 passed`, 세 시나리오 API smoke 통과 |
+| 작업 6 이후 | Backend 세부 API 테스트·Frontend·E2E 연결 | 예정 | 미구현 |
 
 `완료`는 코드 작성과 관련 테스트가 끝난 상태만 의미합니다. 문서에 설계만 있는 기능은 `예정`으로 표시합니다.
 
@@ -63,11 +64,11 @@ flowchart TD
     J --> P[Provider factory: Gemini / Fake / None]
     P --> K[사용자 답변 평가와 상태 전이]
     K --> N[최종 행동 선택과 점수 없는 복기]
-    N -. 후속 작업 .-> L[Backend 세션·턴·결과 저장]
+    N --> L[Backend 세션·턴·결과 저장]
     L -. 후속 작업 .-> M[Frontend 대화와 복기 화면]
 ```
 
-실선은 작업 0~4에서 준비되거나 연결된 범위입니다. 점선은 아직 남은 작업입니다.
+실선은 작업 0~5에서 준비되거나 연결된 범위입니다. 점선은 아직 남은 작업입니다.
 
 ## 4. 먼저 알아야 할 용어
 
@@ -141,6 +142,14 @@ Lease-Companion/
 │        ├─ test_evaluation.py
 │        ├─ test_state_machine.py
 │        └─ test_rules.py
+├─ backend/
+│  ├─ alembic/versions/
+│  │  └─ d4e5f6a7b8c9_add_practice_sessions_and_turns.py
+│  └─ app/
+│     ├─ api/routes/practice.py
+│     ├─ models/practice.py
+│     ├─ schemas/practice.py
+│     └─ services/practice.py
 ├─ data/
 │  ├─ sample/practice-scenarios/
 │  │  ├─ PRACTICE-BROKER-PRESSURE-001/
@@ -775,21 +784,108 @@ RUN_GEMINI_PRACTICE_SMOKE=1
 - mypy: 통과
 - 실제 Gemini 네트워크 호출: `0회`
 
-## 13. 아직 구현하지 않은 부분
+## 13. 작업 5 — Backend 연습 세션·턴·결과 API
 
-### Backend·Frontend 연결
+### 작업 목적
+
+작업 4까지는 AI가 세 시나리오의 사용자 답변을 평가하고 상태를 전이할 수 있었지만, HTTP 요청을 받아 사용자별 세션·턴·복기를 저장하고 재조회할 수 없었습니다. 작업 5는 이 AI 흐름을 FastAPI와 DB에 연결합니다.
+
+### 실제 처리 흐름
+
+```text
+로그인 사용자
+  ↓
+승인 시나리오 3개 목록·현재 필요한 턴만 조회
+  ↓
+PracticeSession 생성 및 canonical 상태 JSON 저장
+  ↓
+사용자 답변 + request_id 제출
+  ↓
+API 키 있음 → Gemini / 키 없음+offline → Fake
+  ↓
+PracticeSimulationService 평가·상태 전이
+  ↓
+PracticeTurn 입력·평가·상대방 응답 저장
+  ↓
+마지막 턴 완료 → 최종 행동 제출
+  ↓
+공식 근거 검색·점수 없는 PracticeResult 저장
+  ↓
+세션·결과 재조회
+```
+
+### DB에 저장하는 내용
+
+| 테이블 | 역할 |
+|---|---|
+| `practice_sessions` | 사용자·시나리오·현재 상태·확인 행동·최종 행동·canonical 상태 JSON·결과를 저장합니다. |
+| `practice_turns` | 매 시도별 request ID·TURN·입력 JSON·평가 JSON·상대방 응답을 저장합니다. |
+
+같은 TURN은 부분 답변이나 미응답 때문에 여러 번 시도할 수 있습니다. 따라서 TURN 자체를 unique로 만들지 않고 세션별 `request_id`만 unique로 만들어 네트워크 중복 제출을 409로 차단합니다.
+
+### API
+
+| 메서드·경로 | 역할 |
+|---|---|
+| `GET /api/practice-scenarios` | 연결 대상 시나리오 3개 목록 |
+| `GET /api/practice-scenarios/{scenario_id}` | 계약 상황과 첫 턴 공개 정보 |
+| `POST /api/practice-sessions` | 로그인 사용자 연습 세션 생성 |
+| `GET /api/practice-sessions/{session_id}` | 본인 세션의 현재 상태·현재 턴 복원 |
+| `POST /api/practice-sessions/{session_id}/turns` | 현재 턴 답변 평가·저장·전이 |
+| `POST /api/practice-sessions/{session_id}/final-action` | 허용된 최종 행동 제출·복기 생성 |
+| `GET /api/practice-sessions/{session_id}/result` | 완료된 복기 결과 재조회 |
+
+### 숨은 정답 보호
+
+API는 `hidden_confirmation_signals`, answer-key, required/partial semantics, 미래 TURN 대사, 내부 R/J fingerprint를 반환하지 않습니다. 상세 화면은 최초 턴만, 진행 중 세션은 현재 턴만 반환합니다. 완료 결과에서만 사용자가 놓친 신호를 쉬운 문장으로 제공합니다.
+
+### 변경한 파일
+
+| 파일 | 역할 |
+|---|---|
+| `backend/app/models/practice.py` | 세션·턴 SQLAlchemy 모델과 request ID 중복 제약 |
+| `backend/alembic/versions/d4e5f6a7b8c9_add_practice_sessions_and_turns.py` | PostgreSQL·테스트 SQLite용 신규 테이블 migration |
+| `backend/app/schemas/practice.py` | canonical simulation 타입을 재사용하는 공개 API wrapper |
+| `backend/app/services/practice.py` | fixture 로딩, provider 선택, AI 호출, 상태·턴·결과 저장 |
+| `backend/app/api/routes/practice.py` | 인증된 7개 Practice API 엔드포인트 |
+| `backend/app/main.py` | Practice 라우터 등록 |
+| `backend/alembic/env.py` | Alembic autogenerate에 Practice 모델 등록 |
+| `backend/.env.example` | 키가 없을 때 Fake provider를 쓰는 `PRACTICE_OFFLINE_MODE` 설명 |
+| `docs/api/openapi.json` | 신규 Practice API와 요청·응답 스키마 반영 |
+
+### 검증 결과
+
+- 작업 전·후 기존 Backend: `66 passed`
+- AI 시뮬레이션 + Backend 통합 회귀: `209 passed`
+- 임시 SQLite 세 시나리오 API smoke: 3개 모두 전체 흐름 통과
+- 비로그인 목록 접근: 401
+- 결과 생성 전 조회: 409
+- 같은 request ID 재제출: 409
+- 정답표·숨은 신호·필수 의미 기준 API 미노출 확인
+- Alembic 빈 SQLite DB `upgrade head`: 통과
+- Ruff: 통과
+- mypy: 통과
+- 실제 Gemini 네트워크 호출: `0회`
+
+### 아직 남은 제한
+
+작업 6에서 타 사용자 접근, 부분 답변 재시도, provider 장애, 완료 후 입력 차단 등 세부 API 자동화 테스트를 저장소에 추가합니다. Frontend 화면과 실제 Frontend↔Backend E2E도 아직 연결하지 않았습니다.
+
+## 14. 아직 구현하지 않은 부분
+
+### Backend 세부 테스트·Frontend 연결
 
 예정 내용:
 
-- 연습 세션·턴·최종 결과 저장
-- 시나리오 목록·소개·대화·복기 API
+- 세 시나리오 Backend API 자동화 테스트
+- 타 사용자 접근·완료 후 입력·부분 답변·provider 장애 검증
 - Frontend 시나리오 카드와 대화 화면
 - 새로고침 후 세션 복원
 - 실제 로컬 Frontend↔Backend E2E
 
-현재 이 기능들은 설계와 기존 일부 기반 코드가 있을 수 있지만, 세 신규 시나리오 전체 연결 완료로 표시하지 않습니다.
+Backend 모델·API는 구현됐지만 전용 API 테스트 작업과 Frontend 연결이 남아 있으므로 전체 연결 완료로 표시하지 않습니다.
 
-## 14. 작업이 끝날 때마다 이 문서를 갱신하는 규칙
+## 15. 작업이 끝날 때마다 이 문서를 갱신하는 규칙
 
 앞으로 각 작업을 완료할 때 다음 순서로 이 문서를 갱신합니다.
 
@@ -831,7 +927,7 @@ RUN_GEMINI_PRACTICE_SMOKE=1
 5. `work/THREAD.md`
 6. 오래된 계획·인계 문서
 
-## 15. 문서를 읽고 확인할 수 있어야 하는 질문
+## 16. 문서를 읽고 확인할 수 있어야 하는 질문
 
 이 문서는 최소한 다음 질문에 답할 수 있어야 합니다.
 
@@ -840,6 +936,8 @@ RUN_GEMINI_PRACTICE_SMOKE=1
 - 작업 1과 작업 2의 차이는 무엇인가?
 - 작업 3에서 한 턴 평가가 어떻게 세션 상태로 누적되는가?
 - API 키와 offline mode에 따라 어떤 practice provider가 선택되는가?
+- Backend가 어느 테이블에 세션과 턴을 저장하고 어떤 API로 재조회하는가?
+- 숨은 신호와 answer-key가 API에서 어떻게 보호되는가?
 - R, J, DP는 각각 무엇인가?
 - 합성 시나리오가 기존 판정 엔진에 어떻게 연결되는가?
 - 세 시나리오에서 기대하는 판정 결과는 무엇인가?
@@ -847,7 +945,7 @@ RUN_GEMINI_PRACTICE_SMOKE=1
 - 전체 테스트에 남은 기존 문제는 무엇인가?
 - 다음 작업은 무엇인가?
 
-## 16. 변경 이력
+## 17. 변경 이력
 
 | 날짜 | 문서 반영 범위 | 관련 커밋 | 비고 |
 |---|---|---|---|
@@ -855,3 +953,4 @@ RUN_GEMINI_PRACTICE_SMOKE=1
 | 2026-07-22 | 작업 3 전 기존 회귀 문제 수정 | `117ebd9` | RAG LF 해시와 generation coverage 기준 정합화 |
 | 2026-07-22 | 작업 3 사용자 답변 평가·상태 머신 | `feat(simulation): add practice state machine` | 세 시나리오 117개 예시, 누적 상태, 최종 복기 연결 |
 | 2026-07-22 | 작업 4 Gemini practice provider | `feat(simulation): add Gemini practice provider` | Gemini mock, answer-key Fake, 키 자동 선택, skip smoke |
+| 2026-07-22 | 작업 5 Backend 세션·턴·결과 API | `feat(practice): add backend session API` | DB·migration·인증 API·세 시나리오 smoke·OpenAPI |
