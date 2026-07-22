@@ -75,7 +75,20 @@ export function DashboardPage() {
             )}
           </div>
         )}
-        <Link className="button-link" to="/contracts/new">새 계약 만들기</Link>
+        <section className="mode-entry-grid" aria-label="서비스 모드 선택">
+          <article className="mode-entry-card">
+            <span>실제 문서 분석</span>
+            <h2>실전 계약 점검 모드</h2>
+            <p>내 계약서와 등기사항증명서를 올려 확인 항목과 근거를 살펴봅니다.</p>
+            <Link className="button-link" to="/contracts/new">새 계약 점검 시작</Link>
+          </article>
+          <article className="mode-entry-card mode-entry-card--practice">
+            <span>가상 연습 · 합성 시나리오</span>
+            <h2>계약 연습 시뮬레이션 모드</h2>
+            <p>서명 직전 대화를 연습하고, 내가 한 질문과 행동을 복기합니다.</p>
+            <Link className="button-link secondary" to="/practice/signing">계약 연습 시작</Link>
+          </article>
+        </section>
       </div>
     </PageShell>
   );

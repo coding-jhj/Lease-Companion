@@ -18,6 +18,7 @@
 | `signing-checklist` | 8 | 서명 전 체크리스트 |
 | `post-contract-actions` | 8 | 계약 직후 권리 확보 행동 관리 |
 | `result-feedback` | 7·8 | 결과에 대한 사용자 피드백 |
+| `practice-simulation` | 별도 연습 흐름 | 합성 계약서 요약과 대화 중 재확인 UI |
 
 ## 기존 디렉터리와의 관계 (삭제하지 말 것)
 

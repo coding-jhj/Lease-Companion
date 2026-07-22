@@ -8,6 +8,8 @@ import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { DocumentUploadPage } from "./pages/document-upload/DocumentUploadPage";
 import { ExtractionReviewPage } from "./pages/extraction-review/ExtractionReviewPage";
 import { ResultReportPage } from "./pages/result-report/ResultReportPage";
+import { PracticeSimulationPage } from "./pages/practice-simulation/PracticeSimulationPage";
+import { ModeSelectPage } from "./pages/mode-select/ModeSelectPage";
 import { getAccessToken } from "./services/authToken";
 
 function RequireAuth() {
@@ -21,6 +23,7 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
+      { path: "/choose-mode", element: <ModeSelectPage /> },
       { path: "/contracts", element: <DashboardPage /> },
       { path: "/contracts/new", element: <ContractCreatePage /> },
       { path: "/contracts/:contractId/situation", element: <ContractSituationPage /> },
@@ -29,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "/contracts/:contractId/analyzing", element: <AnalysisProgressPage /> },
       { path: "/contracts/:contractId/report", element: <ResultReportPage /> },
       { path: "/contracts/:contractId", element: <ContractDetailPage /> },
+      { path: "/practice/signing", element: <PracticeSimulationPage /> },
     ],
   },
 ]);

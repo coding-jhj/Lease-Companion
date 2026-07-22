@@ -1,7 +1,7 @@
 # 계약 연습 시뮬레이션 제품 규칙
 
 - 날짜: 2026-07-20
-- 상태: 0단계 기획 확정, 구현 전
+- 상태: 0단계 기획 확정, AI·데이터 기반 및 프론트엔드 상호작용 뼈대 구현
 - 서비스: 슬기로운 계약생활
 - 첫 시나리오: `PRACTICE-BROKER-PRESSURE-001`
 
@@ -185,3 +185,12 @@
 - [x] 제외 범위 확정
 
 1단계 산출물은 [`practice-scenarios/PRACTICE-BROKER-PRESSURE-001.md`](practice-scenarios/PRACTICE-BROKER-PRESSURE-001.md)와 `data/sample/practice-scenarios/PRACTICE-BROKER-PRESSURE-001/`에 둔다. 사용자 내용 승인 후 2단계 공통 스키마의 입력으로 고정한다.
+
+## 14. 2026-07-22 프론트엔드 뼈대
+
+- `/contracts`에서 `실전 계약 점검 모드`와 `계약 연습 시뮬레이션 모드`를 분리해 진입한다.
+- `/practice/signing`은 상황 → 계약서 → 대화 → 선택 → 복기의 5단계로 동작한다.
+- 첫 연결 시나리오는 `PRACTICE-DEFERRED-REFUND-001`이며, 계약서 확인 단계에서는 숨은 확인 신호와 권장 수정 문구를 노출하지 않는다.
+- 대화 단계는 텍스트 입력과 합성 아바타 미디어 자리표시자를 사용한다. 마이크·STT·실제 영상 provider는 MVP 뼈대에 포함하지 않는다.
+- 복기는 점수나 계약 권고 없이 실제 사용자 발화, 확인한 행동, 놓친 행동, 다음에 사용할 문장을 보여준다.
+- 현재 프론트엔드 서비스는 승인 합성 fixture를 반환한다. Backend 연습 세션 API 연결, 결과 영속 저장·재조회, 공식 근거 노출은 후속 구현 범위다.
