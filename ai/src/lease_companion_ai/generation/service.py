@@ -39,6 +39,13 @@ from lease_companion_ai.schemas.unified import (
 PROMPT_NAMES = ("questions", "checklists", "summaries")
 logger = logging.getLogger(__name__)
 
+_CANONICAL_CLARITY_JUDGMENTS = MappingProxyType(
+    {
+        "R08": "J10",
+        "R09": "J11",
+    }
+)
+
 _CANONICAL_ACTIONS: tuple[tuple[re.Pattern[str], str, str, str], ...] = (
     (
         re.compile(r"임대차(?:계약)?신고"),
@@ -124,6 +131,21 @@ def load_generation_prompts(root: Path | None = None) -> MappingProxyType[str, s
     return MappingProxyType(prompts)
 
 
+def rule_results_requiring_guidance(
+    analysis: AnalysisRunResult,
+) -> tuple[RuleResult, ...]:
+    """canonical J 안내가 대체하지 않는 활성 R 결과만 반환한다."""
+
+    available_judgments = {result.judgment_id for result in analysis.judgments}
+    return tuple(
+        result
+        for result in analysis.results
+        if result.triggers_actions
+        and _CANONICAL_CLARITY_JUDGMENTS.get(result.rule_id)
+        not in available_judgments
+    )
+
+
 class GenerationService:
     def __init__(
         self,
@@ -142,17 +164,9 @@ class GenerationService:
         if analysis.contract_id != contract_context.contract_id:
             raise ValueError("분석 결과와 ContractContext의 contract_id가 다릅니다.")
         before = analysis.model_dump(mode="json")
-        canonical_clarity_judgments = {
-            "R08": "J10",
-            "R09": "J11",
-        }
-        available_judgments = {result.judgment_id for result in analysis.judgments}
         items = tuple(
             self._generate_rule(result)
-            for result in analysis.results
-            if result.triggers_actions
-            and canonical_clarity_judgments.get(result.rule_id)
-            not in available_judgments
+            for result in rule_results_requiring_guidance(analysis)
         )
         judgment_items = tuple(
             self._generate_judgment(result)

@@ -17,7 +17,10 @@ from lease_companion_ai.evaluation.retrieval import (
     load_gold_cases,
 )
 from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
-from lease_companion_ai.generation.service import GenerationService
+from lease_companion_ai.generation.service import (
+    GenerationService,
+    rule_results_requiring_guidance,
+)
 from lease_companion_ai.guardrails.pii import PiiTokenizer, contains_raw_pii
 from lease_companion_ai.guardrails.grounding import (
     grounding_violations,
@@ -615,7 +618,7 @@ def _evaluate_generation(
         )
         rules = {result.rule_id: result for result in analysis.results}
         judgments = {result.judgment_id: result for result in analysis.judgments}
-        active += sum(result.triggers_actions for result in analysis.results)
+        active += len(rule_results_requiring_guidance(analysis))
         active_judgments += sum(
             result.triggers_actions for result in analysis.judgments
         )
