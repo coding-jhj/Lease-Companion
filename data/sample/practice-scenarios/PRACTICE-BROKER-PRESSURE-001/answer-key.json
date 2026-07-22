@@ -162,7 +162,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-007",
@@ -182,7 +182,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "TURN-04"
     },
     {
       "example_id": "EX-009",
@@ -202,7 +202,7 @@
       "input_context": {},
       "expected_status_id": "partial_check",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-04"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-011",
