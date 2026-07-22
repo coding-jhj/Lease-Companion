@@ -234,6 +234,27 @@
       ]
     },
     {
+      "explanation": "계약 전후 권리변동: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
+      "fallback_reason": "provider_unavailable",
+      "generation_method": "template_fallback",
+      "post_contract_action_items": [],
+      "post_contract_actions": [],
+      "provider_model": null,
+      "questions": [
+        "서명과 잔금 지급 직전 최신 등기를 다시 확인할 수 있나요?"
+      ],
+      "request_templates": [
+        "잔금 지급 다음 날까지 근저당 등 새로운 권리를 설정하지 않는다는 특약을 추가해 주세요."
+      ],
+      "rule_id": "R19",
+      "signing_checklist": [],
+      "signing_checklist_items": [],
+      "source_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
       "explanation": "최근 실거래가·전세가 비교: 현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다. 공식 근거와 함께 확인해 주세요.",
       "fallback_reason": "provider_unavailable",
       "generation_method": "template_fallback",
@@ -511,6 +532,7 @@
   ],
   "prompt_version": "v2",
   "schema_version": "1.9.0",
+  "special_clause_items": [],
   "stage_guidance": {
     "after_contract_actions": [
       "보증기관의 심사를 거쳐 반환보증 가입 결과를 확인하고 자료를 보관하세요.",
@@ -567,17 +589,5 @@
       "모순되거나 누락된 날짜를 계약서에서 정리하세요.",
       "관리비 금액·포함·별도 부과 항목을 문서로 확인하세요."
     ]
-  },
-  "special_clause_items": [
-    {
-      "clause_id": "SC-CASE001-0001",
-      "plain_explanation": "잔금을 치르기 전에 임대인이 집에 새로운 담보 같은 권리변동을 만들지 않기로 한 특약입니다.",
-      "confirmation_questions": [
-        "잔금 지급일까지 등기부에 새로운 권리변동이 없는지 다시 확인하실 계획인가요?"
-      ],
-      "revision_requests": [],
-      "source_ids": [],
-      "generation_method": "template_fallback"
-    }
-  ]
+  }
 }

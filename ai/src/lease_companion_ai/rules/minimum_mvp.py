@@ -52,11 +52,39 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
     management_fee_items = contract.get("management_fee_items")
     return {
         "R01": "확인 불가" if not landlord or not owners else "일치" if landlord in owners else "불일치",
-        "R02": "확인 불가" if not contract_address or not registry_address else "일치" if contract_address == registry_address else "불일치",
-        "R03": "확인 불가" if not registry else "확인 필요" if mortgage else "적용 제외" if mortgage is False else "확인 불가",
-        "R04": "확인 불가" if not registry else "확인 필요" if seizure or provisional else "적용 제외" if seizure is False and provisional is False else "확인 불가",
-        "R05": "확인 불가" if not registry else "확인 필요" if trust else "적용 제외" if trust is False else "확인 불가",
-        "R06": "확인 불가" if not landlord else "확인 필요" if not account_holder else "일치" if landlord == account_holder else "불일치",
+        "R02": "확인 불가"
+        if not contract_address or not registry_address
+        else "일치"
+        if contract_address == registry_address
+        else "불일치",
+        "R03": "확인 불가"
+        if not registry
+        else "확인 필요"
+        if mortgage
+        else "적용 제외"
+        if mortgage is False
+        else "확인 불가",
+        "R04": "확인 불가"
+        if not registry
+        else "확인 필요"
+        if seizure or provisional
+        else "적용 제외"
+        if seizure is False and provisional is False
+        else "확인 불가",
+        "R05": "확인 불가"
+        if not registry
+        else "확인 필요"
+        if trust
+        else "적용 제외"
+        if trust is False
+        else "확인 불가",
+        "R06": "확인 불가"
+        if not landlord
+        else "확인 필요"
+        if not account_holder
+        else "일치"
+        if landlord == account_holder
+        else "불일치",
         "R07": "확인 불가" if not registry else "확인 필요" if issue_date else "확인 불가",
         "R08": contract.get("deposit_return_condition") or "확인 필요",
         "R09": contract.get("repair_responsibility") or "확인 필요",
@@ -64,37 +92,41 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
         # 비율·합계는 계산 결과를 제공하되 임의의 안전 임계값으로 판정하지 않는다.
         "R11": (
             "확인 필요"
-            if isinstance(deposit, int)
-            and isinstance(housing_value, int)
-            and housing_value > 0
+            if isinstance(deposit, int) and isinstance(housing_value, int) and housing_value > 0
             else "확인 불가"
         ),
-        "R12": (
-            "확인 필요"
-            if isinstance(senior_claim_amount, int) and senior_claim_amount >= 0
-            else "확인 불가"
-        ),
+        "R12": ("확인 필요" if isinstance(senior_claim_amount, int) and senior_claim_amount >= 0 else "확인 불가"),
         "R13": (
-            "적용 제외" if is_proxy_contract is False
-            else "확인 불가" if is_proxy_contract is None
-            else "명확" if proxy_documents
+            "적용 제외"
+            if is_proxy_contract is False
+            else "확인 불가"
+            if is_proxy_contract is None
+            else "명확"
+            if proxy_documents
             else "확인 필요"
         ),
         "R14": (
-            "확인 불가" if not building_use or violation_building is None
-            else "확인 필요" if violation_building
+            "확인 불가"
+            if not building_use or violation_building is None
+            else "확인 필요"
+            if violation_building
             else "명확"
         ),
         "R15": "확인 불가" if guarantee_eligible is None else "명확" if guarantee_eligible else "확인 필요",
         "R16": "확인 필요",
         "R17": "확인 불가" if sublease_authority is None else "명확" if sublease_authority else "확인 필요",
         "R18": (
-            "확인 불가" if management_fee_present is None
-            else "적용 제외" if management_fee_present is False
-            else "명확" if isinstance(management_fee, int) and bool(management_fee_items)
+            "확인 불가"
+            if management_fee_present is None
+            else "적용 제외"
+            if management_fee_present is False
+            else "명확"
+            if isinstance(management_fee, int) and bool(management_fee_items)
             else "불명확"
         ),
-        "R19": "명확" if rights_change else "미기재" if rights_change is False else "확인 불가",
+        # R10은 제한 특약의 존재를, R19는 시점별 등기 권리변동을 확인한다.
+        # 현재 canonical 입력에는 시점별 등기 이력이 없으므로 R19를 자동 판정하지 않는다.
+        "R19": "확인 불가",
         # 아래 셋은 외부 조회 계약이 생길 때까지 자동 판정을 금지한다.
         "R20": "확인 불가",
         "R21": "확인 불가",
@@ -105,9 +137,7 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
     }
 
 
-def _reason_override(
-    rule_id: str, contract: dict[str, Any], registry: dict[str, Any]
-) -> str | None:
+def _reason_override(rule_id: str, contract: dict[str, Any], registry: dict[str, Any]) -> str | None:
     if rule_id == "R11":
         deposit = contract.get("deposit")
         housing_value = contract.get("estimated_housing_value")
@@ -143,7 +173,6 @@ def _clean_reason(rule_id: str) -> str:
         "R15": "보증기관의 현재 가입 요건을 확인한 것으로 입력되어 있습니다.",
         "R17": "임대·전대 권한을 확인한 것으로 입력되어 있습니다.",
         "R18": "관리비 금액과 포함 항목이 함께 기재되어 있습니다.",
-        "R19": "계약 전후 권리변동을 제한하는 특약 문구가 확인됩니다.",
     }.get(rule_id, "추가 확인이 필요한 사실 플래그입니다.")
 
 

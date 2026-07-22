@@ -184,10 +184,30 @@ def test_rule_engine_never_exposes_static_source_map(monkeypatch):
             return real_read(name)
         common = {"title": "자료", "institution": "공식기관", "summary": "요약"}
         return [
-            {**common, "source_id": "SRC-STD-LEASE", "source_status": "official_verified", "source_url": "https://official.example/source"},
-            {**common, "source_id": "SRC-REGISTRY-SAMPLE", "source_status": "synthetic_reference", "source_url": "https://example.invalid/sample"},
-            {**common, "source_id": "SRC-MOLIT-CHECKLIST", "source_status": "unverified", "source_url": "https://official.example/unverified"},
-            {**common, "source_id": "SRC-CONFIRM-FORM", "source_status": "excluded", "source_url": "https://official.example/excluded"},
+            {
+                **common,
+                "source_id": "SRC-STD-LEASE",
+                "source_status": "official_verified",
+                "source_url": "https://official.example/source",
+            },
+            {
+                **common,
+                "source_id": "SRC-REGISTRY-SAMPLE",
+                "source_status": "synthetic_reference",
+                "source_url": "https://example.invalid/sample",
+            },
+            {
+                **common,
+                "source_id": "SRC-MOLIT-CHECKLIST",
+                "source_status": "unverified",
+                "source_url": "https://official.example/unverified",
+            },
+            {
+                **common,
+                "source_id": "SRC-CONFIRM-FORM",
+                "source_status": "excluded",
+                "source_url": "https://official.example/excluded",
+            },
         ]
 
     monkeypatch.setattr(rules, "_read_csv", fake_read)
@@ -200,8 +220,21 @@ def test_rule_engine_never_exposes_static_source_map(monkeypatch):
 def test_rule_engine_status_and_urgency_do_not_depend_on_evidence():
     from lease_companion_ai.rules import minimum_mvp as rules
 
-    contract = {"landlord_name": "임대인", "account_holder": "다른이", "deposit_return_condition": "명확", "repair_responsibility": "명확", "rights_change_clause_present": True}
-    registry = {"owner_names": ["소유자"], "mortgage_present": True, "seizure_present": False, "provisional_seizure_present": False, "trust_present": False, "issue_date": "2026-07-01"}
+    contract = {
+        "landlord_name": "임대인",
+        "account_holder": "다른이",
+        "deposit_return_condition": "명확",
+        "repair_responsibility": "명확",
+        "rights_change_clause_present": True,
+    }
+    registry = {
+        "owner_names": ["소유자"],
+        "mortgage_present": True,
+        "seizure_present": False,
+        "provisional_seizure_present": False,
+        "trust_present": False,
+        "issue_date": "2026-07-01",
+    }
     baseline = [(item.rule_id, item.status, item.urgency) for item in rules.run_rules(contract, registry)]
     without_evidence = rules.run_rules(contract, registry)
 
@@ -217,7 +250,9 @@ def test_registry_parser_handles_colon_format():
 
 def test_unanalyzable_rule_avoids_fired_wording():
     # 등기 소유자를 못 읽으면 R01은 확인 불가 — 불일치 문구·즉시 확인을 붙이지 않는다.
-    by_id = {r.rule_id: r for r in run_rules({"landlord_name": "김철수", "account_holder": "김철수"}, {"owner_names": None})}
+    by_id = {
+        r.rule_id: r for r in run_rules({"landlord_name": "김철수", "account_holder": "김철수"}, {"owner_names": None})
+    }
     assert by_id["R01"].status == "확인 불가"
     assert by_id["R01"].urgency == "분석 불가"
     assert "다르" not in by_id["R01"].reason
@@ -227,24 +262,36 @@ def test_unanalyzable_rule_avoids_fired_wording():
 def test_unreadable_registry_flag_is_confirm_needed_not_excluded():
     # 안전: 판독불가(None) 존재 플래그는 '없음(적용 제외)'이 아니라 '확인 불가'여야 한다.
     contract = {"landlord_name": "김철수", "account_holder": "김철수"}
-    unread = {"mortgage_present": None, "seizure_present": None,
-              "provisional_seizure_present": None, "trust_present": None, "issue_date": None}
+    unread = {
+        "mortgage_present": None,
+        "seizure_present": None,
+        "provisional_seizure_present": None,
+        "trust_present": None,
+        "issue_date": None,
+    }
     by_id = {r.rule_id: r for r in run_rules(contract, unread)}
     assert by_id["R03"].status == "확인 불가"  # None → 없음으로 단정 금지
     assert by_id["R04"].status == "확인 불가"
     assert by_id["R05"].status == "확인 불가"
     assert by_id["R07"].status == "확인 불가"
     # 읽고 없음(False)은 여전히 적용 제외 — 무회귀
-    readable = {"mortgage_present": False, "seizure_present": False,
-                "provisional_seizure_present": False, "trust_present": False, "issue_date": "2026-07-01"}
+    readable = {
+        "mortgage_present": False,
+        "seizure_present": False,
+        "provisional_seizure_present": False,
+        "trust_present": False,
+        "issue_date": "2026-07-01",
+    }
     ok = {r.rule_id: r for r in run_rules(contract, readable)}
     assert ok["R03"].status == "적용 제외" and ok["R05"].status == "적용 제외"
 
 
 def test_parser_flags_none_when_registry_fully_unreadable():
     # 등기 전체 판독불가(소유자·소재지 모두) → 존재 플래그를 False로 단정하지 않고 None.
-    text = ("등기사항전부증명서 (건물)\n부동산의 표시: (판독 불가)\n열람·발급일: (판독 불가)\n"
-            "【갑구】\n   소유자: (판독 불가)\n【을구】\n   (판독 불가)\n")
+    text = (
+        "등기사항전부증명서 (건물)\n부동산의 표시: (판독 불가)\n열람·발급일: (판독 불가)\n"
+        "【갑구】\n   소유자: (판독 불가)\n【을구】\n   (판독 불가)\n"
+    )
     fields = parse_registry(text).fields
     assert fields["owner_names"] is None and fields["property_address"] is None
     assert fields["mortgage_present"] is None
@@ -256,24 +303,40 @@ def test_gemini_field_shape_feeds_run_rules():
     from lease_companion_ai.extraction.gemini_extractor import ContractFields, RegistryFields
 
     contract = ContractFields(
-        contract_type="전세", landlord_name="김민준", tenant_name="이임차", agent_name=None,
-        property_address="서울특별시 샘플구 202호", deposit=100000000, monthly_rent=None,
-        contract_payment=10000000, balance_payment=90000000, account_holder="김민준",
-        start_date="2026-08-01", end_date="2028-07-31", move_in_date="2026-08-01",
-        deposit_return_condition="명확", repair_responsibility="명확", rights_change_clause_present=True,
+        contract_type="전세",
+        landlord_name="김민준",
+        tenant_name="이임차",
+        agent_name=None,
+        property_address="서울특별시 샘플구 202호",
+        deposit=100000000,
+        monthly_rent=None,
+        contract_payment=10000000,
+        balance_payment=90000000,
+        account_holder="김민준",
+        start_date="2026-08-01",
+        end_date="2028-07-31",
+        move_in_date="2026-08-01",
+        deposit_return_condition="명확",
+        repair_responsibility="명확",
+        rights_change_clause_present=True,
     ).model_dump()
     registry = RegistryFields(
-        owner_names=["김민준"], is_joint_ownership=False, property_address="서울특별시 샘플구 202호",
-        issue_date="2026-07-01", mortgage_present=None, seizure_present=False,
-        provisional_seizure_present=False, trust_present=None,
+        owner_names=["김민준"],
+        is_joint_ownership=False,
+        property_address="서울특별시 샘플구 202호",
+        issue_date="2026-07-01",
+        mortgage_present=None,
+        seizure_present=False,
+        provisional_seizure_present=False,
+        trust_present=None,
     ).model_dump()
 
     by_id = {r.rule_id: r for r in run_rules(contract, registry)}
     assert len(by_id) == 24
-    assert by_id["R01"].status == "일치"        # landlord ∈ owners
-    assert by_id["R03"].status == "확인 불가"    # mortgage_present=None (tri-state)
-    assert by_id["R05"].status == "확인 불가"    # trust_present=None
-    assert by_id["R08"].status == "명확"         # enum 값 그대로 status
+    assert by_id["R01"].status == "일치"  # landlord ∈ owners
+    assert by_id["R03"].status == "확인 불가"  # mortgage_present=None (tri-state)
+    assert by_id["R05"].status == "확인 불가"  # trust_present=None
+    assert by_id["R08"].status == "명확"  # enum 값 그대로 status
 
 
 def test_v19_null_condition_fields_degrade_r08_r09_to_check_needed():
@@ -285,8 +348,8 @@ def test_v19_null_condition_fields_degrade_r08_r09_to_check_needed():
         "landlord_name": "이정훈",
         "property_address": "서울특별시 가온구 나래로 12, 305동 1201호",
         "account_holder": "이정훈",
-        "deposit_return_condition": None,   # v1.9: 해석 후보 미생성
-        "repair_responsibility": None,      # v1.9: 해석 후보 미생성
+        "deposit_return_condition": None,  # v1.9: 해석 후보 미생성
+        "repair_responsibility": None,  # v1.9: 해석 후보 미생성
         "deposit_return_clause": "보증금은 계약 종료 시 반환한다.",
         "repair_responsibility_clause": "수리는 협의하여 정한다.",
         "rights_change_clause_present": True,
@@ -344,9 +407,7 @@ def test_actual_structure_path_builds_canonical_document(monkeypatch):
 def test_gemini_success_shape_also_builds_canonical_document(monkeypatch):
     from lease_companion_ai.pipelines import minimum_mvp as pipe
 
-    expected = parse_contract(
-        (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
-    ).fields
+    expected = parse_contract((ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")).fields
     monkeypatch.setattr(pipe, "extract_contract_fields", lambda _text: expected)
 
     decisions = []
@@ -398,9 +459,7 @@ def test_gemini_registry_null_ownership_is_repaired_when_local_owner_matches(mon
 
 
 def test_verified_legacy_analysis_uses_canonical_result_contract():
-    contract = parse_contract(
-        (ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")
-    ).fields
+    contract = parse_contract((ROOT / "data/sample/contracts/contract_001.txt").read_text(encoding="utf-8")).fields
     registry = parse_registry(
         (ROOT / "data/sample/registry-records/registry_001.txt").read_text(encoding="utf-8")
     ).fields
@@ -419,11 +478,25 @@ def test_verified_legacy_analysis_uses_canonical_result_contract():
     )
 
     assert [result["rule_id"] for result in results] == [f"R{i:02d}" for i in range(1, 25)]
-    assert all(set(result) == {
-        "rule_id", "rule_name", "judgment_id", "status", "urgency", "reason",
-        "result_type", "triggers_actions", "question", "recommended_actions",
-        "evidence_sources", "limitations", "completed",
-    } for result in results)
+    assert all(
+        set(result)
+        == {
+            "rule_id",
+            "rule_name",
+            "judgment_id",
+            "status",
+            "urgency",
+            "reason",
+            "result_type",
+            "triggers_actions",
+            "question",
+            "recommended_actions",
+            "evidence_sources",
+            "limitations",
+            "completed",
+        }
+        for result in results
+    )
     direct_contract = {**contract, "is_proxy_contract": False}
     legacy_results = [result.to_dict() for result in run_rules(direct_contract, registry)]
     for result, legacy in zip(results, legacy_results, strict=True):
@@ -464,7 +537,9 @@ def test_extended_rules_calculate_inputs_and_keep_deferred_rules_honest():
     assert by_id["R16"].status == "확인 필요"
     assert by_id["R17"].status == "확인 필요"
     assert by_id["R18"].status == "명확"
-    assert by_id["R19"].status == "명확"
+    assert by_id["R10"].status == "명확"
+    assert by_id["R19"].status == "확인 불가"
+    assert by_id["R19"].urgency == "분석 불가"
     assert {by_id[rule_id].status for rule_id in ("R20", "R21", "R22")} == {"확인 불가"}
     assert {by_id[rule_id].status for rule_id in ("R23", "R24")} == {"확인 필요"}
 
@@ -495,10 +570,7 @@ def test_registry_parser_keeps_only_latest_full_transfer_owner():
     result = parse_registry(text)
     assert result.fields["owner_names"] == ["오든든"]
     assert result.warnings == []
-    by_id = {
-        item.rule_id: item
-        for item in run_rules({"landlord_name": "권이름"}, result.fields)
-    }
+    by_id = {item.rule_id: item for item in run_rules({"landlord_name": "권이름"}, result.fields)}
     assert by_id["R01"].status == "불일치"
 
 
@@ -549,6 +621,7 @@ def test_registry_parser_applies_explicit_owner_name_correction():
 (기재 사항 없음)
 """
     assert parse_registry(text).fields["owner_names"] == ["김하늘"]
+
 
 def test_registry_parser_does_not_guess_ambiguous_partial_transfer():
     text = """등기사항전부증명서

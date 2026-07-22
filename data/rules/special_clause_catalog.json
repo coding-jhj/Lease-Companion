@@ -1,20 +1,22 @@
 {
-  "version": "0.1.1-draft",
+  "version": "0.2.0-draft",
   "review_status": "unverified",
   "note": "2026-07-22 인수인계의 법률 검토 지적사항을 반영한 초안. 독립 재확인 전 review_status=unverified와 운영 비활성 상태를 유지한다. allowed_source_sections는 직접 검색 근거만 담고 주택임대차보호법 제10조는 구체적 위반 조항과 임차인 불리성이 모두 확인될 때만 별도 검토한다.",
   "entries": [
     {
       "catalog_id": "SC-DEFERRED-REFUND",
-      "version": "0.1.1-draft",
+      "version": "0.2.0-draft",
       "display_name": "보증금 반환을 신규 임차인 입주에 연동한 조건",
       "related_judgment_ids": ["J10"],
       "related_rule_ids": ["R08"],
       "include_patterns": [
         "새로운?\\s*임차인.*입주.*(이후|후|완료).*보증금.*반환",
-        "(신규|새|다음|후속)\\s*임차인.*(입주|구해|계약).*(반환|지급)",
-        "보증금.*(다음|신규|새)\\s*(세입자|임차인).*(구해|입주|정해)"
+        "(신규|새|다음|후속)\\s*(임차인|세입자).*(입주|구해|계약).*(반환|지급)",
+        "보증금.*(다음|신규|새)\\s*(세입자|임차인).*(구해|입주|정해)",
+        "(주택|임차주택|목적물|부동산).*(매각|매매|처분).*보증금.*(반환|지급)",
+        "(임대인|집주인).*(자금\\s*사정|보증금\\s*마련).*보증금.*(반환|지급)"
       ],
-      "exclude_patterns": ["관계\\s*없이", "무관", "상관\\s*없이", "계약\\s*종료(일|\\s*시).*반환"],
+      "exclude_patterns": ["관계\\s*없이", "무관", "상관\\s*없이", "연동하지\\s*않", "임차인.*(요청|희망).*(경우|때)", "계약\\s*종료(일|\\s*시).*반환"],
       "allowed_source_sections": [
         {"source_id": "SRC-STD-LEASE", "article_or_section": "제9조(계약의 종료)"},
         {"source_id": "SRC-CIVIL-LEASE", "article_or_section": "제536조(동시이행의 항변권)"},
@@ -29,16 +31,18 @@
     },
     {
       "catalog_id": "SC-REPAIR-SCOPE",
-      "version": "0.1.1-draft",
+      "version": "0.2.0-draft",
       "display_name": "사용·수익에 필요한 수리·수선 비용을 임차인에게 포괄 전가한 조건",
       "related_judgment_ids": ["J11"],
       "related_rule_ids": ["R09"],
       "include_patterns": [
-        "(수리|수선|시설물|교체)\\s*비용.*(전액|모든|일체).*임차인.*부담",
+        "(수리|수선|시설물|교체)\\s*(비|비용).*(전액|모든|모두|일체).*임차인.*부담",
         "고장.*(원인|귀책).*관계없이.*임차인.*부담",
-        "임차주택의 수리에 관한 모든 비용.*임차인.*부담"
+        "임차주택의 수리에 관한 모든 비용.*임차인.*부담",
+        "(설비|시설물).*(노후|고장).*(모든|전액|일체).*(수리|수선)\\s*(비|비용).*임차인.*부담",
+        "(고장.*설비|설비.*고장).*(수리|수선)\\s*(비|비용).*(모두|전액|일체).*임차인.*부담"
       ],
-      "exclude_patterns": ["임대인.*부담", "주요\\s*설비.*임대인"],
+      "exclude_patterns": ["주요\\s*설비.*임대인.*(수리|수선|부담)"],
       "allowed_source_sections": [
         {"source_id": "SRC-STD-LEASE", "article_or_section": "제3조(입주 전 수리)"},
         {"source_id": "SRC-STD-LEASE", "article_or_section": "제4조 제2항~제4항(임차주택의 사용·관리·수선)"},
@@ -49,14 +53,15 @@
     },
     {
       "catalog_id": "SC-RESTORATION-SCOPE",
-      "version": "0.1.1-draft",
+      "version": "0.2.0-draft",
       "display_name": "원상복구 범위가 불명확하거나 통상손모·노후까지 포함한 조건",
       "related_judgment_ids": ["J11"],
       "related_rule_ids": ["R09"],
       "include_patterns": [
         "원상복구.*(범위|기준).*임대인.*(정하|따르)",
         "원상복구.*이의.*제기하지\\s*아니한다",
-        "(통상\\s*손모|노후|자연\\s*마모).*(원상복구|임차인.*부담)"
+        "(통상\\s*손모|통상적인\\s*마모|노후|자연\\s*마모).*(임차인.*원상복구|원상복구.*임차인)",
+        "원상복구.*(통상\\s*손모|통상적인\\s*마모|노후|자연\\s*마모)"
       ],
       "exclude_patterns": ["(노후|통상\\s*(손모|파손)|자연\\s*마모).*(제외|포함하지\\s*않)", "원상복구.*(노후|통상\\s*(손모|파손)|자연\\s*마모).*(제외|면제)"],
       "allowed_source_sections": [
@@ -72,12 +77,13 @@
     },
     {
       "catalog_id": "SC-RIGHTS-CHANGE",
-      "version": "0.1.1-draft",
+      "version": "0.2.0-draft",
       "display_name": "잔금·입주 전후 권리변동(담보 설정 등) 관련 조건",
       "related_judgment_ids": [],
       "related_rule_ids": ["R10", "R19"],
       "include_patterns": [
         "임대인.*(임의|자유).*(근저당|담보|권리).*설정",
+        "임대인.*(근저당|담보|권리).*(임의|자유).*설정",
         "경매.*(진행|절차).*이의.*제기하지\\s*아니한다",
         "보증금.*미반환.*이의.*제기하지\\s*아니한다"
       ],
@@ -94,7 +100,7 @@
     },
     {
       "catalog_id": "SC-MANAGEMENT-FEE",
-      "version": "0.1.1-draft",
+      "version": "0.2.0-draft",
       "display_name": "관리비·추가비용의 항목·금액·부과 방식이 명확하지 않은 조건",
       "related_judgment_ids": ["J09"],
       "related_rule_ids": ["R18"],
@@ -102,7 +108,8 @@
         "관리비.*(항목|금액).*임대인.*(임의|자유).*변경",
         "관리비.*임대인.*정하는\\s*대로",
         "(관리비|추가\\s*비용).*(항목|금액|부과\\s*방식).*(추후|별도|미정)",
-        "관리비.*(세부\\s*항목|포함\\s*항목).*(기재하지|정하지)"
+        "관리비.*(세부\\s*항목|포함\\s*항목).*(기재하지|정하지)",
+        "관리비.*(항목|금액).*(추후|입주\\s*후).*임대인.*(정하|결정)"
       ],
       "exclude_patterns": ["관리비.*(협의|합의).*변경", "관리비\\s*없음"],
       "allowed_source_sections": [
@@ -113,14 +120,15 @@
     },
     {
       "catalog_id": "SC-MAIN-SPECIAL-CONFLICT",
-      "version": "0.1.1-draft",
+      "version": "0.2.0-draft",
       "display_name": "본문 조항과 특약이 상충할 가능성",
       "related_judgment_ids": ["J12"],
       "related_rule_ids": [],
       "include_patterns": [
         "본\\s*계약.*불구하고",
         "본문.*(에도|과)\\s*(불구|상관없이|달리)",
-        "실제.*(면적|용도|시설).*다르더라도.*인정"
+        "실제.*(면적|용도|시설).*다르더라도.*인정",
+        "(계약서\\s*)?본문.*(다르더라도|달리).*(특약|우선)"
       ],
       "exclude_patterns": [],
       "allowed_source_sections": [

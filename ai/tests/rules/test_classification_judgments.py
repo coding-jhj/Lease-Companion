@@ -107,9 +107,7 @@ def _judgment_status(
 
 
 def test_v19_contract_no_longer_requires_deprecated_candidate_fields() -> None:
-    payload = json.loads(
-        (FIXTURE_DIR / "contract_extraction.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((FIXTURE_DIR / "contract_extraction.json").read_text(encoding="utf-8"))
     payload["schema_version"] = "1.9.0"
     payload["fields"].pop("deposit_return_condition")
     payload["fields"].pop("repair_responsibility")
@@ -123,9 +121,7 @@ def test_v19_contract_no_longer_requires_deprecated_candidate_fields() -> None:
 
 
 def test_v18_snapshot_remains_readable_with_raw_only_judgment_inputs() -> None:
-    snapshot = InputSnapshot.model_validate_json(
-        (FIXTURE_DIR / "input_snapshot.json").read_text(encoding="utf-8")
-    )
+    snapshot = InputSnapshot.model_validate_json((FIXTURE_DIR / "input_snapshot.json").read_text(encoding="utf-8"))
 
     j10 = build_judgment_input(snapshot, judgment_ids=("J10",))
     j11 = build_judgment_input(snapshot, judgment_ids=("J11",))
@@ -137,9 +133,7 @@ def test_v18_snapshot_remains_readable_with_raw_only_judgment_inputs() -> None:
 
 
 def test_j10_uses_return_type_clarity_and_conditions() -> None:
-    snapshot = _snapshot(
-        field_values={"deposit_return_clause": "계약 종료일에 보증금을 반환한다."}
-    )
+    snapshot = _snapshot(field_values={"deposit_return_clause": "계약 종료일에 보증금을 반환한다."})
 
     clear = _judgment_status(
         snapshot,
@@ -163,11 +157,7 @@ def test_j10_uses_return_type_clarity_and_conditions() -> None:
 
 
 def test_j10_flags_refund_deferred_until_a_new_tenant_moves_in() -> None:
-    snapshot = _snapshot(
-        field_values={
-            "deposit_return_clause": "신규 임차인이 입주한 후 보증금을 반환한다."
-        }
-    )
+    snapshot = _snapshot(field_values={"deposit_return_clause": "신규 임차인이 입주한 후 보증금을 반환한다."})
     candidate = _candidate(
         "deposit_return_clause:0",
         clause_type="deposit_return",
@@ -189,11 +179,7 @@ def test_j10_flags_refund_deferred_until_a_new_tenant_moves_in() -> None:
 
 
 def test_j10_keeps_raw_deferred_refund_signal_without_classification_candidate() -> None:
-    snapshot = _snapshot(
-        field_values={
-            "deposit_return_clause": "신규 임차인이 입주한 후 보증금을 반환한다."
-        }
-    )
+    snapshot = _snapshot(field_values={"deposit_return_clause": "신규 임차인이 입주한 후 보증금을 반환한다."})
 
     result = run_judgments(
         build_judgment_input(
@@ -209,11 +195,7 @@ def test_j10_keeps_raw_deferred_refund_signal_without_classification_candidate()
 
 def test_j10_does_not_flag_refund_explicitly_independent_of_a_new_tenant() -> None:
     snapshot = _snapshot(
-        field_values={
-            "deposit_return_clause": (
-                "신규 임차인 입주와 관계없이 계약 종료일에 보증금을 반환한다."
-            )
-        }
+        field_values={"deposit_return_clause": ("신규 임차인 입주와 관계없이 계약 종료일에 보증금을 반환한다.")}
     )
 
     status = _judgment_status(
@@ -231,10 +213,49 @@ def test_j10_does_not_flag_refund_explicitly_independent_of_a_new_tenant() -> No
     assert status is RuleStatus.CLEAR
 
 
-def test_j11_requires_repair_type_clarity_and_responsible_party() -> None:
-    snapshot = _snapshot(
-        field_values={"repair_responsibility_clause": "수리는 임대인이 부담한다."}
+@pytest.mark.parametrize(
+    ("clause", "reason_fragment"),
+    [
+        ("주택이 매각된 후 보증금을 반환한다.", "주택 매각"),
+        ("임대인의 자금 사정이 나아지면 보증금을 지급한다.", "임대인의 자금 사정"),
+    ],
+)
+def test_j10_flags_refund_linked_to_other_future_events(clause: str, reason_fragment: str) -> None:
+    snapshot = _snapshot(field_values={"deposit_return_clause": clause})
+
+    result = run_judgments(
+        build_judgment_input(
+            snapshot,
+            judgment_ids=("J10",),
+            classification_result=_classification(snapshot, []),
+        )
+    )[0]
+
+    assert result.status is RuleStatus.CHECK_NEEDED
+    assert reason_fragment in result.reason
+
+
+def test_j10_does_not_flag_tenant_requested_early_exit_exception() -> None:
+    clause = "임차인이 조기 퇴거를 요청한 경우에만 새 임차인 입주일에 맞춰 보증금을 정산할 수 있다."
+    snapshot = _snapshot(field_values={"deposit_return_clause": clause})
+
+    status = _judgment_status(
+        snapshot,
+        "J10",
+        [
+            _candidate(
+                "deposit_return_clause:0",
+                clause_type="deposit_return",
+                conditions=["임차인이 조기 퇴거를 요청한 경우"],
+            )
+        ],
     )
+
+    assert status is RuleStatus.CLEAR
+
+
+def test_j11_requires_repair_type_clarity_and_responsible_party() -> None:
+    snapshot = _snapshot(field_values={"repair_responsibility_clause": "수리는 임대인이 부담한다."})
 
     clear = _judgment_status(
         snapshot,
@@ -260,6 +281,36 @@ def test_j11_requires_repair_type_clarity_and_responsible_party() -> None:
 
     assert clear is RuleStatus.CLEAR
     assert unspecified is RuleStatus.UNCLEAR
+
+
+@pytest.mark.parametrize(
+    ("clause", "reason_fragment"),
+    [
+        ("보일러 수리는 임대인이 부담한다.", "계약 존속 중 수리"),
+        ("퇴거 시 원상복구는 임차인이 부담한다.", "계약 종료 시 원상복구"),
+    ],
+)
+def test_j11_reason_identifies_repair_or_restoration_topic(clause: str, reason_fragment: str) -> None:
+    snapshot = _snapshot(field_values={"repair_responsibility_clause": clause})
+    result = run_judgments(
+        build_judgment_input(
+            snapshot,
+            judgment_ids=("J11",),
+            classification_result=_classification(
+                snapshot,
+                [
+                    _candidate(
+                        "repair_responsibility_clause:0",
+                        clause_type="repair_restoration",
+                        responsible_party="임대인" if "수리" in clause else "임차인",
+                    )
+                ],
+            ),
+        )
+    )[0]
+
+    assert result.status is RuleStatus.CLEAR
+    assert reason_fragment in result.reason
 
 
 @pytest.mark.parametrize("judgment_id", ["J10", "J11", "J12"])
@@ -337,11 +388,57 @@ def test_j12_compares_main_and_special_candidate_types_and_conditions() -> None:
     assert matching is RuleStatus.CLEAR
 
 
+def test_j12_detects_raw_date_and_amount_conflicts_before_candidate_summary() -> None:
+    snapshot = _snapshot(
+        field_values={
+            "main_clauses": ["보증금 100,000,000원은 계약 종료일 2026-12-31에 반환한다."],
+            "special_clauses_present": True,
+            "special_clauses": ["보증금 90,000,000원은 계약 종료일 2027-01-31에 반환한다."],
+        }
+    )
+    candidates = [
+        _candidate(
+            "main_clauses:0",
+            clause_type="deposit_return",
+            conditions=["계약 종료일"],
+        ),
+        _candidate(
+            "special_clauses:0",
+            clause_type="deposit_return",
+            conditions=["계약 종료일"],
+        ),
+    ]
+
+    assert _judgment_status(snapshot, "J12", candidates) is RuleStatus.POSSIBLE_CONFLICT
+
+
+def test_j12_compares_responsible_parties_for_same_topic() -> None:
+    snapshot = _snapshot(
+        field_values={
+            "main_clauses": ["시설 수리는 임대인이 부담한다."],
+            "special_clauses_present": True,
+            "special_clauses": ["시설 수리는 임차인이 부담한다."],
+        }
+    )
+    candidates = [
+        _candidate(
+            "main_clauses:0",
+            clause_type="repair_restoration",
+            responsible_party="임대인",
+        ),
+        _candidate(
+            "special_clauses:0",
+            clause_type="repair_restoration",
+            responsible_party="임차인",
+        ),
+    ]
+
+    assert _judgment_status(snapshot, "J12", candidates) is RuleStatus.POSSIBLE_CONFLICT
+
+
 def test_classification_result_identifiers_must_match_snapshot() -> None:
     snapshot = _snapshot()
-    mismatched = _classification(snapshot, []).model_copy(
-        update={"input_snapshot_id": "SNAP-OTHER"}
-    )
+    mismatched = _classification(snapshot, []).model_copy(update={"input_snapshot_id": "SNAP-OTHER"})
 
     with pytest.raises(ValueError, match="input_snapshot_id"):
         build_judgment_input(
@@ -393,9 +490,5 @@ def test_classification_candidates_never_change_legacy_rule_results() -> None:
     assert [result.status for result in clear_analysis.results] == [
         result.status for result in unclear_analysis.results
     ]
-    assert JUDGMENT_INPUT_SPECS["J10"].contract_fields == (
-        "deposit_return_clause",
-    )
-    assert JUDGMENT_INPUT_SPECS["J11"].contract_fields == (
-        "repair_responsibility_clause",
-    )
+    assert JUDGMENT_INPUT_SPECS["J10"].contract_fields == ("deposit_return_clause",)
+    assert JUDGMENT_INPUT_SPECS["J11"].contract_fields == ("repair_responsibility_clause",)

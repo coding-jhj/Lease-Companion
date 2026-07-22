@@ -7,6 +7,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from lease_companion_ai.special_clauses import (
@@ -14,6 +17,15 @@ from lease_companion_ai.special_clauses import (
     load_special_clause_catalog,
     match_special_clauses,
 )
+
+ROOT = Path(__file__).resolve().parents[3]
+LOCKED_CATALOG_CASES = [
+    json.loads(line)
+    for line in (ROOT / "data" / "evaluation" / "special-clauses" / "catalog_test.jsonl")
+    .read_text(encoding="utf-8")
+    .splitlines()
+    if line.strip()
+]
 
 
 def _ids(candidates, text_startswith):
@@ -36,9 +48,7 @@ def test_catalog_loads_six_draft_entries():
 
 
 def test_pattern_match_selects_catalog_and_candidate_rj():
-    (candidate,) = match_special_clauses(
-        ["임대인은 새로운 임차인의 입주가 완료된 이후에 보증금을 반환한다."]
-    )
+    (candidate,) = match_special_clauses(["임대인은 새로운 임차인의 입주가 완료된 이후에 보증금을 반환한다."])
     assert isinstance(candidate, SpecialClauseCandidate)
     assert candidate.catalog_ids == ("SC-DEFERRED-REFUND",)
     assert candidate.match_method == "catalog_pattern"
@@ -52,9 +62,7 @@ def test_pattern_match_selects_catalog_and_candidate_rj():
 
 
 def test_exclude_pattern_blocks_exception_sentence():
-    candidates = match_special_clauses(
-        ["임대인은 신규 임차인 입주와 관계없이 계약 종료 시 보증금을 반환한다."]
-    )
+    candidates = match_special_clauses(["임대인은 신규 임차인 입주와 관계없이 계약 종료 시 보증금을 반환한다."])
     assert candidates[0].match_method == "unmatched"
     assert candidates[0].catalog_ids == ()
     assert candidates[0].related_judgment_ids == ()
@@ -99,3 +107,15 @@ def test_uses_confirmed_text_and_normalizes_whitespace_only():
     assert candidate.catalog_ids == ("SC-MANAGEMENT-FEE",)
     # 원문은 사용자 확인 값을 보존한다(정규화는 매칭에만 사용)
     assert "관리비" in candidate.original_text
+
+
+@pytest.mark.parametrize(
+    "case",
+    LOCKED_CATALOG_CASES,
+    ids=[case["case_id"] for case in LOCKED_CATALOG_CASES],
+)
+def test_locked_catalog_ground_truth(case):
+    (candidate,) = match_special_clauses([case["text"]])
+    assert set(candidate.catalog_ids) == set(case["expected_catalog_ids"])
+    assert not hasattr(candidate, "status")
+    assert not hasattr(candidate, "urgency")

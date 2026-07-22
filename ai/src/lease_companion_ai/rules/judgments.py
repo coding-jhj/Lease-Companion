@@ -31,6 +31,7 @@ from lease_companion_ai.schemas.unified import (
     Urgency,
 )
 
+
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
 
@@ -51,9 +52,7 @@ def _value(judgment_input: JudgmentInput, name: str):
     return _field(judgment_input, name).effective_value
 
 
-def _has_issue(
-    judgment_input: JudgmentInput, names: tuple[str, ...], *issues: FieldIssueCode
-) -> bool:
+def _has_issue(judgment_input: JudgmentInput, names: tuple[str, ...], *issues: FieldIssueCode) -> bool:
     return any(_field(judgment_input, name).issue_code in issues for name in names)
 
 
@@ -92,11 +91,7 @@ def _j03(data: JudgmentInput) -> RuleStatus:
         return RuleStatus.CHECK_NEEDED
     if _is_missing(data, names):
         return RuleStatus.CANNOT_CHECK
-    return (
-        RuleStatus.CHECK_NEEDED
-        if _value(data, "is_joint_ownership") is True
-        else RuleStatus.NOT_APPLICABLE
-    )
+    return RuleStatus.CHECK_NEEDED if _value(data, "is_joint_ownership") is True else RuleStatus.NOT_APPLICABLE
 
 
 def _j04(data: JudgmentInput) -> RuleStatus:
@@ -106,9 +101,7 @@ def _j04(data: JudgmentInput) -> RuleStatus:
     if proxy is None:
         return RuleStatus.CANNOT_CHECK
     names = ("agent_name", "agent_relationship", "proxy_authority_documents")
-    if _is_missing(data, names) and _has_issue(
-        data, names, FieldIssueCode.UNREADABLE, FieldIssueCode.PARSE_FAILED
-    ):
+    if _is_missing(data, names) and _has_issue(data, names, FieldIssueCode.UNREADABLE, FieldIssueCode.PARSE_FAILED):
         return RuleStatus.CANNOT_CHECK
     return RuleStatus.CHECK_NEEDED
 
@@ -205,13 +198,9 @@ def _j08(data: JudgmentInput) -> RuleStatus:
         contract_payment <= balance <= move_in
         and move_in == start
         and start < end
+        and (data.contract_context.move_in_date is None or move_in == data.contract_context.move_in_date)
         and (
-            data.contract_context.move_in_date is None
-            or move_in == data.contract_context.move_in_date
-        )
-        and (
-            data.contract_context.balance_payment_date is None
-            or balance == data.contract_context.balance_payment_date
+            data.contract_context.balance_payment_date is None or balance == data.contract_context.balance_payment_date
         )
     )
     return RuleStatus.MATCH if consistent else RuleStatus.MISMATCH
@@ -234,11 +223,7 @@ def _j09(data: JudgmentInput) -> RuleStatus:
 
 def _candidate(data: JudgmentInput, clause_ref: str) -> ClauseCandidate | None:
     return next(
-        (
-            candidate
-            for candidate in data.classification_candidates
-            if candidate.clause_ref == clause_ref
-        ),
+        (candidate for candidate in data.classification_candidates if candidate.clause_ref == clause_ref),
         None,
     )
 
@@ -246,11 +231,7 @@ def _candidate(data: JudgmentInput, clause_ref: str) -> ClauseCandidate | None:
 def _raw_clause_state(data: JudgmentInput, field_name: str) -> RuleStatus | None:
     field = data.contract_fields[field_name]
     if field.effective_value is None:
-        return (
-            RuleStatus.NOT_STATED
-            if field.issue_code is FieldIssueCode.NOT_STATED
-            else RuleStatus.CHECK_NEEDED
-        )
+        return RuleStatus.NOT_STATED if field.issue_code is FieldIssueCode.NOT_STATED else RuleStatus.CHECK_NEEDED
     return None
 
 
@@ -264,21 +245,35 @@ def _candidate_clarity(candidate: ClauseCandidate) -> RuleStatus:
     return RuleStatus.CLEAR
 
 
-_DEFERRED_RETURN_PARTY = re.compile(r"(?:신규|새|다음|후속)\s*임차인")
-_RETURN_INDEPENDENCE = re.compile(r"(?:관계\s*없이|무관하게|상관\s*없이)")
+_RETURN_CONTEXT = re.compile(r"보증금.{0,20}(?:반환|지급|돌려|정산)|(?:반환|지급|돌려|정산).{0,20}보증금")
+_RETURN_INDEPENDENCE = re.compile(r"(?:관계\s*없이|무관하게|상관\s*없이|연동하지\s*않)")
+_TENANT_REQUEST_EXCEPTION = re.compile(r"임차인.{0,20}(?:요청|희망).{0,20}(?:경우|때)")
+_DEFERRED_RETURN_EVENTS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("신규 임차인의 입주", re.compile(r"(?:신규|새|다음|후속)\s*(?:임차인|세입자)")),
+    ("주택 매각", re.compile(r"(?:주택|임차주택|목적물|부동산).{0,12}(?:매각|매매|처분)")),
+    ("임대인의 자금 사정", re.compile(r"(?:임대인|집주인).{0,15}(?:자금\s*사정|자금|보증금\s*마련)")),
+)
 
 
-def _has_deferred_return_text(text: str | None) -> bool:
-    return bool(
-        text
-        and _DEFERRED_RETURN_PARTY.search(text)
-        and not _RETURN_INDEPENDENCE.search(text)
+def _deferred_return_event(text: str | None) -> str | None:
+    if (
+        not text
+        or not _RETURN_CONTEXT.search(text)
+        or _RETURN_INDEPENDENCE.search(text)
+        or _TENANT_REQUEST_EXCEPTION.search(text)
+    ):
+        return None
+    return next(
+        (label for label, pattern in _DEFERRED_RETURN_EVENTS if pattern.search(text)),
+        None,
     )
 
 
-def _has_deferred_return_condition(
-    candidate: ClauseCandidate, raw_clause: str | None = None
-) -> bool:
+def _has_deferred_return_text(text: str | None) -> bool:
+    return _deferred_return_event(text) is not None
+
+
+def _has_deferred_return_condition(candidate: ClauseCandidate, raw_clause: str | None = None) -> bool:
     """Detect an explicit dependency on finding or admitting a later tenant.
 
     This is a narrow confirmation signal, not a legal-validity judgment.  Clauses
@@ -291,11 +286,22 @@ def _has_deferred_return_condition(
     return any(_has_deferred_return_text(text) for text in texts)
 
 
+def _deferred_return_condition_event(candidate: ClauseCandidate | None, raw_clause: str | None) -> str | None:
+    texts = [raw_clause] if raw_clause else []
+    if candidate is not None:
+        texts.extend(candidate.condition_candidates)
+    return next(
+        (event for text in texts if (event := _deferred_return_event(text)) is not None),
+        None,
+    )
+
+
 def _j10(data: JudgmentInput) -> RuleStatus:
     raw_state = _raw_clause_state(data, "deposit_return_clause")
     if raw_state is not None:
         return raw_state
-    raw_clause = data.contract_fields["deposit_return_clause"].effective_value
+    raw_value = data.contract_fields["deposit_return_clause"].effective_value
+    raw_clause = raw_value if isinstance(raw_value, str) else None
     # 사용자가 확인한 원문에 좁고 명시적인 반환 연동 조건이 있으면 provider
     # 후보가 없더라도 확인 신호를 보존한다. 법적 효력·위험도를 판정하지 않는다.
     if _has_deferred_return_text(raw_clause):
@@ -306,15 +312,9 @@ def _j10(data: JudgmentInput) -> RuleStatus:
     clarity = _candidate_clarity(candidate)
     if clarity is not RuleStatus.CLEAR:
         return clarity
-    if _has_deferred_return_condition(
-        candidate, raw_clause
-    ):
+    if _has_deferred_return_condition(candidate, raw_clause):
         return RuleStatus.CHECK_NEEDED
-    return (
-        RuleStatus.CLEAR
-        if candidate.condition_candidates
-        else RuleStatus.UNCLEAR
-    )
+    return RuleStatus.CLEAR if candidate.condition_candidates else RuleStatus.UNCLEAR
 
 
 def _j11(data: JudgmentInput) -> RuleStatus:
@@ -329,27 +329,24 @@ def _j11(data: JudgmentInput) -> RuleStatus:
         return clarity
     return (
         RuleStatus.UNCLEAR
-        if candidate.responsible_party_candidate
-        is ResponsiblePartyCandidate.UNSPECIFIED
+        if candidate.responsible_party_candidate is ResponsiblePartyCandidate.UNSPECIFIED
         else RuleStatus.CLEAR
     )
 
 
 def _expected_clause_refs(field_name: str, clauses: list[str]) -> list[str]:
-    return [
-        f"{field_name}:{ordinal}"
-        for ordinal, clause in enumerate(clause for clause in clauses if clause.strip())
-    ]
+    return [f"{field_name}:{ordinal}" for ordinal, clause in enumerate(clause for clause in clauses if clause.strip())]
 
 
-def _candidate_conditions(
+def _candidate_facts(
     candidates: list[ClauseCandidate],
-) -> dict[ClauseType, set[str]]:
-    grouped: dict[ClauseType, set[str]] = {}
+) -> dict[ClauseType, dict[str, set[str]]]:
+    grouped: dict[ClauseType, dict[str, set[str]]] = {}
     for candidate in candidates:
-        grouped.setdefault(candidate.clause_type, set()).update(
-            candidate.condition_candidates
-        )
+        facts = grouped.setdefault(candidate.clause_type, {"conditions": set(), "parties": set()})
+        facts["conditions"].update(candidate.condition_candidates)
+        if candidate.responsible_party_candidate is not ResponsiblePartyCandidate.UNSPECIFIED:
+            facts["parties"].add(candidate.responsible_party_candidate.value)
     return grouped
 
 
@@ -357,15 +354,8 @@ _DATE_PATTERN = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
 _MONEY_PATTERN = re.compile(r"(?<!\d)\d[\d,]*\s*원")
 
 
-def _legacy_clause_values(
-    clauses: list[str], marker: str, pattern: re.Pattern[str]
-) -> set[str]:
-    return {
-        match.replace(" ", "")
-        for clause in clauses
-        if marker in clause
-        for match in pattern.findall(clause)
-    }
+def _legacy_clause_values(clauses: list[str], marker: str, pattern: re.Pattern[str]) -> set[str]:
+    return {match.replace(" ", "") for clause in clauses if marker in clause for match in pattern.findall(clause)}
 
 
 def _legacy_structured_conflict(main: list[str], special: list[str]) -> bool:
@@ -380,9 +370,7 @@ def _legacy_structured_conflict(main: list[str], special: list[str]) -> bool:
         special_text = " ".join(clause for clause in special if marker in clause)
         if main_text and special_text:
             main_party = {party for party in ("임대인", "임차인") if party in main_text}
-            special_party = {
-                party for party in ("임대인", "임차인") if party in special_text
-            }
+            special_party = {party for party in ("임대인", "임차인") if party in special_text}
             if main_party and special_party and main_party != special_party:
                 return True
     return False
@@ -398,9 +386,9 @@ def _j12(data: JudgmentInput) -> RuleStatus:
     special = _value(data, "special_clauses")
     if not isinstance(main, list) or not isinstance(special, list):
         return RuleStatus.CHECK_NEEDED
+    if _legacy_structured_conflict(main, special):
+        return RuleStatus.POSSIBLE_CONFLICT
     if data.schema_version == "1.8.0" and not data.classification_candidates:
-        if _legacy_structured_conflict(main, special):
-            return RuleStatus.POSSIBLE_CONFLICT
         normalized_special = " ".join(special)
         if "본문과 동일" in normalized_special or main == special:
             return RuleStatus.CLEAR
@@ -408,35 +396,32 @@ def _j12(data: JudgmentInput) -> RuleStatus:
 
     main_refs = _expected_clause_refs("main_clauses", main)
     special_refs = _expected_clause_refs("special_clauses", special)
-    candidates_by_ref = {
-        candidate.clause_ref: candidate
-        for candidate in data.classification_candidates
-    }
+    candidates_by_ref = {candidate.clause_ref: candidate for candidate in data.classification_candidates}
     expected_refs = main_refs + special_refs
     if any(clause_ref not in candidates_by_ref for clause_ref in expected_refs):
         return RuleStatus.CHECK_NEEDED
 
     main_candidates = [candidates_by_ref[clause_ref] for clause_ref in main_refs]
-    special_candidates = [
-        candidates_by_ref[clause_ref] for clause_ref in special_refs
-    ]
+    special_candidates = [candidates_by_ref[clause_ref] for clause_ref in special_refs]
     all_candidates = main_candidates + special_candidates
     if any(
-        candidate.review_required
-        or candidate.clarity_candidate is not ClarityCandidate.CLEAR
+        candidate.review_required or candidate.clarity_candidate is not ClarityCandidate.CLEAR
         for candidate in all_candidates
     ):
         return RuleStatus.CHECK_NEEDED
 
-    main_conditions = _candidate_conditions(main_candidates)
-    special_conditions = _candidate_conditions(special_candidates)
-    for clause_type in main_conditions.keys() & special_conditions.keys():
-        left = main_conditions[clause_type]
-        right = special_conditions[clause_type]
-        if not left or not right:
-            return RuleStatus.CHECK_NEEDED
-        if left != right:
-            return RuleStatus.POSSIBLE_CONFLICT
+    main_facts = _candidate_facts(main_candidates)
+    special_facts = _candidate_facts(special_candidates)
+    for clause_type in main_facts.keys() & special_facts.keys():
+        for fact_name in ("conditions", "parties"):
+            left = main_facts[clause_type][fact_name]
+            right = special_facts[clause_type][fact_name]
+            if not left and not right:
+                continue
+            if not left or not right:
+                return RuleStatus.CHECK_NEEDED
+            if left != right:
+                return RuleStatus.POSSIBLE_CONFLICT
     return RuleStatus.CLEAR
 
 
@@ -456,9 +441,7 @@ _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {
 }
 
 
-def _result(
-    judgment_id: str, status: RuleStatus, judgment_input: JudgmentInput
-) -> JudgmentResult:
+def _result(judgment_id: str, status: RuleStatus, judgment_input: JudgmentInput) -> JudgmentResult:
     definition = _definitions()[judgment_id]
     clean = status in CLEAN_STATUSES
     urgency = (
@@ -468,24 +451,29 @@ def _result(
         if status is RuleStatus.CANNOT_CHECK
         else DEFAULT_JUDGMENT_URGENCY[judgment_id]
     )
-    candidate = (
-        _candidate(judgment_input, "deposit_return_clause:0")
-        if judgment_id == "J10"
-        else None
+    candidate = _candidate(judgment_input, "deposit_return_clause:0") if judgment_id == "J10" else None
+    raw_return_value = (
+        judgment_input.contract_fields["deposit_return_clause"].effective_value if judgment_id == "J10" else None
     )
-    raw_return_clause = (
-        judgment_input.contract_fields["deposit_return_clause"].effective_value
-        if judgment_id == "J10"
-        else None
-    )
-    if _has_deferred_return_text(raw_return_clause) or (
-        candidate is not None
-        and _has_deferred_return_condition(candidate, raw_return_clause)
-    ):
-        reason = (
-            "보증금 반환이 신규 임차인의 입주에 연동된 조건이 확인되어 "
-            "반환 조건의 수정 여부를 확인해야 합니다."
+    raw_return_clause = raw_return_value if isinstance(raw_return_value, str) else None
+    deferred_event = _deferred_return_condition_event(candidate, raw_return_clause)
+    if judgment_id == "J10" and deferred_event is not None:
+        reason = f"보증금 반환이 {deferred_event}에 연동된 조건이 확인되어 " "반환 조건의 수정 여부를 확인해야 합니다."
+    elif judgment_id == "J11":
+        raw_repair_clause = judgment_input.contract_fields["repair_responsibility_clause"].effective_value
+        raw_text = raw_repair_clause if isinstance(raw_repair_clause, str) else ""
+        has_repair = bool(re.search(r"수리|수선|고장|보일러|설비", raw_text))
+        has_restoration = bool(re.search(r"원상복구|원상회복|퇴거|통상\s*손모", raw_text))
+        topic = (
+            "계약 존속 중 수리와 계약 종료 시 원상복구"
+            if has_repair and has_restoration
+            else "계약 종료 시 원상복구"
+            if has_restoration
+            else "계약 존속 중 수리"
+            if has_repair
+            else "수리·원상복구"
         )
+        reason = f"{topic} 책임의 주체와 범위를 확인한 결과: {status.value}."
     elif status is RuleStatus.CANNOT_CHECK:
         reason = f"{definition['judgment_name']} 판정에 필요한 값을 확인할 수 없습니다."
     else:
