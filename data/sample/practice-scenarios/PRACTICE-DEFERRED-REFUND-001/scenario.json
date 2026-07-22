@@ -71,13 +71,17 @@
       "name": "후임 임차인 조건부 반환 구조 확인",
       "linked_signal_ids": [
         "SIG-DEFERRED-REFUND"
-      ]
+      ],
+      "effect_tags": []
     },
     {
       "action_id": "PA02",
       "name": "구두 설명 대신 반환 특약 수정 요구",
       "linked_signal_ids": [
         "SIG-DEFERRED-REFUND"
+      ],
+      "effect_tags": [
+        "document_or_clause_request"
       ]
     },
     {
@@ -85,6 +89,9 @@
       "name": "특약 수정 확인 전 계약 진행 보류",
       "linked_signal_ids": [
         "SIG-DEFERRED-REFUND"
+      ],
+      "effect_tags": [
+        "contract_or_signing_hold"
       ]
     }
   ],

@@ -22,7 +22,7 @@
 - **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.
 - **v1.7.0 J 생성 계약**: `JudgmentGuidance`와 `GenerationResult.judgment_items`를 추가했다. 기존 R `items`와 J `judgment_items`는 별도 ID 축이며, 각 source ID는 해당 분석 항목의 `evidence_sources`만 참조한다.
 - **v1.8.0 안정 action item 계약**: R/J `signing_checklist_items`·`post_contract_action_items`에 `{item_key, text}`를 추가했다. `item_key`는 Python이 `result_id|kind|text`에서 생성하며 Backend가 형식·kind 일치를 검증한다.
-- **v1.9.0 표시용 피해 유형 계약**: `AnalysisRunResult.damage_patterns`에 DP01~DP08 비교를 추가했다. R/J 판정을 변경하지 않으며 상태는 `관련 확인 신호 있음`·`제출 자료에서 관련 신호 미확인`·`자료 부족으로 확인 불가`·`예방 확인 필요`만 사용한다. 검증된 사례 corpus가 없으면 `reference_cases=[]`다.
+- **v1.9.0 표시용 피해 유형 계약**: `AnalysisRunResult.damage_patterns`에 DP01~DP08 비교를 추가했다. R/J 판정을 변경하지 않으며 상태는 `관련 확인 신호 있음`·`제출 자료에서 관련 신호 미확인`·`자료 부족으로 확인 불가`·`예방 확인 필요`만 사용한다. 검증된 로컬 사례가 있고 현재 비교 상태가 확인 대상이면 `reference_cases`에 연결하며, 없으면 `[]`다.
 - **v1.9.0 행동 안내 확장**: R/J 안내에 `request_templates`, 단계 안내에 `before_contract_actions`·`during_contract_actions`·`closing_day_actions`·`after_contract_actions`를 추가했다. 이전 payload에서 필드가 없으면 기존 체크리스트·계약 직후 행동으로 대체한다.
 - **생성 계약 유지**: `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`StageGuidance`는 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`contract_id`·`rule_id`·`judgment_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
 

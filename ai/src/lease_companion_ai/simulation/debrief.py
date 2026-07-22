@@ -9,6 +9,7 @@ from lease_companion_ai.schemas.simulation import (
     PracticeResult,
     PracticeTurnEvaluation,
     ScenarioDefinition,
+    SelectedAction,
 )
 from lease_companion_ai.schemas.unified import OfficialSource
 from lease_companion_ai.simulation.models import PracticeAnswerKey
@@ -24,6 +25,8 @@ def build_practice_result(
     answer_key: PracticeAnswerKey,
     evaluations: Sequence[PracticeTurnEvaluation],
     evidence_by_action: Mapping[str, Sequence[OfficialSource]],
+    *,
+    selected_action: SelectedAction | None = None,
 ) -> PracticeResult:
     """승인 근거와 안전 문구만 포함한 복기 결과를 반환한다."""
 
@@ -89,6 +92,7 @@ def build_practice_result(
         session_id=session_id,
         scenario_id=scenario.scenario_id,
         scenario_version=scenario.scenario_version,
+        selected_action=selected_action,
         confirmed_action_ids=confirmed_ids,
         missed_action_ids=missed_ids,
         confirmed_actions=confirmed_actions,

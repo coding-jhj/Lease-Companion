@@ -484,6 +484,18 @@
           "title": "Action Id",
           "type": "string"
         },
+        "effect_tags": {
+          "items": {
+            "enum": [
+              "document_or_clause_request",
+              "contract_or_signing_hold",
+              "payment_hold"
+            ],
+            "type": "string"
+          },
+          "title": "Effect Tags",
+          "type": "array"
+        },
         "linked_signal_ids": {
           "items": {
             "type": "string"

@@ -28,7 +28,17 @@
       "pattern_id": "DP01",
       "pattern_name": "소유자 사칭 계약",
       "reason": "계약서의 임대인과 등기상 소유자 정보가 다르면 계약 권한 확인이 필요합니다.",
-      "reference_cases": [],
+      "reference_cases": [
+        {
+          "published_at": null,
+          "publisher": "주택도시보증공사(HUG)",
+          "reference_case_id": "REF-HUG-FAKE-LANDLORD",
+          "source_url": "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp",
+          "summary": "HUG 전세사기예방센터가 임대인 확인 단계에서 실제 소유자나 정당한 계약 권한이 없는 상대와 계약하는 유형을 설명하고, 등기상 소유자와 계약 상대를 확인하도록 안내합니다.",
+          "title": "가짜 임대인과의 계약 유형",
+          "verification_scope": "HUG 공식 예방 콘텐츠에 공개된 유형별 사례입니다. 개별 계약의 사기 여부나 법적 결론을 입증하는 자료는 아닙니다."
+        }
+      ],
       "related_judgment_ids": [
         "J01"
       ],
@@ -68,7 +78,17 @@
       "pattern_id": "DP03",
       "pattern_name": "보증금 대비 주택가치 확인",
       "reason": "현재 입력 또는 외부 연동이 없어 이 항목을 자동 판정할 수 없습니다.",
-      "reference_cases": [],
+      "reference_cases": [
+        {
+          "published_at": null,
+          "publisher": "주택도시보증공사(HUG)",
+          "reference_case_id": "REF-HUG-SENIOR-CLAIMS",
+          "source_url": "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp",
+          "summary": "HUG는 주택가치와 보증금의 관계, 선순위 근저당 및 다른 임차보증금 정보가 실제와 다르게 안내되는 유형을 구분해 소개합니다.",
+          "title": "선순위 근저당·임차보증금 허위 고지 유형",
+          "verification_scope": "HUG 공식 예방 콘텐츠의 유형 설명입니다. 제출 문서만으로 주택가치, 채무 잔액 또는 보증금 회수 가능성을 확정하지 않습니다."
+        }
+      ],
       "related_judgment_ids": [],
       "related_rule_ids": [
         "R11",
@@ -92,7 +112,26 @@
       "pattern_id": "DP04",
       "pattern_name": "근저당·선순위 권리",
       "reason": "근저당 설정: 관련 확인 신호 발견. 과도한 근저당 여부: 추가 확인 필요. 이유: 비교할 주택가치와 실제 선순위 금액 자료가 부족합니다.",
-      "reference_cases": [],
+      "reference_cases": [
+        {
+          "published_at": null,
+          "publisher": "주택도시보증공사(HUG)",
+          "reference_case_id": "REF-HUG-SENIOR-CLAIMS",
+          "source_url": "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp",
+          "summary": "HUG는 주택가치와 보증금의 관계, 선순위 근저당 및 다른 임차보증금 정보가 실제와 다르게 안내되는 유형을 구분해 소개합니다.",
+          "title": "선순위 근저당·임차보증금 허위 고지 유형",
+          "verification_scope": "HUG 공식 예방 콘텐츠의 유형 설명입니다. 제출 문서만으로 주택가치, 채무 잔액 또는 보증금 회수 가능성을 확정하지 않습니다."
+        },
+        {
+          "published_at": null,
+          "publisher": "주택도시보증공사(HUG)",
+          "reference_case_id": "REF-HUG-SAME-DAY-RIGHTS-CHANGE",
+          "source_url": "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp",
+          "summary": "HUG는 계약 직후 임대인이 변경되거나 주택담보대출이 실행되고, 선순위 근저당 말소 등 약속한 특약이 이행되지 않는 유형을 소개합니다.",
+          "title": "계약 당일 임대인 변경·담보대출 실행 유형",
+          "verification_scope": "계약 후 권리변동을 예방 확인하기 위한 공식 유형 사례입니다. 현재 등기만으로 미래 권리변동을 예측하지 않습니다."
+        }
+      ],
       "related_judgment_ids": [],
       "related_rule_ids": [
         "R03",
@@ -149,7 +188,17 @@
       "pattern_id": "DP06",
       "pattern_name": "선순위 임차보증금",
       "reason": "동일 건물의 선순위 임차보증금은 현재 문서만으로 자동 확인하기 어렵습니다.",
-      "reference_cases": [],
+      "reference_cases": [
+        {
+          "published_at": null,
+          "publisher": "주택도시보증공사(HUG)",
+          "reference_case_id": "REF-HUG-SENIOR-CLAIMS",
+          "source_url": "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp",
+          "summary": "HUG는 주택가치와 보증금의 관계, 선순위 근저당 및 다른 임차보증금 정보가 실제와 다르게 안내되는 유형을 구분해 소개합니다.",
+          "title": "선순위 근저당·임차보증금 허위 고지 유형",
+          "verification_scope": "HUG 공식 예방 콘텐츠의 유형 설명입니다. 제출 문서만으로 주택가치, 채무 잔액 또는 보증금 회수 가능성을 확정하지 않습니다."
+        }
+      ],
       "related_judgment_ids": [],
       "related_rule_ids": [
         "R23"
@@ -162,7 +211,17 @@
       "pattern_id": "DP07",
       "pattern_name": "계약 후 권리변동",
       "reason": "계약 후 권리변동을 제한하는 특약 문구가 확인됩니다.",
-      "reference_cases": [],
+      "reference_cases": [
+        {
+          "published_at": null,
+          "publisher": "주택도시보증공사(HUG)",
+          "reference_case_id": "REF-HUG-SAME-DAY-RIGHTS-CHANGE",
+          "source_url": "https://www.khug.or.kr/jeonse/web/s02/s020101.jsp",
+          "summary": "HUG는 계약 직후 임대인이 변경되거나 주택담보대출이 실행되고, 선순위 근저당 말소 등 약속한 특약이 이행되지 않는 유형을 소개합니다.",
+          "title": "계약 당일 임대인 변경·담보대출 실행 유형",
+          "verification_scope": "계약 후 권리변동을 예방 확인하기 위한 공식 유형 사례입니다. 현재 등기만으로 미래 권리변동을 예측하지 않습니다."
+        }
+      ],
       "related_judgment_ids": [],
       "related_rule_ids": [
         "R10",

@@ -59,13 +59,17 @@
       "name": "등기상 소유자와 계약 상대 확인",
       "linked_signal_ids": [
         "SIG-PROXY-AUTHORITY-MISSING"
-      ]
+      ],
+      "effect_tags": []
     },
     {
       "action_id": "PA02",
       "name": "대리인 권한 서류와 권한 범위 확인",
       "linked_signal_ids": [
         "SIG-PROXY-AUTHORITY-MISSING"
+      ],
+      "effect_tags": [
+        "document_or_clause_request"
       ]
     },
     {
@@ -73,6 +77,10 @@
       "name": "권한 확인 전 서명·송금 보류",
       "linked_signal_ids": [
         "SIG-PROXY-AUTHORITY-MISSING"
+      ],
+      "effect_tags": [
+        "contract_or_signing_hold",
+        "payment_hold"
       ]
     }
   ],

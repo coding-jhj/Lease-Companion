@@ -59,13 +59,17 @@
       "name": "입금 명의와 계약 상대 불일치 확인",
       "linked_signal_ids": [
         "SIG-PAYEE-MISMATCH"
-      ]
+      ],
+      "effect_tags": []
     },
     {
       "action_id": "PA02",
       "name": "제3자 수령 관계와 권한 자료 확인",
       "linked_signal_ids": [
         "SIG-PAYEE-AUTHORITY-UNVERIFIED"
+      ],
+      "effect_tags": [
+        "document_or_clause_request"
       ]
     },
     {
@@ -73,6 +77,9 @@
       "name": "확인 완료 전 가계약금 송금 보류",
       "linked_signal_ids": [
         "SIG-PAYMENT-BEFORE-CHECK"
+      ],
+      "effect_tags": [
+        "payment_hold"
       ]
     }
   ],

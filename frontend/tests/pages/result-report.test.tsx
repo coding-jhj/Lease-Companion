@@ -112,6 +112,11 @@ describe("ResultReportPage", () => {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
     expect(screen.getByRole("heading", { name: "주요 금전피해 유형 비교" })).toBeInTheDocument();
+    const firstPatternDetails = document.querySelector(".damage-patterns details") as HTMLDetailsElement;
+    fireEvent.click(within(firstPatternDetails).getByText("근거와 분석 한계"));
+    const referenceCases = within(firstPatternDetails).getByRole("region", { name: /검증된 유사 참고 사례$/ });
+    expect(within(referenceCases).getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeInTheDocument();
+    expect(within(referenceCases).getByRole("link")).toHaveAttribute("href", expect.stringMatching(/^https:\/\//));
     expect(screen.getByRole("button", { name: "전체 리포트 PDF 저장" })).toBeInTheDocument();
     expect(screen.getByLabelText("제출 자료 기준 피해 유형 비교 요약")).toBeInTheDocument();
     const questionGroup = screen.getByRole("heading", { name: "먼저 물어볼 질문" }).closest("section")!;

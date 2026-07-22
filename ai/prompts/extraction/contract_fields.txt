@@ -21,7 +21,7 @@
 - repair_responsibility: 수리·원상복구 책임 주체·범위의 명확성. 위와 같은 4개 값.
 - deposit_return_clause·repair_responsibility_clause: 해당 조항 원문. 없으면 null.
 - management_fee_present: 관리비 항목이 있으면 true, 없음이 확인되면 false, 판독 불가면 null. management_fee는 고정 금액이 실제 기재된 경우에만 원 단위 정수로 내고, 사용량·세대수 비례처럼 변동 방식만 있으면 null이다. management_fee_items는 변동 관리비 괄호 안의 전기·수도·가스·공용관리비 등 실제 기재 항목도 포함한다.
-- main_clauses: 본문의 주요 금액·기간·책임 조항 목록. special_clauses: 특약 조항 목록. special_clauses_present는 특약이 있으면 true, 없음이 확인되면 false, 판독 불가면 null.
+- main_clauses: 본문의 주요 금액·기간·책임 조항 목록. special_clauses: [특약사항] 영역의 모든 개별 조항을 문서 순서대로 담는다. 여러 조항을 하나로 요약하거나 생략하지 말고 날짜·금액·조건·체크박스 선택 상태를 포함한 원문 표현을 보존한다. special_clauses_present는 특약이 있으면 true, 없음이 확인되면 false, 영역은 있으나 일부라도 판독할 수 없으면 null.
 - rights_change_clause_present: 계약 후 임대인이 담보권(저당권 등)을 설정하지 않기로 하는 특약이 있으면 true, 없으면 false.
 
 문서 텍스트:

@@ -38,6 +38,12 @@
 - 합성 참고·미검증·제외 자료는 평가 구조 참고로만 유지하며 공식 근거로 노출하지 않는다.
 - `rule_evidence_map.csv`와 dev/test retrieval goldset의 기대 source ID도 `official_verified`만 허용한다.
 
+## 유사 참고 사례와의 분리
+
+- `reference_cases`는 RAG 공식 근거가 아니다. 피해 유형을 이해하기 위한 별도 표시 자료이며 R/J 상태·시급도·행동 생성을 바꾸지 않는다.
+- 공개 사례 메타데이터는 `data/reference-cases/verified_reference_cases.json`에 저장하고, 원문 전체·개인정보·사례에서 추론한 법률 결론은 저장하지 않는다.
+- 현재 구현은 DP01~DP08 식별자 기반 로컬 검색만 제공한다. 최신 사례 자동 수집이나 법원 판례 검색은 외부 데이터 범위로 남긴다.
+
 ## 확정 (2026-07-14 선정표)
 
 - 임베딩: gemini-embedding-001 + BM25 하이브리드, 재랭킹: Cohere rerank-v4.0-pro. (`../ai/model-routing.md`)

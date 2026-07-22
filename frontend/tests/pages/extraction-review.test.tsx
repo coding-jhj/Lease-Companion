@@ -44,6 +44,14 @@ function renderPage() {
   );
 }
 
+function confirmRemainingDirectFields() {
+  for (const button of screen.queryAllByRole("button", {
+    name: /(?:직접 확인|확인할 수 없음으로 저장)$/,
+  })) {
+    fireEvent.click(button);
+  }
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -91,6 +99,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText("수정됨")).toBeInTheDocument();
     expect(screen.getByText("저장되지 않은 수정 1건")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
+    confirmRemainingDirectFields();
     const analyzeButton = screen.getByRole("button", { name: "확인 완료하고 분석하기" });
     expect(analyzeButton).toBeEnabled();
     fireEvent.click(analyzeButton);
@@ -272,6 +281,77 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeEnabled();
   });
 
+  it("blocks analysis when a financial field could not be read", async () => {
+    const contract: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-FAILED-DEPOSIT",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        deposit: {
+          field_name: "deposit",
+          extracted_value: null,
+          normalized_value: null,
+          user_corrected_value: null,
+          verification_status: "unverified",
+          confidence: "실패",
+          source_evidence: { page: null, text: null },
+          issue_code: "unreadable",
+          failure_reason: "보증금 칸을 읽지 못했습니다.",
+        },
+      },
+    };
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue({
+      id: 22,
+      status: "completed",
+      error: null,
+      contract_doc: contract,
+      registry_doc: null,
+      created_at: "2026-07-22T00:00:00Z",
+    });
+
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "특약·핵심값 확인 1개" })).toBeInTheDocument();
+    expect(screen.getByLabelText("보증금 값")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeDisabled();
+  });
+
+  it("allows analysis when only a noncritical optional field could not be read", async () => {
+    const contract: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-FAILED-OPTIONAL",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        tenant_name: {
+          field_name: "tenant_name",
+          extracted_value: null,
+          normalized_value: null,
+          user_corrected_value: null,
+          verification_status: "unverified",
+          confidence: "실패",
+          source_evidence: { page: null, text: null },
+          issue_code: "unreadable",
+          failure_reason: "임차인 이름을 읽지 못했습니다.",
+        },
+      },
+    };
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue({
+      id: 23,
+      status: "completed",
+      error: null,
+      contract_doc: contract,
+      registry_doc: null,
+      created_at: "2026-07-22T00:00:00Z",
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("그 밖에 읽지 못한 값")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeEnabled();
+  });
+
   it("sends the user back to upload when extraction cannot be loaded", async () => {
     // 잘못된 문서로 추출이 실패하면 재폴링은 같은 실패만 반환하므로,
     // 복구 경로는 문서를 다시 올리는 것뿐이다.
@@ -318,6 +398,7 @@ describe("ExtractionReviewPage", () => {
       target: { value: "이정훈" },
     });
     fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
+    confirmRemainingDirectFields();
 
     fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 분석하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(

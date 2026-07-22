@@ -47,8 +47,21 @@ export function DamagePatternTable({ items }: { items: DamagePatternComparisonDt
                   idPrefix={`damage-pattern-${item.pattern_id}`}
                 />
                 {item.reference_cases.length > 0
-                  ? <ul className="reference-case-list">{item.reference_cases.map((reference) => <li key={reference.reference_case_id}><a href={reference.source_url} target="_blank" rel="noreferrer">{reference.title}</a><p>{reference.summary}</p><small>{reference.publisher} · {reference.verification_scope}</small></li>)}</ul>
-                  : <p className="empty-note">검증된 유사 참고 사례가 아직 연결되지 않았습니다.</p>}
+                  ? (
+                    <section aria-label={`${item.pattern_name} 검증된 유사 참고 사례`}>
+                      <h3>검증된 유사 참고 사례</h3>
+                      <ul className="reference-case-list">
+                        {item.reference_cases.map((reference) => (
+                          <li key={reference.reference_case_id}>
+                            <a href={reference.source_url} target="_blank" rel="noreferrer">{reference.title}</a>
+                            <p>{reference.summary}</p>
+                            <small>{reference.publisher} · {reference.verification_scope}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )
+                  : <p className="empty-note">현재 비교 상태에 연결된 검증 사례가 없습니다.</p>}
               </details>
             </div>
           </div>
