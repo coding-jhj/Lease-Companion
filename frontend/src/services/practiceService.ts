@@ -1,5 +1,6 @@
 import type {
   PracticeFinalActionRequestDto,
+  PracticeAdvanceRequestDto,
   PracticeResultResponseDto,
   PracticeScenarioDetailDto,
   PracticeScenarioSummaryDto,
@@ -32,6 +33,11 @@ export const practiceService = {
   submitTurn: (sessionId: string, body: PracticeTurnRequestDto) =>
     apiClient<PracticeTurnResponseDto>(
       `/api/practice-sessions/${sessionId}/turns`,
+      jsonOptions("POST", body),
+    ),
+  advanceDialogue: (sessionId: string, body: PracticeAdvanceRequestDto) =>
+    apiClient<PracticeTurnResponseDto>(
+      `/api/practice-sessions/${sessionId}/advance`,
       jsonOptions("POST", body),
     ),
   submitFinalAction: (sessionId: string, body: PracticeFinalActionRequestDto) =>

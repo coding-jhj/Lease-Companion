@@ -27,6 +27,7 @@ from lease_companion_ai.schemas.unified import OfficialSource
 from lease_companion_ai.simulation.evidence import retrieve_action_evidence
 from lease_companion_ai.simulation.models import PracticeAnswerKey, load_practice_assets
 from lease_companion_ai.simulation.service import PracticeSimulationService
+from lease_companion_ai.simulation.state_machine import advance_dialogue_without_confirmation
 
 from app.models.practice import PracticeSession, PracticeTurn
 from app.models.user import User
@@ -159,6 +160,68 @@ def submit_practice_final_action(
     if session_row.result is None:
         raise RuntimeError("완료된 연습 세션에 결과가 저장되지 않았습니다.")
     return turn, state, PracticeResult.model_validate(session_row.result)
+
+
+def advance_practice_dialogue(
+    db: Session,
+    session_row: PracticeSession,
+    *,
+    request_id: str,
+    turn_id: str,
+    destination: str,
+) -> PracticeTurn:
+    duplicate = db.scalar(
+        select(PracticeTurn).where(
+            PracticeTurn.practice_session_fk == session_row.id,
+            PracticeTurn.request_id == request_id,
+        )
+    )
+    if duplicate is not None:
+        raise PracticeServiceError("duplicate_practice_request", "이미 처리된 연습 요청입니다.", 409)
+
+    scenario, _ = load_approved_practice_assets(session_row.scenario_id)
+    state = PracticeSessionState.model_validate(session_row.state_payload)
+    try:
+        advanced = advance_dialogue_without_confirmation(
+            state,
+            scenario,
+            turn_id,
+            to_action_selection=destination == "action_selection",
+        )
+    except ValueError as exc:
+        raise PracticeServiceError("invalid_practice_transition", str(exc), 409) from exc
+
+    attempt_no = (
+        db.scalar(
+            select(func.count())
+            .select_from(PracticeTurn)
+            .where(
+                PracticeTurn.practice_session_fk == session_row.id,
+                PracticeTurn.turn_id == turn_id,
+            )
+        )
+        or 0
+    ) + 1
+    turn = PracticeTurn(
+        practice_turn_id=uuid.uuid4().hex,
+        practice_session_fk=session_row.id,
+        turn_id=turn_id,
+        attempt_no=attempt_no,
+        request_id=request_id,
+        input_payload={"turn_id": turn_id, "destination": destination},
+        evaluation_payload=None,
+        dialogue_response=None,
+    )
+    _apply_state(session_row, advanced, None)
+    db.add(turn)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise PracticeServiceError("duplicate_practice_request", "이미 처리된 연습 요청입니다.", 409) from exc
+    db.refresh(turn)
+    db.refresh(session_row)
+    return turn
 
 
 def session_response(row: PracticeSession) -> PracticeSessionResponse:

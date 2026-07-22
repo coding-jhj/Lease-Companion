@@ -247,6 +247,40 @@ def test_timed_out_turn_is_saved_as_no_response_and_can_retry(client: TestClient
     assert payload["session"]["confirmed_action_ids"] == []
 
 
+def test_user_can_advance_without_confirming_or_move_to_final_choice(client: TestClient):
+    headers = _headers(client)
+    session = _create_session(client, headers, "PRACTICE-DEFERRED-REFUND-001")
+    session_id = session["practice_session_id"]
+    endpoint = f"/api/practice-sessions/{session_id}/advance"
+
+    advanced = client.post(
+        endpoint,
+        headers=headers,
+        json={
+            "request_id": "advance-without-confirmation",
+            "turn_id": "TURN-01",
+            "destination": "next_turn",
+        },
+    )
+    assert advanced.status_code == 200, advanced.text
+    assert advanced.json()["evaluation"] is None
+    assert advanced.json()["session"]["current_state"] == "TURN-02"
+    assert advanced.json()["session"]["confirmed_action_ids"] == []
+
+    final_choice = client.post(
+        endpoint,
+        headers=headers,
+        json={
+            "request_id": "finish-dialogue-early",
+            "turn_id": "TURN-02",
+            "destination": "action_selection",
+        },
+    )
+    assert final_choice.status_code == 200, final_choice.text
+    assert final_choice.json()["session"]["current_state"] == "ACTION-SELECTION"
+    assert final_choice.json()["session"]["confirmed_action_ids"] == []
+
+
 @pytest.mark.parametrize("scenario_id,user_answer", FREE_FORM_TURN_ONE)
 def test_offline_practice_accepts_natural_turn_answer(
     client: TestClient, scenario_id: str, user_answer: str

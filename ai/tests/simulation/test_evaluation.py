@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import importlib
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +21,13 @@ FIXTURE_DIR = (
     / "sample"
     / "practice-scenarios"
     / "PRACTICE-BROKER-PRESSURE-001"
+)
+DEFERRED_FIXTURE_DIR = (
+    ROOT
+    / "data"
+    / "sample"
+    / "practice-scenarios"
+    / "PRACTICE-DEFERRED-REFUND-001"
 )
 
 
@@ -121,6 +128,59 @@ def test_provider_categories_follow_the_approved_turn_contract(
     assert result.answer_category == category
     assert result.confirmed_action_ids == confirmed
     assert provider.calls[0].prompt_version == "practice-evaluation-v1"
+
+
+@pytest.mark.parametrize(
+    "answer,expected_response",
+    [
+        (
+            "후임 임차인이 안 구해지면 어떻게 되나요?",
+            "지금까지는 대부분 금방 구해졌습니다. 다음 임차인이 들어오면 받은 보증금으로 바로 돌려드릴 생각입니다.",
+        ),
+        (
+            "계약 종료일에 바로 돌려받을 수 있나요?",
+            "날짜를 확정해서 넣는 것은 조금 어렵습니다. 다음 임차인이 언제 들어올지 모르니까요.",
+        ),
+        (
+            "특약 3번은 무슨 뜻인가요?",
+            "보증금을 돌려드리지 않는다는 뜻은 아니고요. 보통 다음 임차인이 들어오는 일정에 맞춰서 반환한다는 의미입니다.",
+        ),
+        (
+            "이 특약 조건을 삭제해 주세요.",
+            "임대인분이 이 조건을 원하고 계십니다. 다른 분도 계약을 고민하고 있어서 오래 기다려드리기는 어렵습니다.",
+        ),
+    ],
+)
+def test_same_turn_uses_question_specific_counterparty_response(answer, expected_response):
+    modules = _modules()
+    scenario, answer_key = modules["models"].load_practice_assets(
+        DEFERRED_FIXTURE_DIR / "scenario.json",
+        DEFERRED_FIXTURE_DIR / "answer-key.json",
+    )
+    provider = StubProvider(
+        PracticeTurnEvaluation(
+            turn_id="TURN-01",
+            answer_category="partial_check",
+            confirmed_action_ids=[],
+            next_dialogue_state="TURN-01",
+        )
+    )
+    service = modules["service"].PracticeSimulationService(scenario, answer_key, provider)
+    occurred_at = datetime.now(timezone.utc)
+    session = service.start_session("practice-session-variant", 1, occurred_at)
+
+    step = service.submit(
+        session,
+        PracticeTurnInput(
+            session_id=session.session_id,
+            turn_id="TURN-01",
+            user_answer=answer,
+            response_time_seconds=3.5,
+        ),
+        occurred_at=occurred_at,
+    )
+
+    assert step.dialogue_response == expected_response
 
 
 def test_timeout_input_is_no_response_without_calling_provider():

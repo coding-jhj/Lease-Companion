@@ -4,20 +4,16 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
 import type {
-  PracticeAnswerCategory,
   PracticeSelectedAction,
   PracticeSessionDto,
   PracticeTurnResponseDto,
 } from "../../types/api";
 
-const categoryLabels: Record<PracticeAnswerCategory, string> = {
-  appropriate_check: "필요한 확인 행동이 전달되었습니다.",
-  partial_check: "확인 대상을 조금 더 구체적으로 말해 보세요.",
-  ambiguous_answer: "진행 여부와 확인 요청을 더 분명히 말해 보세요.",
-  avoidance: "질문을 피하지 말고 확인할 내용을 직접 말해 보세요.",
-  no_response: "답변하지 못한 턴입니다. 같은 상황에서 다시 답할 수 있습니다.",
-  needs_review: "답변을 자동으로 평가하지 못했습니다. 같은 턴에서 다시 답해 주세요.",
-};
+interface DialogueHistoryItem {
+  id: string;
+  userAnswer: string;
+  response: string | null;
+}
 
 function elapsedSeconds(startedAt: number) {
   return Math.min(3600, Math.max(0, (Date.now() - startedAt) / 1000));
@@ -29,6 +25,7 @@ export function PracticeSessionPage() {
   const turnStartedAt = useRef(Date.now());
   const [session, setSession] = useState<PracticeSessionDto | null>(null);
   const [lastResponse, setLastResponse] = useState<PracticeTurnResponseDto | null>(null);
+  const [dialogueHistory, setDialogueHistory] = useState<DialogueHistoryItem[]>([]);
   const [answer, setAnswer] = useState("");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [submitting, setSubmitting] = useState(false);
@@ -67,10 +64,38 @@ export function PracticeSessionPage() {
       });
       setLastResponse(response);
       setSession(response.session);
+      setDialogueHistory((current) => [
+        ...current,
+        {
+          id: response.practice_turn_id,
+          userAnswer: timedOut ? "답변하지 못했어요." : answer.trim(),
+          response: response.dialogue_response,
+        },
+      ]);
       setAnswer("");
       turnStartedAt.current = Date.now();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "답변을 보내지 못했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function advanceDialogue(destination: "next_turn" | "action_selection") {
+    if (!session?.current_turn) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      const response = await practiceService.advanceDialogue(sessionId, {
+        request_id: createPracticeRequestId("advance"),
+        turn_id: session.current_turn.turn_id,
+        destination,
+      });
+      setSession(response.session);
+      setLastResponse(null);
+      turnStartedAt.current = Date.now();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "다음 상황으로 이동하지 못했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -110,11 +135,17 @@ export function PracticeSessionPage() {
               <span>현재 단계 <strong>{isActionSelection ? "최종 행동 선택" : session.current_turn?.turn_id}</strong></span>
               <span>확인한 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
             </div>
-            {lastResponse?.dialogue_response && (
-              <section className="practice-feedback" aria-live="polite">
-                <p>상대방의 반응</p>
-                <blockquote>{lastResponse.dialogue_response}</blockquote>
-                {lastResponse.evaluation && <strong>{categoryLabels[lastResponse.evaluation.answer_category]}</strong>}
+            {dialogueHistory.length > 0 && (
+              <section className="practice-conversation-history" aria-label="지금까지의 대화" aria-live="polite">
+                <h2>지금까지의 대화</h2>
+                <ol>
+                  {dialogueHistory.map((item) => (
+                    <li key={item.id}>
+                      <div className="practice-conversation-history__user"><strong>나</strong><p>{item.userAnswer}</p></div>
+                      {item.response && <div className="practice-conversation-history__counterparty"><strong>상대방</strong><p>{item.response}</p></div>}
+                    </li>
+                  ))}
+                </ol>
               </section>
             )}
             {!isActionSelection && session.current_turn && (
@@ -132,6 +163,13 @@ export function PracticeSessionPage() {
                     <button type="submit" disabled={submitting || !answer.trim()}>{submitting ? "답변 확인 중…" : "답변 보내기"}</button>
                   </div>
                 </form>
+                <div className="practice-dialogue-actions" aria-label="대화 진행 선택">
+                  <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue("next_turn")}>이 확인은 남기고 다음 상황</button>
+                  <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue("action_selection")}>대화를 마치고 최종 행동 선택</button>
+                </div>
+                {lastResponse?.attempt_no && lastResponse.attempt_no >= 2 && (
+                  <p className="practice-loop-help">같은 확인이 반복되고 있습니다. 더 질문하거나, 미확인으로 남기고 다음 상황으로 넘어갈 수 있습니다.</p>
+                )}
               </section>
             )}
             {isActionSelection && (

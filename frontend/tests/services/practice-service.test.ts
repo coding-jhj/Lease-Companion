@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe("practiceService", () => {
-  it("uses the seven Practice API paths and JSON request bodies", async () => {
+  it("uses the Practice API paths and JSON request bodies", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
       new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } }),
     );
@@ -24,6 +24,11 @@ describe("practiceService", () => {
       timed_out: false,
       response_time_seconds: 3,
     });
+    await practiceService.advanceDialogue("session-001", {
+      request_id: "advance-request-001",
+      turn_id: "TURN-01",
+      destination: "next_turn",
+    });
     await practiceService.submitFinalAction("session-001", {
       request_id: "final-request-001",
       selected_action: "보류",
@@ -37,6 +42,7 @@ describe("practiceService", () => {
       "/api/practice-sessions",
       "/api/practice-sessions/session-001",
       "/api/practice-sessions/session-001/turns",
+      "/api/practice-sessions/session-001/advance",
       "/api/practice-sessions/session-001/final-action",
       "/api/practice-sessions/session-001/result",
     ]);
@@ -57,6 +63,14 @@ describe("practiceService", () => {
     expect(fetchMock.mock.calls[5][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
+        request_id: "advance-request-001",
+        turn_id: "TURN-01",
+        destination: "next_turn",
+      }),
+    });
+    expect(fetchMock.mock.calls[6][1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({
         request_id: "final-request-001",
         selected_action: "보류",
         response_time_seconds: 1,
@@ -68,5 +82,6 @@ describe("practiceService", () => {
   it("creates backend-compatible request IDs", () => {
     expect(createPracticeRequestId("turn")).toMatch(/^turn-[A-Za-z0-9-]{36}$/);
     expect(createPracticeRequestId("final")).toMatch(/^final-[A-Za-z0-9-]{36}$/);
+    expect(createPracticeRequestId("advance")).toMatch(/^advance-[A-Za-z0-9-]{36}$/);
   });
 });

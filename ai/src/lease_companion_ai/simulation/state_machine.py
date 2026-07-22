@@ -132,6 +132,31 @@ def advance_dialogue(
     return PracticeSessionState.model_validate(payload)
 
 
+def advance_dialogue_without_confirmation(
+    session: PracticeSessionState,
+    scenario: ScenarioDefinition,
+    turn_id: str,
+    *,
+    to_action_selection: bool = False,
+) -> PracticeSessionState:
+    """확인 행동을 인정하지 않은 채 다음 장면 또는 최종 선택으로 이동한다."""
+
+    if session.status != "active":
+        raise ValueError("완료되거나 중단된 세션에는 입력할 수 없습니다.")
+    if session.current_state != turn_id:
+        raise ValueError("입력 turn_id가 현재 상태와 일치하지 않습니다.")
+    turn = next(
+        (item for item in scenario.dialogue_turns if item.turn_id == turn_id),
+        None,
+    )
+    if turn is None:
+        raise ValueError("시나리오에 없는 turn_id입니다.")
+    next_state = scenario.action_selection.state_id if to_action_selection else turn.next_turn_id
+    payload = session.model_dump(mode="python")
+    payload.update(current_state=next_state)
+    return PracticeSessionState.model_validate(payload)
+
+
 def complete_action_selection(
     session: PracticeSessionState,
     scenario: ScenarioDefinition,

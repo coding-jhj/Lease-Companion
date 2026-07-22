@@ -192,7 +192,9 @@ describe("PracticeSessionPage", () => {
       timed_out: false,
     })));
     expect(await screen.findByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
-    expect(screen.getByText("필요한 확인 행동이 전달되었습니다.")).toBeInTheDocument();
+    expect(screen.getByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
+    expect(screen.getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
+    expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
 
   it("submits a timeout without answer text and keeps the same turn", async () => {
@@ -207,7 +209,7 @@ describe("PracticeSessionPage", () => {
       user_answer: null,
       timed_out: true,
     })));
-    expect(screen.getByText("답변하지 못한 턴입니다. 같은 상황에서 다시 답할 수 있습니다.")).toBeInTheDocument();
+    expect(screen.getByText("답변하지 못했어요.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
   });
 
@@ -219,7 +221,8 @@ describe("PracticeSessionPage", () => {
     fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
     fireEvent.click(screen.getByRole("button", { name: "답변 보내기" }));
 
-    expect(await screen.findByText("답변을 자동으로 평가하지 못했습니다. 같은 턴에서 다시 답해 주세요.")).toBeInTheDocument();
+    expect(await screen.findByText("답변을 다시 말씀해 주세요.")).toBeInTheDocument();
+    expect(screen.queryByText("답변을 자동으로 평가하지 못했습니다. 같은 턴에서 다시 답해 주세요.")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
     const retryAnswer = screen.getByLabelText("내 답변");
     expect(retryAnswer).toBeEnabled();
@@ -260,6 +263,22 @@ describe("PracticeSessionPage", () => {
 
     await waitFor(() => expect(submit).toHaveBeenCalledWith("session-001", expect.objectContaining({ selected_action: "보류" })));
     expect(await screen.findByText("결과 화면 이동 완료")).toBeInTheDocument();
+  });
+
+  it("lets the user leave a repeated turn without confirming its action", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    const advance = vi.spyOn(practiceService, "advanceDialogue").mockResolvedValue(
+      turnResponse(session({ current_state: "TURN-02", current_turn: dialogueTurn("TURN-02", "다음 확인 상황입니다.") })),
+    );
+    renderSession();
+
+    fireEvent.click(await screen.findByRole("button", { name: "이 확인은 남기고 다음 상황" }));
+
+    await waitFor(() => expect(advance).toHaveBeenCalledWith("session-001", expect.objectContaining({
+      turn_id: "TURN-01",
+      destination: "next_turn",
+    })));
+    expect(await screen.findByRole("heading", { name: "다음 확인 상황입니다." })).toBeInTheDocument();
   });
 
   it("redirects a restored completed session to its result", async () => {

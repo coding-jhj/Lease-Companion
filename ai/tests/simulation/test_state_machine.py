@@ -11,6 +11,7 @@ from lease_companion_ai.schemas.simulation import (
 )
 from lease_companion_ai.simulation.models import load_practice_assets
 from lease_companion_ai.simulation.service import PracticeSimulationService
+from lease_companion_ai.simulation.state_machine import advance_dialogue_without_confirmation
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -266,3 +267,26 @@ def test_action_selection_is_rejected_before_dialogue_completion():
             ),
             occurred_at=STARTED_AT,
         )
+
+
+def test_user_can_leave_an_unconfirmed_turn_or_finish_the_dialogue():
+    scenario, answer_key = _assets("PRACTICE-DEFERRED-REFUND-001")
+    service = PracticeSimulationService(scenario, answer_key, TurnProvider())
+    session = service.start_session("practice-session-escape", 12, STARTED_AT)
+
+    next_turn = advance_dialogue_without_confirmation(
+        session,
+        scenario,
+        "TURN-01",
+    )
+    final_choice = advance_dialogue_without_confirmation(
+        session,
+        scenario,
+        "TURN-01",
+        to_action_selection=True,
+    )
+
+    assert next_turn.current_state == "TURN-02"
+    assert final_choice.current_state == "ACTION-SELECTION"
+    assert next_turn.confirmed_action_ids == []
+    assert final_choice.confirmed_action_ids == []
