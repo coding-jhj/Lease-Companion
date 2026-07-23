@@ -88,11 +88,23 @@ class PracticeAdvanceRequest(BaseModel):
     destination: Literal["next_turn", "action_selection"]
 
 
+class PracticeMediaJobResponse(BaseModel):
+    media_job_id: str
+    practice_turn_id: str
+    status: Literal["queued", "generating_audio", "generating_video", "completed", "failed"]
+    provider: str
+    video_url: str | None = None
+    error_code: str | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
+
+
 class PracticeTurnResponse(BaseModel):
     practice_turn_id: str
     attempt_no: int
     evaluation: PracticeTurnEvaluation | None
     dialogue_response: str | None
+    media: PracticeMediaJobResponse | None = None
     session: PracticeSessionResponse
 
 

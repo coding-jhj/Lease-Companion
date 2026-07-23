@@ -433,6 +433,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-avatar-stage__caption div { flex: 1 1 auto; min-width: 0; }
 .practice-avatar-stage__caption p { margin: 0 0 5px; color: #42634c; font-size: 12px; font-weight: 900; }
 .practice-avatar-stage__caption h2 { margin: 0; font-size: 18px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word; }
+.practice-avatar-stage__media-state { display: block; margin-top: 8px; color: #42634c; font-size: 12px; font-weight: 700; }
 .practice-avatar-stage__caption button { flex: 0 0 auto; width: auto; min-height: 42px; padding: 9px 13px; white-space: nowrap; }
 .practice-feedback { border-color: #9fb8c4; background: #edf5f8; }
 .practice-feedback strong { display: block; margin-top: 12px; color: #284e60; }

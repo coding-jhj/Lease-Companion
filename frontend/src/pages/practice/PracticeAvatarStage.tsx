@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { practiceMediaForScenario } from "./practiceMediaManifest";
+import type { PracticeMediaStatus } from "../../types/api";
 
 type AvatarMode = "idle" | "speaking" | "listening" | "pressure";
 
@@ -16,6 +17,9 @@ interface PracticeAvatarStageProps {
   pressureDelaySeconds: number | null;
   hasUserInput: boolean;
   submitting: boolean;
+  generatedVideoUrl?: string | null;
+  generatedSpeechText?: string | null;
+  mediaStatus?: PracticeMediaStatus | null;
 }
 
 export function PracticeAvatarStage({
@@ -24,6 +28,9 @@ export function PracticeAvatarStage({
   pressureDelaySeconds,
   hasUserInput,
   submitting,
+  generatedVideoUrl = null,
+  generatedSpeechText = null,
+  mediaStatus = null,
 }: PracticeAvatarStageProps) {
   const avatarVideos = practiceMediaForScenario(scenarioId);
   const [mode, setMode] = useState<AvatarMode>("idle");
@@ -35,6 +42,12 @@ export function PracticeAvatarStage({
     setMode("speaking");
     setPlaybackId((current) => current + 1);
   }, [prompt]);
+
+  useEffect(() => {
+    if (!generatedVideoUrl) return;
+    setMode("speaking");
+    setPlaybackId((current) => current + 1);
+  }, [generatedVideoUrl]);
 
   useEffect(() => {
     if (
@@ -57,6 +70,10 @@ export function PracticeAvatarStage({
     setPlaybackId((current) => current + 1);
   }
 
+  const isGeneratedSpeech = mode === "speaking" && Boolean(generatedVideoUrl);
+  const videoSource = isGeneratedSpeech ? generatedVideoUrl! : avatarVideos[mode];
+  const caption = isGeneratedSpeech && generatedSpeechText ? generatedSpeechText : prompt;
+
   function handleEnded() {
     if (mode === "speaking" || mode === "pressure") setMode("listening");
   }
@@ -67,9 +84,10 @@ export function PracticeAvatarStage({
         <video
           key={`${mode}-${playbackId}`}
           className="practice-avatar-stage__video"
-          src={avatarVideos[mode]}
+          src={videoSource}
           autoPlay
-          muted
+          muted={!isGeneratedSpeech}
+          controls={isGeneratedSpeech}
           playsInline
           loop={mode === "idle" || mode === "listening"}
           preload="auto"
@@ -82,7 +100,17 @@ export function PracticeAvatarStage({
       <div className="practice-avatar-stage__caption">
         <div>
           <p>공인중개사</p>
-          <h2 id="practice-avatar-title">{prompt}</h2>
+          <h2 id="practice-avatar-title">{caption}</h2>
+          {(mediaStatus === "queued" || mediaStatus === "generating_audio" || mediaStatus === "generating_video") && (
+            <span className="practice-avatar-stage__media-state" role="status">
+              {mediaStatus === "queued" && "아바타 응답을 준비하고 있습니다."}
+              {mediaStatus === "generating_audio" && "응답 음성을 만들고 있습니다."}
+              {mediaStatus === "generating_video" && "입 모양을 음성에 맞추고 있습니다."}
+            </span>
+          )}
+          {mediaStatus === "failed" && (
+            <span className="practice-avatar-stage__media-state">영상 생성에 실패해 텍스트 응답을 표시합니다.</span>
+          )}
         </div>
         <button type="button" className="secondary" onClick={replayPrompt} disabled={submitting}>
           장면 다시 보기

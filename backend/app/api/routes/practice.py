@@ -2,7 +2,8 @@
 
 from typing import NoReturn
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from lease_companion_ai.schemas.simulation import PracticeResult, PracticeTurnEvaluation
@@ -13,6 +14,7 @@ from app.models.user import User
 from app.schemas.practice import (
     PracticeConversationPage,
     PracticeFinalActionRequest,
+    PracticeMediaJobResponse,
     PracticeAdvanceRequest,
     PracticeResultResponse,
     PracticeScenarioDetail,
@@ -34,6 +36,13 @@ from app.services.practice import (
     submit_practice_turn,
     advance_practice_dialogue,
 )
+from app.services.practice_media import (
+    get_owned_practice_media_job,
+    media_job_response,
+    queue_practice_media_job,
+    resolve_media_file,
+)
+from app.workers.practice_media import run_practice_media_job
 
 router = APIRouter(tags=["practice"])
 
@@ -118,6 +127,7 @@ def get_conversation_messages(
 def submit_turn(
     practice_session_id: str,
     body: PracticeTurnRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PracticeTurnResponse:
@@ -132,6 +142,9 @@ def submit_turn(
             timed_out=body.timed_out,
             response_time_seconds=body.response_time_seconds,
         )
+        media_job = queue_practice_media_job(db, session_row, turn)
+        if media_job is not None and media_job.status == "queued":
+            background_tasks.add_task(run_practice_media_job, media_job.media_job_id)
         return PracticeTurnResponse(
             practice_turn_id=turn.practice_turn_id,
             attempt_no=turn.attempt_no,
@@ -141,8 +154,55 @@ def submit_turn(
                 else None
             ),
             dialogue_response=turn.dialogue_response,
+            media=(
+                media_job_response(media_job, turn.practice_turn_id)
+                if media_job is not None
+                else None
+            ),
             session=session_response(session_row),
         )
+    except PracticeServiceError as exc:
+        _raise_http(exc)
+
+
+@router.get(
+    "/api/practice-media-jobs/{media_job_id}",
+    response_model=PracticeMediaJobResponse,
+)
+def get_media_job(
+    media_job_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PracticeMediaJobResponse:
+    try:
+        job, turn = get_owned_practice_media_job(db, user, media_job_id)
+        return media_job_response(job, turn.practice_turn_id)
+    except PracticeServiceError as exc:
+        _raise_http(exc)
+
+
+@router.get("/api/practice-media-jobs/{media_job_id}/video")
+def get_media_video(
+    media_job_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    try:
+        job, _turn = get_owned_practice_media_job(db, user, media_job_id)
+        if job.status != "completed" or not job.video_relpath:
+            raise PracticeServiceError(
+                "practice_media_not_ready",
+                "연습 아바타 영상이 아직 준비되지 않았습니다.",
+                409,
+            )
+        path = resolve_media_file(job.video_relpath)
+        if not path.is_file():
+            raise PracticeServiceError(
+                "practice_media_file_missing",
+                "완료된 연습 아바타 영상 파일을 찾을 수 없습니다.",
+                404,
+            )
+        return FileResponse(path, media_type="video/mp4", filename="speaking.mp4")
     except PracticeServiceError as exc:
         _raise_http(exc)
 

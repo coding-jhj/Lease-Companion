@@ -1,5 +1,6 @@
 import type {
   PracticeFinalActionRequestDto,
+  PracticeMediaJobDto,
   PracticeAdvanceRequestDto,
   PracticeConversationPageDto,
   PracticeResultResponseDto,
@@ -9,7 +10,7 @@ import type {
   PracticeTurnRequestDto,
   PracticeTurnResponseDto,
 } from "../types/api";
-import { apiClient } from "./apiClient";
+import { apiBlobClient, apiClient } from "./apiClient";
 
 function jsonOptions(method: "POST", body: unknown): RequestInit {
   return {
@@ -43,6 +44,9 @@ export const practiceService = {
       `/api/practice-sessions/${sessionId}/turns`,
       jsonOptions("POST", body),
     ),
+  getMediaJob: (mediaJobId: string) =>
+    apiClient<PracticeMediaJobDto>(`/api/practice-media-jobs/${mediaJobId}`),
+  getMediaVideo: (videoUrl: string) => apiBlobClient(videoUrl),
   advanceDialogue: (sessionId: string, body: PracticeAdvanceRequestDto) =>
     apiClient<PracticeTurnResponseDto>(
       `/api/practice-sessions/${sessionId}/advance`,

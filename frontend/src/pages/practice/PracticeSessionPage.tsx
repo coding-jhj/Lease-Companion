@@ -11,6 +11,7 @@ import type {
   PracticeSelectedAction,
   PracticeSessionDto,
   PracticeConversationTurnDto,
+  PracticeMediaJobDto,
   PracticeTurnResponseDto,
 } from "../../types/api";
 
@@ -45,6 +46,9 @@ export function PracticeSessionPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
+  const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
 
   async function loadSession() {
     setStatus("loading");
@@ -70,6 +74,65 @@ export function PracticeSessionPage() {
 
   useEffect(() => { void loadSession(); }, [sessionId]);
 
+  useEffect(() => {
+    if (!avatarMedia || avatarMedia.status === "completed" || avatarMedia.status === "failed") return;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function poll() {
+      try {
+        const latest = await practiceService.getMediaJob(avatarMedia!.media_job_id);
+        if (cancelled) return;
+        setAvatarMedia(latest);
+        if (latest.status !== "failed") {
+          timer = window.setTimeout(() => void poll(), 1500);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvatarMedia((current) => current ? { ...current, status: "failed", error_code: "media_poll_failed" } : null);
+        }
+      }
+    }
+
+    timer = window.setTimeout(() => void poll(), 500);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [avatarMedia?.media_job_id, avatarMedia?.status]);
+
+  useEffect(() => {
+    if (
+      avatarMedia?.status !== "completed"
+      || !avatarMedia.video_url
+      || avatarVideoUrl
+    ) return;
+    let cancelled = false;
+
+    void practiceService.getMediaVideo(avatarMedia.video_url)
+      .then((video) => {
+        if (cancelled) return;
+        setAvatarVideoUrl(URL.createObjectURL(video));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvatarMedia((current) => current ? {
+            ...current,
+            status: "failed",
+            error_code: "media_download_failed",
+          } : null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl]);
+
+  useEffect(() => () => {
+    if (avatarVideoUrl) URL.revokeObjectURL(avatarVideoUrl);
+  }, [avatarVideoUrl]);
+
   async function sendTurn(timedOut: boolean) {
     if (!session?.current_turn || (!timedOut && !answer.trim())) return;
     const answeredTurn = session.current_turn;
@@ -85,6 +148,12 @@ export function PracticeSessionPage() {
         response_time_seconds: elapsedSeconds(turnStartedAt.current),
       });
       setLastResponse(response);
+      setAvatarMedia(response.media ?? null);
+      setAvatarSpeechText(response.dialogue_response);
+      setAvatarVideoUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return null;
+      });
       setSession(response.session);
       setLatestConversationTurn({
         practice_turn_id: response.practice_turn_id,
@@ -252,6 +321,9 @@ export function PracticeSessionPage() {
                   pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                   hasUserInput={Boolean(answer.trim())}
                   submitting={submitting}
+                  generatedVideoUrl={avatarVideoUrl}
+                  generatedSpeechText={avatarSpeechText}
+                  mediaStatus={avatarMedia?.status ?? null}
                 />
               </section>
             )}
@@ -262,6 +334,9 @@ export function PracticeSessionPage() {
                 pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                 hasUserInput={Boolean(answer.trim())}
                 submitting={submitting}
+                generatedVideoUrl={avatarVideoUrl}
+                generatedSpeechText={avatarSpeechText}
+                mediaStatus={avatarMedia?.status ?? null}
               />
             )}
             {!isActionSelection && session.current_turn && (

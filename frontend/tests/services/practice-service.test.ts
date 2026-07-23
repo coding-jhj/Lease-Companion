@@ -25,6 +25,8 @@ describe("practiceService", () => {
       timed_out: false,
       response_time_seconds: 3,
     });
+    await practiceService.getMediaJob("media-job-001");
+    await practiceService.getMediaVideo("/api/practice-media-jobs/media-job-001/video");
     await practiceService.advanceDialogue("session-001", {
       request_id: "advance-request-001",
       turn_id: "TURN-01",
@@ -44,6 +46,8 @@ describe("practiceService", () => {
       "/api/practice-sessions/session-001",
       "/api/practice-sessions/session-001/messages?limit=20&before=cursor-001",
       "/api/practice-sessions/session-001/turns",
+      "/api/practice-media-jobs/media-job-001",
+      "/api/practice-media-jobs/media-job-001/video",
       "/api/practice-sessions/session-001/advance",
       "/api/practice-sessions/session-001/final-action",
       "/api/practice-sessions/session-001/result",
@@ -62,7 +66,7 @@ describe("practiceService", () => {
         response_time_seconds: 3,
       }),
     });
-    expect(fetchMock.mock.calls[6][1]).toMatchObject({
+    expect(fetchMock.mock.calls[8][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
         request_id: "advance-request-001",
@@ -70,7 +74,7 @@ describe("practiceService", () => {
         destination: "next_turn",
       }),
     });
-    expect(fetchMock.mock.calls[7][1]).toMatchObject({
+    expect(fetchMock.mock.calls[9][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
         request_id: "final-request-001",

@@ -203,7 +203,7 @@ python -m pip install -r requirements-minimum-mvp.txt
 
 - **실전 계약 점검**: 회원가입부터 계약 생성, 문서 업로드, 추출값 확인·수정, R01~R24·J01~J12 분석, DP01~DP08 비교, 특약별 공식 근거·질문·수정 요청·행동 안내, PDF, 체크리스트 저장·재조회까지 Backend·Frontend에 연결됐다.
 - **특약 RAG**: 6개 특약 유형의 결정적 매칭, 공식 source·section 검색, 생성·Guardrail, Backend 저장, Frontend 카드·PDF가 연결됐다. 오프라인 잠금 평가에서 카탈로그 `30/30`, source Top-3 `13/15`, section Top-3 `10/15`, 금지 단정 `0`을 기록했다. 독립 검토와 실제 Gemini·Cohere 품질 검증은 미완료다.
-- **계약 연습**: 조건부 보증금 반환, 제3자 계좌 송금, 대리인 권한 미확인 3개 합성 시나리오가 AI 답변 평가, Backend 세션·턴·결과 저장, Frontend 텍스트 대화·복기와 연결됐다. 미디어·음성은 후속 범위다.
+- **계약 연습**: 조건부 보증금 반환, 제3자 계좌 송금, 대리인 권한 미확인 3개 합성 시나리오가 AI 답변 평가, Backend 세션·턴·결과 저장, Frontend 텍스트 대화·복기와 연결됐다. 선택적 로컬 Supertonic 3 → MuseTalk 1.5 미디어 작업과 Frontend 폴링·재생도 연결됐으며, 생성 실패 시 텍스트·기존 영상으로 복구한다.
 - **검증 경계**: 실제 FastAPI·PostgreSQL 브라우저 E2E와 API 키 없는 fallback 흐름은 검증 기록이 있다. 실제 Gemini·Cohere 네트워크 응답 품질·비용은 아직 검증하지 않았다.
 - **현재 제한**: R20~R22 외부 데이터 자동 연결, 운영 배포·보안 정책, 실제 provider 품질 평가, 독립 평가셋 검토는 후속이다.
 

@@ -148,6 +148,57 @@ def test_unapproved_scenario_is_not_available(client: TestClient):
     assert created.json()["error"]["code"] == "practice_scenario_not_found"
 
 
+def test_practice_media_job_is_queued_and_owner_scoped(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+):
+    from app.api.routes import practice as practice_routes
+
+    monkeypatch.setenv("PRACTICE_MEDIA_ENABLED", "true")
+    monkeypatch.setattr(practice_routes, "run_practice_media_job", lambda _job_id: None)
+    owner_headers = _headers(client)
+    other_headers = _headers(client)
+    session = _create_session(
+        client, owner_headers, "PRACTICE-DEFERRED-REFUND-001"
+    )
+
+    response = client.post(
+        f"/api/practice-sessions/{session['practice_session_id']}/turns",
+        headers=owner_headers,
+        json={
+            "request_id": "media-job-request-001",
+            "turn_id": "TURN-01",
+            "user_answer": "반환 조건을 확인하고 계약서 문구를 수정해 주세요.",
+            "timed_out": False,
+            "response_time_seconds": 2,
+        },
+    )
+    assert response.status_code == 200, response.text
+    media = response.json()["media"]
+    assert media["status"] == "queued"
+    assert media["provider"] == "supertonic-3+musetalk-1.5"
+    assert media["video_url"] is None
+
+    owned = client.get(
+        f"/api/practice-media-jobs/{media['media_job_id']}",
+        headers=owner_headers,
+    )
+    assert owned.status_code == 200
+    assert owned.json()["practice_turn_id"] == response.json()["practice_turn_id"]
+
+    hidden = client.get(
+        f"/api/practice-media-jobs/{media['media_job_id']}",
+        headers=other_headers,
+    )
+    assert hidden.status_code == 404
+
+    not_ready = client.get(
+        f"/api/practice-media-jobs/{media['media_job_id']}/video",
+        headers=owner_headers,
+    )
+    assert not_ready.status_code == 409
+    assert not_ready.json()["error"]["code"] == "practice_media_not_ready"
+
+
 def test_only_owner_can_read_or_submit_to_session(client: TestClient):
     owner_headers = _headers(client)
     other_headers = _headers(client)
