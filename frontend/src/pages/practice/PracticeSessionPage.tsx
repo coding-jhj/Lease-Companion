@@ -5,12 +5,15 @@ import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
 import { PracticeAvatarStage } from "./PracticeAvatarStage";
 import { PracticeHintPanel } from "./PracticeHintPanel";
+import { PracticeChatPanel } from "./PracticeChatPanel";
 import { PracticeMissionCard } from "./PracticeMissionCard";
 import { practiceMissionForScenario } from "./practiceMissionCatalog";
 import type {
   PracticeScenarioDetailDto,
   PracticeSelectedAction,
   PracticeSessionDto,
+  PracticeConversationTurnDto,
+  PracticeMediaJobDto,
   PracticeTurnResponseDto,
 } from "../../types/api";
 
@@ -58,6 +61,8 @@ export function PracticeSessionPage() {
   const [session, setSession] = useState<PracticeSessionDto | null>(null);
   const [scenario, setScenario] = useState<PracticeScenarioDetailDto | null>(null);
   const [lastResponse, setLastResponse] = useState<PracticeTurnResponseDto | null>(null);
+  const [latestConversationTurn, setLatestConversationTurn] = useState<PracticeConversationTurnDto | null>(null);
+  const [conversationRefreshToken, setConversationRefreshToken] = useState(0);
   const [answer, setAnswer] = useState("");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [submitting, setSubmitting] = useState(false);
@@ -65,11 +70,16 @@ export function PracticeSessionPage() {
   const [hintOpen, setHintOpen] = useState(false);
   const [contractOpen, setContractOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<PracticeSelectedAction | null>(null);
+  const [conversationOpen, setConversationOpen] = useState(false);
+  const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
+  const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
 
   async function loadSession() {
     setStatus("loading");
     setHintOpen(false);
     setContractOpen(false);
+    setConversationOpen(false);
     setSelectedAction(null);
     try {
       const loaded = await practiceService.getSession(sessionId);
@@ -93,8 +103,69 @@ export function PracticeSessionPage() {
 
   useEffect(() => { void loadSession(); }, [sessionId]);
 
+  useEffect(() => {
+    if (!avatarMedia || avatarMedia.status === "completed" || avatarMedia.status === "failed") return;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function poll() {
+      try {
+        const latest = await practiceService.getMediaJob(avatarMedia!.media_job_id);
+        if (cancelled) return;
+        setAvatarMedia(latest);
+        if (latest.status !== "failed") {
+          timer = window.setTimeout(() => void poll(), 1500);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvatarMedia((current) => current ? { ...current, status: "failed", error_code: "media_poll_failed" } : null);
+        }
+      }
+    }
+
+    timer = window.setTimeout(() => void poll(), 500);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [avatarMedia?.media_job_id, avatarMedia?.status]);
+
+  useEffect(() => {
+    if (
+      avatarMedia?.status !== "completed"
+      || !avatarMedia.video_url
+      || avatarVideoUrl
+    ) return;
+    let cancelled = false;
+
+    void practiceService.getMediaVideo(avatarMedia.video_url)
+      .then((video) => {
+        if (cancelled) return;
+        setAvatarVideoUrl(URL.createObjectURL(video));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvatarMedia((current) => current ? {
+            ...current,
+            status: "failed",
+            error_code: "media_download_failed",
+          } : null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl]);
+
+  useEffect(() => () => {
+    if (avatarVideoUrl) URL.revokeObjectURL(avatarVideoUrl);
+  }, [avatarVideoUrl]);
+
   async function sendTurn(timedOut: boolean) {
     if (!session?.current_turn || (!timedOut && !answer.trim())) return;
+    const answeredTurn = session.current_turn;
+    const submittedAnswer = timedOut ? null : answer.trim();
     setSubmitting(true);
     setErrorMessage("");
     try {
@@ -106,7 +177,23 @@ export function PracticeSessionPage() {
         response_time_seconds: elapsedSeconds(turnStartedAt.current),
       });
       setLastResponse(response);
+      setAvatarMedia(response.media ?? null);
+      setAvatarSpeechText(response.dialogue_response);
+      setAvatarVideoUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return null;
+      });
       setSession(response.session);
+      setLatestConversationTurn({
+        practice_turn_id: response.practice_turn_id,
+        turn_id: answeredTurn.turn_id,
+        prompt: answeredTurn.prompt,
+        user_answer: submittedAnswer,
+        timed_out: timedOut,
+        dialogue_response: response.dialogue_response,
+        created_at: new Date().toISOString(),
+      });
+      setConversationRefreshToken((current) => current + 1);
       setAnswer("");
       setHintOpen(false);
       turnStartedAt.current = Date.now();
@@ -198,6 +285,9 @@ export function PracticeSessionPage() {
                   pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                   hasUserInput={Boolean(answer.trim())}
                   submitting={submitting}
+                  generatedVideoUrl={avatarVideoUrl}
+                  generatedSpeechText={avatarSpeechText}
+                  mediaStatus={avatarMedia?.status ?? null}
                 />
                 <section className="practice-dialogue practice-dialogue--composer" aria-label="현재 답변">
                   <form className="practice-answer-composer" onSubmit={submitAnswer}>
@@ -221,6 +311,17 @@ export function PracticeSessionPage() {
                     </>
                   )}
                 </section>
+                <details className="practice-conversation-reference" onToggle={(event) => setConversationOpen(event.currentTarget.open)}>
+                  <summary>이전 대화 보기</summary>
+                  {conversationOpen && (
+                    <PracticeChatPanel
+                      sessionId={session.practice_session_id}
+                      currentTurn={session.current_turn}
+                      latestTurn={latestConversationTurn}
+                      refreshToken={conversationRefreshToken}
+                    />
+                  )}
+                </details>
               </>
             )}
             {isActionSelection && (

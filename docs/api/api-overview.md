@@ -20,9 +20,16 @@
 | `results` | 판정·원문 증거·공식 근거·질문 리포트 조회 | JudgmentResult, EvidenceSource, QuestionCard | 독립 `results` 경로는 두지 않고 `GET /api/contracts/{id}/analysis-runs/{analysis_run_id}`의 `result`·`generation_result`에서 조회 |
 | `checklists` | 서명 전 체크리스트·계약 직후 행동 상태 관리 | ChecklistItem, PostContractAction | **구현됨**: `GET /api/contracts/{id}/checklist-items`(?kind=checklist/post_action 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert — 계약 건 단위 저장·재조회). 항목 문구·근거는 생성 결과가 원본이며 상태만 저장. item_key는 `R01/J01:checklist:<hash>` / `R01/J01:post_action:<hash>` 안정 식별자(→ `docs/decisions/2026-07-18-guidance-action-item-keys.md`). Backend는 신규 쓰기의 형식과 kind 일치를 검증 |
 | `feedback` | 사용자 피드백 수집 | UserFeedback | **구현됨**(2026-07-17 신규 추가 — 목록 추가는 자유 규칙): `POST /api/contracts/{id}/feedback`(content 1~2000자 필수 + rating 1~5 선택, 201) · `GET /api/contracts/{id}/feedback`(본인 것만, 최신순). 이력으로 쌓기만 하고 수정·삭제 없음 |
-| `practice` | 승인된 합성 계약 연습 시나리오·세션·턴·복기 | PracticeSession, PracticeTurn | **구현됨**: 시나리오 목록·상세, 세션 생성·조회, TURN 제출·명시적 진행, 최종 행동, 결과 재조회. 실제 계약과 별도 식별자·테이블을 사용하며 answer key·숨은 신호·미래 TURN을 공개하지 않음. 정확한 경로·schema는 OpenAPI 기준 |
+| `practice` | 승인된 합성 계약 연습 시나리오·세션·턴·복기·선택적 아바타 미디어 | PracticeSession, PracticeTurn, PracticeMediaJob | **구현됨**: 시나리오 목록·상세, 세션 생성·조회, TURN 제출·명시적 진행, 최종 행동, 결과 재조회. 기능 플래그 활성화 시 답변별 미디어 작업을 큐에 넣고 상태·영상을 본인에게만 제공. 실제 계약과 별도 식별자·테이블을 사용하며 answer key·숨은 신호·미래 TURN을 공개하지 않음. 정확한 경로·schema는 OpenAPI 기준 |
 
 > 영역 ↔ 도메인은 1:1이 아니다. `auth`·`users`는 모두 `User`를 다루고, `results`는 판정·근거·질문을 함께 조회하며, `checklists`는 체크리스트와 계약 직후 행동을 함께 관리한다.
+
+## 계약 연습 아바타 미디어
+
+- TURN 제출 응답의 `media`는 기능 플래그가 꺼져 있으면 `null`, 켜져 있으면 작업 식별자와 초기 상태를 포함한다.
+- `GET /api/practice-media-jobs/{media_job_id}`로 `queued`·`generating_audio`·`generating_video`·`completed`·`failed` 상태를 폴링한다.
+- 완료 후 `GET /api/practice-media-jobs/{media_job_id}/video`에서 인증된 사용자의 MP4만 제공한다.
+- 생성 실패는 저장된 텍스트 답변, 계약 규칙 판정, TURN 진행 상태를 변경하지 않는다.
 
 ## 결과 표현 기준
 

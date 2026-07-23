@@ -1,0 +1,17 @@
+FROM leelang/atl-avatar:1
+
+RUN python -m venv /opt/colab \
+    && /opt/colab/bin/python -m pip install --no-cache-dir notebook \
+    && /opt/mt/bin/python -m pip install --no-cache-dir ipykernel \
+    && /opt/mt/bin/python -m ipykernel install \
+        --prefix=/opt/colab \
+        --name=python3 \
+        --display-name="MuseTalk"
+
+RUN mkdir -p /content /workspace
+
+WORKDIR /content
+
+EXPOSE 8888
+
+CMD ["/opt/colab/bin/jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--port-retries=0", "--no-browser", "--allow-root", "--ServerApp.allow_origin=https://colab.research.google.com", "--ServerApp.allow_credentials=True"]

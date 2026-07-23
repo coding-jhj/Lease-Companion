@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import type {
   PracticeAnswerCategory,
+  PracticeConversationTurnDto,
   PracticeDialogueTurnDto,
   PracticeResultDto,
   PracticeScenarioDetailDto,
@@ -25,6 +26,7 @@ interface MockSession {
   turnIndex: number;
   result: PracticeResultDto | null;
   requestIds: Set<string>;
+  messages: PracticeConversationTurnDto[];
 }
 
 const now = "2026-07-22T00:00:00Z";
@@ -201,7 +203,7 @@ function getStoredSession(id: string): MockSession | undefined {
     const stored = globalThis.localStorage?.getItem(`${sessionStoragePrefix}${id}`);
     if (!stored) return undefined;
     const parsed = JSON.parse(stored) as Omit<MockSession, "requestIds"> & { requestIds: string[] };
-    const restored = { ...parsed, requestIds: new Set(parsed.requestIds) };
+    const restored = { ...parsed, messages: parsed.messages ?? [], requestIds: new Set(parsed.requestIds) };
     sessions.set(id, restored);
     return restored;
   } catch {
@@ -276,12 +278,32 @@ export const practiceHandlers = [
       started_at: now,
       completed_at: null,
     };
-    storeSession(id, { response, turnIndex: 0, result: null, requestIds: new Set() });
+    storeSession(id, { response, turnIndex: 0, result: null, requestIds: new Set(), messages: [] });
     return HttpResponse.json(response, { status: 201 });
   }),
   http.get("/api/practice-sessions/:sessionId", ({ params }) => {
     const session = getStoredSession(String(params.sessionId));
     return session ? HttpResponse.json(session.response) : error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
+  }),
+  http.get("/api/practice-sessions/:sessionId/messages", ({ params, request }) => {
+    const session = getStoredSession(String(params.sessionId));
+    if (!session) return error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
+    const url = new URL(request.url);
+    const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") ?? 30)));
+    const before = url.searchParams.get("before");
+    const newestFirst = [...session.messages].reverse();
+    const start = before
+      ? newestFirst.findIndex((item) => item.practice_turn_id === before) + 1
+      : 0;
+    if (before && start === 0) return error("invalid_practice_cursor", "대화 기록 위치를 확인할 수 없습니다.", 400);
+    const pageNewestFirst = newestFirst.slice(start, start + limit);
+    const hasMore = start + limit < newestFirst.length;
+    const nextCursor = hasMore ? pageNewestFirst[pageNewestFirst.length - 1]?.practice_turn_id ?? null : null;
+    return HttpResponse.json({
+      items: pageNewestFirst.reverse(),
+      next_cursor: nextCursor,
+      has_more: hasMore,
+    });
   }),
   http.post("/api/practice-sessions/:sessionId/turns", async ({ params, request }) => {
     const sessionId = String(params.sessionId);
@@ -302,11 +324,22 @@ export const practiceHandlers = [
       current_state: nextTurn?.turn_id ?? "ACTION-SELECTION",
       current_turn: nextTurn,
     };
+    const practiceTurnId = crypto.randomUUID().replaceAll("-", "");
+    const dialogueResponse = body.timed_out ? "답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요." : "말씀하신 확인 내용을 반영했습니다. 다음 상황으로 넘어가겠습니다.";
+    session.messages.push({
+      practice_turn_id: practiceTurnId,
+      turn_id: body.turn_id,
+      prompt: scenario.turns.find((item) => item.turn_id === body.turn_id)?.prompt ?? "",
+      user_answer: body.user_answer,
+      timed_out: body.timed_out,
+      dialogue_response: dialogueResponse,
+      created_at: now,
+    });
     const response: PracticeTurnResponseDto = {
-      practice_turn_id: crypto.randomUUID().replaceAll("-", ""),
+      practice_turn_id: practiceTurnId,
       attempt_no: 1,
       evaluation,
-      dialogue_response: body.timed_out ? "답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요." : "말씀하신 확인 내용을 반영했습니다. 다음 상황으로 넘어가겠습니다.",
+      dialogue_response: dialogueResponse,
       session: session.response,
     };
     storeSession(sessionId, session);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { practiceMediaForScenario, sharedPoster } from "./practiceMediaManifest";
+import type { PracticeMediaStatus } from "../../types/api";
 
 type AvatarMode = "idle" | "speaking" | "listening" | "pressure";
 
@@ -16,6 +17,9 @@ interface PracticeAvatarStageProps {
   pressureDelaySeconds: number | null;
   hasUserInput: boolean;
   submitting: boolean;
+  generatedVideoUrl?: string | null;
+  generatedSpeechText?: string | null;
+  mediaStatus?: PracticeMediaStatus | null;
 }
 
 function prefersReducedMotion() {
@@ -28,6 +32,9 @@ export function PracticeAvatarStage({
   pressureDelaySeconds,
   hasUserInput,
   submitting,
+  generatedVideoUrl = null,
+  generatedSpeechText = null,
+  mediaStatus = null,
 }: PracticeAvatarStageProps) {
   const avatarVideos = practiceMediaForScenario(scenarioId);
   const [mode, setMode] = useState<AvatarMode>("idle");
@@ -38,8 +45,10 @@ export function PracticeAvatarStage({
   const pressurePlayedForPrompt = useRef<string | null>(null);
   const playbackFailed = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const source = avatarVideos[mode];
-  const hasVideo = Boolean(source);
+  const isGeneratedSpeech = mode === "speaking" && Boolean(generatedVideoUrl);
+  const videoSource = isGeneratedSpeech ? generatedVideoUrl! : avatarVideos[mode];
+  const caption = generatedSpeechText || prompt;
+  const hasVideo = Boolean(videoSource);
 
   function requestPlayback() {
     if (!videoRef.current || !hasVideo) return;
@@ -66,6 +75,14 @@ export function PracticeAvatarStage({
       setUserPlaybackRequested(false);
     }
   }, [hasVideo, mode, playbackId, reducedMotion, userPlaybackRequested]);
+
+  useEffect(() => {
+    if (!generatedVideoUrl) return;
+    playbackFailed.current = false;
+    setMode("speaking");
+    setPlaybackId((current) => current + 1);
+    setVideoUnavailable(false);
+  }, [generatedVideoUrl]);
 
   useEffect(() => {
     if (mode !== "listening" || pressureDelaySeconds === null || hasUserInput || pressurePlayedForPrompt.current === prompt) return;
@@ -109,21 +126,22 @@ export function PracticeAvatarStage({
             key={`${mode}-${playbackId}`}
             data-testid="practice-video"
             className="practice-avatar-stage__video"
-            src={source}
+            src={videoSource}
             poster={sharedPoster}
             autoPlay={!reducedMotion}
-            muted
+            muted={!isGeneratedSpeech}
+            controls={isGeneratedSpeech}
             playsInline
             loop={mode === "idle" || mode === "listening"}
             preload="auto"
             onEnded={handleEnded}
             onAbort={handleVideoError}
             onError={handleVideoError}
-          onPlaying={() => {
-            if (!playbackFailed.current) {
-              setVideoUnavailable(false);
-            }
-          }}
+            onPlaying={() => {
+              if (!playbackFailed.current) {
+                setVideoUnavailable(false);
+              }
+            }}
           />
         )}
         {fallbackMessage && <p className="practice-avatar-stage__video-fallback" role="status">{fallbackMessage}</p>}
@@ -134,7 +152,23 @@ export function PracticeAvatarStage({
       <div className="practice-avatar-stage__caption">
         <div>
           <p>공인중개사</p>
-          <h2 id="practice-avatar-title">{prompt}</h2>
+          <h2 id="practice-avatar-title">{caption}</h2>
+          {generatedSpeechText && generatedSpeechText !== prompt && (
+            <div className="practice-avatar-stage__next-prompt">
+              <p>이어서 확인할 내용</p>
+              <h3>{prompt}</h3>
+            </div>
+          )}
+          {(mediaStatus === "queued" || mediaStatus === "generating_audio" || mediaStatus === "generating_video") && (
+            <span className="practice-avatar-stage__media-state" role="status">
+              {mediaStatus === "queued" && "아바타 응답을 준비하고 있습니다."}
+              {mediaStatus === "generating_audio" && "응답 음성을 만들고 있습니다."}
+              {mediaStatus === "generating_video" && "입 모양을 음성에 맞추고 있습니다."}
+            </span>
+          )}
+          {mediaStatus === "failed" && (
+            <span className="practice-avatar-stage__media-state">영상 생성에 실패해 텍스트 응답을 표시합니다.</span>
+          )}
         </div>
         <button type="button" className="secondary practice-avatar-stage__retry" onClick={replayPrompt} disabled={submitting}>
           {reducedMotion ? "장면 재생" : "장면 다시 보기"}

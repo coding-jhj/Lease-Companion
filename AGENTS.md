@@ -28,12 +28,12 @@
 
 ## 병렬 확장 모드: 계약 연습
 
-- 상태(2026-07-22): 승인된 합성 시나리오 3개가 AI 답변 평가, Backend 세션·턴·결과 저장 API, Frontend 텍스트 대화·복기 화면에 연결됐다.
+- 상태(2026-07-23): 승인된 합성 시나리오 3개가 AI 답변 평가, Backend 세션·턴·결과 저장 API, Frontend 텍스트 대화·복기 화면에 연결됐다. 선택적 로컬 미디어 파이프라인은 Supertonic 3 음성합성 → MuseTalk 1.5 립싱크 영상 생성 → Frontend 폴링·재생으로 연결됐다.
 - 식별자: `scenario_id`·`practice_session_id`·`practice_turn_id`를 사용하며 실제 계약 `contract_id`·분석 이력과 섞지 않는다.
 - 판정: Python 규칙 엔진만 합성 계약의 R/J 상태를 결정한다. Gemini는 사용자 답변 의미만 분류하며 판정을 바꾸지 않는다.
 - 실패: provider 장애·timeout·형식 오류를 사용자 오답으로 기록하지 않고 현재 TURN의 `needs_review` fallback으로 처리한다.
 - 보안: answer key·숨은 신호·미래 TURN을 API·Frontend에 노출하지 않는다.
-- 범위: 현재 텍스트 입력만 지원한다. 아바타·영상·TTS·STT는 후속이다.
+- 범위: 사용자 입력은 현재 텍스트만 지원한다. 답변 출력은 텍스트를 기준으로 유지하면서 기능 플래그로 로컬 아바타·영상·TTS를 추가할 수 있다. STT·실시간 음성 입력은 후속이다.
 - 기준: [`docs/planning/practice-simulation-work-guide.md`](docs/planning/practice-simulation-work-guide.md), [`docs/decisions/2026-07-20-practice-simulation-boundary.md`](docs/decisions/2026-07-20-practice-simulation-boundary.md).
 
 ## 아키텍처 (기준: 2026-07-15 아키텍처 다이어그램)

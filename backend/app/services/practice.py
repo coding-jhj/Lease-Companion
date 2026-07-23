@@ -32,6 +32,8 @@ from lease_companion_ai.simulation.state_machine import advance_dialogue_without
 from app.models.practice import PracticeSession, PracticeTurn
 from app.models.user import User
 from app.schemas.practice import (
+    PracticeConversationPage,
+    PracticeConversationTurn,
     PracticeDialogueTurnView,
     PracticeScenarioDetail,
     PracticeScenarioSummary,
@@ -114,6 +116,57 @@ def get_owned_practice_session(db: Session, user: User, practice_session_id: str
     if row is None:
         raise PracticeServiceError("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404)
     return row
+
+
+def list_practice_conversation(
+    db: Session,
+    session_row: PracticeSession,
+    *,
+    before: str | None,
+    limit: int,
+) -> PracticeConversationPage:
+    scenario, _ = load_approved_practice_assets(session_row.scenario_id)
+    prompts = {turn.turn_id: turn.prompt for turn in scenario.dialogue_turns}
+    query = (
+        select(PracticeTurn)
+        .where(
+            PracticeTurn.practice_session_fk == session_row.id,
+            PracticeTurn.turn_id.like("TURN-%"),
+            PracticeTurn.dialogue_response.is_not(None),
+        )
+        .order_by(PracticeTurn.id.desc())
+    )
+    if before is not None:
+        cursor_row = db.scalar(
+            select(PracticeTurn).where(
+                PracticeTurn.practice_session_fk == session_row.id,
+                PracticeTurn.practice_turn_id == before,
+            )
+        )
+        if cursor_row is None:
+            raise PracticeServiceError("invalid_practice_cursor", "대화 기록 위치를 확인할 수 없습니다.", 400)
+        query = query.where(PracticeTurn.id < cursor_row.id)
+
+    rows = list(db.scalars(query.limit(limit + 1)))
+    has_more = len(rows) > limit
+    page_rows = rows[:limit]
+    items = [
+        PracticeConversationTurn(
+            practice_turn_id=row.practice_turn_id,
+            turn_id=row.turn_id,
+            prompt=prompts.get(row.turn_id, ""),
+            user_answer=row.input_payload.get("user_answer"),
+            timed_out=bool(row.input_payload.get("timed_out", False)),
+            dialogue_response=row.dialogue_response,
+            created_at=row.created_at,
+        )
+        for row in reversed(page_rows)
+    ]
+    return PracticeConversationPage(
+        items=items,
+        next_cursor=page_rows[-1].practice_turn_id if has_more and page_rows else None,
+        has_more=has_more,
+    )
 
 
 def submit_practice_turn(

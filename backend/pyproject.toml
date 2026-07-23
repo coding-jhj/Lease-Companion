@@ -18,6 +18,8 @@ dependencies = [
     "bcrypt<4.1",
     "email-validator",
     "python-multipart",
+    # 계약 연습 아바타 음성을 CPU ONNX로 생성한다. 모델 가중치는 Git이 아닌 외부 캐시에 둔다.
+    "supertonic>=1.3.1,<2",
 ]
 
 [build-system]

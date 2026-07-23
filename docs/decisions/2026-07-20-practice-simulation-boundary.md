@@ -3,7 +3,7 @@
 - 날짜: 2026-07-20
 - 상태: 확정
 
-> 구현 갱신(2026-07-22): 이 ADR의 데이터·판정 경계를 유지한 채 승인 시나리오 3개가 AI 평가, Backend 영속 API, Frontend 텍스트 대화·복기, 실제 API Playwright 흐름으로 연결됐다. 아래의 “구현 전”과 첫 시나리오 1개 표기는 결정 당시의 역사적 상태다. 미디어·음성은 여전히 후속 범위다.
+> 구현 갱신(2026-07-23): 이 ADR의 데이터·판정 경계를 유지한 채 승인 시나리오 3개가 AI 평가, Backend 영속 API, Frontend 텍스트 대화·복기, 실제 API Playwright 흐름으로 연결됐다. 선택적 로컬 미디어 경로는 별도 ADR에서 Supertonic 3 + MuseTalk 1.5로 확정했다. 아래의 “구현 전”, 첫 시나리오 1개, 제공자 미정 표기는 결정 당시의 역사적 상태다.
 
 ## 배경
 
@@ -102,9 +102,9 @@
 
 ## 후속 결정
 
-- image-to-video 제공자·모델: TODO
-- 음성합성 제공자·목소리 정책: TODO
+- 로컬 image-to-video·음성합성: Supertonic 3 + MuseTalk 1.5로 결정(→ [`2026-07-23-practice-avatar-media-pipeline.md`](2026-07-23-practice-avatar-media-pipeline.md))
 - 운영 미디어 저장소·CDN: TODO
+- 영속 GPU worker·avatar 전처리 cache: TODO
 - 텍스트 버전 검증 후 음성 입력 도입 여부: TODO
 
 세부 제품 규칙은 [`../planning/practice-simulation-product-rules.md`](../planning/practice-simulation-product-rules.md)를 따른다.
