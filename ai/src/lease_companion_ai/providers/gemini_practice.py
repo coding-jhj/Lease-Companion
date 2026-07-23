@@ -20,6 +20,7 @@ from lease_companion_ai.providers.gemini_gateway import (
     gemini_http_options,
     get_gemini_gateway,
 )
+from lease_companion_ai.providers.gemini_schema import clean_gemini_response_schema
 from lease_companion_ai.schemas.simulation import (
     PracticeTurnEvaluation,
     ScenarioDefinition,
@@ -32,19 +33,7 @@ from lease_companion_ai.simulation.provider import (
 )
 
 
-def _clean_response_schema(node: Any) -> Any:
-    if isinstance(node, dict):
-        return {
-            key: _clean_response_schema(value)
-            for key, value in node.items()
-            if key not in ("additionalProperties", "title", "default")
-        }
-    if isinstance(node, list):
-        return [_clean_response_schema(item) for item in node]
-    return node
-
-
-_PRACTICE_RESPONSE_SCHEMA = _clean_response_schema(
+_PRACTICE_RESPONSE_SCHEMA = clean_gemini_response_schema(
     PracticeTurnEvaluation.model_json_schema()
 )
 

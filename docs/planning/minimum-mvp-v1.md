@@ -83,7 +83,7 @@
 - 수집일
 - 사용자용 근거 요약
 
-공식 근거는 설명을 뒷받침하지만 규칙 판정을 변경하지 않는다. 검증된 9개 공식자료 manifest는 [`../../data/rag/metadata/official_sources.jsonl`](../../data/rag/metadata/official_sources.jsonl)에 등록돼 있으며, 이용조건이 확인된 원문만 저장한다.
+공식 근거는 설명을 뒷받침하지만 규칙 판정을 변경하지 않는다. 검증된 10개 공식자료 manifest는 [`../../data/rag/metadata/official_sources.jsonl`](../../data/rag/metadata/official_sources.jsonl)에 등록돼 있으며, 이용조건이 확인된 원문만 저장한다.
 
 ### 6. 리포트
 

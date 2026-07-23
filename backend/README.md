@@ -37,7 +37,7 @@
 
 `auth`·`contracts`·`documents`·`extractions`·`analysis-runs`·`checklist-items`·`feedback` 경로가 구현되어 있다. 분석 결과는 완료된 `analysis-runs`의 `result`(규칙 판정)·`generation_result`(생성 안내) JSON으로 조회한다. 상세: [`docs/api/api-overview.md`](../docs/api/api-overview.md).
 
-`auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
+현재 라우터 영역은 `auth` · `contracts` · `documents` · `extractions` · `analysis-runs` · `checklist-items` · `feedback` · `practice`다. 독립 `users`·`results` 경로는 두지 않는다.
 
 계약 연습은 실제 계약 건과 분리된 `practice-scenarios`·`practice-sessions` API를 사용한다. API 키가 있으면 Gemini practice provider, 키가 없고 `PRACTICE_OFFLINE_MODE=true`이면 승인 answer-key 기반 Fake provider를 선택한다. 실제 API 연결 검증 절차는 [`docs/testing/practice-real-api-validation.md`](../docs/testing/practice-real-api-validation.md)를 따른다.
 

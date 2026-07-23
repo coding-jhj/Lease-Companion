@@ -8,7 +8,7 @@
 |---|---|
 | Pydantic 단일 원본 | `ai/src/lease_companion_ai/schemas/unified.py` |
 | R01–R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
-| 생성 JSON Schema 10개 | `data/schemas/generated/` (v1.9 classification input/result 포함, 손으로 수정 금지) |
+| 생성 JSON Schema 16개 | `data/schemas/generated/` (v1.9 classification·계약 연습 포함, 손으로 수정 금지) |
 | CASE-001 fixture 9개 | `data/sample/fixtures/case-001/` |
 
 **현재 상태를 정확히 구분한다:**
@@ -267,7 +267,7 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 
 | 단계 | 상태 |
 |---|---|
-| 1. A 패키지 준비 | **완료** — canonical v1.8.0 읽기 호환·v1.9.0 신규 출력, ClassificationInput·ClassificationResult·pipeline helper 포함 Schema 10개, fixture 9개, J gold 47건 |
+| 1. A 패키지 준비 | **완료** — canonical v1.8.0 읽기 호환·v1.9.0 신규 출력, classification·계약 연습 포함 Schema 16개, fixture 9개, J gold 47건 |
 | 2. B 소비 확인 | **완료** — confirm·R/J 분석·생성 분리 저장, classification worker 실행·내부 저장, provider 성공·실패·safe fallback·API 미노출 검증 완료 |
 | 3. Frontend 소비 확인 | **완료** — v1.8.0·v1.9.0 DTO, v1.9 fixture, J10~J12 조항 명확성 화면, classification fallback·내부 오류 미노출, 모바일 E2E 연결 |
 

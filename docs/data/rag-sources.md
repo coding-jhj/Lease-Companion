@@ -51,7 +51,7 @@
 
 ## 2026-07-16 공식 출처 manifest
 
-- 공식 검증 9개를 `data/rag/metadata/official_sources.jsonl`에 기록했다. `scripts/prepare_rag_sources.py`가 inventory에서 결정적으로 재생성한다.
+- 공식 검증 10개를 `data/rag/metadata/official_sources.jsonl`에 기록했다. `scripts/prepare_rag_sources.py`가 inventory에서 결정적으로 재생성한다.
 - 국가법령정보센터는 저작권법 제7조 대상 법령정보와 법제처 보유 저작물의 자유이용 정책을 안내한다. 다만 서식·첨부물의 제3자 권리 가능성 때문에 개별 이용조건 확인 전 원문은 커밋하지 않는다.
 - `SRC-CONFIRM-FORM`은 국가법령정보센터의 공식 별지 제20호서식과 자유이용 정책을 확인해 목적물·권리관계·관리비 관련 부분을 정규화해 저장한다.
 - 법무부 표준 주택임대차계약서(`SRC-STD-LEASE`)는 공공누리 제1유형 표시를 확인해 정규화 원문을 저장한다.
@@ -61,7 +61,7 @@
 ## 미정 (TODO)
 
 - 기본 청킹 크기·중첩은 배치 1 로컬 구현에서 `1200`·`120`을 사용한다. 공식 코퍼스 수집 후 실제 문서 구조 평가를 거쳐 버전으로 확정한다.
-- 출처 후보 15개는 `data/rules/source_inventory.csv`에서 상태 분류 완료. 명시적 재배포 허용을 확인한 원문만 수집한다.
+- 출처 후보 16개는 `data/rules/source_inventory.csv`에서 상태 분류 완료. 명시적 재배포 허용을 확인한 원문만 수집한다.
 
 ## 2026-07-16 평가 계약 정비
 

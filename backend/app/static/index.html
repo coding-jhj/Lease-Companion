@@ -30,6 +30,39 @@
         <h2 id="review-title">추출값 확인·수정</h2>
         <p class="hint">문서 원문과 대조한 뒤 값을 고쳐주세요. 확인 전에는 분석할 수 없습니다.</p>
         <div id="review-fields"></div>
+        <fieldset class="contract-context">
+          <legend>계약 상황</legend>
+          <p class="hint">현재 상황을 기준으로 질문·체크리스트·계약 직후 행동을 만듭니다.</p>
+          <div class="context-grid">
+            <label>계약 종류
+              <select id="contract-type">
+                <option value="전세">전세</option>
+                <option value="보증부 월세">보증부 월세</option>
+                <option value="일반 월세">일반 월세</option>
+              </select>
+            </label>
+            <label>계약 단계
+              <select id="contract-stage">
+                <option value="계약금 입금 전">계약금 입금 전</option>
+                <option value="서명 전">서명 전</option>
+                <option value="계약 직후">계약 직후</option>
+              </select>
+            </label>
+            <label>입주 예정일 <span>선택</span><input id="move-in-date" type="date"></label>
+            <label>잔금 지급일 <span>선택</span><input id="balance-payment-date" type="date"></label>
+            <label>대리 계약 여부
+              <select id="is-proxy-contract">
+                <option value="">모름</option>
+                <option value="false">아니요</option>
+                <option value="true">예</option>
+              </select>
+            </label>
+          </div>
+          <div class="context-checks">
+            <label><input id="deposit-paid" type="checkbox"> 계약금을 이미 지급함</label>
+            <label><input id="signed" type="checkbox"> 계약서에 이미 서명함</label>
+          </div>
+        </fieldset>
         <label class="confirm"><input id="confirm-check" type="checkbox"> 문서와 대조해 추출값을 확인했습니다.</label>
         <button id="analyze-button" type="button">규칙 분석하기</button>
       </div>

@@ -68,6 +68,15 @@ def test_home_serves_demo():
     response = client.get("/")
     assert response.status_code == 200
     assert "추출값 확인·수정" in response.text
+    assert 'id="contract-type"' in response.text
+
+
+def test_demo_client_sends_contract_context_and_reads_common_errors():
+    response = client.get("/static/app.js")
+    assert response.status_code == 200
+    script = response.text
+    assert "contract_context:contractContext()" in script
+    assert "payload.error?.message" in script
 
 
 def test_analyze_rejects_wrong_canonical_field_type_as_422():

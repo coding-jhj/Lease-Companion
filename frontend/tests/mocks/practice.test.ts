@@ -96,6 +96,34 @@ describe("Practice MSW handlers", () => {
     expect(response.session.current_turn?.turn_id).toBe("TURN-01");
   });
 
+  it("advances without confirming the current action", async () => {
+    const session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
+    const response = await practiceService.advanceDialogue(session.practice_session_id, {
+      request_id: "advance-request-001",
+      turn_id: "TURN-01",
+      destination: "next_turn",
+    });
+
+    expect(response.evaluation).toBeNull();
+    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+    expect(response.session.confirmed_action_ids).toEqual([]);
+    await expect(practiceService.getSession(session.practice_session_id)).resolves.toMatchObject({
+      current_state: "TURN-02",
+      confirmed_action_ids: [],
+    });
+
+    const actionSelection = await practiceService.advanceDialogue(session.practice_session_id, {
+      request_id: "advance-request-002",
+      turn_id: "TURN-02",
+      destination: "action_selection",
+    });
+    expect(actionSelection.session).toMatchObject({
+      current_state: "ACTION-SELECTION",
+      current_turn: null,
+      confirmed_action_ids: [],
+    });
+  });
+
   it("surfaces a network failure through the shared API client", async () => {
     server.use(http.get("/api/practice-scenarios", () => HttpResponse.error()));
     await expect(practiceService.listScenarios()).rejects.toBeInstanceOf(TypeError);

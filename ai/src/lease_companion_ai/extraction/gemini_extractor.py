@@ -29,6 +29,7 @@ from lease_companion_ai.providers.gemini_gateway import (
     gemini_http_options,
     get_gemini_gateway,
 )
+from lease_companion_ai.providers.gemini_schema import clean_gemini_response_schema
 from lease_companion_ai.ingestion.limits import (
     MAX_CONCURRENT_VLM_CALLS,
     MAX_EXTERNAL_CALLS_PER_REQUEST,
@@ -149,30 +150,12 @@ def _client():
     )
 
 
-def _clean_response_schema(node: Any) -> Any:
-    """Gemini response_schema가 거부하는 키(additionalProperties·title·default)를 제거한다.
-
-    Pydantic이 낸 JSON Schema를 그대로 넘기면, dict 필드(예: RegistryFields.owner_shares)의
-    `additionalProperties` 때문에 400 INVALID_ARGUMENT가 난다. 지원되는 하위 집합만 남긴다.
-    (생성 provider와 동일 기법)
-    """
-    if isinstance(node, dict):
-        return {
-            key: _clean_response_schema(value)
-            for key, value in node.items()
-            if key not in ("additionalProperties", "title", "default")
-        }
-    if isinstance(node, list):
-        return [_clean_response_schema(item) for item in node]
-    return node
-
-
 def _generation_config(schema: type[BaseModel]):
     from google.genai import types
 
     return types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=_clean_response_schema(schema.model_json_schema()),
+        response_schema=clean_gemini_response_schema(schema.model_json_schema()),
         # 필드 옮기기는 복잡한 추론이 아니므로 Gemini 3.x 권장 수준 중 최소값을 쓴다.
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
     )

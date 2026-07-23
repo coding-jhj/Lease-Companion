@@ -17,27 +17,11 @@ from lease_companion_ai.providers.gemini_gateway import (
     gemini_http_options,
     get_gemini_gateway,
 )
+from lease_companion_ai.providers.gemini_schema import clean_gemini_response_schema
 from lease_companion_ai.providers.generation import GenerationRequest
 
 
-def _clean_response_schema(node: Any) -> Any:
-    """Gemini response_schema가 거부하는 키(additionalProperties·title·default)를 제거한다.
-
-    Pydantic이 생성한 JSON Schema를 그대로 넘기면 `additionalProperties` 때문에
-    400 INVALID_ARGUMENT가 발생하므로 지원되는 하위 집합만 남긴다.
-    """
-    if isinstance(node, dict):
-        return {
-            key: _clean_response_schema(value)
-            for key, value in node.items()
-            if key not in ("additionalProperties", "title", "default")
-        }
-    if isinstance(node, list):
-        return [_clean_response_schema(item) for item in node]
-    return node
-
-
-_GEMINI_RESPONSE_SCHEMA = _clean_response_schema(
+_GEMINI_RESPONSE_SCHEMA = clean_gemini_response_schema(
     GeneratedGuidanceDraft.model_json_schema()
 )
 
@@ -174,7 +158,7 @@ class GeminiGenerationProvider:
                     ],
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
-                        response_schema=_clean_response_schema(
+                        response_schema=clean_gemini_response_schema(
                             GeneratedGuidanceBatch.model_json_schema()
                         ),
                         temperature=0,

@@ -303,6 +303,40 @@ export const practiceHandlers = [
     storeSession(sessionId, session);
     return HttpResponse.json(response);
   }),
+  http.post("/api/practice-sessions/:sessionId/advance", async ({ params, request }) => {
+    const sessionId = String(params.sessionId);
+    const session = getStoredSession(sessionId);
+    if (!session) return error("practice_session_not_found", "연습 세션을 찾을 수 없습니다.", 404);
+    const body = (await request.json()) as {
+      request_id: string;
+      turn_id: string;
+      destination: "next_turn" | "action_selection";
+    };
+    if (session.requestIds.has(body.request_id)) return error("duplicate_practice_request", "이미 처리된 연습 요청입니다.", 409);
+    if (session.response.status !== "active" || session.response.current_turn?.turn_id !== body.turn_id) {
+      return error("invalid_practice_transition", "현재 대화 턴과 요청이 일치하지 않습니다.", 409);
+    }
+    session.requestIds.add(body.request_id);
+    const scenario = findScenario(session.response.scenario_id)!;
+    const currentIndex = scenario.turns.findIndex((item) => item.turn_id === body.turn_id);
+    const nextTurn = body.destination === "action_selection"
+      ? null
+      : scenario.turns[currentIndex + 1] ?? null;
+    session.turnIndex = nextTurn ? currentIndex + 1 : scenario.turns.length;
+    session.response = {
+      ...session.response,
+      current_state: nextTurn?.turn_id ?? "ACTION-SELECTION",
+      current_turn: nextTurn,
+    };
+    storeSession(sessionId, session);
+    return HttpResponse.json({
+      practice_turn_id: crypto.randomUUID().replaceAll("-", ""),
+      attempt_no: 1,
+      evaluation: null,
+      dialogue_response: null,
+      session: session.response,
+    } satisfies PracticeTurnResponseDto);
+  }),
   http.post("/api/practice-sessions/:sessionId/final-action", async ({ params, request }) => {
     const sessionId = String(params.sessionId);
     const session = getStoredSession(sessionId);
