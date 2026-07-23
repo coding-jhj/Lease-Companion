@@ -44,6 +44,10 @@ class GenerationProvider(Protocol):
 
     def generate(self, request: GenerationRequest) -> GeneratedGuidanceDraft: ...
 
+    def generate_batch(
+        self, requests: tuple[GenerationRequest, ...]
+    ) -> Mapping[str, GeneratedGuidanceDraft]: ...
+
 
 class FakeGenerationProvider:
     """외부 호출 없이 생성 서비스 계약을 검증하는 결정적 provider."""
@@ -59,6 +63,7 @@ class FakeGenerationProvider:
         self._outputs = MappingProxyType(dict(outputs))
         self._failing_rule_ids = failing_rule_ids
         self.calls: list[GenerationRequest] = []
+        self.batch_calls: list[tuple[GenerationRequest, ...]] = []
 
     def generate(self, request: GenerationRequest) -> GeneratedGuidanceDraft:
         self.calls.append(request)
@@ -68,3 +73,15 @@ class FakeGenerationProvider:
             return self._outputs[request.rule_id]
         except KeyError as exc:
             raise ProviderError("fake generation output is missing") from exc
+
+    def generate_batch(
+        self, requests: tuple[GenerationRequest, ...]
+    ) -> Mapping[str, GeneratedGuidanceDraft]:
+        self.batch_calls.append(requests)
+        outputs: dict[str, GeneratedGuidanceDraft] = {}
+        for request in requests:
+            try:
+                outputs[request.rule_id] = self.generate(request)
+            except ProviderError:
+                continue
+        return MappingProxyType(outputs)

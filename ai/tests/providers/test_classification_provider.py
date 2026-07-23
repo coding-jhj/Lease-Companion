@@ -73,6 +73,15 @@ class FakeGeminiModels:
         return SimpleNamespace(parsed=self.parsed)
 
 
+class RecordingGateway:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def call(self, **kwargs: object):
+        self.calls.append(kwargs)
+        return kwargs["operation"]()
+
+
 class FailingGeminiModels:
     def __init__(self, sdk_error: str) -> None:
         self.sdk_error = sdk_error
@@ -153,6 +162,19 @@ def test_gemini_classification_provider_wraps_canonical_result() -> None:
     assert models.calls[0]["model"] == "gemini-3.5-flash"
 
 
+def test_gemini_classification_routes_transport_through_gateway() -> None:
+    models = FakeGeminiModels({"candidates": []})
+    gateway = RecordingGateway()
+    provider = GeminiClassificationProvider(
+        client=SimpleNamespace(models=models), gateway=gateway
+    )
+
+    provider.classify(_input())
+
+    assert len(gateway.calls) == 1
+    assert gateway.calls[0]["task"] == "clause_classification"
+
+
 def test_gemini_provider_rejects_rule_fields_in_response() -> None:
     models = FakeGeminiModels(
         {
@@ -193,6 +215,6 @@ def test_gemini_provider_does_not_expose_clause_or_sdk_error() -> None:
     with pytest.raises(ProviderError) as error:
         provider.classify(_input(sensitive_text))
 
-    assert str(error.value) == "Gemini classification 호출에 실패했습니다."
+    assert str(error.value) == "Gemini 호출에 실패했습니다."
     assert sensitive_text not in str(error.value)
     assert sdk_error not in str(error.value)

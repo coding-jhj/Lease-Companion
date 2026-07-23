@@ -17,6 +17,12 @@ from lease_companion_ai.providers.errors import (
     ProviderError,
     ProviderResponseValidationError,
 )
+from lease_companion_ai.providers.gemini_gateway import (
+    GeminiCallPolicy,
+    GeminiGateway,
+    gemini_http_options,
+    get_gemini_gateway,
+)
 from lease_companion_ai.schemas import (
     ClassificationInput,
     ClassificationMethod,
@@ -40,12 +46,17 @@ class GeminiClassificationProvider:
         self,
         *,
         client: Any | None = None,
+        gateway: GeminiGateway | None = None,
         prompt: str | None = None,
         timeout_seconds: float = 30.0,
     ) -> None:
         if timeout_seconds <= 0:
             raise ValueError("timeout_seconds는 양수여야 합니다.")
         self._client = client
+        self.model_name = os.getenv(
+            "GEMINI_MODEL_CLASSIFICATION", type(self).model_name
+        )
+        self._gateway = gateway or get_gemini_gateway()
         self._prompt = prompt or load_classification_prompt()
         self._timeout_seconds = timeout_seconds
 
@@ -57,13 +68,10 @@ class GeminiClassificationProvider:
             raise ProviderError("Gemini classification provider 설정이 없습니다.")
         try:
             from google import genai
-            from google.genai import types
 
             self._client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(
-                    timeout=int(self._timeout_seconds * 1_000)
-                ),
+                http_options=gemini_http_options(int(self._timeout_seconds * 1_000)),
             )
         except Exception:
             raise ProviderError(
@@ -77,13 +85,18 @@ class GeminiClassificationProvider:
         try:
             from google.genai import types
 
-            response = self._get_client().models.generate_content(
+            response = self._gateway.call(
+                task="clause_classification",
                 model=self.model_name,
-                contents=[self._prompt, self._serialize_input(classification_input)],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=_ClassificationCandidateBatch,
-                    temperature=0,
+                policy=GeminiCallPolicy(max_attempts=2, max_total_wait_seconds=8.0),
+                operation=lambda: self._get_client().models.generate_content(
+                    model=self.model_name,
+                    contents=[self._prompt, self._serialize_input(classification_input)],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=_ClassificationCandidateBatch,
+                        temperature=0,
+                    ),
                 ),
             )
             parsed = getattr(response, "parsed", None)

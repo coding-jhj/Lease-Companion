@@ -7,6 +7,22 @@ import time
 import pytest
 
 from lease_companion_ai.extraction import gemini_extractor as gemini
+from lease_companion_ai.providers.gemini_gateway import GeminiGateway
+
+
+@pytest.fixture(autouse=True)
+def _gateway_without_real_wait(monkeypatch):
+    gateway = GeminiGateway(sleep=lambda _seconds: None, jitter=lambda: 0.0)
+    monkeypatch.setattr(gemini, "get_gemini_gateway", lambda: gateway)
+
+
+class RecordingGateway:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def call(self, **kwargs):
+        self.calls.append(kwargs)
+        return kwargs["operation"]()
 
 
 def _contract_fields() -> gemini.ContractFields:
@@ -56,6 +72,22 @@ def test_scanned_contract_uses_one_structured_call(monkeypatch):
     assert calls[0]["config"].thinking_config.thinking_level.value == "MINIMAL"
 
 
+def test_extraction_routes_transport_through_gateway(monkeypatch):
+    gateway = RecordingGateway()
+
+    class Models:
+        def generate_content(self, **kwargs):
+            return SimpleNamespace(parsed=_contract_fields(), text=None)
+
+    monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
+    monkeypatch.setattr(gemini, "get_gemini_gateway", lambda: gateway, raising=False)
+
+    gemini._generate(["prompt"], gemini.ContractFields)
+
+    assert len(gateway.calls) == 1
+    assert gateway.calls[0]["task"] == "document_extraction"
+
+
 def test_transient_server_error_is_retried_then_succeeds(monkeypatch):
     # 스캔 VLM 구조화의 일시 503은 즉시 실패가 아니라 재시도로 흡수돼야 한다.
     from google.genai import errors
@@ -70,7 +102,6 @@ def test_transient_server_error_is_retried_then_succeeds(monkeypatch):
             return SimpleNamespace(parsed=_contract_fields(), text=None)
 
     monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
-    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
 
     result = gemini._generate(["prompt"], gemini.ContractFields)
 
@@ -93,7 +124,6 @@ def test_client_timeout_is_retried_then_succeeds(monkeypatch):
             return SimpleNamespace(parsed=_contract_fields(), text=None)
 
     monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
-    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
 
     result = gemini._generate(["prompt"], gemini.ContractFields)
 
@@ -115,7 +145,6 @@ def test_falls_back_to_secondary_model_when_primary_overloaded(monkeypatch):
             return SimpleNamespace(parsed=_contract_fields(), text=None)
 
     monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
-    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
 
     result = gemini._generate(["prompt"], gemini.ContractFields)
 
@@ -132,7 +161,6 @@ def test_raises_when_both_primary_and_fallback_overloaded(monkeypatch):
             raise errors.ServerError(503, {"error": {"message": "high demand"}})
 
     monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
-    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
 
     with pytest.raises(gemini.GeminiExtractError):
         gemini._generate(["prompt"], gemini.ContractFields)
@@ -150,7 +178,6 @@ def test_client_api_error_is_not_retried(monkeypatch):
             raise errors.APIError(400, {"error": {"message": "bad request"}})
 
     monkeypatch.setattr(gemini, "_client", lambda: SimpleNamespace(models=Models()))
-    monkeypatch.setattr(gemini.time, "sleep", lambda *_: None)
 
     with pytest.raises(gemini.GeminiExtractError):
         gemini._generate(["prompt"], gemini.ContractFields)
@@ -190,7 +217,7 @@ def test_external_call_budget_rejects_excess_calls():
         budget.consume()
 
 
-def test_vlm_semaphore_caps_concurrency(monkeypatch):
+def test_gateway_caps_vlm_concurrency_to_one(monkeypatch):
     active = 0
     maximum = 0
     lock = threading.Lock()
@@ -212,7 +239,7 @@ def test_vlm_semaphore_caps_concurrency(monkeypatch):
     with ThreadPoolExecutor(max_workers=5) as pool:
         list(pool.map(lambda _: gemini._generate(["prompt"], gemini.ContractFields), range(5)))
 
-    assert maximum == 2
+    assert maximum == 1
 
 
 def test_digital_text_is_deidentified_before_gemini_and_restored(monkeypatch):
