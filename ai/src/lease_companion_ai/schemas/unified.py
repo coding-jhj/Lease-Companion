@@ -131,12 +131,14 @@ JUDGMENT_IDS: tuple[str, ...] = tuple(f"J{index:02d}" for index in range(1, 14))
 
 # 지금까지 실제로 저장된 적이 있는 judgments 시퀀스 길이의 append-only 이력이다.
 # 과거 분석 결과는 당시의 JUDGMENT_IDS 길이만큼 J01부터 순서대로 저장됐으므로,
-# `JUDGMENT_IDS[:n]`이 그 시점의 canonical 시퀀스와 같다. 현재값은 13(J01~J13),
-# 12는 J13 도입 이전(J01~J12) 레거시다.
+# `JUDGMENT_IDS[:n]`이 그 시점의 canonical 시퀀스와 같다. 현재 길이(13, J01~J13)는
+# 검증기가 len(JUDGMENT_IDS)로 자동으로 허용하므로 여기 나열하지 않는다. 12는
+# J13 도입 이전(J01~J12) 레거시로, 더는 현재 길이가 아니게 됐기 때문에 append됐다.
 #
 # 유지보수 규칙: 판정 축이 늘어날 때(J14 등) 이 목록에서 항목을 지우거나 바꾸지
-# 말고, JUDGMENT_IDS를 늘리기 *전에* 현재 len(JUDGMENT_IDS) 값을 여기에 먼저
-# append한다. 그래야 이번 릴리스에서 저장된 결과가 다음 릴리스에서도 계속 읽힌다.
+# 말고, JUDGMENT_IDS를 늘리기 *전에* 지금까지 현재 길이였던 len(JUDGMENT_IDS) 값을
+# 여기에 먼저 append한다. 그래야 이번 릴리스에서 저장된 결과가 다음 릴리스에서도
+# 계속 읽힌다. 새 현재 길이 자체는 절대 나열하지 않는다.
 HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS: tuple[int, ...] = (12,)
 
 # judgment id 정규식을 상수에서 만든다. 두 곳에 하드코딩하면 확장 시 어긋난다.

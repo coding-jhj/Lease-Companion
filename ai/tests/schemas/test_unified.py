@@ -1135,7 +1135,7 @@ def test_analysis_run_result_rejects_non_historical_length_prefix():
         for judgment_id in short_ids
     ]
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(
             analysis_run_id="AR-SHORT",
             input_snapshot_id="SNAP-SHORT",
@@ -1175,7 +1175,7 @@ def test_analysis_run_result_rejects_same_length_wrong_content_sequence():
         for judgment_id in bogus_ids
     ]
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(
             analysis_run_id="AR-BOGUS",
             input_snapshot_id="SNAP-BOGUS",
@@ -1183,3 +1183,25 @@ def test_analysis_run_result_rejects_same_length_wrong_content_sequence():
             results=_rule_results_r01_to_r24(),
             judgments=judgments,
         )
+
+
+def test_judgment_axis_growth_requires_appending_previous_length():
+    """축을 늘리기 전에 이전 길이를 이력에 append해야 저장된 결과가 계속 읽힌다.
+
+    이 테스트가 실패하면 값을 고치기 전에 HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS를
+    먼저 확인하라. 이전 길이를 append하지 않고 JUDGMENT_IDS만 늘리면 그 길이로
+    저장된 과거 분석 결과가 전부 읽히지 않는다.
+    """
+    from lease_companion_ai.schemas.unified import (
+        HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS,
+        JUDGMENT_IDS,
+    )
+
+    assert len(JUDGMENT_IDS) == 13, (
+        "판정 축을 늘렸다면 HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS에 이전 길이를 "
+        "append한 뒤 이 기대값을 갱신하라."
+    )
+    assert HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS == (12,), (
+        "이력 길이는 append만 한다. 기존 항목을 지우거나 바꾸면 그 길이로 저장된 "
+        "과거 분석 결과가 읽히지 않는다."
+    )

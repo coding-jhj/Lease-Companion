@@ -211,7 +211,7 @@ TDD로 진행하며 빨간불을 두 번 확인한다.
 1. RED   J13 포함 시퀀스가 AnalysisRunResult에 들어간다   → 실패 (J13 미존재·정규식 거부)
 2. GREEN JUDGMENT_IDS·정규식·max_length·J13 규칙 구현      → 통과
 3. RED   레거시 J01~J12 결과가 여전히 읽힌다               → 실패 (허용 시퀀스가 하나뿐)
-4. GREEN allowed_judgment_sequences 도입                   → 둘 다 통과
+4. GREEN HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS 도입          → 둘 다 통과
 ```
 
 3번이 하위호환 사고를 재현하는 테스트다. 실제로 빨간불을 봐야 shim이 검증된다.
