@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import lru_cache
 import json
@@ -10,6 +11,8 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
+import time
 
 from sqlalchemy import select
 
@@ -19,12 +22,73 @@ from app.services.practice_media import practice_media_root
 
 logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+_BACKEND_ROOT = _REPO_ROOT / "backend"
 
 
 class PracticeMediaGenerationError(RuntimeError):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
         self.code = code
+
+
+def launch_practice_media_job(media_job_id: str) -> None:
+    """Start an isolated worker so the API response never waits for TTS/video."""
+
+    command = [sys.executable, "-m", "app.workers.practice_media", media_job_id]
+    kwargs: dict = {
+        "cwd": _BACKEND_ROOT,
+        "env": os.environ.copy(),
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "close_fds": True,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    else:
+        kwargs["start_new_session"] = True
+    try:
+        subprocess.Popen(command, **kwargs)
+    except OSError:
+        logger.exception("Could not launch practice media worker for job %s", media_job_id)
+        _mark_failed(media_job_id, "practice_media_worker_launch_failed")
+
+
+@contextmanager
+def _generation_lock():
+    """Serialize GPU jobs across worker processes on Windows and POSIX."""
+
+    root = practice_media_root()
+    root.mkdir(parents=True, exist_ok=True)
+    lock_path = root / ".generation.lock"
+    with lock_path.open("a+b") as lock_file:
+        lock_file.seek(0, os.SEEK_END)
+        if lock_file.tell() == 0:
+            lock_file.write(b"0")
+            lock_file.flush()
+        lock_file.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            while True:
+                try:
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.25)
+            try:
+                yield
+            finally:
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 @lru_cache(maxsize=1)
@@ -189,7 +253,13 @@ def _generate_video(audio_path: Path, job_dir: Path) -> Path:
 
 
 def run_practice_media_job(media_job_id: str) -> None:
-    """BackgroundTasks entry point. It owns all database sessions it opens."""
+    """Run one queued media job in an isolated process."""
+
+    with _generation_lock():
+        _run_locked_practice_media_job(media_job_id)
+
+
+def _run_locked_practice_media_job(media_job_id: str) -> None:
 
     with SessionLocal() as db:
         job = db.scalar(
@@ -255,3 +325,9 @@ def _mark_failed(media_job_id: str, error_code: str) -> None:
         current.error_code = error_code
         current.completed_at = datetime.now(timezone.utc)
         db.commit()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: python -m app.workers.practice_media <media_job_id>")
+    run_practice_media_job(sys.argv[1])

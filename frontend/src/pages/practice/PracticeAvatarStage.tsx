@@ -18,12 +18,10 @@ interface PracticeAvatarStageProps {
   hasUserInput: boolean;
   submitting: boolean;
   generatedVideoUrl?: string | null;
+  generatedAudioUrl?: string | null;
+  onGeneratedAudioEnded?: () => void;
   generatedSpeechText?: string | null;
   mediaStatus?: PracticeMediaStatus | null;
-}
-
-function prefersReducedMotion() {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
 }
 
 export function PracticeAvatarStage({
@@ -33,6 +31,8 @@ export function PracticeAvatarStage({
   hasUserInput,
   submitting,
   generatedVideoUrl = null,
+  generatedAudioUrl = null,
+  onGeneratedAudioEnded,
   generatedSpeechText = null,
   mediaStatus = null,
 }: PracticeAvatarStageProps) {
@@ -40,8 +40,7 @@ export function PracticeAvatarStage({
   const [mode, setMode] = useState<AvatarMode>("idle");
   const [playbackId, setPlaybackId] = useState(0);
   const [videoUnavailable, setVideoUnavailable] = useState(false);
-  const [reducedMotion] = useState(prefersReducedMotion);
-  const [userPlaybackRequested, setUserPlaybackRequested] = useState(false);
+  const [playbackPaused, setPlaybackPaused] = useState(false);
   const pressurePlayedForPrompt = useRef<string | null>(null);
   const playbackFailed = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -69,12 +68,9 @@ export function PracticeAvatarStage({
   }, [prompt]);
 
   useEffect(() => {
-    if (!hasVideo) return;
-    if (!reducedMotion || userPlaybackRequested) {
-      requestPlayback();
-      setUserPlaybackRequested(false);
-    }
-  }, [hasVideo, mode, playbackId, reducedMotion, userPlaybackRequested]);
+    if (!hasVideo || playbackPaused) return;
+    requestPlayback();
+  }, [hasVideo, mode, playbackId, playbackPaused]);
 
   useEffect(() => {
     if (!generatedVideoUrl) return;
@@ -98,8 +94,19 @@ export function PracticeAvatarStage({
     playbackFailed.current = false;
     setVideoUnavailable(false);
     setMode("speaking");
-    setUserPlaybackRequested(true);
+    setPlaybackPaused(false);
     setPlaybackId((current) => current + 1);
+  }
+
+  function togglePlayback() {
+    if (!videoRef.current || !hasVideo) return;
+    if (playbackPaused) {
+      setPlaybackPaused(false);
+      requestPlayback();
+      return;
+    }
+    videoRef.current.pause();
+    setPlaybackPaused(true);
   }
 
   function handleEnded() {
@@ -128,7 +135,7 @@ export function PracticeAvatarStage({
             className="practice-avatar-stage__video"
             src={videoSource}
             poster={sharedPoster}
-            autoPlay={!reducedMotion}
+            autoPlay={!playbackPaused}
             muted={!isGeneratedSpeech}
             controls={isGeneratedSpeech}
             playsInline
@@ -159,6 +166,16 @@ export function PracticeAvatarStage({
               <h3>{prompt}</h3>
             </div>
           )}
+          {generatedAudioUrl && !generatedVideoUrl && (
+            <audio
+              className="practice-avatar-stage__audio"
+              src={generatedAudioUrl}
+              autoPlay
+              controls
+              aria-label="공인중개사 응답 음성"
+              onEnded={onGeneratedAudioEnded}
+            />
+          )}
           {(mediaStatus === "queued" || mediaStatus === "generating_audio" || mediaStatus === "generating_video") && (
             <span className="practice-avatar-stage__media-state" role="status">
               {mediaStatus === "queued" && "아바타 응답을 준비하고 있습니다."}
@@ -170,9 +187,14 @@ export function PracticeAvatarStage({
             <span className="practice-avatar-stage__media-state">영상 생성에 실패해 텍스트 응답을 표시합니다.</span>
           )}
         </div>
-        <button type="button" className="secondary practice-avatar-stage__retry" onClick={replayPrompt} disabled={submitting}>
-          {reducedMotion ? "장면 재생" : "장면 다시 보기"}
-        </button>
+        <div className="practice-avatar-stage__controls">
+          <button type="button" className="secondary" onClick={togglePlayback} disabled={submitting || !hasVideo}>
+            {playbackPaused ? "계속 재생" : "일시정지"}
+          </button>
+          <button type="button" className="secondary practice-avatar-stage__retry" onClick={replayPrompt} disabled={submitting}>
+            장면 다시 보기
+          </button>
+        </div>
       </div>
     </section>
   );

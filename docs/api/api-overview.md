@@ -28,6 +28,7 @@
 
 - TURN 제출 응답의 `media`는 기능 플래그가 꺼져 있으면 `null`, 켜져 있으면 작업 식별자와 초기 상태를 포함한다.
 - `GET /api/practice-media-jobs/{media_job_id}`로 `queued`·`generating_audio`·`generating_video`·`completed`·`failed` 상태를 폴링한다.
+- Supertonic WAV가 먼저 준비되면 `GET /api/practice-media-jobs/{media_job_id}/audio`에서 즉시 재생한다. MuseTalk 완료를 기다리는 동안 기본 아바타 루프와 음성을 함께 제공한다.
 - 완료 후 `GET /api/practice-media-jobs/{media_job_id}/video`에서 인증된 사용자의 MP4만 제공한다.
 - 생성 실패는 저장된 텍스트 답변, 계약 규칙 판정, TURN 진행 상태를 변경하지 않는다.
 

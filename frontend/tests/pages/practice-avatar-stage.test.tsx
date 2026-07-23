@@ -14,6 +14,7 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
 });
 
 const baseProps = {
@@ -86,14 +87,17 @@ describe("PracticeAvatarStage", () => {
     expect(screen.getByRole("button", { name: "장면 다시 보기" })).toBeEnabled();
   });
 
-  it("respects reduced motion and lets the user start playback", () => {
+  it("keeps the avatar moving and gives the user an explicit pause control", () => {
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
     const play = vi.mocked(HTMLMediaElement.prototype.play);
     render(<PracticeAvatarStage {...baseProps} />);
 
     const video = screen.getByTestId("practice-video");
-    expect(video).not.toHaveAttribute("autoplay");
-    fireEvent.click(screen.getByRole("button", { name: "장면 재생" }));
+    expect(video).toHaveAttribute("autoplay");
+    expect(video).toHaveAttribute("poster", "/practice/avatar/poster.jpg");
+    fireEvent.click(screen.getByRole("button", { name: "일시정지" }));
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "계속 재생" }));
     expect(play).toHaveBeenCalled();
   });
 

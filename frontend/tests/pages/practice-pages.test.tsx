@@ -223,6 +223,7 @@ describe("PracticeSessionPage", () => {
     vi.spyOn(practiceService, "getScenario").mockResolvedValue(
       detail("PRACTICE-DEFERRED-REFUND-001", "보증금 반환 조건 확인", "후임 임차인의 보증금이 입금된 후 반환한다."),
     );
+    vi.spyOn(practiceService, "getLatestMedia").mockResolvedValue(null);
     vi.spyOn(practiceService, "getMessages").mockResolvedValue({
       items: [],
       next_cursor: null,

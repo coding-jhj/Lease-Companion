@@ -93,6 +93,8 @@ class PracticeMediaJobResponse(BaseModel):
     practice_turn_id: str
     status: Literal["queued", "generating_audio", "generating_video", "completed", "failed"]
     provider: str
+    speech_text: str
+    audio_url: str | None = None
     video_url: str | None = None
     error_code: str | None = None
     created_at: datetime

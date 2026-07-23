@@ -2,7 +2,7 @@
 
 ## 책임
 
-FastAPI `BackgroundTasks`에서 추출·분석과 선택적 계약 연습 미디어 파이프라인을 실행하고 상태와 결과를 저장한다.
+FastAPI `BackgroundTasks`에서 추출·분석을 실행한다. 선택적 계약 연습 미디어는 웹 요청과 분리한 전용 자식 프로세스에서 실행하고 상태와 결과를 저장한다.
 
 ## 현재 동작
 
@@ -15,6 +15,7 @@ FastAPI `BackgroundTasks`에서 추출·분석과 선택적 계약 연습 미디
 - 서버 기동 시 남은 pending/running 추출·분석·생성 상태를 안전한 실패 상태로 정리한다.
 - 상태 조회는 HTTP 폴링을 사용한다.
 - 계약 연습 미디어는 `queued → generating_audio → generating_video → completed/failed`로 진행한다.
+- TURN 응답은 worker 완료를 기다리지 않고 텍스트와 `queued` 상태를 즉시 반환한다. GPU 작업은 프로세스 간 파일 잠금으로 한 번에 하나씩 실행한다.
 - Supertonic 3 음성합성과 MuseTalk 1.5 립싱크는 판정·답변 저장과 분리한다. 미디어 실패는 사용자 오답이나 TURN 실패로 바꾸지 않는다.
 - 로컬 생성물은 `backend/var/practice-media/` 아래에 저장하며 Git에 포함하지 않는다.
 

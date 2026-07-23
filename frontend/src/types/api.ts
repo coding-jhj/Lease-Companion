@@ -503,6 +503,8 @@ export interface PracticeMediaJobDto {
   practice_turn_id: string;
   status: PracticeMediaStatus;
   provider: string;
+  speech_text: string;
+  audio_url: string | null;
   video_url: string | null;
   error_code: string | null;
   created_at: string;

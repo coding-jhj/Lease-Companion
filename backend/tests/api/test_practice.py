@@ -154,7 +154,8 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     from app.api.routes import practice as practice_routes
 
     monkeypatch.setenv("PRACTICE_MEDIA_ENABLED", "true")
-    monkeypatch.setattr(practice_routes, "run_practice_media_job", lambda _job_id: None)
+    launched_job_ids: list[str] = []
+    monkeypatch.setattr(practice_routes, "launch_practice_media_job", launched_job_ids.append)
     owner_headers = _headers(client)
     other_headers = _headers(client)
     session = _create_session(
@@ -176,7 +177,10 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
+    assert media["speech_text"] == response.json()["dialogue_response"]
+    assert media["audio_url"] is None
     assert media["video_url"] is None
+    assert launched_job_ids == [media["media_job_id"]]
 
     owned = client.get(
         f"/api/practice-media-jobs/{media['media_job_id']}",
@@ -185,11 +189,25 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     assert owned.status_code == 200
     assert owned.json()["practice_turn_id"] == response.json()["practice_turn_id"]
 
+    latest = client.get(
+        f"/api/practice-sessions/{session['practice_session_id']}/media/latest",
+        headers=owner_headers,
+    )
+    assert latest.status_code == 200
+    assert latest.json()["media_job_id"] == media["media_job_id"]
+
     hidden = client.get(
         f"/api/practice-media-jobs/{media['media_job_id']}",
         headers=other_headers,
     )
     assert hidden.status_code == 404
+
+    audio_not_ready = client.get(
+        f"/api/practice-media-jobs/{media['media_job_id']}/audio",
+        headers=owner_headers,
+    )
+    assert audio_not_ready.status_code == 409
+    assert audio_not_ready.json()["error"]["code"] == "practice_media_audio_not_ready"
 
     not_ready = client.get(
         f"/api/practice-media-jobs/{media['media_job_id']}/video",

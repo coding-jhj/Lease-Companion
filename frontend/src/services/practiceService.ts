@@ -32,6 +32,8 @@ export const practiceService = {
     apiClient<PracticeSessionDto>("/api/practice-sessions", jsonOptions("POST", { scenario_id: scenarioId })),
   getSession: (sessionId: string) =>
     apiClient<PracticeSessionDto>(`/api/practice-sessions/${sessionId}`),
+  getLatestMedia: (sessionId: string) =>
+    apiClient<PracticeMediaJobDto | null>(`/api/practice-sessions/${sessionId}/media/latest`),
   getMessages: (sessionId: string, before?: string, limit = 30) => {
     const query = new URLSearchParams({ limit: String(limit) });
     if (before) query.set("before", before);
@@ -46,6 +48,7 @@ export const practiceService = {
     ),
   getMediaJob: (mediaJobId: string) =>
     apiClient<PracticeMediaJobDto>(`/api/practice-media-jobs/${mediaJobId}`),
+  getMediaAudio: (audioUrl: string) => apiBlobClient(audioUrl),
   getMediaVideo: (videoUrl: string) => apiBlobClient(videoUrl),
   advanceDialogue: (sessionId: string, body: PracticeAdvanceRequestDto) =>
     apiClient<PracticeTurnResponseDto>(

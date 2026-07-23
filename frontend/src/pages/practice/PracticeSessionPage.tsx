@@ -72,8 +72,10 @@ export function PracticeSessionPage() {
   const [selectedAction, setSelectedAction] = useState<PracticeSelectedAction | null>(null);
   const [conversationOpen, setConversationOpen] = useState(false);
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
+  const [avatarAudioUrl, setAvatarAudioUrl] = useState<string | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
   const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
+  const [playedAudioJobId, setPlayedAudioJobId] = useState<string | null>(null);
 
   async function loadSession() {
     setStatus("loading");
@@ -88,6 +90,15 @@ export function PracticeSessionPage() {
         return;
       }
       setSession(loaded);
+      try {
+        const latestMedia = await practiceService.getLatestMedia(sessionId);
+        setAvatarMedia(latestMedia);
+        setAvatarSpeechText(latestMedia?.speech_text ?? null);
+        setPlayedAudioJobId(null);
+      } catch {
+        setAvatarMedia(null);
+        setAvatarSpeechText(null);
+      }
       try {
         setScenario(await practiceService.getScenario(loaded.scenario_id));
       } catch {
@@ -132,9 +143,32 @@ export function PracticeSessionPage() {
 
   useEffect(() => {
     if (
+      !avatarMedia?.audio_url
+      || avatarMedia.status === "completed"
+      || avatarAudioUrl
+      || playedAudioJobId === avatarMedia.media_job_id
+    ) return;
+    let cancelled = false;
+
+    void practiceService.getMediaAudio(avatarMedia.audio_url)
+      .then((audio) => {
+        if (!cancelled) setAvatarAudioUrl(URL.createObjectURL(audio));
+      })
+      .catch(() => {
+        // MuseTalk MP4 폴링은 계속한다. 음성 단독 조회 실패가 TURN을 막지 않는다.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarMedia?.audio_url, avatarMedia?.media_job_id, avatarMedia?.status, avatarAudioUrl, playedAudioJobId]);
+
+  useEffect(() => {
+    if (
       avatarMedia?.status !== "completed"
       || !avatarMedia.video_url
       || avatarVideoUrl
+      || avatarAudioUrl
     ) return;
     let cancelled = false;
 
@@ -156,11 +190,12 @@ export function PracticeSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl]);
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarAudioUrl, avatarVideoUrl]);
 
   useEffect(() => () => {
+    if (avatarAudioUrl) URL.revokeObjectURL(avatarAudioUrl);
     if (avatarVideoUrl) URL.revokeObjectURL(avatarVideoUrl);
-  }, [avatarVideoUrl]);
+  }, [avatarAudioUrl, avatarVideoUrl]);
 
   async function sendTurn(timedOut: boolean) {
     if (!session?.current_turn || (!timedOut && !answer.trim())) return;
@@ -179,6 +214,11 @@ export function PracticeSessionPage() {
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
       setAvatarSpeechText(response.dialogue_response);
+      setPlayedAudioJobId(null);
+      setAvatarAudioUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return null;
+      });
       setAvatarVideoUrl((current) => {
         if (current) URL.revokeObjectURL(current);
         return null;
@@ -202,6 +242,14 @@ export function PracticeSessionPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleAvatarAudioEnded() {
+    if (avatarMedia) setPlayedAudioJobId(avatarMedia.media_job_id);
+    setAvatarAudioUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
   }
 
   async function advanceDialogue() {
@@ -286,6 +334,8 @@ export function PracticeSessionPage() {
                   hasUserInput={Boolean(answer.trim())}
                   submitting={submitting}
                   generatedVideoUrl={avatarVideoUrl}
+                  generatedAudioUrl={avatarAudioUrl}
+                  onGeneratedAudioEnded={handleAvatarAudioEnded}
                   generatedSpeechText={avatarSpeechText}
                   mediaStatus={avatarMedia?.status ?? null}
                 />

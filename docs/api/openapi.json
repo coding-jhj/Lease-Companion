@@ -1287,6 +1287,61 @@
         }
       }
     },
+    "/api/practice-sessions/{practice_session_id}/media/latest": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Latest Session Media",
+        "operationId": "get_latest_session_media_api_practice_sessions__practice_session_id__media_latest_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PracticeMediaJobResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Latest Session Media Api Practice Sessions  Practice Session Id  Media Latest Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/practice-sessions/{practice_session_id}/messages": {
       "get": {
         "tags": [
@@ -1450,6 +1505,51 @@
                 "schema": {
                   "$ref": "#/components/schemas/PracticeMediaJobResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-media-jobs/{media_job_id}/audio": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Media Audio",
+        "operationId": "get_media_audio_api_practice_media_jobs__media_job_id__audio_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "media_job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Media Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -3046,6 +3146,21 @@
             "type": "string",
             "title": "Provider"
           },
+          "speech_text": {
+            "type": "string",
+            "title": "Speech Text"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
           "video_url": {
             "anyOf": [
               {
@@ -3092,6 +3207,7 @@
           "practice_turn_id",
           "status",
           "provider",
+          "speech_text",
           "created_at"
         ],
         "title": "PracticeMediaJobResponse"

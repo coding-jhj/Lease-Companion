@@ -57,7 +57,7 @@ def queue_practice_media_job(
         speech_text=turn.dialogue_response.strip(),
         provider="supertonic-3+musetalk-1.5",
         settings_payload={
-            "tts_voice": os.getenv("SUPERTONIC_VOICE", "M1"),
+            "tts_voice": os.getenv("SUPERTONIC_VOICE", "F1"),
             "tts_language": os.getenv("SUPERTONIC_LANGUAGE", "ko"),
             "tts_steps": int(os.getenv("SUPERTONIC_TOTAL_STEPS", "8")),
             "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.0")),
@@ -96,6 +96,20 @@ def get_owned_practice_media_job(
     return row[0], row[1]
 
 
+def get_latest_practice_media_job(
+    db: Session,
+    session_row: PracticeSession,
+) -> tuple[PracticeMediaJob, PracticeTurn] | None:
+    row = db.execute(
+        select(PracticeMediaJob, PracticeTurn)
+        .join(PracticeTurn, PracticeTurn.id == PracticeMediaJob.practice_turn_fk)
+        .where(PracticeMediaJob.practice_session_fk == session_row.id)
+        .order_by(PracticeMediaJob.id.desc())
+        .limit(1)
+    ).one_or_none()
+    return (row[0], row[1]) if row is not None else None
+
+
 def media_job_response(
     job: PracticeMediaJob,
     practice_turn_id: str,
@@ -105,6 +119,12 @@ def media_job_response(
         practice_turn_id=practice_turn_id,
         status=job.status,
         provider=job.provider,
+        speech_text=job.speech_text,
+        audio_url=(
+            f"/api/practice-media-jobs/{job.media_job_id}/audio"
+            if job.audio_relpath
+            else None
+        ),
         video_url=(
             f"/api/practice-media-jobs/{job.media_job_id}/video"
             if job.status == "completed" and job.video_relpath

@@ -2,11 +2,15 @@
 import "@testing-library/jest-dom/vitest";
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PracticeAvatarStage } from "../../src/pages/practice/PracticeAvatarStage";
 
 
 describe("PracticeAvatarStage generated media", () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+  });
+
   it("plays a completed authenticated media blob with audio controls", () => {
     const view = render(
       <PracticeAvatarStage
@@ -40,5 +44,28 @@ describe("PracticeAvatarStage generated media", () => {
 
     expect(screen.getByText("입 모양을 음성에 맞추고 있습니다.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약 조건을 확인하시겠습니까?" })).toBeInTheDocument();
+  });
+
+  it("plays Supertonic audio while MuseTalk is still generating", () => {
+    const onEnded = vi.fn();
+    render(
+      <PracticeAvatarStage
+        prompt="다음 확인 질문입니다."
+        pressureDelaySeconds={null}
+        hasUserInput={false}
+        submitting={false}
+        generatedAudioUrl="blob:supertonic-audio"
+        onGeneratedAudioEnded={onEnded}
+        generatedSpeechText="계약 조건을 다시 확인해 주세요."
+        mediaStatus="generating_video"
+      />,
+    );
+
+    const audio = screen.getByLabelText("공인중개사 응답 음성");
+    expect(audio).toHaveAttribute("src", "blob:supertonic-audio");
+    expect(audio).toHaveAttribute("autoplay");
+    expect(audio).toHaveAttribute("controls");
+    audio.dispatchEvent(new Event("ended", { bubbles: true }));
+    expect(onEnded).toHaveBeenCalledOnce();
   });
 });
