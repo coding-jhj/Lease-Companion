@@ -52,6 +52,7 @@
 - 프롬프트를 코드에 길게 하드코딩하지 않는다. 원본은 `prompts/`에 두고 버전을 관리한다. (`../docs/ai/prompt-management.md`)
 - 로컬 7B 가중치·체크포인트는 Git에 커밋하지 않는다. `training/`에는 설정·전처리·평가·메타데이터만 둔다. (`../docs/ai/fine-tuning-plan.md`)
 - 목표 성능 수치는 실제 측정 전 임의로 만들지 않는다. 지표 정의·기록 형식만 관리한다. (`../docs/ai/evaluation-matrix.md`)
+- 계약 연습은 승인된 scenario·answer key만 사용한다. Gemini는 현재 사용자 답변 의미만 분류하며, 상태 머신이 허용 전이를 검증한다. provider 실패는 사용자 오답이 아닌 `needs_review`다.
 
 ## 모듈 경계
 
@@ -61,7 +62,7 @@
 | `extraction/` | 인식 결과에서 핵심 필드 추출 |
 | `normalization/` | 추출값 정규화(주소·금액·날짜·이름) |
 | `local_model/` | 로컬 7B 조항 유형·명확성 후보 분류 — (선택) 성능비교 실험용, MVP 크리티컬 패스 아님 (최종 판정 안 함) |
-| `classification/` | `local_model` 출력을 조항 유형·명확성 후보 구조로 정리 (판정 안 함) |
+| `classification/` | Gemini 또는 선택 실험 출력을 조항 유형·명확성 후보 구조로 정리하고 safe fallback 제공 (판정 안 함) |
 | `rules/` | 문서 내부 판정·문서 교차검증 (최종 판정) |
 | `rag/` | 공식 근거 검색 (판정 안 함) |
 | `risk_patterns/` | R/J 결과를 DP01~DP08 피해 유형 관점으로 결정적으로 묶음. 판정 변경 안 함 |
@@ -72,6 +73,7 @@
 | `evaluation/` | 서비스 파이프라인 컴포넌트별·end-to-end 평가 실행 |
 | `pipelines/` | PoC·MVP 처리 흐름 연결 |
 | `schemas/` | AI 입출력 구조 |
+| `simulation/` | 승인 계약 연습의 답변 평가·상태 전이·복기 서비스 |
 
 `src/` 밖(`ai/` 직속) 디렉터리:
 

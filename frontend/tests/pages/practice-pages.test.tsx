@@ -315,7 +315,9 @@ describe("PracticeSessionPage", () => {
     expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
     expect(screen.getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
     expect(screen.queryByText("답변을 다시 말씀해 주세요.")).not.toBeInTheDocument();
-    expect(screen.queryByText("답변을 자동으로 평가하지 못했습니다. 같은 턴에서 다시 답해 주세요.")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "AI 연결이 원활하지 않아 답변을 판정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
     const retryAnswer = screen.getByLabelText("내 답변");
     expect(retryAnswer).toBeEnabled();
     expect(retryAnswer).toHaveValue("");

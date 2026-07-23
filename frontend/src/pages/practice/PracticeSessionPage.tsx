@@ -23,6 +23,14 @@ function elapsedSeconds(startedAt: number) {
   return Math.min(3600, Math.max(0, (Date.now() - startedAt) / 1000));
 }
 
+function practiceEvaluationNotice(response: PracticeTurnResponseDto | null) {
+  const reason = response?.evaluation?.fallback_reason;
+  if (reason === "provider_error" || reason === "provider_timeout") {
+    return "AI 연결이 원활하지 않아 답변을 판정하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+  return null;
+}
+
 export function PracticeSessionPage() {
   const { sessionId = "" } = useParams();
   const navigate = useNavigate();
@@ -150,6 +158,7 @@ export function PracticeSessionPage() {
   }
 
   const isActionSelection = session?.current_state === "ACTION-SELECTION";
+  const evaluationNotice = practiceEvaluationNotice(lastResponse);
 
   return (
     <PageShell layout="workspace" step="계약 연습" title="상대방에게 직접 말해 보세요" description="정답 문구를 외우기보다, 확인할 내용과 진행 보류 의사를 자신의 말로 표현하는 연습입니다." showJourney={false}>
@@ -240,6 +249,7 @@ export function PracticeSessionPage() {
                 {lastResponse?.attempt_no && lastResponse.attempt_no >= 2 && (
                   <p className="practice-loop-help">같은 확인이 반복되고 있습니다. 더 질문하거나, 미확인으로 남기고 다음 상황으로 넘어갈 수 있습니다.</p>
                 )}
+                {evaluationNotice && <p className="notice" role="alert">{evaluationNotice}</p>}
               </section>
             )}
             {isActionSelection && (

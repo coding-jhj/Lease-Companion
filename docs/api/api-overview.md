@@ -1,13 +1,13 @@
 # API 개요
 
 > API **책임 영역**만 기록한다. 확정되지 않은 경로·메서드·스키마는 `TODO`로 표시한다.
-> **구현된 API의 정확한 요청·응답 스키마**: [`openapi.json`](openapi.json) (서버 코드에서 자동 생성 — 갱신: `backend/`에서 `python -c "from app.main import app; import json, pathlib; pathlib.Path('../docs/api/openapi.json').write_text(json.dumps(app.openapi(), ensure_ascii=False, indent=2), encoding='utf-8')"`).
+> **구현된 API의 정확한 요청·응답 스키마**: [`openapi.json`](openapi.json) (서버 코드에서 자동 생성 — 저장소 루트에서 `python backend/scripts/export_openapi.py`).
 > 서버를 켜면 같은 내용을 http://localhost:8000/docs (Swagger UI)에서 화면으로 보고 직접 호출 테스트도 가능.
 > 도메인·계층 상세는 [`docs/backend/auth-and-persistence.md`](../backend/auth-and-persistence.md) 참조.
 
 분석은 단일 세션이 아니라 로그인한 사용자의 **계약 건(ContractProject) 단위**로 저장·재조회한다.
 
-## 책임 영역 (9개)
+## 책임 영역 (10개)
 
 | 영역 | 책임 | 관련 도메인 | 상태 |
 |------|------|-------------|------|
@@ -20,6 +20,7 @@
 | `results` | 판정·원문 증거·공식 근거·질문 리포트 조회 | JudgmentResult, EvidenceSource, QuestionCard | 독립 `results` 경로는 두지 않고 `GET /api/contracts/{id}/analysis-runs/{analysis_run_id}`의 `result`·`generation_result`에서 조회 |
 | `checklists` | 서명 전 체크리스트·계약 직후 행동 상태 관리 | ChecklistItem, PostContractAction | **구현됨**: `GET /api/contracts/{id}/checklist-items`(?kind=checklist/post_action 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert — 계약 건 단위 저장·재조회). 항목 문구·근거는 생성 결과가 원본이며 상태만 저장. item_key는 `R01/J01:checklist:<hash>` / `R01/J01:post_action:<hash>` 안정 식별자(→ `docs/decisions/2026-07-18-guidance-action-item-keys.md`). Backend는 신규 쓰기의 형식과 kind 일치를 검증 |
 | `feedback` | 사용자 피드백 수집 | UserFeedback | **구현됨**(2026-07-17 신규 추가 — 목록 추가는 자유 규칙): `POST /api/contracts/{id}/feedback`(content 1~2000자 필수 + rating 1~5 선택, 201) · `GET /api/contracts/{id}/feedback`(본인 것만, 최신순). 이력으로 쌓기만 하고 수정·삭제 없음 |
+| `practice` | 승인된 합성 계약 연습 시나리오·세션·턴·복기 | PracticeSession, PracticeTurn | **구현됨**: 시나리오 목록·상세, 세션 생성·조회, TURN 제출·명시적 진행, 최종 행동, 결과 재조회. 실제 계약과 별도 식별자·테이블을 사용하며 answer key·숨은 신호·미래 TURN을 공개하지 않음. 정확한 경로·schema는 OpenAPI 기준 |
 
 > 영역 ↔ 도메인은 1:1이 아니다. `auth`·`users`는 모두 `User`를 다루고, `results`는 판정·근거·질문을 함께 조회하며, `checklists`는 체크리스트와 계약 직후 행동을 함께 관리한다.
 

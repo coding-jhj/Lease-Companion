@@ -19,14 +19,15 @@
 - **DB는 PostgreSQL, 인증은 JWT Bearer(PyJWT) + Passlib-bcrypt**(2026-07-16 확정 → [`../docs/decisions/2026-07-16-mvp-platform-stack.md`](../docs/decisions/2026-07-16-mvp-platform-stack.md)). Access Token 만료는 로컬 MVP 24시간 임시값이다. refresh token·토큰 폐기·운영 서명 키 관리는 TODO다.
 - **AI 공통 타입 재사용**: 도메인 데이터 타입은 `ai/src/lease_companion_ai/schemas/`의 Pydantic 모델(단일 원본)을 import해 사용한다. Backend에서 같은 도메인 타입을 **중복 정의하지 않는다.** (→ [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md))
 - **식별자**: 실제 사용자 계약 건의 영속 저장은 `contract_id` 기준이다. `case_id`는 CASE-001 같은 합성·평가 fixture 연결에만 사용하며 `contract_id`와 혼용하지 않는다.
+- **계약 연습 분리**: `PracticeSession`·`PracticeTurn`은 실제 계약·분석 모델과 분리한다. `scenario_id`·`practice_session_id`·`practice_turn_id`를 사용하고 answer key·숨은 신호·미래 TURN을 API에 노출하지 않는다. provider 실패를 사용자 오답으로 저장하지 않는다.
 
 ## 도메인 엔터티
 
-현재 영속 모델: `User` · `ContractProject` · `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback`. 판정·근거·생성 안내는 canonical JSON으로 `AnalysisRun`에 분리 저장한다.
+현재 영속 모델: `User` · `ContractProject` · `Document` · `ExtractionRun` · `CorrectionRecord` · `InputSnapshotRecord` · `AnalysisRun` · `ChecklistItemState` · `UserFeedback` · `PracticeSession` · `PracticeTurn`. 판정·근거·생성 안내는 canonical JSON으로 `AnalysisRun`에 분리 저장하고, 계약 연습 상태·평가·복기는 Practice 모델에 분리 저장한다.
 
 ## API 책임 영역
 
-`auth` · `users` · `contracts` · `documents` · `extractions` · `analyses` · `results` · `checklists` · `feedback`
+`auth` · `contracts` · `documents` · `extractions` · `analyses` · `checklists` · `feedback` · `practice`
 
 구현 경로·메서드·스키마는 [`docs/api/openapi.json`](../docs/api/openapi.json)을 단일 기준으로 한다. 미구현 영역만 [`docs/api/api-overview.md`](../docs/api/api-overview.md)에 `TODO`로 둔다.
 

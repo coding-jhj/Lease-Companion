@@ -240,6 +240,57 @@ def test_provider_output_is_grounded_and_rule_results_are_immutable():
     assert [call.rule_id for call in provider.calls] == ["R01"]
 
 
+def test_generation_batches_each_guidance_kind_once() -> None:
+    analysis = _analysis_with_special_clause(
+        text="보증금은 다음 임차인 입주 후 반환한다.",
+        catalog_id="SC-DEFERRED-REFUND",
+        with_evidence=True,
+    )
+    judgments = [
+        judgment.model_copy(
+            update={
+                "evidence_sources": [
+                    OfficialSource(
+                        source_id="SRC-J10",
+                        title="보증금 반환 공식자료",
+                        institution="공공기관",
+                    )
+                ]
+            }
+        )
+        if judgment.judgment_id == "J10"
+        else judgment
+        for judgment in analysis.judgments
+    ]
+    analysis = AnalysisRunResult.model_validate(
+        analysis.model_copy(update={"judgments": judgments}).model_dump()
+    )
+    provider = FakeGenerationProvider(
+        {
+            "J01": GeneratedGuidanceDraft(
+                explanation="소유자를 확인하세요.", source_ids=("SRC-J01",)
+            ),
+            "J10": GeneratedGuidanceDraft(
+                explanation="반환 조건을 확인하세요.", source_ids=("SRC-J10",)
+            ),
+            "CLAUSE-GEN-001": GeneratedGuidanceDraft(
+                explanation="특약 조건을 확인하세요.",
+                questions=("반환 조건을 확인했나요?",),
+                source_ids=("SRC-SPECIAL",),
+            ),
+        }
+    )
+
+    generated = GenerationService(provider).generate(analysis, _context())
+
+    assert len(provider.batch_calls) == 3
+    assert {request.rule_id for request in provider.batch_calls[0]} == {"R01"}
+    assert {request.rule_id for request in provider.batch_calls[1]} == {"J01", "J10"}
+    assert {request.rule_id for request in provider.batch_calls[2]} == {"CLAUSE-GEN-001"}
+    assert all(item.generation_method is GenerationMethod.PROVIDER for item in generated.judgment_items)
+    assert generated.special_clause_items[0].generation_method is GenerationMethod.PROVIDER
+
+
 def test_missing_evidence_skips_provider_and_does_not_confirm_actions():
     analysis = _analysis()
     provider = FakeGenerationProvider({})

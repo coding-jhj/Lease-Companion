@@ -103,9 +103,10 @@ npx playwright install chromium
 
 ## 현재 검증 상태
 
-- Practice Frontend 단위·통합 테스트: `94 passed`
+- 2026-07-22 저장소 검증 기록: Frontend 전체 `110 passed`, production build 성공
 - MSW 전용 브라우저 E2E: `9 passed`
+- 실제 FastAPI·PostgreSQL Practice E2E: `9 passed`
 - Production build: 성공
 - 실제 API 전용 E2E 파일: `frontend/e2e/practice-flow.spec.ts`
 - 로컬 자유 답변 판별: 세 시나리오 9개 TURN 지원
-- 실제 Gemini 네트워크 호출: 실행하지 않음
+- 실제 Gemini 네트워크 호출·응답 품질·비용: 미검증

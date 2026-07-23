@@ -11,6 +11,10 @@ from lease_companion_ai.providers.gemini_practice import (
     GeminiPracticeProvider,
     build_practice_provider,
 )
+from lease_companion_ai.providers.errors import (
+    ProviderQuotaError,
+    ProviderTemporaryError,
+)
 from lease_companion_ai.schemas.simulation import PracticeTurnInput
 from lease_companion_ai.simulation.models import load_practice_assets
 from lease_companion_ai.simulation.service import PracticeEvaluationService
@@ -45,6 +49,37 @@ class FakeModels:
         if self.error is not None:
             raise self.error
         return SimpleNamespace(parsed=self.parsed, text=self.text)
+
+
+class RecordingGateway:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def call(self, **kwargs: object):
+        self.calls.append(kwargs)
+        return kwargs["operation"]()
+
+
+class PrimaryFailureGateway:
+    def __init__(self, failure: Exception) -> None:
+        self.failure = failure
+        self.calls: list[dict[str, object]] = []
+
+    def call(self, **kwargs: object):
+        self.calls.append(kwargs)
+        if len(self.calls) == 1:
+            raise self.failure
+        return kwargs["operation"]()
+
+
+class AlwaysFailingGateway:
+    def __init__(self, failure: Exception) -> None:
+        self.failure = failure
+        self.calls: list[dict[str, object]] = []
+
+    def call(self, **kwargs: object):
+        self.calls.append(kwargs)
+        raise self.failure
 
 
 def _turn_input(turn_id: str, answer: str) -> PracticeTurnInput:
@@ -93,6 +128,80 @@ def test_gemini_practice_uses_fixed_model_schema_prompt_and_read_only_rj():
     assert payload["goal_action_id"] == "PA01"
     assert len(payload["rule_states"]) == 24
     assert payload["judgment_states"][0]["judgment_id"] == "J10"
+
+
+def test_gemini_practice_routes_transport_through_gateway():
+    gateway = RecordingGateway()
+    models = FakeModels(parsed=_appropriate_payload("TURN-01", "PA01", "TURN-02"))
+    provider = GeminiPracticeProvider(
+        client=SimpleNamespace(models=models), gateway=gateway
+    )
+    scenario, answer_key = _assets()
+
+    PracticeEvaluationService(scenario, answer_key, provider).evaluate(
+        _turn_input("TURN-01", "확인하겠습니다.")
+    )
+
+    assert len(gateway.calls) == 1
+    assert gateway.calls[0]["task"] == "practice_classification"
+
+
+def test_gemini_practice_uses_fallback_model_only_after_temporary_failure(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL_PRACTICE_FALLBACK", "gemini-2.5-flash")
+    scenario, answer_key = _assets()
+    models = FakeModels(parsed=_appropriate_payload("TURN-01", "PA01", "TURN-02"))
+    gateway = PrimaryFailureGateway(ProviderTemporaryError("temporary"))
+    provider = GeminiPracticeProvider(
+        client=SimpleNamespace(models=models), gateway=gateway
+    )
+
+    result = PracticeEvaluationService(scenario, answer_key, provider).evaluate(
+        _turn_input("TURN-01", "확인하겠습니다.")
+    )
+
+    assert result.answer_category == "appropriate_check"
+    assert [call["model"] for call in gateway.calls] == [
+        "gemini-3.5-flash",
+        "gemini-2.5-flash",
+    ]
+    assert models.calls[0]["model"] == "gemini-2.5-flash"
+
+
+def test_gemini_practice_does_not_use_fallback_model_for_quota(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL_PRACTICE_FALLBACK", "gemini-2.5-flash")
+    scenario, answer_key = _assets()
+    gateway = PrimaryFailureGateway(ProviderQuotaError("daily quota"))
+    provider = GeminiPracticeProvider(
+        client=SimpleNamespace(models=FakeModels()), gateway=gateway
+    )
+
+    result = PracticeEvaluationService(scenario, answer_key, provider).evaluate(
+        _turn_input("TURN-01", "확인하겠습니다.")
+    )
+
+    assert result.answer_category == "needs_review"
+    assert result.fallback_reason == "provider_error"
+    assert len(gateway.calls) == 1
+
+
+def test_gemini_practice_stops_after_primary_and_fallback_both_fail(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL_PRACTICE_FALLBACK", "gemini-2.5-flash")
+    scenario, answer_key = _assets()
+    gateway = AlwaysFailingGateway(ProviderTemporaryError("temporary"))
+    provider = GeminiPracticeProvider(
+        client=SimpleNamespace(models=FakeModels()), gateway=gateway
+    )
+
+    result = PracticeEvaluationService(scenario, answer_key, provider).evaluate(
+        _turn_input("TURN-01", "확인하겠습니다.")
+    )
+
+    assert result.answer_category == "needs_review"
+    assert result.fallback_reason == "provider_error"
+    assert [call["model"] for call in gateway.calls] == [
+        "gemini-3.5-flash",
+        "gemini-2.5-flash",
+    ]
 
 
 def test_gemini_practice_accepts_json_text_fallback():

@@ -1,6 +1,6 @@
 # 데이터 계약 v1 인수인계 (A → B·C)
 
-> schema_version **1.8.0 읽기 호환 / 1.9.0 신규 출력** · 작성 2026-07-16 · 최근 갱신 2026-07-21 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md), [`../decisions/2026-07-18-classification-boundary.md`](../decisions/2026-07-18-classification-boundary.md), [`../decisions/2026-07-21-damage-pattern-reference-boundary.md`](../decisions/2026-07-21-damage-pattern-reference-boundary.md)
+> schema_version **1.8.0 읽기 호환 / 1.9.0 신규 출력** · 작성 2026-07-16 · 최근 갱신 2026-07-23 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md), [`../decisions/2026-07-18-classification-boundary.md`](../decisions/2026-07-18-classification-boundary.md), [`../decisions/2026-07-21-damage-pattern-reference-boundary.md`](../decisions/2026-07-21-damage-pattern-reference-boundary.md)
 
 ## 1. 목적과 현재 상태
 
@@ -43,8 +43,8 @@ conda run -n lease-py310 python -m pytest ai/tests backend/tests -q    # 전체 
 Gemini 생성 실제 호출은 기본 테스트에서 실행되지 않는다. 키·비용을 별도 승인한 경우에만 합성 CASE-001 하나로 실행한다.
 
 ```powershell
-$env:RUN_OPENAI_SMOKE='1'
-conda run -n lease-py310 python -m pytest ai/tests/generation/test_openai_case001_smoke.py -q
+$env:RUN_GEMINI_GENERATION_SMOKE='1'
+conda run -n lease-py310 python -m pytest ai/tests/generation/test_gemini_generation_case001_smoke.py -q
 ```
 
 검증 결과는 시점마다 달라지므로 이 문서에 고정 개수를 복제하지 않는다. 위 명령과 저장소의 현재 CI·작업 기록으로 확인한다. Gemini 생성 실제 호출은 기본 회귀에서 제외한다.

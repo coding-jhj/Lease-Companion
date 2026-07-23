@@ -11,6 +11,8 @@
 ```
 planning/       service-overview.md user-flow.md poc-scope.md mvp-scope.md
                 differentiation.md minimum-mvp-v1.md minimum-mvp-runbook.md
+                practice-simulation-product-rules.md practice-simulation-work-guide.md
+                special-clause-rag-handoff.md
 architecture/   system-architecture.md ai-pipeline.md data-flow.md deployment.md
 api/            api-overview.md error-format.md
 backend/        auth-and-persistence.md
@@ -41,6 +43,7 @@ testing/        실제 API·브라우저 통합 검증 실행 절차
 
 ## 현재 상태
 
-- 위 지도 문서 전부 작성됨. 미정 항목은 각 문서에서 TODO로 표시.
+- 현재 코드·OpenAPI·generated schema·테스트가 구현 상태의 우선 기준이다. ADR과 회의록의 과거 상태 문구는 역사 기록으로 유지한다.
 - 판정 단일 기준: `data/judgment-spec.md`. 모델 라우팅 확정표: `ai/model-routing.md`. 최소 MVP 실행 기준: `planning/minimum-mvp-runbook.md`.
-- 계약 연습 실제 API 검증: `testing/practice-real-api-validation.md`. 전용 Playwright spec과 MSW 사전검증은 준비됐으며 실제 API 실행 절차를 설명한다.
+- 실전 계약 점검 8단계, J01~J12, 특약 RAG·리포트, 계약 연습 시나리오 3개가 Backend·Frontend에 연결됐다. 실제 외부 provider 품질·비용 검증과 운영 배포는 후속이다.
+- 계약 연습 실제 API 검증: `testing/practice-real-api-validation.md`. 실제 FastAPI·PostgreSQL 실행 절차와 전용 Playwright 명령을 설명한다.
