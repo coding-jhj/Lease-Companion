@@ -2,7 +2,7 @@
   "fixture_type": "synthetic_practice_scenario",
   "data_classification": "synthetic",
   "scenario_id": "PRACTICE-PROXY-AUTHORITY-001",
-  "scenario_version": "1.0.0",
+  "scenario_version": "1.1.0",
   "review_status": "approved",
   "title": "대리인 권한 자료 없는 계약 요구",
   "role": "공인중개사",
@@ -45,7 +45,9 @@
     "deposit_return_clause": "임대차 종료일에 목적물을 인도받은 후 보증금을 반환한다.",
     "rights_change_clause_present": true,
     "special_clauses": [
-      "계약 체결은 임대인의 대리인이 진행한다."
+      "본 계약은 현 시설 상태에서 체결하며, 임차인은 계약 전 목적물의 시설 상태를 확인한다.",
+      "본 계약의 체결 및 계약금 수령에 관한 절차는 임대인이 지정한 대리인 박민준을 통하여 진행한다.",
+      "임차인은 임대인의 사전 동의 없이 임차권을 양도하거나 본 목적물을 전대하지 아니한다."
     ],
     "is_proxy_contract": true,
     "agent_name": "박민준",

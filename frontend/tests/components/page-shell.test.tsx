@@ -9,6 +9,29 @@ import { PageShell } from "../../src/components/layout/PageShell";
 afterEach(cleanup);
 
 describe("PageShell logout", () => {
+  it.each([
+    ["계약 연습", "/practice", "계약 연습"],
+    ["실전 계약 점검", "/contracts", "2 / 8"],
+  ])("links the %s screen back to mode selection", (_label, path, step) => {
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <PageShell step={step} title="진행 화면" description="진행 중"><p>본문</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "모드 선택" })).toHaveAttribute("href", "/choose-mode");
+  });
+
+  it("does not show a self-link on the mode selection screen", () => {
+    render(
+      <MemoryRouter initialEntries={["/choose-mode"]}>
+        <PageShell step="시작" title="어떤 방식으로 시작할까요?" description="모드 선택"><p>선택</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("link", { name: "모드 선택" })).not.toBeInTheDocument();
+  });
+
   it("returns authenticated screens to login", () => {
     render(
       <MemoryRouter initialEntries={["/contracts"]}>

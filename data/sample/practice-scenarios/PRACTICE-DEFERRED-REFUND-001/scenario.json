@@ -2,10 +2,10 @@
   "fixture_type": "synthetic_practice_scenario",
   "data_classification": "synthetic",
   "scenario_id": "PRACTICE-DEFERRED-REFUND-001",
-  "scenario_version": "1.0.0",
+  "scenario_version": "1.1.0",
   "review_status": "approved",
   "title": "후임 임차인 조건부 보증금 반환",
-  "role": "임대인",
+  "role": "공인중개사",
   "difficulty": "기본",
   "contract_stage": "서명 전",
   "always_show_labels": [
@@ -42,11 +42,12 @@
     },
     "mortgage_present": false,
     "mortgage_maximum_claim": null,
-    "deposit_return_clause": "보증금은 신규 임차인이 입주한 후 반환한다.",
+    "deposit_return_clause": "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
     "rights_change_clause_present": true,
     "special_clauses": [
-      "보증금은 신규 임차인이 입주한 후 반환한다.",
-      "임대인은 잔금 지급 다음 날까지 새로운 근저당권 등 권리를 설정하지 않는다."
+      "임차인은 계약 종료 시 임차목적물을 원상회복하여 임대인에게 인도한다. 다만, 통상적인 사용으로 인한 마모 및 노후는 제외한다.",
+      "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
+      "임대인은 잔금 지급일 다음 날까지 본 목적물에 근저당권 등 새로운 권리를 설정하지 아니한다."
     ],
     "is_proxy_contract": false,
     "agent_name": null,
@@ -60,7 +61,7 @@
       "clarity_candidate": "명확",
       "responsible_party_candidate": "임대인",
       "condition_candidates": [
-        "신규 임차인이 입주한 후 보증금을 반환한다."
+        "신규 임차인의 입주 및 보증금 수령이 완료된 후 보증금을 반환한다."
       ],
       "review_required": false
     }
@@ -115,7 +116,7 @@
     {
       "turn_id": "TURN-01",
       "goal_action_id": "PA01",
-      "prompt": "특약대로 다음 세입자가 들어오면 보증금을 바로 돌려드리겠습니다. 이 조건을 확인하셨죠?",
+      "prompt": "임대인분은 특약대로 다음 세입자가 들어오면 보증금을 바로 반환하겠다고 하십니다. 이 조건으로 진행해도 괜찮으시죠?",
       "wait_sequence": [
         {
           "state": "WAIT_BASIC",
@@ -149,7 +150,7 @@
     {
       "turn_id": "TURN-02",
       "goal_action_id": "PA02",
-      "prompt": "새 세입자는 금방 구해질 테니 걱정하지 않으셔도 됩니다. 구두로 확실히 약속드리겠습니다.",
+      "prompt": "임대인분 말씀으로는 새 세입자는 금방 구해질 테니 걱정하지 않으셔도 된다고 합니다. 구두로도 확실히 약속하셨습니다.",
       "wait_sequence": [],
       "responses": {
         "appropriate_check": "구두 약속이 아니라 신규 임차인 입주와 관계없이 반환하도록 특약 수정을 요청하시는군요.",
@@ -164,7 +165,7 @@
     {
       "turn_id": "TURN-03",
       "goal_action_id": "PA03",
-      "prompt": "특약은 나중에도 협의할 수 있습니다. 우선 오늘 계약서에 서명하시죠.",
+      "prompt": "임대인분이 특약은 나중에도 협의할 수 있다고 하십니다. 우선 오늘 계약서에 서명하시죠.",
       "wait_sequence": [],
       "responses": {
         "appropriate_check": "특약 수정 내용을 확인하기 전에는 계약 진행을 보류하시겠다는 말씀이군요.",

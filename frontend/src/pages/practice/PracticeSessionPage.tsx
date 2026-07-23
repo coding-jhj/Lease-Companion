@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
+import { PracticeAvatarStage } from "./PracticeAvatarStage";
 import type {
   PracticeScenarioDetailDto,
   PracticeSelectedAction,
@@ -87,7 +88,9 @@ export function PracticeSessionPage() {
         {
           id: response.practice_turn_id,
           userAnswer: timedOut ? "답변하지 못했어요." : answer.trim(),
-          response: response.session.current_turn?.prompt ?? response.dialogue_response,
+          response: timedOut
+            ? response.dialogue_response
+            : response.session.current_turn?.prompt ?? response.dialogue_response,
         },
       ]);
       setAnswer("");
@@ -202,6 +205,14 @@ export function PracticeSessionPage() {
                 </div>
               </section>
             )}
+            {!isActionSelection && session.current_turn && (
+              <PracticeAvatarStage
+                prompt={session.current_turn.prompt}
+                pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
+                hasUserInput={Boolean(answer.trim())}
+                submitting={submitting}
+              />
+            )}
             {dialogueHistory.length > 0 && (
               <section className="practice-conversation-history" aria-label="지금까지의 대화" aria-live="polite">
                 <h2>지금까지의 대화</h2>
@@ -217,8 +228,8 @@ export function PracticeSessionPage() {
             )}
             {!isActionSelection && session.current_turn && (
               <section className="practice-dialogue" aria-labelledby="practice-prompt-title">
-                <p>임대인 또는 공인중개사의 말</p>
-                <h2 id="practice-prompt-title">{session.current_turn.prompt}</h2>
+                <p className="sr-only">공인중개사의 말</p>
+                <span className="sr-only" id="practice-prompt-title">현재 대사에 대한 답변 입력</span>
                 {session.current_turn.wait_sequence.some((step) => step.line) && (
                   <p className="practice-pressure-hint">잠시 뒤 상대방이 재촉할 수 있습니다. 서두르지 말고 확인할 내용을 말해 보세요.</p>
                 )}

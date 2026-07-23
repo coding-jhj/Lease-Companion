@@ -7,7 +7,7 @@ type PracticeScenario = {
   clause: string;
   answers: [string, string, string];
   confirmedActions: [string, string, string];
-  officialSourceIds: string[];
+  officialSourceNames: string[];
 };
 
 const scenarios: PracticeScenario[] = [
@@ -15,7 +15,7 @@ const scenarios: PracticeScenario[] = [
     id: "PRACTICE-DEFERRED-REFUND-001",
     slug: "refund",
     title: "후임 임차인 조건부 보증금 반환",
-    clause: "보증금은 신규 임차인이 입주한 후 반환한다.",
+    clause: "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
     answers: [
       "임대차 종료일과 관계없이 신규 임차인이 입주해야만 반환한다는 뜻인지 확인해 주세요.",
       "구두 약속이 아니라 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 특약을 수정해 주세요.",
@@ -26,13 +26,13 @@ const scenarios: PracticeScenario[] = [
       "구두 설명 대신 반환 특약 수정 요구",
       "특약 수정 확인 전 계약 진행 보류",
     ],
-    officialSourceIds: ["SRC-HTA-LAW", "SRC-STD-LEASE"],
+    officialSourceNames: ["주택임대차보호법", "주택임대차 표준계약서"],
   },
   {
     id: "PRACTICE-THIRD-PARTY-PAYMENT-001",
     slug: "payee",
     title: "공인중개사 명의 계좌로 가계약금 송금 요구",
-    clause: "계약 후 잔금 지급일까지 임차인의 권리를 해치는 새로운 권리를 설정하지 않는다.",
+    clause: "계약금 및 잔금은 임대인이 지정한 계좌로 지급하고, 임대인은 지급받은 금액에 대한 영수증을 교부한다.",
     answers: [
       "입금 명의가 중개사님이고 임대인과 등기상 소유자 박서연 씨가 아닌 이유부터 확인하겠습니다.",
       "임대인과 어떤 관계인지, 가계약금을 대신 받을 권한을 증명하는 자료가 있는지 확인하겠습니다.",
@@ -43,13 +43,13 @@ const scenarios: PracticeScenario[] = [
       "제3자 수령 관계와 권한 자료 확인",
       "확인 완료 전 가계약금 송금 보류",
     ],
-    officialSourceIds: ["SRC-STD-LEASE", "SRC-MOLIT-CHECKLIST"],
+    officialSourceNames: ["주택임대차 표준계약서", "안심 전세계약 체크리스트"],
   },
   {
     id: "PRACTICE-PROXY-AUTHORITY-001",
     slug: "proxy",
     title: "대리인 권한 자료 없는 계약 요구",
-    clause: "계약 체결은 임대인의 대리인이 진행한다.",
+    clause: "본 계약의 체결 및 계약금 수령에 관한 절차는 임대인이 지정한 대리인 박민준을 통하여 진행한다.",
     answers: [
       "등기상 소유자가 한서윤 씨인지 확인하고 박민준 씨가 어떤 관계로 계약하는지도 확인하겠습니다.",
       "계약 전에 위임장과 인감증명서를 보고 계약 체결과 계약금 수령 권한까지 확인하겠습니다.",
@@ -60,7 +60,7 @@ const scenarios: PracticeScenario[] = [
       "대리인 권한 서류와 권한 범위 확인",
       "권한 확인 전 서명·송금 보류",
     ],
-    officialSourceIds: ["SRC-MOLIT-CHECKLIST", "SRC-STD-LEASE"],
+    officialSourceNames: ["안심 전세계약 체크리스트", "주택임대차 표준계약서"],
   },
 ];
 
@@ -105,13 +105,14 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   const card = catalog.locator("article").filter({ has: page.getByRole("heading", { name: scenario.title }) });
   await card.getByRole("link", { name: "상황 먼저 보기" }).click();
   await expect(page).toHaveURL(new RegExp(`/practice/scenarios/${scenario.id}$`));
-  await expect(page.getByRole("heading", { name: scenario.title })).toBeVisible();
-  await expect(page.getByRole("region", { name: "계약서 특약" })).toContainText(scenario.clause);
-  await expect(page.getByText("가상 연습", { exact: true })).toBeVisible();
-  await expect(page.getByText("합성 시나리오", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "주택임대차계약서 확인" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "주택임대차계약서" })).toContainText(scenario.clause);
+  await expect(page.getByRole("heading", { name: scenario.title })).toHaveCount(0);
+  await expect(page.getByText("가상 연습", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("합성 시나리오", { exact: true })).toHaveCount(0);
 
   if (testInfo.project.name.startsWith("real-api")) {
-    await expect(page.getByRole("button", { name: "대화 연습 시작" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "계약서 확인 완료 · 대화 시작" })).toBeEnabled();
   }
 }
 
@@ -126,9 +127,15 @@ test.describe("세 가지 계약 대화 연습", () => {
   for (const scenario of scenarios) {
     test(`${scenario.title}: 시작부터 저장된 복기까지 완료한다`, async ({ page }, testInfo) => {
       await signUpAndOpenPractice(page, scenario, testInfo);
-      await page.getByRole("button", { name: "대화 연습 시작" }).click();
+      await page.getByRole("button", { name: "계약서 확인 완료 · 대화 시작" }).click();
       await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+$/);
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
+      await expect(page.locator("video[src='/practice/avatar/speaking.mp4']")).toBeVisible();
+      await expect(page.getByRole("link", { name: "모드 선택" })).toHaveAttribute("href", "/choose-mode");
+
+      const contractTitle = await page.getByRole("heading", { name: "주택임대차계약서" }).boundingBox();
+      expect(contractTitle).not.toBeNull();
+      expect((contractTitle?.width ?? 0) > (contractTitle?.height ?? 0)).toBeTruthy();
 
       await page.getByRole("button", { name: "답변하지 못했어요" }).click();
       await expect(page.getByText("답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요.")).toBeVisible();
@@ -153,7 +160,7 @@ test.describe("세 가지 계약 대화 연습", () => {
       for (const action of scenario.confirmedActions) await expect(confirmed).toContainText(action);
       await expect(page.getByText("이번 연습에서 놓친 확인 신호가 없습니다.")).toBeVisible();
       const sources = page.getByRole("heading", { name: "연결된 공식 근거" }).locator("xpath=parent::section");
-      for (const sourceId of scenario.officialSourceIds) await expect(sources).toContainText(sourceId);
+      for (const sourceName of scenario.officialSourceNames) await expect(sources).toContainText(sourceName);
 
       await page.reload();
       await expect(page.getByRole("heading", { name: "연습 결과 복기" })).toBeVisible();
