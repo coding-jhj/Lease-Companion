@@ -38,6 +38,7 @@ export function PracticeSessionPage() {
   const [session, setSession] = useState<PracticeSessionDto | null>(null);
   const [scenario, setScenario] = useState<PracticeScenarioDetailDto | null>(null);
   const [workspaceTab, setWorkspaceTab] = useState<"contract" | "conversation">("contract");
+  const [drawerOpen, setDrawerOpen] = useState(true);
   const [contractPage, setContractPage] = useState(1);
   const [contractZoomed, setContractZoomed] = useState(false);
   const [lastResponse, setLastResponse] = useState<PracticeTurnResponseDto | null>(null);
@@ -174,12 +175,22 @@ export function PracticeSessionPage() {
               <span>확인한 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
             </div>
             {!isActionSelection && session.current_turn && scenario && (
-              <section className="practice-simulation-workspace" aria-label="계약서와 공인중개사 대화 화면">
-                <div className="practice-document-viewer">
-                  <div className="practice-workspace-tabs" role="tablist" aria-label="연습 자료 보기">
-                    <button type="button" role="tab" aria-selected={workspaceTab === "contract"} onClick={() => setWorkspaceTab("contract")}>계약서</button>
-                    <button type="button" role="tab" aria-selected={workspaceTab === "conversation"} onClick={() => setWorkspaceTab("conversation")}>
-                      대화 내용 {dialogueHistory.length > 0 && <span className="practice-tab-dot" aria-label="새 대화 있음">●</span>}
+              <section className={`practice-simulation-workspace${drawerOpen ? "" : " practice-simulation-workspace--drawer-closed"}`} aria-label="계약서와 공인중개사 대화 화면">
+                {!drawerOpen && (
+                  <button type="button" className="secondary practice-drawer-open" onClick={() => setDrawerOpen(true)}>
+                    계약서·대화 열기
+                  </button>
+                )}
+                {drawerOpen && <div className="practice-document-viewer">
+                  <div className="practice-document-viewer__toolbar">
+                    <div className="practice-workspace-tabs" role="tablist" aria-label="연습 자료 보기">
+                      <button type="button" role="tab" aria-selected={workspaceTab === "contract"} onClick={() => setWorkspaceTab("contract")}>계약서</button>
+                      <button type="button" role="tab" aria-selected={workspaceTab === "conversation"} onClick={() => setWorkspaceTab("conversation")}>
+                        대화 내용 <span className="practice-tab-dot" aria-label="공인중개사 대화 있음">●</span>
+                      </button>
+                    </div>
+                    <button type="button" className="secondary practice-drawer-close" onClick={() => setDrawerOpen(false)}>
+                      자료 접기
                     </button>
                   </div>
                   {workspaceTab === "contract" ? (
@@ -228,19 +239,22 @@ export function PracticeSessionPage() {
                   ) : (
                     <section className="practice-conversation-history practice-conversation-history--panel" role="tabpanel" aria-label="지금까지의 대화" aria-live="polite">
                       <h2>지금까지의 대화</h2>
-                      {dialogueHistory.length === 0 ? <p className="practice-conversation-history__empty">아직 주고받은 대화가 없습니다.</p> : (
-                        <ol>
+                      <ol>
+                        {dialogueHistory.length === 0 && (
+                          <li>
+                            <div className="practice-conversation-history__counterparty"><strong>공인중개사</strong><p>{session.current_turn.prompt}</p></div>
+                          </li>
+                        )}
                           {dialogueHistory.map((item) => (
                             <li key={item.id}>
                               <div className="practice-conversation-history__user"><strong>나</strong><p>{item.userAnswer}</p></div>
-                              {item.response && <div className="practice-conversation-history__counterparty"><strong>상대방</strong><p>{item.response}</p></div>}
+                              {item.response && <div className="practice-conversation-history__counterparty"><strong>공인중개사</strong><p>{item.response}</p></div>}
                             </li>
                           ))}
-                        </ol>
-                      )}
+                      </ol>
                     </section>
                   )}
-                </div>
+                </div>}
                 <PracticeAvatarStage
                   prompt={session.current_turn.prompt}
                   pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}

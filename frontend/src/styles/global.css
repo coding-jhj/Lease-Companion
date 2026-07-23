@@ -367,12 +367,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-result-hero > p { margin: 0 0 5px; color: #42634c; font-size: 12px; font-weight: 900; }
 .practice-prompt-preview blockquote, .practice-feedback blockquote { margin: 0; color: #26382c; font-size: 17px; font-weight: 700; line-height: 1.65; }
 .practice-progress { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 18px; padding: 12px 14px; border-radius: 12px; background: #e9f1ea; color: #31523a; }
-.practice-simulation-workspace { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 560px; overflow: hidden; border: 1px solid #cfdcd2; border-radius: 18px; background: #fff; }
-.practice-document-viewer { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; background: #f4f1e9; }
-.practice-workspace-tabs { display: flex; gap: 4px; padding: 10px 12px 0; border-bottom: 1px solid #d6ddd7; background: #eef3ef; }
+.practice-simulation-workspace { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 560px; overflow: hidden; border: 1px solid #cfdcd2; border-radius: 18px; background: #fff; }
+.practice-simulation-workspace--drawer-closed { grid-template-columns: 1fr; }
+.practice-document-viewer { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; background: #f4f1e9; animation: practice-drawer-in 180ms ease-out; }
+.practice-document-viewer__toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; border-bottom: 1px solid #d6ddd7; background: #eef3ef; }
+.practice-workspace-tabs { display: flex; flex: 1 1 auto; gap: 4px; min-width: 0; padding: 10px 12px 0; }
 .practice-workspace-tabs button { width: auto; padding: 10px 14px; border: 1px solid transparent; border-bottom: 0; border-radius: 10px 10px 0 0; background: transparent; color: #536259; }
 .practice-workspace-tabs button[aria-selected="true"] { border-color: #cfd8d1; background: #fff; color: #245236; }
 .practice-tab-dot { color: #a56400; font-size: 10px; }
+.practice-drawer-close { width: auto; margin: 0 10px 8px 0; padding: 8px 10px; white-space: nowrap; }
+.practice-drawer-open { position: absolute; z-index: 2; top: 12px; left: 12px; width: auto; padding: 9px 12px; box-shadow: 0 4px 14px rgb(36 82 54 / 16%); }
+@keyframes practice-drawer-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
 .practice-contract-document { display: flex; flex-direction: column; min-height: 0; margin: 18px; overflow: hidden; border: 1px solid #d7d1c5; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgb(70 59 39 / 8%); }
 .practice-contract-document > header { padding: 22px 24px 15px; border-bottom: 2px solid #2e5d3c; }
 .practice-contract-document > header h2, .practice-contract-document > header h3 { margin: 0; }
@@ -390,6 +395,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-contract-document__footer > div { display: flex; gap: 6px; }
 .practice-contract-document__footer button { width: auto; min-width: 54px; padding: 8px 10px; font-size: 13px; }
 .practice-simulation-workspace > .practice-avatar-stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; border: 0; border-left: 1px solid #cfdcd2; border-radius: 0; }
+.practice-simulation-workspace--drawer-closed > .practice-avatar-stage { border-left: 0; }
 .practice-simulation-workspace > .practice-avatar-stage .practice-avatar-stage__video-wrap { min-height: 0; aspect-ratio: auto; }
 .practice-avatar-stage { overflow: hidden; border: 1px solid #cfdcd2; border-radius: 18px; background: #f7faf7; }
 .practice-avatar-stage__video-wrap { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #17251c; }
@@ -397,10 +403,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-avatar-stage__status { position: absolute; top: 14px; left: 14px; max-width: calc(100% - 28px); padding: 7px 11px; border-radius: 999px; background: rgb(16 48 29 / 86%); color: #fff; font-size: 12px; font-weight: 800; backdrop-filter: blur(4px); }
 .practice-avatar-stage__status--pressure { background: rgb(113 63 0 / 90%); }
 .practice-avatar-stage__caption { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 16px 18px 18px; }
-.practice-avatar-stage__caption div { min-width: 0; }
+.practice-avatar-stage__caption div { flex: 1 1 auto; min-width: 0; }
 .practice-avatar-stage__caption p { margin: 0 0 5px; color: #42634c; font-size: 12px; font-weight: 900; }
-.practice-avatar-stage__caption h2 { margin: 0; font-size: 18px; line-height: 1.55; overflow-wrap: anywhere; }
-.practice-avatar-stage__caption button { flex: 0 0 auto; min-height: 42px; padding: 9px 13px; }
+.practice-avatar-stage__caption h2 { margin: 0; font-size: 18px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word; }
+.practice-avatar-stage__caption button { flex: 0 0 auto; width: auto; min-height: 42px; padding: 9px 13px; white-space: nowrap; }
 .practice-feedback { border-color: #9fb8c4; background: #edf5f8; }
 .practice-feedback strong { display: block; margin-top: 12px; color: #284e60; }
 .practice-pressure-hint { padding: 10px 12px; border-radius: 10px; background: #fff3d8; color: #6b4f00; font-size: 14px; }

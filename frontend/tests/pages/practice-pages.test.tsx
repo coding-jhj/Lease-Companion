@@ -230,6 +230,22 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByRole("button", { name: "축소" })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("shows the broker's first prompt in conversation and toggles the material drawer", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    renderSession();
+
+    fireEvent.click(await screen.findByRole("tab", { name: /대화 내용/ }));
+    const conversation = screen.getByRole("tabpanel", { name: "지금까지의 대화" });
+    expect(within(conversation).getByText("공인중개사")).toBeInTheDocument();
+    expect(within(conversation).getByText("계약을 바로 진행하시겠습니까?")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "자료 접기" }));
+    expect(screen.queryByRole("tab", { name: "계약서" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "계약서·대화 열기" }));
+    expect(screen.getByRole("tab", { name: "계약서" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /대화 내용/ })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("restores the current turn, submits an answer, and renders the next turn", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     const next = session({ current_state: "TURN-02", current_turn: dialogueTurn("TURN-02", "권한 자료도 필요할까요?"), confirmed_action_ids: ["PA01"] });
