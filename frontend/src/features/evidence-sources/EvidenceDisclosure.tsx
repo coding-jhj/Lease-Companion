@@ -45,8 +45,6 @@ function EvidenceSummary({ summary }: { summary: string }) {
 
 function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; index: number }) {
   const relatedExcerpt = source.summary?.trim() || null;
-  const fullSource = source.source_text?.trim() || null;
-  const hasSeparateFullSource = fullSource !== null && fullSource !== relatedExcerpt;
 
   return (
     <section className="evidence-source-card">
@@ -63,12 +61,6 @@ function EvidenceSourceCard({ source, index }: { source: OfficialSourceDto; inde
         </section>
       ) : (
         <p className="evidence-summary-empty">이번 판정과 연결된 공식자료 발췌가 없습니다.</p>
-      )}
-      {hasSeparateFullSource && (
-        <details className="evidence-summary evidence-full-source">
-          <summary>공식자료 전체 원문 보기</summary>
-          <EvidenceSummary summary={fullSource} />
-        </details>
       )}
       {source.source_url && (
         <a
@@ -91,7 +83,7 @@ export function EvidenceDisclosure({
   financialImpact,
   financialImpactLabel = "생길 수 있는 금전 문제",
   idPrefix,
-  order = "sources-first",
+  order = "explanation-first",
 }: {
   sources: OfficialSourceDto[];
   limitations: string;
@@ -106,18 +98,20 @@ export function EvidenceDisclosure({
   const limitationTitleId = `${idPrefix}-limitation-title`;
 
   const sourceSection = (
-    <section className="evidence-disclosure__sources" aria-labelledby={evidenceTitleId}>
-        <div className="evidence-disclosure__intro">
+    <details className="evidence-disclosure__sources" aria-labelledby={evidenceTitleId}>
+        <summary className="evidence-disclosure__intro">
           <div>
-            <strong id={evidenceTitleId}>공식 근거</strong>
+            <strong id={evidenceTitleId}>공식자료</strong>
             <p>
               {sources.length > 0
-                ? "이번 판정과 연결된 발췌와 참고용 전체 원문을 구분해 제공합니다."
-                : "현재 연결된 공식 근거가 없습니다."}
+                ? "이번 판정과 연결된 공식자료를 펼쳐서 확인할 수 있습니다."
+                : "현재 연결된 공식자료가 없습니다."}
             </p>
           </div>
-          <span className="evidence-count" aria-label={`공식 근거 ${sources.length}건`}>{sources.length}건</span>
-        </div>
+          <span className="evidence-count" aria-label={`공식자료 ${sources.length}건`}>{sources.length}건</span>
+          <span className="collapse-arrow" aria-hidden="true">▸</span>
+        </summary>
+        <div className="evidence-disclosure__sources-body">
         {sources.length > 0 ? (
           <div className="evidence-source-list">
             {sources.map((source, index) => (
@@ -127,7 +121,8 @@ export function EvidenceDisclosure({
         ) : (
           <p className="evidence-empty">공식 근거가 없는 항목은 계약 상대방이나 관련 기관에 직접 확인해 주세요.</p>
         )}
-    </section>
+        </div>
+    </details>
   );
   const explanationSection = (
     <section className="plain-evidence-card" aria-labelledby={explanationTitleId}>
