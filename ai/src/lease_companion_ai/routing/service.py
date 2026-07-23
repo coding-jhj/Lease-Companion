@@ -26,9 +26,26 @@ logger = logging.getLogger(__name__)
 
 
 def _record_decision(decision: RoutingDecision) -> None:
+    """라우팅 결정을 본문에 적는다.
+
+    값을 extra로만 넘기면 기본 포매터가 메시지만 출력해 "ai_routing_decision"이라는
+    빈 줄만 남는다. fallback은 조용히 흡수되는 실패이므로 WARNING으로 올려
+    로그만 보고도 어느 단계가 무슨 이유로 대체 경로를 탔는지 알 수 있게 한다.
+    """
+    if decision.fallback_used:
+        logger.warning(
+            "라우팅 fallback stage=%s primary=%s→selected=%s reason=%s primary_available=%s",
+            decision.stage.value,
+            decision.primary.value,
+            decision.selected.value,
+            decision.failure_reason.value if decision.failure_reason else "unknown",
+            decision.primary_available,
+        )
+        return
     logger.info(
-        "ai_routing_decision",
-        extra={"routing_decision": decision.to_dict()},
+        "라우팅 정상 stage=%s selected=%s",
+        decision.stage.value,
+        decision.selected.value,
     )
 
 

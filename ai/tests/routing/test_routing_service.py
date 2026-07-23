@@ -88,10 +88,12 @@ def test_routing_log_contains_structured_reason_without_provider_message(caplog)
         fallback=lambda: "hybrid",
     )
 
+    # 값이 extra에만 있으면 기본 포매터가 안 찍어 로그가 무의미해진다. 본문에 있어야 한다.
     record = next(
-        record for record in caplog.records if record.message == "ai_routing_decision"
+        record for record in caplog.records if "라우팅 fallback" in record.getMessage()
     )
-    assert record.routing_decision["failure_reason"] == "quota_exceeded"
+    assert "reason=quota_exceeded" in record.getMessage()
+    assert record.levelname == "WARNING"
     assert "민감한 provider 원문" not in record.getMessage()
 
 
@@ -111,9 +113,9 @@ def test_primary_failure_is_recorded_even_when_fallback_also_fails(caplog):
         )
 
     record = next(
-        record for record in caplog.records if record.message == "ai_routing_decision"
+        record for record in caplog.records if "라우팅 fallback" in record.getMessage()
     )
-    assert record.routing_decision["failure_reason"] == "quota_exceeded"
+    assert "reason=quota_exceeded" in record.getMessage()
 
 
 @pytest.mark.parametrize(

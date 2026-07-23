@@ -11,6 +11,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from lease_companion_ai.classification.service import ClassificationService
+from lease_companion_ai.schemas.unified import ClassificationMethod
 from lease_companion_ai.generation.service import GenerationService
 from lease_companion_ai.pipelines.classified_analysis import (
     analyze_special_clause_evidence,
@@ -22,6 +23,7 @@ from lease_companion_ai.schemas.adapters import document_from_legacy
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
     ContractContext,
+    GenerationMethod,
     InputSnapshot,
     validate_generation_result_for_analysis,
 )
@@ -77,6 +79,7 @@ def run_extraction(extraction_run_id: int, contract_path: str, contract_filename
             return
         run.status = STATUS_RUNNING
         db.commit()
+        logger.info("[1/4] 문서 추출 시작 (extraction_run_id=%s)", extraction_run_id)
         try:
             extracted = extract_documents(
                 Path(contract_path).read_bytes(), contract_filename,
@@ -103,6 +106,54 @@ def run_extraction(extraction_run_id: int, contract_path: str, contract_filename
             run.status = STATUS_FAILED
             run.error = str(exc)
         db.commit()
+        logger.info(
+            "[1/4] 문서 추출 종료 (extraction_run_id=%s status=%s %s)",
+            extraction_run_id,
+            run.status,
+            _extraction_summary(run),
+        )
+        if run.status == STATUS_FAILED:
+            logger.warning(
+                "[1/4] 추출 실패 사유 (extraction_run_id=%s): %s",
+                extraction_run_id,
+                run.error,
+            )
+
+
+def _reason_histogram(items) -> str:
+    """폴백 사유 분포. 사유는 결과 JSON에만 있고 로그엔 없어서 원인 추적이 막혔었다."""
+    counts: dict[str, int] = {}
+    for item in items:
+        key = item.fallback_reason or "unspecified"
+        counts[key] = counts.get(key, 0) + 1
+    return ",".join(f"{key}:{count}" for key, count in sorted(counts.items())) or "없음"
+
+
+def _status_histogram(results) -> str:
+    """판정 상태 분포를 `불일치:2,미기재:5` 형태로 요약한다."""
+    counts: dict[str, int] = {}
+    for result in results:
+        key = getattr(result.status, "value", str(result.status))
+        counts[key] = counts.get(key, 0) + 1
+    return ",".join(f"{key}:{count}" for key, count in sorted(counts.items())) or "없음"
+
+
+def _extraction_summary(run: ExtractionRun) -> str:
+    """추출 결과를 값 노출 없이 요약한다. 원문·개인정보는 남기지 않는다."""
+    parts = []
+    for label, doc in (("계약서", run.contract_doc), ("등기", run.registry_doc)):
+        if not doc:
+            parts.append(f"{label}=없음")
+            continue
+        fields = doc.get("fields") or {}
+        # 값 자체는 절대 로그에 남기지 않는다. 판독 성공/실패 개수만 센다.
+        read = sum(
+            1
+            for field in fields.values()
+            if isinstance(field, dict) and field.get("extracted_value") is not None
+        )
+        parts.append(f"{label}=판독{read}/{len(fields)}")
+    return " ".join(parts)
 
 
 def run_analysis(analysis_run_pk: int) -> None:
@@ -113,6 +164,7 @@ def run_analysis(analysis_run_pk: int) -> None:
             return
         run.status = STATUS_RUNNING
         db.commit()
+        logger.info("[2/4] 구조화·규칙 판정 시작 (analysis_run_id=%s)", run.analysis_run_id)
         try:
             snapshot = InputSnapshot.model_validate(run.input_snapshot)
             classification_service = ClassificationService(
@@ -129,6 +181,35 @@ def run_analysis(analysis_run_pk: int) -> None:
             run.classification_result = classification.model_dump(mode="json")
             run.result = analysis.model_dump(mode="json")
             run.status = STATUS_COMPLETED
+            # 구조화가 safe_fallback으로 떨어지면 후보가 0이 되어 특약 근거·안내가
+            # 조용히 비는데, 지금까지는 그 사실이 어디에도 남지 않았다.
+            if classification.classification_method != ClassificationMethod.PROVIDER:
+                logger.warning(
+                    "[2/4] 조항 구조화 fallback (analysis_run_id=%s method=%s 후보=%d) "
+                    "— 특약 근거·안내가 비게 됩니다",
+                    run.analysis_run_id,
+                    classification.classification_method.value,
+                    len(classification.candidates),
+                )
+            # 데모 해설용 단계 요약 — 판정 id·건수만. 문서 내용·개인정보는 남기지 않는다.
+            logger.info(
+                "[3/4] 규칙 판정 완료 (analysis_run_id=%s R=%d J=%d 특약근거=%d "
+                "즉시확인=%d 상태=%s 근거있음=%d/%d)",
+                run.analysis_run_id,
+                len(analysis.results),
+                len(analysis.judgments),
+                len(analysis.special_clause_reviews),
+                sum(1 for r in analysis.results if r.urgency == "즉시 확인"),
+                _status_histogram(analysis.results),
+                sum(1 for r in analysis.results if r.evidence_sources),
+                len(analysis.results),
+            )
+            if not any(r.evidence_sources for r in analysis.results):
+                logger.warning(
+                    "[3/4] 공식 근거 0건 (analysis_run_id=%s) — RAG 검색 실패 또는 "
+                    "임베딩 한도 소진. 생성 단계가 전량 템플릿 폴백이 됩니다",
+                    run.analysis_run_id,
+                )
         except Exception as exc:
             logger.exception("분석 실행 실패 (analysis_run_id=%s)", run.analysis_run_id)
             run.status = STATUS_FAILED
@@ -176,6 +257,28 @@ def _run_generation(
         run.generation_result = generation.model_dump(mode="json")
         run.generation_status = STATUS_COMPLETED
         run.generation_error = None
+        fallbacks = [
+            item
+            for item in generation.items
+            if item.generation_method is not GenerationMethod.PROVIDER
+        ]
+        logger.info(
+            "[4/4] 안내 생성 완료 (analysis_run_id=%s provider=%s 규칙안내=%d 특약안내=%d "
+            "템플릿폴백=%d 사유=%s)",
+            run.analysis_run_id,
+            "gemini" if provider else "none",
+            len(generation.items),
+            len(generation.special_clause_items),
+            len(fallbacks),
+            _reason_histogram(fallbacks),
+        )
+        if fallbacks and len(fallbacks) == len(generation.items):
+            logger.warning(
+                "[4/4] 규칙 안내 전량 템플릿 폴백 (analysis_run_id=%s 사유=%s) "
+                "— LLM 생성 결과가 하나도 반영되지 않았습니다",
+                run.analysis_run_id,
+                _reason_histogram(fallbacks),
+            )
     except Exception:
         logger.exception("생성 실행 실패 (analysis_run_id=%s)", run.analysis_run_id)
         # provider 경로가 통째로 실패해도(설정·네트워크·SDK 예외 등) 규칙 recommended_actions 기반

@@ -16,6 +16,12 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
+# SDK 소음이 파이프라인 진단 줄을 덮는다. httpx는 요청 1건마다 URL 줄을,
+# google_genai는 호출마다 "AFC is enabled"를 찍는데 둘 다 GeminiGateway 로그가
+# 같은 정보를 더 정확히(task·model·attempt·latency) 남기므로 WARNING으로 올린다.
+for _noisy in ("httpx", "httpcore", "google_genai"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
+
 from app.api.routes import (  # noqa: E402
     analyses,
     auth,
