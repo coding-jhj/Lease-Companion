@@ -23,11 +23,14 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 _RETRYABLE_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504})
 _NON_RETRYABLE_STATUS_CODES = frozenset({400, 401, 403, 404})
+# 공백·밑줄을 지운 형태로 비교한다. 실제 응답의 quotaId는
+# `GenerateRequestsPerDayPerProjectPerModel-FreeTier`처럼 공백이 없어
+# "per day" 같은 띄어쓴 마커로는 잡히지 않는다(2026-07-23 실측).
 _DAILY_QUOTA_MARKERS = (
-    "per day",
-    "requests per day",
+    "perday",
+    "requestsperday",
     "daily",
-    "quota per day",
+    "quotaperday",
 )
 
 
@@ -82,7 +85,8 @@ def _is_daily_quota(exc: Exception) -> bool:
             str(exc),
         )
     ).lower()
-    return any(marker in detail for marker in _DAILY_QUOTA_MARKERS)
+    compact = detail.replace(" ", "").replace("_", "")
+    return any(marker in compact for marker in _DAILY_QUOTA_MARKERS)
 
 
 class GeminiGateway:
@@ -176,14 +180,39 @@ class GeminiGateway:
                     or isinstance(exc, ConnectionError)
                 )
                 if daily_quota:
+                    logger.error(
+                        "Gemini 일일 할당량 소진 task=%s model=%s — 재시도하지 않음",
+                        task,
+                        model,
+                    )
                     raise ProviderQuotaError("Gemini 일일 할당량을 초과했습니다.") from None
                 if status in _NON_RETRYABLE_STATUS_CODES or not retryable:
+                    logger.error(
+                        "Gemini 호출 실패(재시도 불가) task=%s model=%s status=%s type=%s",
+                        task,
+                        model,
+                        status,
+                        type(exc).__name__,
+                    )
                     raise ProviderError("Gemini 호출에 실패했습니다.") from None
                 if status == 429 and not _retry_after(exc):
                     unknown_quota_retries += 1
                     if unknown_quota_retries > 1:
+                        logger.error(
+                            "Gemini 할당량 초과 task=%s model=%s — 재시도 중단",
+                            task,
+                            model,
+                        )
                         raise ProviderQuotaError("Gemini 할당량을 초과했습니다.") from None
                 if attempt == policy.max_attempts:
+                    logger.error(
+                        "Gemini 호출 최종 실패 task=%s model=%s attempts=%d status=%s timed_out=%s",
+                        task,
+                        model,
+                        attempt,
+                        status,
+                        timed_out,
+                    )
                     if timed_out:
                         raise ProviderTimeoutError("Gemini 호출 시간이 초과되었습니다.") from None
                     raise ProviderTemporaryError("Gemini 서비스를 일시적으로 사용할 수 없습니다.") from None
@@ -191,6 +220,16 @@ class GeminiGateway:
                 if delay is None:
                     delay = min(30.0, float(2 ** (attempt - 1))) + self._jitter()
                 if waited + delay > policy.max_total_wait_seconds:
+                    logger.error(
+                        "Gemini 대기 예산 초과로 중단 task=%s model=%s status=%s "
+                        "waited_ms=%d needed_ms=%d budget_ms=%d",
+                        task,
+                        model,
+                        status,
+                        int(waited * 1000),
+                        int(delay * 1000),
+                        int(policy.max_total_wait_seconds * 1000),
+                    )
                     if timed_out:
                         raise ProviderTimeoutError("Gemini 호출 시간이 초과되었습니다.") from None
                     raise ProviderTemporaryError("Gemini 서비스를 일시적으로 사용할 수 없습니다.") from None

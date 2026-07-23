@@ -88,6 +88,40 @@ def test_gateway_does_not_retry_daily_quota() -> None:
     assert clock.sleeps == []
 
 
+def test_gateway_does_not_retry_real_free_tier_daily_quota_id() -> None:
+    """실제 응답의 quotaId는 공백이 없다(2026-07-23 실측). 재시도하면 안 된다."""
+    clock = FakeClock()
+    attempts = 0
+
+    def operation() -> None:
+        nonlocal attempts
+        attempts += 1
+        raise FakeApiError(
+            429,
+            "RESOURCE_EXHAUSTED 'quotaId': "
+            "'GenerateRequestsPerDayPerProjectPerModel-FreeTier', "
+            "'retryDelay': '12s'",
+            retry_after=12,
+        )
+
+    gateway = GeminiGateway(
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+        jitter=lambda: 0.0,
+    )
+
+    with pytest.raises(ProviderError, match="일일 할당량"):
+        gateway.call(
+            task="document_extraction",
+            model="test-model",
+            operation=operation,
+            policy=GeminiCallPolicy(max_attempts=3, max_total_wait_seconds=15),
+        )
+
+    assert attempts == 1
+    assert clock.sleeps == []
+
+
 def test_gateway_stops_when_retry_delay_exceeds_wait_budget() -> None:
     clock = FakeClock()
     attempts = 0

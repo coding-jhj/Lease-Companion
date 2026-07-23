@@ -32,7 +32,7 @@
 - 특약 생성 요청은 비식별 특약 원문과 허용된 공식 근거만 전달한다. 같은 provider 초안을 설명·확인 질문·수정 요청으로 변환하고 별도 Guardrail을 통과시킨다.
 - 구현 완료(classification v1): `ClassificationProvider` Protocol과 결정적 Fake provider, `GeminiClassificationProvider`를 분리했다. Gemini adapter는 `classification-v1` prompt와 canonical `ClassificationInput`·`ClassificationResult`만 사용하며, SDK·원문 오류를 외부 예외에 노출하지 않는다.
 - 구현 완료(practice evaluation v1): `GeminiPracticeProvider`가 `practice-evaluation-v1` prompt와 `PracticeTurnEvaluation` Structured Output을 사용한다. R01~R24와 연결된 J 판정은 읽기 전용 요약으로만 전달하며, 최종 상태 전이는 simulation 서비스가 검증한다.
-- 계약 연습은 3.5 Flash를 1회 호출하고, 503·timeout일 때만 `GEMINI_MODEL_PRACTICE_FALLBACK`(기본 2.5 Flash)을 1회 호출한다. 429·인증·요청 오류에는 fallback하지 않으며 한 답변의 실제 호출은 최대 2회다.
+- 계약 연습은 3.5 Flash를 1회 호출하고, 503·timeout일 때만 `GEMINI_MODEL_PRACTICE_FALLBACK`(코드 기본값은 빈 값 = fallback 없음)을 1회 호출한다. 429·인증·요청 오류에는 fallback하지 않으며 한 답변의 실제 호출은 최대 2회다. 2026-07-23 실측에서 `gemini-2.5-flash`·`gemini-2.5-flash-lite`는 현재 키에서 404이므로 fallback 모델로 지정하지 않는다.
 - `build_practice_provider()`는 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`가 있으면 Gemini, 키가 없고 offline mode면 승인 answer key 기반 Fake, 그 외에는 `None`을 반환한다. 키가 있으면 offline mode보다 Gemini가 우선한다.
 - Gemini·Cohere 유료 실호출은 미수행. 키·비용 승인 후 별도 smoke test가 필요하다.
 - Gemini 유료 실호출은 미수행. `RUN_GEMINI_GENERATION_SMOKE=1`과 승인된 `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`가 함께 있을 때만 합성 CASE-001 smoke test가 실행된다.
