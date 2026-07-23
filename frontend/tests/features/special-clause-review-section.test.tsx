@@ -58,7 +58,7 @@ describe("SpecialClauseReviewSection", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("특약 원문과 Python 판정은 그대로 표시");
     expect(screen.getByText(review.original_text)).toBeInTheDocument();
-    expect(screen.getByText("현재 연결된 공식 근거가 없습니다.")).toBeInTheDocument();
+    expect(screen.getByText("현재 연결된 공식자료가 없습니다.")).toBeInTheDocument();
     expect(screen.getByText(/안내 생성에 실패했습니다/)).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "수정 요청 문구" })).not.toBeInTheDocument();
   });

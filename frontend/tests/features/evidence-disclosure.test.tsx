@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { EvidenceDisclosure } from "../../src/features/evidence-sources/EvidenceDisclosure";
 
@@ -30,7 +30,10 @@ describe("EvidenceDisclosure", () => {
       />,
     );
 
-    expect(screen.getByLabelText("공식 근거 1건")).toBeInTheDocument();
+    expect(screen.getByText("조항을 쉽게 설명하면").closest("section")?.nextElementSibling).toHaveClass("evidence-disclosure__sources");
+    expect(screen.getByLabelText("공식자료 1건")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "주택임대차 표준계약서" })).not.toBeVisible();
+    fireEvent.click(screen.getByText("공식자료"));
     expect(screen.getByRole("heading", { name: "주택임대차 표준계약서" })).toBeInTheDocument();
     expect(screen.getByText("법무부")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "[특약사항]" })).toBeInTheDocument();
@@ -44,7 +47,7 @@ describe("EvidenceDisclosure", () => {
     expect(screen.getByText("이 결과만으로 법률적 결론을 내릴 수 없습니다.")).toBeInTheDocument();
   });
 
-  it("separates the retrieval excerpt from the optional full source text", () => {
+  it("shows only the matched excerpt and removes the embedded full source text", () => {
     render(
       <EvidenceDisclosure
         idPrefix="R01"
@@ -62,16 +65,10 @@ describe("EvidenceDisclosure", () => {
       />,
     );
 
+    fireEvent.click(screen.getByText("공식자료"));
     expect(screen.getByText("검색 발췌 문장입니다.")).toBeInTheDocument();
-    expect(screen.getByText("전체 원문 첫 문장입니다.")).not.toBeVisible();
-
-    const fullSourceToggle = screen.getByText("공식자료 전체 원문 보기");
-    expect(fullSourceToggle.closest("details")).not.toHaveAttribute("open");
-    fullSourceToggle.click();
-
-    expect(screen.getByText("전체 원문 첫 문장입니다.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "[수선비용 부담의 해석 기준]" })).toBeInTheDocument();
-    expect(screen.getByText("전체 원문 마지막 문장입니다.")).toBeInTheDocument();
+    expect(screen.queryByText("전체 원문 첫 문장입니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText("공식자료 전체 원문 보기")).not.toBeInTheDocument();
   });
 
   it("does not present a full source document as a matched excerpt", () => {
@@ -92,9 +89,10 @@ describe("EvidenceDisclosure", () => {
       />,
     );
 
+    fireEvent.click(screen.getByText("공식자료"));
     expect(screen.getByText("이번 판정과 연결된 공식자료 발췌가 없습니다.")).toBeInTheDocument();
-    expect(screen.getByText("전체 문서 내용")).not.toBeVisible();
-    expect(screen.getByText("공식자료 전체 원문 보기")).toBeInTheDocument();
+    expect(screen.queryByText("전체 문서 내용")).not.toBeInTheDocument();
+    expect(screen.queryByText("공식자료 전체 원문 보기")).not.toBeInTheDocument();
   });
 
   it("shows a clear next step when no official source is connected", () => {
@@ -108,7 +106,8 @@ describe("EvidenceDisclosure", () => {
       />,
     );
 
-    expect(screen.getByLabelText("공식 근거 0건")).toBeInTheDocument();
+    expect(screen.getByLabelText("공식자료 0건")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("공식자료"));
     expect(screen.getByText("공식 근거가 없는 항목은 계약 상대방이나 관련 기관에 직접 확인해 주세요.")).toBeInTheDocument();
   });
 });

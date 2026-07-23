@@ -276,9 +276,13 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .special-clause-card__guidance { padding-top: 12px; border-top: 1px solid #e2ded5; }
 .special-clause-card__guidance h4 { margin: 0 0 8px; font-size: 15px; }
 .special-clause-card__guidance ul { margin: 0; padding-left: 20px; line-height: 1.65; }
-.evidence-disclosure__sources { display: grid; gap: 10px; }
-.evidence-disclosure__intro { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.evidence-disclosure__sources { overflow: hidden; border: 1px solid #d9e1da; border-radius: 12px; background: #fff; }
+.evidence-disclosure__intro { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: start; gap: 12px; padding: 14px; cursor: pointer; list-style: none; }
+.evidence-disclosure__intro::-webkit-details-marker { display: none; }
 .evidence-disclosure__intro p { margin: 5px 0 0; color: #626b64; font-size: 14px; line-height: 1.55; }
+.evidence-disclosure__sources[open] .evidence-disclosure__intro { border-bottom: 1px solid #e2e7e3; }
+.evidence-disclosure__sources[open] .collapse-arrow { transform: rotate(90deg); }
+.evidence-disclosure__sources-body { display: grid; gap: 10px; padding: 12px; background: #f8faf8; }
 .evidence-count { flex: 0 0 auto; padding: 4px 8px; border-radius: 999px; background: #e5eee7; color: #245236; font-size: 12px; font-weight: 800; }
 .evidence-source-list { display: grid; gap: 10px; }
 .evidence-source-card { width: 100%; min-width: 0; padding: 14px; border: 1px solid #ddd7ca; border-radius: 12px; background: #fff; }
