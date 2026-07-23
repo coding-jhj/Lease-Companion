@@ -399,7 +399,7 @@ def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
     results = run_judgments(build_judgment_input(snapshot))
 
     assert [result.judgment_id for result in results] == [
-        f"J{index:02d}" for index in range(1, 13)
+        f"J{index:02d}" for index in range(1, 14)
     ]
     assert {result.judgment_id: result.status.value for result in results} == {
         "J01": "일치",
@@ -414,4 +414,6 @@ def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
         "J10": "명확",
         "J11": "명확",
         "J12": "확인 필요",
+        # J13은 연결된 카탈로그 항목이 아직 없어(Task 1 범위) 항상 적용 제외/확인 불가만 낸다.
+        "J13": "적용 제외",
     }

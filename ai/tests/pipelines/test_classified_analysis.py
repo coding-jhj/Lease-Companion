@@ -138,9 +138,9 @@ def test_matched_special_clause_becomes_review_linked_to_rule_engine_result():
     )
     analysis = _analyze(snapshot)
 
-    # R/J 결과는 그대로 (24 규칙·12 판정)
+    # R/J 결과는 그대로 (24 규칙·13 판정 — J13 포함)
     assert len(analysis.results) == 24
-    assert len(analysis.judgments) == 12
+    assert len(analysis.judgments) == 13
 
     assert len(analysis.special_clause_reviews) == 1
     review = analysis.special_clause_reviews[0]

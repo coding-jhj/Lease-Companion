@@ -423,7 +423,7 @@
       "items": {
         "type": "string"
       },
-      "maxItems": 12,
+      "maxItems": 13,
       "minItems": 1,
       "title": "Judgment Ids",
       "type": "array"

@@ -127,7 +127,10 @@ class ContractStage(str, Enum):
     AFTER_CONTRACT = "계약 직후"
 
 
-JUDGMENT_IDS: tuple[str, ...] = tuple(f"J{index:02d}" for index in range(1, 13))
+JUDGMENT_IDS: tuple[str, ...] = tuple(f"J{index:02d}" for index in range(1, 14))
+
+# judgment id 정규식을 상수에서 만든다. 두 곳에 하드코딩하면 확장 시 어긋난다.
+_JUDGMENT_ID_PATTERN: str = "^(?:" + "|".join(JUDGMENT_IDS) + ")$"
 
 DEFAULT_JUDGMENT_URGENCY: dict[str, Urgency] = {
     "J01": Urgency.IMMEDIATE,
@@ -142,6 +145,7 @@ DEFAULT_JUDGMENT_URGENCY: dict[str, Urgency] = {
     "J10": Urgency.BEFORE_CONTRACT,
     "J11": Urgency.REFERENCE,
     "J12": Urgency.IMMEDIATE,
+    "J13": Urgency.IMMEDIATE,
 }
 
 
@@ -231,6 +235,9 @@ JUDGMENT_INPUT_SPECS: dict[str, JudgmentInputSpec] = {
     ),
     "J12": JudgmentInputSpec(
         contract_fields=("main_clauses", "special_clauses_present", "special_clauses"),
+    ),
+    "J13": JudgmentInputSpec(
+        contract_fields=("special_clauses_present", "special_clauses"),
     ),
 }
 
@@ -403,6 +410,13 @@ ALLOWED_JUDGMENT_STATUSES: dict[str, frozenset[RuleStatus]] = {
             RuleStatus.CLEAR,
             RuleStatus.CHECK_NEEDED,
             RuleStatus.NOT_APPLICABLE,
+        }
+    ),
+    "J13": frozenset(
+        {
+            RuleStatus.CHECK_NEEDED,
+            RuleStatus.NOT_APPLICABLE,
+            RuleStatus.CANNOT_CHECK,
         }
     ),
 }
@@ -785,7 +799,7 @@ def _validate_judgment_ids(judgment_ids: tuple[str, ...]) -> tuple[str, ...]:
         judgment_id for judgment_id in JUDGMENT_IDS if judgment_id in judgment_ids
     )
     if judgment_ids != expected_order:
-        raise ValueError("judgment_ids는 J01~J12 canonical 순서를 따라야 합니다.")
+        raise ValueError("judgment_ids는 canonical 순서를 따라야 합니다.")
     return judgment_ids
 
 
@@ -930,7 +944,7 @@ class JudgmentInput(BaseModel):
     input_snapshot_id: str = Field(min_length=1)
     contract_id: ContractId
     case_id: str | None = None
-    judgment_ids: tuple[str, ...] = Field(min_length=1, max_length=12)
+    judgment_ids: tuple[str, ...] = Field(min_length=1, max_length=len(JUDGMENT_IDS))
     contract_context: ContractContext
     contract_fields: FrozenExtractedFieldMap
     registry_fields: FrozenExtractedFieldMap
@@ -1140,7 +1154,7 @@ class DamagePatternComparison(BaseModel):
 
 
 _RuleId = Annotated[str, Field(pattern=r"^R\d{2}$")]
-_JudgmentId = Annotated[str, Field(pattern=r"^J(?:0[1-9]|1[0-2])$")]
+_JudgmentId = Annotated[str, Field(pattern=_JUDGMENT_ID_PATTERN)]
 
 
 class SpecialClauseReview(BaseModel):
@@ -1230,7 +1244,7 @@ class JudgmentResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    judgment_id: str = Field(pattern=_JUDGMENT_ID_PATTERN)
     judgment_name: str = Field(min_length=1)
     status: RuleStatus
     urgency: Urgency
@@ -1277,7 +1291,7 @@ class AnalysisRunResult(BaseModel):
     # v1.9의 기존 R01~R10 저장 결과도 계속 읽되, 신규 실행은 R01~R24를 생성한다.
     results: list[RuleResult] = Field(min_length=10, max_length=24)
     # 1단계 R-only 실행은 빈 목록, 2단계 J 확장 실행은 J01~J12 전체를 요구한다.
-    judgments: list[JudgmentResult] = Field(default_factory=list, max_length=12)
+    judgments: list[JudgmentResult] = Field(default_factory=list, max_length=len(JUDGMENT_IDS))
     # 과거 결과에는 필드가 없으므로 빈 목록을 기본값으로 유지한다.
     damage_patterns: list[DamagePatternComparison] = Field(default_factory=list, max_length=8)
     # 특약별 근거 카드. 과거 결과에는 없으므로 빈 목록이 기본값(하위 호환).
@@ -1296,11 +1310,15 @@ class AnalysisRunResult(BaseModel):
             raise ValueError("results에는 R01~R10 또는 R01~R24가 순서대로 각각 정확히 1개씩 있어야 합니다.")
         if self.judgments:
             judgment_ids = [result.judgment_id for result in self.judgments]
-            expected_judgments = [f"J{index:02d}" for index in range(1, 13)]
-            if judgment_ids != expected_judgments:
+            # 레거시 J01~J12는 영구히 허용한다. 저장된 과거 결과를 계속 읽기 위해서다.
+            allowed_judgment_sequences = (
+                [f"J{index:02d}" for index in range(1, 13)],
+                list(JUDGMENT_IDS),
+            )
+            if judgment_ids not in allowed_judgment_sequences:
                 raise ValueError(
-                    "judgments에는 J01~J12가 순서대로 각각 정확히 1개씩 있거나 "
-                    "R-only 실행을 나타내는 빈 목록이어야 합니다."
+                    "judgments에는 레거시 J01~J12 또는 현행 canonical 순서가 "
+                    "각각 정확히 1개씩 있거나, R-only 실행을 나타내는 빈 목록이어야 합니다."
                 )
         if self.damage_patterns:
             pattern_ids = [item.pattern_id for item in self.damage_patterns]

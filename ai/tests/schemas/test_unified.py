@@ -339,7 +339,7 @@ def test_build_judgment_input_rejects_missing_or_unknown_inputs():
             judgment_ids=("J03",),
         )
     with pytest.raises(ValueError, match="알 수 없는 judgment_id"):
-        build_judgment_input(_judgment_snapshot(), judgment_ids=("J13",))
+        build_judgment_input(_judgment_snapshot(), judgment_ids=("J14",))
     with pytest.raises(ValueError, match="중복"):
         build_judgment_input(_judgment_snapshot(), judgment_ids=("J01", "J01"))
 
@@ -996,3 +996,116 @@ def test_generation_special_items_source_ids_subset_of_card_evidence():
     })
     with pytest.raises(ValueError, match="특약|clause"):
         validate_generation_result_for_analysis(analysis, unknown_clause)
+
+
+def _rule_results_r01_to_r24():
+    """R01~R24 더미 RuleResult 목록.
+
+    ALLOWED_RULE_STATUSES가 규칙마다 다른 상태 집합을 허용하므로(예: R08·R09·R16·
+    R23·R24는 CANNOT_CHECK를 허용하지 않는다), 규칙별 허용 목록에서 실제로
+    유효한 status를 골라야 한다. result_type도 RESULT_TYPE_BY_RULE_ID를 따라야
+    RuleResult 검증을 통과한다.
+    """
+    from lease_companion_ai.schemas.unified import (
+        ALLOWED_RULE_STATUSES,
+        RESULT_TYPE_BY_RULE_ID,
+        RuleResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    results = []
+    for index in range(1, 25):
+        rule_id = f"R{index:02d}"
+        allowed = ALLOWED_RULE_STATUSES[rule_id]
+        status = (
+            RuleStatus.CANNOT_CHECK
+            if RuleStatus.CANNOT_CHECK in allowed
+            else RuleStatus.CHECK_NEEDED
+        )
+        results.append(
+            RuleResult(
+                rule_id=rule_id,
+                rule_name=f"{rule_id} 규칙",
+                result_type=RESULT_TYPE_BY_RULE_ID[rule_id],
+                status=status,
+                urgency=Urgency.NOT_ANALYZABLE,
+                triggers_actions=True,
+                reason="테스트용 사유입니다.",
+                limitations="테스트용 한계입니다.",
+            )
+        )
+    return results
+
+
+def test_analysis_run_result_accepts_current_judgment_sequence():
+    """JUDGMENT_IDS가 늘어나면 그 시퀀스가 그대로 수용돼야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        JUDGMENT_IDS,
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    assert "J13" in JUDGMENT_IDS, "J13이 canonical 판정 목록에 있어야 합니다."
+
+    # CHECK_NEEDED/REFERENCE는 ALLOWED_JUDGMENT_STATUSES 전 항목(J01~J13)에서
+    # 공통으로 허용되는 조합이다. CANNOT_CHECK는 일부 판정(J06 등)에서 허용되지
+    # 않으므로 시퀀스 검증용 더미 값으로 쓸 수 없다.
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="테스트용 판정입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in JUDGMENT_IDS
+    ]
+
+    result = AnalysisRunResult(
+        analysis_run_id="AR-J13",
+        input_snapshot_id="SNAP-J13",
+        contract_id=1,
+        results=_rule_results_r01_to_r24(),
+        judgments=judgments,
+    )
+
+    assert [item.judgment_id for item in result.judgments] == list(JUDGMENT_IDS)
+
+
+def test_analysis_run_result_still_accepts_legacy_j01_to_j12():
+    """DB에 저장된 과거 결과는 J01~J12다. 판정 축이 늘어도 계속 읽혀야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    legacy_ids = [f"J{index:02d}" for index in range(1, 13)]
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="과거 저장 결과입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in legacy_ids
+    ]
+
+    result = AnalysisRunResult(
+        analysis_run_id="AR-LEGACY",
+        input_snapshot_id="SNAP-LEGACY",
+        contract_id=1,
+        results=_rule_results_r01_to_r24(),
+        judgments=judgments,
+    )
+
+    assert [item.judgment_id for item in result.judgments] == legacy_ids

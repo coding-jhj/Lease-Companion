@@ -45,6 +45,7 @@ from lease_companion_ai.routing.models import (
 )
 from lease_companion_ai.routing.service import RoutingService
 from lease_companion_ai.schemas.unified import (
+    JUDGMENT_IDS,
     AnalysisRunResult,
     JudgmentResult,
     OfficialSource,
@@ -304,10 +305,10 @@ def load_judgment_source_ids(root: Path | None = None) -> dict[str, tuple[str, .
     path = repo_root / "data" / "rules" / "judgment_spec.csv"
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    expected_ids = [f"J{index:02d}" for index in range(1, 13)]
+    expected_ids = list(JUDGMENT_IDS)
     judgment_ids = [row["judgment_id"] for row in rows]
     if judgment_ids != expected_ids:
-        raise ValueError("judgment_spec에는 J01~J12가 순서대로 있어야 합니다.")
+        raise ValueError("judgment_spec에는 canonical J 순서가 있어야 합니다.")
     mapping: dict[str, tuple[str, ...]] = {}
     for row in rows:
         source_ids = tuple(

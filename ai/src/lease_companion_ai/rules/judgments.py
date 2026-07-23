@@ -30,6 +30,7 @@ from lease_companion_ai.schemas.unified import (
     RuleStatus,
     Urgency,
 )
+from lease_companion_ai.special_clauses import match_special_clauses
 
 
 def _repo_root() -> Path:
@@ -425,6 +426,43 @@ def _j12(data: JudgmentInput) -> RuleStatus:
     return RuleStatus.CLEAR
 
 
+_J13_JUDGMENT_ID = "J13"
+
+
+def _j13_matched_catalog_ids(clauses: list[str]) -> tuple[str, ...]:
+    """J13에 연결된 카탈로그 항목만 세어 반환한다.
+
+    기존 독소조항 6종(SC-DEFERRED-REFUND 등)이 매칭돼도 J13에는 영향을 주지 않는다.
+    그쪽은 각자 연결된 R08·R09·R10·R18·J09~J12가 담당한다.
+    """
+    return tuple(
+        catalog_id
+        for candidate in match_special_clauses(clauses)
+        if _J13_JUDGMENT_ID in candidate.related_judgment_ids
+        for catalog_id in candidate.catalog_ids
+    )
+
+
+def _j13(data: JudgmentInput) -> RuleStatus:
+    names = ("special_clauses",)
+    if _has_issue(data, names, FieldIssueCode.AMBIGUOUS, FieldIssueCode.PARSE_FAILED):
+        return RuleStatus.CANNOT_CHECK
+    present = _value(data, "special_clauses_present")
+    special = _value(data, "special_clauses")
+    if special is None:
+        # present=False면 특약이 없는 것이고, 그 외에는 판독 실패다.
+        return RuleStatus.NOT_APPLICABLE if present is False else RuleStatus.CANNOT_CHECK
+    if not isinstance(special, list):
+        return RuleStatus.CANNOT_CHECK
+    clauses = [clause for clause in special if isinstance(clause, str) and clause.strip()]
+    if not clauses:
+        # present=True인데 원문 목록이 비면 신호가 어긋난 것이므로 확인 불가로 둔다.
+        return RuleStatus.NOT_APPLICABLE if present is False else RuleStatus.CANNOT_CHECK
+    if _j13_matched_catalog_ids(clauses):
+        return RuleStatus.CHECK_NEEDED
+    return RuleStatus.NOT_APPLICABLE
+
+
 _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {
     "J01": _j01,
     "J02": _j02,
@@ -438,6 +476,7 @@ _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {
     "J10": _j10,
     "J11": _j11,
     "J12": _j12,
+    "J13": _j13,
 }
 
 
