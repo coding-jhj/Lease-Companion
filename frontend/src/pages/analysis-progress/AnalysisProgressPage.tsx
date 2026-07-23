@@ -52,7 +52,7 @@ export function AnalysisProgressPage() {
       retryMode.current = "new";
       setStatus("failed");
       setActiveStage("analysis");
-      setError(run.error ?? "계약 분석에 실패했습니다.");
+      setError(run.error ?? "확인 결과를 준비하지 못했습니다.");
       return;
     }
     retryMode.current = "resume";
@@ -91,7 +91,7 @@ export function AnalysisProgressPage() {
       startPromise.current = null;
       setStatus("failed");
       setActiveStage("request");
-      setError(caught instanceof Error ? caught.message : "계약 분석에 실패했습니다.");
+      setError(caught instanceof Error ? caught.message : "확인 결과를 준비하지 못했습니다.");
     }
   }
 
@@ -115,7 +115,7 @@ export function AnalysisProgressPage() {
     } catch (caught) {
       if (controller.signal.aborted || (caught instanceof DOMException && caught.name === "AbortError")) return;
       setStatus(caught instanceof PollTimeoutError ? "timeout" : "failed");
-      setError(caught instanceof Error ? caught.message : "분석 상태를 다시 확인하지 못했습니다.");
+      setError(caught instanceof Error ? caught.message : "결과 준비 상태를 다시 확인하지 못했습니다.");
     }
   }
 
@@ -129,12 +129,12 @@ export function AnalysisProgressPage() {
   }, [contractId]);
 
   const title = status === "completed"
-    ? "분석 완료"
+    ? "확인 결과 준비 완료"
     : status === "running"
-      ? "계약 내용을 분석하고 있어요"
+      ? "계약 확인 결과를 준비하고 있어요"
       : status === "timeout"
-        ? "분석 상태 확인이 지연되고 있어요"
-        : "분석 시작을 기다리고 있어요";
+        ? "결과 준비 상태 확인이 지연되고 있어요"
+        : "결과 준비를 기다리고 있어요";
 
   return (
     <PageShell step="6 / 8" title={title} description="규칙 판정과 공식 근거를 정리합니다. 종합 안전 점수는 제공하지 않습니다.">
@@ -144,11 +144,11 @@ export function AnalysisProgressPage() {
           hasError={status === "failed"}
           delayed={status === "timeout"}
         />
-        {status === "pending" && <LoadingState title="분석 대기 중" description="서버에서 분석 작업을 준비하고 있습니다." />}
-        {status === "running" && <LoadingState title="분석 실행 중" description="완료될 때까지 실제 분석 상태를 확인하고 있습니다." />}
-        {status === "failed" && <ErrorState title="분석을 완료하지 못했습니다" description={error} onRetry={() => void retry()} />}
-        {status === "timeout" && <ErrorState title="분석 상태 확인이 지연되고 있습니다" description={error} onRetry={() => void retry()} />}
-        <button type="button" disabled={status !== "completed"} onClick={() => navigate(`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(analysisRunId)}`)}>{status === "completed" ? "리포트 보기" : "분석 중…"}</button>
+        {status === "pending" && <LoadingState title="결과 준비 대기 중" description="서버에서 결과 준비를 시작하고 있습니다." />}
+        {status === "running" && <LoadingState title="확인 결과 준비 중" description="완료될 때까지 실제 준비 상태를 확인하고 있습니다." />}
+        {status === "failed" && <ErrorState title="확인 결과를 준비하지 못했습니다" description={error} onRetry={() => void retry()} />}
+        {status === "timeout" && <ErrorState title="결과 준비 상태 확인이 지연되고 있습니다" description={error} onRetry={() => void retry()} />}
+        <button type="button" disabled={status !== "completed"} onClick={() => navigate(`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(analysisRunId)}`)}>{status === "completed" ? "확인 결과 보기" : "결과 준비 중…"}</button>
       </div>
     </PageShell>
   );

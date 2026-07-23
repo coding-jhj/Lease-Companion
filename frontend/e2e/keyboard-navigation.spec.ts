@@ -33,7 +33,7 @@ test("critical upload, review, analysis, and report actions work with the keyboa
     mimeType: "text/plain",
     buffer: Buffer.from("synthetic lease contract"),
   });
-  const startExtraction = page.getByRole("button", { name: "업로드하고 추출 시작하기" });
+  const startExtraction = page.getByRole("button", { name: "업로드하고 다음 단계로" });
   await startExtraction.focus();
   await expect(startExtraction).toBeFocused();
   await page.keyboard.press("Enter");
@@ -70,12 +70,12 @@ test("critical upload, review, analysis, and report actions work with the keyboa
   await page.keyboard.press("Enter");
   await expect(clauseSummary.locator("..")).toHaveAttribute("open", "");
 
-  const startAnalysis = page.getByRole("button", { name: "확인 완료하고 분석하기" });
+  const startAnalysis = page.getByRole("button", { name: "확인 완료하고 결과 준비하기" });
   await startAnalysis.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "계약 분석 진행 상황" })).toBeVisible();
-  await expect(page.getByText("리포트 준비 완료").locator("xpath=ancestor::li")).toHaveAttribute("aria-current", "step", { timeout: 60_000 });
-  const reportButton = page.getByRole("button", { name: "리포트 보기" });
+  await expect(page.getByRole("heading", { name: "확인 결과 준비 상황" })).toBeVisible();
+  await expect(page.getByText("확인 결과 준비 완료").locator("xpath=ancestor::li")).toHaveAttribute("aria-current", "step", { timeout: 60_000 });
+  const reportButton = page.getByRole("button", { name: "확인 결과 보기" });
   await reportButton.focus();
   await page.keyboard.press("Enter");
 

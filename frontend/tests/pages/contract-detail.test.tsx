@@ -64,7 +64,7 @@ describe("ContractDetailPage", () => {
     expect(within(completedSection).getByText(/근거 판정 R01/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "완료된 계약 직후 행동" })).toBeInTheDocument();
     expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /완료 리포트 보기/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /확인 결과 보기/ })).toHaveAttribute(
       "href",
       "/contracts/1001/report?analysisRunId=RUN-1001-001",
     );

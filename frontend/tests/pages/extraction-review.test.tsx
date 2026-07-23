@@ -69,13 +69,13 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("추출 상태를 확인하는 중")).toBeInTheDocument();
+    expect(screen.getByText("문서 읽기 상태를 확인하는 중")).toBeInTheDocument();
     expect(await screen.findByLabelText("입금 계좌 예금주 값")).toHaveValue("");
     expect(screen.getAllByText("추출됨").length).toBeGreaterThan(0);
     expect(screen.getByText("불확실")).toBeInTheDocument();
     expect(screen.getAllByText("판독 실패").length).toBeGreaterThan(0);
     expect(screen.getAllByText("판독 실패 해결 방법").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/직접 입력한 값은 자동 추출값이 아니라/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/직접 입력한 내용은 자동으로 읽은 값이 아니라/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("미확인").length).toBe(fieldViewModels(documents).length);
     expect(screen.queryByText("원문 위치 미확인")).not.toBeInTheDocument();
     expect(screen.getByText("입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.")).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText("저장되지 않은 수정 1건")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
     confirmRemainingDirectFields();
-    const analyzeButton = screen.getByRole("button", { name: "확인 완료하고 분석하기" });
+    const analyzeButton = screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" });
     expect(analyzeButton).toBeEnabled();
     fireEvent.click(analyzeButton);
 
@@ -164,7 +164,7 @@ describe("ExtractionReviewPage", () => {
       target: { value: "둘째 조항은 유지하고, 쉼표도 보존한다." },
     });
     fireEvent.click(screen.getByRole("button", { name: "계약서 본문 주요 조항 이 값 확인" }));
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 분석하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" }));
 
     await waitFor(() => {
       expect(submit).toHaveBeenCalledWith({
@@ -217,7 +217,7 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 분석하기" });
+    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 결과 준비하기" });
     expect(analyzeButton).toBeDisabled();
     expect(screen.getAllByRole("button", { name: /직접 확인$/ })).toHaveLength(2);
     fireEvent.click(screen.getByRole("radio", { name: "가입 가능" }));
@@ -278,7 +278,7 @@ describe("ExtractionReviewPage", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "입금 계좌 예금주 직접 확인" }));
     expect(screen.getByText("확인된 항목 1개")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeEnabled();
   });
 
   it("blocks analysis when a financial field could not be read", async () => {
@@ -314,7 +314,7 @@ describe("ExtractionReviewPage", () => {
 
     expect(await screen.findByRole("heading", { name: "특약·핵심값 확인 1개" })).toBeInTheDocument();
     expect(screen.getByLabelText("보증금 값")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeDisabled();
   });
 
   it("allows analysis when only a noncritical optional field could not be read", async () => {
@@ -349,7 +349,7 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     expect(await screen.findByText("그 밖에 읽지 못한 값")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeEnabled();
   });
 
   it("sends the user back to upload when extraction cannot be loaded", async () => {
@@ -369,16 +369,16 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("확인할 추출값이 없습니다")).toBeInTheDocument();
+    expect(await screen.findByText("확인할 문서 내용이 없습니다")).toBeInTheDocument();
   });
 
   it("blocks analysis while unverified fields remain", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
     renderPage();
 
-    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 분석하기" });
+    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 결과 준비하기" });
     expect(analyzeButton).toBeDisabled();
-    expect(screen.getByText("미확인 필드가 남아 있어 분석을 시작할 수 없습니다.")).toBeInTheDocument();
+    expect(screen.getByText("확인하지 않은 항목이 남아 있어 결과 준비를 시작할 수 없습니다.")).toBeInTheDocument();
   });
 
   it("keeps correction and confirmation failures separate and retryable", async () => {
@@ -400,17 +400,17 @@ describe("ExtractionReviewPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
     confirmRemainingDirectFields();
 
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 분석하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "수정 요청 실패: correction down",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 분석하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" }));
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(
         "확인 실패: confirmation down",
       );
     });
-    expect(screen.getByRole("button", { name: "확인 완료하고 분석하기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeEnabled();
   });
 });

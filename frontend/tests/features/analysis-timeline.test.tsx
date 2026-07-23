@@ -9,10 +9,10 @@ afterEach(cleanup);
 
 describe("AnalysisTimeline", () => {
   it.each([
-    ["request", "분석 요청 접수"],
+    ["request", "결과 준비 요청 접수"],
     ["analysis", "규칙 판정·공식 근거 정리"],
     ["generation", "질문·행동 안내 생성"],
-    ["complete", "리포트 준비 완료"],
+    ["complete", "확인 결과 준비 완료"],
   ] as const)("marks %s as the current stage", (activeStage, currentTitle) => {
     render(<AnalysisTimeline activeStage={activeStage} />);
 

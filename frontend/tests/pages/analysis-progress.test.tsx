@@ -71,7 +71,7 @@ describe("AnalysisProgressPage", () => {
     });
 
     expect(start).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("heading", { name: "분석 완료" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "확인 결과 준비 완료", level: 1 })).toBeInTheDocument();
   });
 
   it("shows the backend error when pending becomes failed and allows a new run", async () => {
@@ -93,7 +93,7 @@ describe("AnalysisProgressPage", () => {
     await flushPromises();
 
     expect(start).toHaveBeenCalledTimes(2);
-    expect(screen.getByRole("heading", { name: "분석 완료" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "확인 결과 준비 완료", level: 1 })).toBeInTheDocument();
   });
 
   it("stops polling after timeout and retries by checking the existing run", async () => {
@@ -152,10 +152,10 @@ describe("AnalysisProgressPage", () => {
     renderPage();
     await flushPromises();
     await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS); });
-    expect(screen.getByRole("heading", { name: "계약 내용을 분석하고 있어요" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "계약 확인 결과를 준비하고 있어요" })).toBeInTheDocument();
 
     await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS); });
-    expect(screen.getByRole("heading", { name: "분석 완료" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "확인 결과 준비 완료", level: 1 })).toBeInTheDocument();
     expect(getRun).toHaveBeenCalledTimes(2);
   });
 });

@@ -85,7 +85,7 @@ export function DocumentUploadPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!files.계약서) {
-      setError("분석을 시작하려면 계약서를 선택해 주세요.");
+      setError("다음 단계로 진행하려면 계약서를 선택해 주세요.");
       return;
     }
     setError("");
@@ -171,7 +171,7 @@ export function DocumentUploadPage() {
           </details>
         )}
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={!files.계약서 || submitting}>{submitting ? "문서를 준비하는 중…" : "업로드하고 추출 시작하기"}</button>
+        <button type="submit" disabled={!files.계약서 || submitting}>{submitting ? "문서를 준비하는 중…" : "업로드하고 다음 단계로"}</button>
       </form>
     </PageShell>
   );

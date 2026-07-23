@@ -182,7 +182,7 @@ export function ExtractionFieldCard({
             <li>원문에서 값이 확인되면 위 입력칸에 그대로 입력하고 <strong>이 값 확인</strong>을 누르세요.</li>
             <li>원문도 흐리거나 잘려 있다면 해당 페이지가 선명하게 보이는 PDF·이미지를 다시 업로드해 추출하세요.</li>
           </ol>
-          <p>직접 입력한 값은 자동 추출값이 아니라 사용자가 확인한 수정값으로 저장됩니다.</p>
+          <p>직접 입력한 내용은 자동으로 읽은 값이 아니라 사용자가 확인한 수정 내용으로 저장됩니다.</p>
         </details>
       )}
       {view.guidance && <small>{view.guidance}</small>}

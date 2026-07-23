@@ -35,7 +35,7 @@ describe("DocumentUploadPage", () => {
       <MemoryRouter initialEntries={["/contracts/1001/upload"]}>
         <Routes>
           <Route path="/contracts/:contractId/upload" element={<DocumentUploadPage />} />
-          <Route path="/contracts/:contractId/review" element={<p>추출값 확인 화면</p>} />
+          <Route path="/contracts/:contractId/review" element={<p>문서 내용 확인 화면</p>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -44,9 +44,9 @@ describe("DocumentUploadPage", () => {
       target: { files: [new File(["synthetic"], "contract.txt", { type: "text/plain" })] },
     });
     expect(screen.getByText("contract.txt")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "업로드하고 추출 시작하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "업로드하고 다음 단계로" }));
 
-    expect(await screen.findByText("추출값 확인 화면")).toBeInTheDocument();
+    expect(await screen.findByText("문서 내용 확인 화면")).toBeInTheDocument();
     await waitFor(() => expect(upload).toHaveBeenCalledWith(1001, expect.any(File), "계약서"));
     expect(linkRegistry).not.toHaveBeenCalled();
     expect(startExtraction).toHaveBeenCalledWith(1001);

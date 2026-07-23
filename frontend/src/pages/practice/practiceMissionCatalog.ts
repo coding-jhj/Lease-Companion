@@ -2,14 +2,18 @@ export interface PracticeMission {
   title: string;
   description: string;
   guide: string;
-  targetCount: number;
+  // 공개 미션 메타데이터에 정의된 목표 확인 행동 수. null이면 목표 수가 정의되지 않은
+  // 시나리오이며, 이때는 숨은 answer key를 읽지 않고 진행률 분모를 표시하지 않는다.
+  targetCount: number | null;
 }
+
+const missionGuide = "정답 문장을 외우지 않아도 됩니다. 확인할 내용과 보류 의사가 전달되면 됩니다.";
 
 const defaultMission: PracticeMission = {
   title: "계약을 서두르지 않고 확인하기",
   description: "상대방의 제안을 바로 받아들이기 전에 필요한 내용을 자신의 말로 확인해 보세요.",
-  guide: "정답 문장을 외우지 않아도 됩니다. 확인할 내용과 보류 의사가 전달되면 됩니다.",
-  targetCount: 3,
+  guide: missionGuide,
+  targetCount: null,
 };
 
 const missions: Record<string, PracticeMission> = {

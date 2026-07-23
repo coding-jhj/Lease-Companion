@@ -26,7 +26,7 @@ interface ChecklistViewItem extends GuidanceActionItemDto {
 
 const analysisStatusLabels: Record<AnalysisRunSummaryDto["status"], string> = {
   pending: "대기 중",
-  running: "분석 중",
+  running: "결과 준비 중",
   completed: "완료",
   failed: "실패",
 };
@@ -143,7 +143,7 @@ export function ContractDetailPage() {
   }
 
   async function deleteContract() {
-    if (!window.confirm("이 계약과 저장된 분석 이력을 삭제할까요? 삭제한 데이터는 복구할 수 없습니다.")) return;
+    if (!window.confirm("이 계약과 저장된 확인 결과를 삭제할까요? 삭제한 데이터는 복구할 수 없습니다.")) return;
     setDeleting(true);
     setDeleteError("");
     try {
@@ -263,7 +263,7 @@ export function ContractDetailPage() {
       <div className="stack">
         {status === "loading" && <LoadingState title="계약 상세를 불러오는 중" description="체크리스트와 저장 이력을 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 상세를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContractDetail()} />}
-        {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="리포트가 생성되면 확인 행동이 여기에 표시됩니다." />}
+        {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="확인 결과가 준비되면 확인 행동이 여기에 표시됩니다." />}
         {status === "success" && items.length > 0 && (
           <div className="checklist-flow">
             {printableChecklistItems.length > 0 && (
@@ -278,7 +278,7 @@ export function ContractDetailPage() {
                 <h1>서명 전 체크리스트</h1>
                 <dl>
                   <div><dt>계약 건</dt><dd>#{contractId}</dd></div>
-                  <div><dt>분석 기준</dt><dd>{latestCompletedAnalysis ? new Date(latestCompletedAnalysis.created_at).toLocaleString("ko-KR") : "최신 완료 분석"}</dd></div>
+                  <div><dt>확인 결과 기준</dt><dd>{latestCompletedAnalysis ? new Date(latestCompletedAnalysis.created_at).toLocaleString("ko-KR") : "최신 완료 확인 결과"}</dd></div>
                   <div><dt>출력일</dt><dd>{new Date().toLocaleDateString("ko-KR")}</dd></div>
                 </dl>
               </header>
@@ -294,7 +294,7 @@ export function ContractDetailPage() {
                   </li>
                 ))}
               </ol>
-              <footer>이 체크리스트는 문서 분석을 바탕으로 확인할 항목을 정리한 자료이며, 계약의 안전성이나 적법성을 확정하지 않습니다.</footer>
+              <footer>이 체크리스트는 확인한 문서 내용을 바탕으로 확인할 항목을 정리한 자료이며, 계약의 안전성이나 적법성을 확정하지 않습니다.</footer>
             </article>, document.body)}
             <div className="checklist-active-grid">
               {renderActionItems({
@@ -338,13 +338,13 @@ export function ContractDetailPage() {
         {status === "success" && (
           <div className="history-grid">
             <section className="history-section">
-              <h2>분석 이력</h2>
+              <h2>확인 결과 이력</h2>
               {analysisRuns.length === 0
-                ? <p>저장된 분석 이력이 없습니다.</p>
+                ? <p>저장된 확인 결과가 없습니다.</p>
                 : <ul>{analysisRuns.map((run) => (
                   <li key={run.analysis_run_id}>
                     {run.status === "completed"
-                      ? <Link to={`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(run.analysis_run_id)}`}>{new Date(run.created_at).toLocaleString("ko-KR")} · 완료 리포트 보기</Link>
+                      ? <Link to={`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(run.analysis_run_id)}`}>{new Date(run.created_at).toLocaleString("ko-KR")} · 확인 결과 보기</Link>
                       : <span>{new Date(run.created_at).toLocaleString("ko-KR")} · {analysisStatusLabels[run.status]}</span>}
                   </li>
                 ))}</ul>}
@@ -358,7 +358,7 @@ export function ContractDetailPage() {
           </div>
         )}
         <div className="page-actions">
-          <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>리포트 다시 보기</Link>
+          <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>확인 결과 다시 보기</Link>
           <Link className="button-link" to="/contracts">대시보드로 돌아가기</Link>
         </div>
         {deleteError && <p className="error" role="alert">{deleteError}</p>}

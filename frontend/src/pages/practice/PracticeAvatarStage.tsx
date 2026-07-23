@@ -28,6 +28,7 @@ export function PracticeAvatarStage({
   const avatarVideos = practiceMediaForScenario(scenarioId);
   const [mode, setMode] = useState<AvatarMode>("idle");
   const [playbackId, setPlaybackId] = useState(0);
+  const [videoUnavailable, setVideoUnavailable] = useState(false);
   const pressurePlayedForPrompt = useRef<string | null>(null);
 
   useEffect(() => {
@@ -61,9 +62,16 @@ export function PracticeAvatarStage({
     if (mode === "speaking" || mode === "pressure") setMode("listening");
   }
 
+  function handleVideoError() {
+    // 영상 누락·재생 오류 시 빈 검은 화면 대신 대사·안내로 계속 진행한다.
+    setVideoUnavailable(true);
+    // 발화·재촉 영상이 끊겨도 답변 단계로 넘어가 미션을 막지 않는다.
+    if (mode === "speaking" || mode === "pressure") setMode("listening");
+  }
+
   return (
     <section className="practice-avatar-stage" aria-labelledby="practice-avatar-title">
-      <div className="practice-avatar-stage__video-wrap">
+      <div className={`practice-avatar-stage__video-wrap${videoUnavailable ? " practice-avatar-stage__video-wrap--fallback" : ""}`}>
         <video
           key={`${mode}-${playbackId}`}
           className="practice-avatar-stage__video"
@@ -74,7 +82,14 @@ export function PracticeAvatarStage({
           loop={mode === "idle" || mode === "listening"}
           preload="auto"
           onEnded={handleEnded}
+          onError={handleVideoError}
+          onPlaying={() => setVideoUnavailable(false)}
         />
+        {videoUnavailable && (
+          <p className="practice-avatar-stage__video-fallback" role="status">
+            영상을 재생할 수 없어 아래 대사와 안내 문구로 계속 진행합니다.
+          </p>
+        )}
         <span className={`practice-avatar-stage__status practice-avatar-stage__status--${mode}`} role="status" aria-live="polite">
           {avatarLabels[mode]}
         </span>

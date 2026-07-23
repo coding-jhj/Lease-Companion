@@ -111,7 +111,7 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("리포트를 불러오는 중")).toBeInTheDocument();
+    expect(screen.getByText("확인 결과를 불러오는 중")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "계약서 임대인=등기 소유자" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "서두르지 않아도 괜찮아요." })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toHaveAttribute("href", "#first-priority-group");
@@ -143,7 +143,7 @@ describe("ResultReportPage", () => {
     const referenceCases = within(firstPatternDetails).getByRole("region", { name: /검증된 유사 참고 사례$/ });
     expect(within(referenceCases).getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeInTheDocument();
     expect(within(referenceCases).getByRole("link")).toHaveAttribute("href", expect.stringMatching(/^https:\/\//));
-    expect(screen.getByRole("button", { name: "전체 리포트 PDF 저장" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeInTheDocument();
     expect(screen.getByLabelText("제출 자료 기준 피해 유형 비교 요약")).toBeInTheDocument();
     const questionGroup = screen.getByRole("heading", { name: "먼저 물어볼 질문" }).closest("section")!;
     expect(within(questionGroup).getAllByRole("listitem")).toHaveLength(3);
@@ -182,6 +182,8 @@ describe("ResultReportPage", () => {
     expect(within(section).getByText(specialClauseGuidance.confirmation_questions[0])).toBeInTheDocument();
     expect(within(section).getByText(specialClauseGuidance.revision_requests[0])).toBeInTheDocument();
     const printSheet = document.querySelector(".report-print-sheet");
+    // PDF 제목은 화면 제목과 같은 "내 계약 확인 결과"여야 한다. (print sheet는 aria-hidden)
+    expect(printSheet?.querySelector("h1")).toHaveTextContent("내 계약 확인 결과");
     expect(printSheet).toHaveTextContent("확인이 필요한 특약");
     expect(printSheet).toHaveTextContent(specialClauseReview.original_text);
     expect(printSheet).toHaveTextContent(specialClauseGuidance.confirmation_questions[0]);
@@ -225,6 +227,6 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("아직 생성된 리포트가 없습니다")).toBeInTheDocument();
+    expect(await screen.findByText("아직 준비된 확인 결과가 없습니다")).toBeInTheDocument();
   });
 });

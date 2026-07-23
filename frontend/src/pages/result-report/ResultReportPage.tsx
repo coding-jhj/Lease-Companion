@@ -63,7 +63,7 @@ export function ResultReportPage() {
       setGenerationFailed(run.generation_status === "failed");
       setStatus("success");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "리포트를 불러오지 못했습니다.");
+      setErrorMessage(error instanceof Error ? error.message : "확인 결과를 불러오지 못했습니다.");
       setStatus("error");
     }
   }
@@ -97,7 +97,7 @@ export function ResultReportPage() {
 
   function printReport() {
     const previousTitle = document.title;
-    document.title = `임차인_방어_리포트_계약_${contractId}`;
+    document.title = `내_계약_확인_결과_계약_${contractId}`;
     window.print();
     document.title = previousTitle;
   }
@@ -105,19 +105,19 @@ export function ResultReportPage() {
   return (
     <PageShell layout="report" step="7 / 8" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 물어볼 말을 순서대로 살펴보세요.">
       <div className="stack">
-        {status === "loading" && <LoadingState title="리포트를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
-        {status === "error" && <ErrorState title="리포트를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}
+        {status === "loading" && <LoadingState title="확인 결과를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
+        {status === "error" && <ErrorState title="확인 결과를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}
         {status === "success" && generationFailed && (
           <p className="notice" role="alert">규칙 판정은 정상이며 안내 생성에 실패했습니다. 확인 결과는 그대로 볼 수 있습니다.</p>
         )}
-        {status === "success" && allResults.length === 0 && <EmptyState title="아직 생성된 리포트가 없습니다" description="추출값 확인과 분석을 완료하면 결과가 표시됩니다." />}
+        {status === "success" && allResults.length === 0 && <EmptyState title="아직 준비된 확인 결과가 없습니다" description="문서에서 읽은 내용을 확인하고 결과 준비를 마치면 표시됩니다." />}
         {status === "success" && allResults.length > 0 && (
           <>
             <section className="report-hero" aria-labelledby="report-guide-title">
               <div>
                 <p>천천히 하나씩 확인하면 됩니다</p>
                 <h2 id="report-guide-title">서두르지 않아도 괜찮아요.</h2>
-                <span>이 리포트는 안전 여부를 단정하지 않고, 먼저 확인할 순서를 알려드립니다.</span>
+                <span>이 확인 결과는 안전 여부를 단정하지 않고, 먼저 확인할 순서를 알려드립니다.</span>
               </div>
               {firstPriority && <a className="report-hero__link" href="#first-priority-group">가장 먼저 확인할 항목으로 이동</a>}
             </section>
@@ -135,7 +135,7 @@ export function ResultReportPage() {
               <span>관련 신호 미확인 {patternCounts.clear}건</span>
               <span>자료 부족 {patternCounts.unknown}건</span>
             </section>}
-            <div className="report-export-toolbar"><p>비교표·질문·수정 요청·단계별 행동을 함께 저장할 수 있습니다.</p><button className="secondary" type="button" onClick={printReport}>전체 리포트 PDF 저장</button></div>
+            <div className="report-export-toolbar"><p>비교표·질문·수정 요청·단계별 행동을 함께 저장할 수 있습니다.</p><button className="secondary" type="button" onClick={printReport}>확인 결과 PDF 저장</button></div>
             {createPortal(<ReportPrintSheet contractId={contractId} patterns={damagePatterns} guidance={allGuidance} specialClauseReviews={specialClauseReviews} specialClauseGuidance={specialClauseGuidance} stageGuidance={stageGuidance} />, document.body)}
             <div className="report-grid">
               <section className="report-results-column stack" aria-labelledby="all-results-title">

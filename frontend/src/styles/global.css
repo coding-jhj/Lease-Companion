@@ -425,6 +425,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-avatar-stage__video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .practice-avatar-stage__status { position: absolute; top: 14px; left: 14px; max-width: calc(100% - 28px); padding: 7px 11px; border-radius: 999px; background: rgb(16 48 29 / 86%); color: #fff; font-size: 12px; font-weight: 800; backdrop-filter: blur(4px); }
 .practice-avatar-stage__status--pressure { background: rgb(113 63 0 / 90%); }
+.practice-avatar-stage__video-wrap--fallback { display: grid; place-items: center; }
+.practice-avatar-stage__video-fallback { position: absolute; inset: auto 14px 14px; margin: 0; padding: 10px 12px; border-radius: 10px; background: rgb(16 48 29 / 88%); color: #fff; font-size: 13px; font-weight: 700; line-height: 1.5; text-align: center; }
 .practice-avatar-stage__caption { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 16px 18px 18px; }
 .practice-avatar-stage__caption div { flex: 1 1 auto; min-width: 0; }
 .practice-avatar-stage__caption p { margin: 0 0 5px; color: #42634c; font-size: 12px; font-weight: 900; }

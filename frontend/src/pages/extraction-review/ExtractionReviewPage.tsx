@@ -134,7 +134,7 @@ export function ExtractionReviewPage() {
       if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
       setErrorMessage(error instanceof PollTimeoutError
         ? error.message
-        : error instanceof Error ? error.message : "추출값을 불러오지 못했습니다.");
+        : error instanceof Error ? error.message : "문서에서 읽은 내용을 불러오지 못했습니다.");
       setStatus("error");
     }
   }
@@ -306,7 +306,7 @@ export function ExtractionReviewPage() {
       await mvpService.confirmExtraction(contractId);
       navigate("/contracts/" + contractId + "/analyzing");
     } catch (error) {
-      setConfirmationError(error instanceof Error ? error.message : "추출값 확인을 완료하지 못했습니다.");
+      setConfirmationError(error instanceof Error ? error.message : "문서 내용 확인을 완료하지 못했습니다.");
       setSubmitting(false);
     }
   }
@@ -314,10 +314,10 @@ export function ExtractionReviewPage() {
   return (
     <PageShell layout="workspace" step="5 / 8" title="문서에서 읽은 내용 확인" description="잘못 읽힌 내용이 있으면 고치고, 맞는 내용은 확인해 주세요.">
       <div className="stack">
-        {status === "loading" && <LoadingState title="추출 상태를 확인하는 중" description="서버의 최신 추출 실행을 찾고 있습니다." />}
-        {status === "processing" && <LoadingState title={runStatus === "pending" ? "추출 대기 중" : "문서에서 값을 추출하는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
-        {status === "error" && <ErrorState title="추출값을 불러오지 못했습니다" description={errorMessage} retryLabel="문서 다시 올리기" onRetry={() => navigate(`/contracts/${contractId}/upload`)} />}
-        {status === "success" && fields.length === 0 && <EmptyState title="확인할 추출값이 없습니다" description="문서를 다시 업로드하거나 처리 상태를 확인해 주세요." />}
+        {status === "loading" && <LoadingState title="문서 읽기 상태를 확인하는 중" description="서버에서 문서 읽기 상태를 확인하고 있습니다." />}
+        {status === "processing" && <LoadingState title={runStatus === "pending" ? "문서 읽기 대기 중" : "문서에서 값을 읽는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
+        {status === "error" && <ErrorState title="문서에서 읽은 내용을 불러오지 못했습니다" description={errorMessage} retryLabel="문서 다시 올리기" onRetry={() => navigate(`/contracts/${contractId}/upload`)} />}
+        {status === "success" && fields.length === 0 && <EmptyState title="확인할 문서 내용이 없습니다" description="문서를 다시 업로드하거나 처리 상태를 확인해 주세요." />}
         {status === "success" && fields.length > 0 && (
           <section className="review-focus" aria-labelledby="review-focus-title">
             <div className="section-heading">
@@ -338,10 +338,10 @@ export function ExtractionReviewPage() {
                 <p>보증금 반환 조건, 책임 전가, 권리변동 관련 문구가 원문과 같은지 아래에서 확인하세요.</p>
               </article>
               <article className="review-focus__card">
-                <span>분석 준비</span>
+                <span>결과 준비</span>
                 <h3>돈과 권리에 관련된 중요 내용</h3>
-                <strong>{unresolvedFinancialFields.length > 0 ? `${unresolvedFinancialFields.length}개 확인 필요` : "필요값 추출됨"}</strong>
-                <p>금액·지급일·예금주·소유자·근저당 등은 읽지 못한 값만 아래에 표시하고, 실제 관련 신호는 확인 완료 후 분석합니다.</p>
+                <strong>{unresolvedFinancialFields.length > 0 ? `${unresolvedFinancialFields.length}개 확인 필요` : "필요한 내용을 읽었어요"}</strong>
+                <p>금액·지급일·예금주·소유자·근저당 등은 읽지 못한 값만 아래에 표시하고, 실제 관련 신호는 확인 완료 후 결과 준비 단계에서 확인합니다.</p>
               </article>
             </div>
           </section>
@@ -375,7 +375,7 @@ export function ExtractionReviewPage() {
         {status === "success" && fields.length > 0 && (
           <section className="attention-review" aria-labelledby="attention-review-title">
             <div className="section-heading">
-              <p>특약 원문과 금전피해 분석에 필요한 누락값만 먼저 모았습니다</p>
+              <p>특약 원문과 금전 관련 확인에 필요한 누락 항목만 먼저 모았습니다</p>
               <h2 id="attention-review-title">특약·핵심값 확인 {attentionFields.length}개</h2>
             </div>
             {attentionFields.length > 0 ? (
@@ -410,7 +410,7 @@ export function ExtractionReviewPage() {
               <span className="collapse-arrow" aria-hidden="true">▸</span>
             </summary>
             <div className="readable-fields__body">
-              <p className="group-empty">현재 문서에서 읽지 못한 값입니다. 분석은 해당 값이 없는 상태로 진행되며, 원문에서 확인되는 경우에만 직접 입력하세요.</p>
+              <p className="group-empty">현재 문서에서 읽지 못한 값입니다. 결과는 해당 내용이 없는 상태로 준비되며, 원문에서 확인되는 경우에만 직접 입력하세요.</p>
               <div className="review-document-stack">
                 {renderDocumentFields(optionalFailedFields, "contract", "계약서")}
                 {renderDocumentFields(optionalFailedFields, "registry", "등기사항증명서")}
@@ -434,12 +434,12 @@ export function ExtractionReviewPage() {
         {confirmationError && <p className="error" role="alert">확인 실패: {confirmationError}</p>}
         {status === "success" && fields.length > 0 && hasUnverified && (
           <p className="notice review-remaining" role="status">
-            <span>미확인 필드가 남아 있어 분석을 시작할 수 없습니다.</span>
+            <span>확인하지 않은 항목이 남아 있어 결과 준비를 시작할 수 없습니다.</span>
             <small> 확인이 필요한 항목 {blockingFields.length}개를 완료해 주세요.</small>
           </p>
         )}
         <button type="button" disabled={status !== "success" || fields.length === 0 || hasUnverified || submitting} onClick={() => void confirm()}>
-          {submitting ? "확인 내용을 저장하는 중…" : "확인 완료하고 분석하기"}
+          {submitting ? "확인 내용을 저장하는 중…" : "확인 완료하고 결과 준비하기"}
         </button>
       </div>
     </PageShell>
