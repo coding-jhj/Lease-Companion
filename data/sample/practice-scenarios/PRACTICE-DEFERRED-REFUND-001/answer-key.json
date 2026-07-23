@@ -1,7 +1,7 @@
 {
   "fixture_type": "synthetic_practice_answer_key",
   "scenario_id": "PRACTICE-DEFERRED-REFUND-001",
-  "scenario_version": "1.0.0",
+  "scenario_version": "1.1.0",
   "answer_key_version": "1.1.0",
   "review_status": "approved",
   "answer_statuses": [

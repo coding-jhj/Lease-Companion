@@ -2,7 +2,7 @@
   "fixture_type": "synthetic_practice_scenario",
   "data_classification": "synthetic",
   "scenario_id": "PRACTICE-THIRD-PARTY-PAYMENT-001",
-  "scenario_version": "1.0.0",
+  "scenario_version": "1.1.0",
   "review_status": "approved",
   "title": "공인중개사 명의 계좌로 가계약금 송금 요구",
   "role": "공인중개사",
@@ -45,7 +45,9 @@
     "deposit_return_clause": "임대차 종료일에 임차목적물 인도와 동시에 보증금을 반환한다.",
     "rights_change_clause_present": true,
     "special_clauses": [
-      "계약 후 잔금 지급일까지 임차인의 권리를 해치는 새로운 권리를 설정하지 않는다."
+      "본 계약은 현 시설 상태에서 체결하며, 임차인은 계약 전 목적물의 시설 상태를 확인한다.",
+      "계약금 및 잔금은 임대인이 지정한 계좌로 지급하고, 임대인은 지급받은 금액에 대한 영수증을 교부한다.",
+      "임대인은 계약 체결일부터 잔금 지급일 다음 날까지 본 목적물에 근저당권 등 새로운 권리를 설정하지 아니한다."
     ],
     "is_proxy_contract": false,
     "agent_name": null,

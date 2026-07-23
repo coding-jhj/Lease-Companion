@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { clearAccessToken } from "../../services/authToken";
 
 interface PageShellProps {
@@ -26,7 +26,9 @@ export function PageShell({
   eyebrow = "첫 계약 확인 도우미",
 }: PageShellProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const currentStep = Number(step.split("/")[0].trim());
+  const showModeSelect = showLogout && location.pathname !== "/choose-mode";
 
   function logout() {
     clearAccessToken();
@@ -39,6 +41,7 @@ export function PageShell({
         <Link className="brand" to="/contracts">슬기로운 계약생활</Link>
         <div className="header-actions">
           <span className="step-badge">{step}</span>
+          {showModeSelect && <Link className="mode-switch-link" to="/choose-mode">모드 선택</Link>}
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>

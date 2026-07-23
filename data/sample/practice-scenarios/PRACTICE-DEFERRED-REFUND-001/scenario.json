@@ -2,7 +2,7 @@
   "fixture_type": "synthetic_practice_scenario",
   "data_classification": "synthetic",
   "scenario_id": "PRACTICE-DEFERRED-REFUND-001",
-  "scenario_version": "1.0.0",
+  "scenario_version": "1.1.0",
   "review_status": "approved",
   "title": "후임 임차인 조건부 보증금 반환",
   "role": "공인중개사",
@@ -42,11 +42,12 @@
     },
     "mortgage_present": false,
     "mortgage_maximum_claim": null,
-    "deposit_return_clause": "보증금은 신규 임차인이 입주한 후 반환한다.",
+    "deposit_return_clause": "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
     "rights_change_clause_present": true,
     "special_clauses": [
-      "보증금은 신규 임차인이 입주한 후 반환한다.",
-      "임대인은 잔금 지급 다음 날까지 새로운 근저당권 등 권리를 설정하지 않는다."
+      "임차인은 계약 종료 시 임차목적물을 원상회복하여 임대인에게 인도한다. 다만, 통상적인 사용으로 인한 마모 및 노후는 제외한다.",
+      "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
+      "임대인은 잔금 지급일 다음 날까지 본 목적물에 근저당권 등 새로운 권리를 설정하지 아니한다."
     ],
     "is_proxy_contract": false,
     "agent_name": null,
@@ -60,7 +61,7 @@
       "clarity_candidate": "명확",
       "responsible_party_candidate": "임대인",
       "condition_candidates": [
-        "신규 임차인이 입주한 후 보증금을 반환한다."
+        "신규 임차인의 입주 및 보증금 수령이 완료된 후 보증금을 반환한다."
       ],
       "review_required": false
     }

@@ -15,7 +15,7 @@ const scenarios: PracticeScenario[] = [
     id: "PRACTICE-DEFERRED-REFUND-001",
     slug: "refund",
     title: "후임 임차인 조건부 보증금 반환",
-    clause: "보증금은 신규 임차인이 입주한 후 반환한다.",
+    clause: "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
     answers: [
       "임대차 종료일과 관계없이 신규 임차인이 입주해야만 반환한다는 뜻인지 확인해 주세요.",
       "구두 약속이 아니라 신규 임차인 입주와 관계없이 계약 종료 시 반환하도록 특약을 수정해 주세요.",
@@ -32,7 +32,7 @@ const scenarios: PracticeScenario[] = [
     id: "PRACTICE-THIRD-PARTY-PAYMENT-001",
     slug: "payee",
     title: "공인중개사 명의 계좌로 가계약금 송금 요구",
-    clause: "계약 후 잔금 지급일까지 임차인의 권리를 해치는 새로운 권리를 설정하지 않는다.",
+    clause: "계약금 및 잔금은 임대인이 지정한 계좌로 지급하고, 임대인은 지급받은 금액에 대한 영수증을 교부한다.",
     answers: [
       "입금 명의가 중개사님이고 임대인과 등기상 소유자 박서연 씨가 아닌 이유부터 확인하겠습니다.",
       "임대인과 어떤 관계인지, 가계약금을 대신 받을 권한을 증명하는 자료가 있는지 확인하겠습니다.",
@@ -49,7 +49,7 @@ const scenarios: PracticeScenario[] = [
     id: "PRACTICE-PROXY-AUTHORITY-001",
     slug: "proxy",
     title: "대리인 권한 자료 없는 계약 요구",
-    clause: "계약 체결은 임대인의 대리인이 진행한다.",
+    clause: "본 계약의 체결 및 계약금 수령에 관한 절차는 임대인이 지정한 대리인 박민준을 통하여 진행한다.",
     answers: [
       "등기상 소유자가 한서윤 씨인지 확인하고 박민준 씨가 어떤 관계로 계약하는지도 확인하겠습니다.",
       "계약 전에 위임장과 인감증명서를 보고 계약 체결과 계약금 수령 권한까지 확인하겠습니다.",
@@ -131,6 +131,11 @@ test.describe("세 가지 계약 대화 연습", () => {
       await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+$/);
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
       await expect(page.locator("video[src='/practice/avatar/speaking.mp4']")).toBeVisible();
+      await expect(page.getByRole("link", { name: "모드 선택" })).toHaveAttribute("href", "/choose-mode");
+
+      const contractTitle = await page.getByRole("heading", { name: "주택임대차계약서" }).boundingBox();
+      expect(contractTitle).not.toBeNull();
+      expect((contractTitle?.width ?? 0) > (contractTitle?.height ?? 0)).toBeTruthy();
 
       await page.getByRole("button", { name: "답변하지 못했어요" }).click();
       await expect(page.getByText("답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요.")).toBeVisible();

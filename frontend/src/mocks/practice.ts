@@ -84,17 +84,18 @@ function turn(turnId: string, prompt: string, pressured = false): PracticeDialog
 const scenarios: MockScenario[] = [
   {
     scenario_id: "PRACTICE-DEFERRED-REFUND-001",
-    scenario_version: "1.0.0",
+    scenario_version: "1.1.0",
     title: "후임 임차인 조건부 보증금 반환",
     role: "공인중개사",
     difficulty: "기본",
     contract_stage: "서명 전",
     always_show_labels: labels,
     synthetic_contract: contract({
-      deposit_return_clause: "보증금은 신규 임차인이 입주한 후 반환한다.",
+      deposit_return_clause: "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
       special_clauses: [
-        "보증금은 신규 임차인이 입주한 후 반환한다.",
-        "임대인은 잔금 지급 다음 날까지 새로운 근저당권 등 권리를 설정하지 않는다.",
+        "임차인은 계약 종료 시 임차목적물을 원상회복하여 임대인에게 인도한다. 다만, 통상적인 사용으로 인한 마모 및 노후는 제외한다.",
+        "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
+        "임대인은 잔금 지급일 다음 날까지 본 목적물에 근저당권 등 새로운 권리를 설정하지 아니한다.",
       ],
     }),
     initial_turn: turn("TURN-01", "임대인분은 특약대로 다음 세입자가 들어오면 보증금을 바로 반환하겠다고 하십니다. 이 조건으로 진행해도 괜찮으시죠?", true),
@@ -111,7 +112,7 @@ const scenarios: MockScenario[] = [
   },
   {
     scenario_id: "PRACTICE-THIRD-PARTY-PAYMENT-001",
-    scenario_version: "1.0.0",
+    scenario_version: "1.1.0",
     title: "공인중개사 명의 계좌로 가계약금 송금 요구",
     role: "공인중개사",
     difficulty: "기본",
@@ -129,7 +130,11 @@ const scenarios: MockScenario[] = [
       account_holder: "이도윤",
       owner_names: ["박서연"],
       owner_shares: { 박서연: "1/1" },
-      special_clauses: ["계약 후 잔금 지급일까지 임차인의 권리를 해치는 새로운 권리를 설정하지 않는다."],
+      special_clauses: [
+        "본 계약은 현 시설 상태에서 체결하며, 임차인은 계약 전 목적물의 시설 상태를 확인한다.",
+        "계약금 및 잔금은 임대인이 지정한 계좌로 지급하고, 임대인은 지급받은 금액에 대한 영수증을 교부한다.",
+        "임대인은 계약 체결일부터 잔금 지급일 다음 날까지 본 목적물에 근저당권 등 새로운 권리를 설정하지 아니한다.",
+      ],
     }),
     initial_turn: turn("TURN-01", "임대인께서 바쁘셔서 제 명의 계좌로 가계약금 100만 원을 받기로 했습니다. 바로 보내 주시겠어요?"),
     turns: [
@@ -145,7 +150,7 @@ const scenarios: MockScenario[] = [
   },
   {
     scenario_id: "PRACTICE-PROXY-AUTHORITY-001",
-    scenario_version: "1.0.0",
+    scenario_version: "1.1.0",
     title: "대리인 권한 자료 없는 계약 요구",
     role: "공인중개사",
     difficulty: "기본",
@@ -166,7 +171,11 @@ const scenarios: MockScenario[] = [
       is_proxy_contract: true,
       agent_name: "박민준",
       agent_relationship: "임대인의 친족",
-      special_clauses: ["계약 체결은 임대인의 대리인이 진행한다."],
+      special_clauses: [
+        "본 계약은 현 시설 상태에서 체결하며, 임차인은 계약 전 목적물의 시설 상태를 확인한다.",
+        "본 계약의 체결 및 계약금 수령에 관한 절차는 임대인이 지정한 대리인 박민준을 통하여 진행한다.",
+        "임차인은 임대인의 사전 동의 없이 임차권을 양도하거나 본 목적물을 전대하지 아니한다.",
+      ],
     }),
     initial_turn: turn("TURN-01", "등기상 소유자분은 오늘 못 오시고 친족인 박민준 씨가 대신 계약합니다. 가족이니 바로 진행해도 되겠죠?", true),
     turns: [
