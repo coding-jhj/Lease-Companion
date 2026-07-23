@@ -2,7 +2,7 @@
 
 from typing import NoReturn
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from lease_companion_ai.schemas.simulation import PracticeResult, PracticeTurnEvaluation
@@ -11,6 +11,7 @@ from app.api.dependencies.auth import get_current_user
 from app.core.db import get_db
 from app.models.user import User
 from app.schemas.practice import (
+    PracticeConversationPage,
     PracticeFinalActionRequest,
     PracticeAdvanceRequest,
     PracticeResultResponse,
@@ -26,6 +27,7 @@ from app.services.practice import (
     create_practice_session,
     get_owned_practice_session,
     get_practice_scenario,
+    list_practice_conversation,
     list_practice_scenarios,
     session_response,
     submit_practice_final_action,
@@ -87,6 +89,24 @@ def get_session(
 ) -> PracticeSessionResponse:
     try:
         return session_response(get_owned_practice_session(db, user, practice_session_id))
+    except PracticeServiceError as exc:
+        _raise_http(exc)
+
+
+@router.get(
+    "/api/practice-sessions/{practice_session_id}/messages",
+    response_model=PracticeConversationPage,
+)
+def get_conversation_messages(
+    practice_session_id: str,
+    before: str | None = None,
+    limit: int = Query(default=30, ge=1, le=50),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PracticeConversationPage:
+    try:
+        session_row = get_owned_practice_session(db, user, practice_session_id)
+        return list_practice_conversation(db, session_row, before=before, limit=limit)
     except PracticeServiceError as exc:
         _raise_http(exc)
 

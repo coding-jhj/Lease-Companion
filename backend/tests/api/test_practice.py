@@ -279,6 +279,9 @@ def test_user_can_advance_without_confirming_or_move_to_final_choice(client: Tes
     assert final_choice.status_code == 200, final_choice.text
     assert final_choice.json()["session"]["current_state"] == "ACTION-SELECTION"
     assert final_choice.json()["session"]["confirmed_action_ids"] == []
+    history = client.get(f"/api/practice-sessions/{session_id}/messages", headers=headers)
+    assert history.status_code == 200
+    assert history.json() == {"items": [], "next_cursor": None, "has_more": False}
 
 
 @pytest.mark.parametrize("scenario_id,user_answer", FREE_FORM_TURN_ONE)
@@ -305,6 +308,61 @@ def test_offline_practice_accepts_natural_turn_answer(
     assert payload["evaluation"]["answer_category"] == "appropriate_check"
     assert payload["evaluation"]["fallback_reason"] is None
     assert payload["session"]["current_turn"]["turn_id"] == "TURN-02"
+
+
+def test_conversation_history_is_owned_paginated_and_hides_future_turns(client: TestClient):
+    owner_headers = _headers(client)
+    other_headers = _headers(client)
+    scenario, answer_key = load_approved_practice_assets("PRACTICE-DEFERRED-REFUND-001")
+    session = _create_session(client, owner_headers, scenario.scenario_id)
+    session_id = session["practice_session_id"]
+
+    for index, turn in enumerate(scenario.dialogue_turns[:2], start=1):
+        answer = _example(answer_key, turn.turn_id, "appropriate_check").user_input
+        response = client.post(
+            f"/api/practice-sessions/{session_id}/turns",
+            headers=owner_headers,
+            json={
+                "request_id": f"history-turn-{index:02d}",
+                "turn_id": turn.turn_id,
+                "user_answer": answer,
+                "response_time_seconds": 1,
+            },
+        )
+        assert response.status_code == 200, response.text
+
+    first_page = client.get(
+        f"/api/practice-sessions/{session_id}/messages?limit=1",
+        headers=owner_headers,
+    )
+    assert first_page.status_code == 200, first_page.text
+    first_payload = first_page.json()
+    assert first_payload["has_more"] is True
+    assert first_payload["items"][0]["turn_id"] == "TURN-02"
+    assert first_payload["items"][0]["prompt"] == scenario.dialogue_turns[1].prompt
+    assert scenario.dialogue_turns[2].prompt not in first_page.text
+
+    second_page = client.get(
+        f"/api/practice-sessions/{session_id}/messages",
+        headers=owner_headers,
+        params={"limit": 1, "before": first_payload["next_cursor"]},
+    )
+    assert second_page.status_code == 200
+    assert second_page.json()["items"][0]["turn_id"] == "TURN-01"
+    assert second_page.json()["has_more"] is False
+
+    hidden = client.get(
+        f"/api/practice-sessions/{session_id}/messages",
+        headers=other_headers,
+    )
+    assert hidden.status_code == 404
+
+    invalid_cursor = client.get(
+        f"/api/practice-sessions/{session_id}/messages?before=missing-cursor",
+        headers=owner_headers,
+    )
+    assert invalid_cursor.status_code == 400
+    assert invalid_cursor.json()["error"]["code"] == "invalid_practice_cursor"
 
 
 @pytest.mark.parametrize("scenario_id", APPROVED_SCENARIO_IDS)

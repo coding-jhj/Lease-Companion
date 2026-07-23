@@ -154,7 +154,7 @@ test.describe("세 가지 계약 대화 연습", () => {
         await workspace.getByRole("tab", { name: /대화 내용/ }).click();
         const conversation = workspace.getByRole("tabpanel", { name: "지금까지의 대화" });
         await expect(conversation).toContainText("공인중개사");
-        await expect(conversation.locator(".practice-conversation-history__counterparty p")).not.toBeEmpty();
+        await expect(conversation.locator(".practice-chat__message--counterparty p").first()).not.toBeEmpty();
         await workspace.getByRole("button", { name: "자료 접기" }).click();
         await expect(workspace.getByRole("button", { name: "계약서·대화 열기" })).toBeVisible();
         await workspace.getByRole("button", { name: "계약서·대화 열기" }).click();

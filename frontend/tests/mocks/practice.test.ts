@@ -68,6 +68,17 @@ describe("Practice MSW handlers", () => {
     }
 
     expect(session.current_state).toBe("ACTION-SELECTION");
+    const messages = await practiceService.getMessages(session.practice_session_id, undefined, 2);
+    expect(messages.items).toHaveLength(2);
+    expect(messages.items[1].turn_id).toBe("TURN-03");
+    expect(messages.has_more).toBe(true);
+    const olderMessages = await practiceService.getMessages(
+      session.practice_session_id,
+      messages.next_cursor!,
+      2,
+    );
+    expect(olderMessages.items.map((item) => item.turn_id)).toEqual(["TURN-01"]);
+
     const completed = await practiceService.submitFinalAction(session.practice_session_id, {
       request_id: `final-${scenarioId.slice(-3)}-0`,
       selected_action: "보류",

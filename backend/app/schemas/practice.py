@@ -96,5 +96,21 @@ class PracticeTurnResponse(BaseModel):
     session: PracticeSessionResponse
 
 
+class PracticeConversationTurn(BaseModel):
+    practice_turn_id: str
+    turn_id: str
+    prompt: str
+    user_answer: str | None
+    timed_out: bool
+    dialogue_response: str | None
+    created_at: datetime
+
+
+class PracticeConversationPage(BaseModel):
+    items: list[PracticeConversationTurn]
+    next_cursor: str | None
+    has_more: bool
+
+
 class PracticeResultResponse(BaseModel):
     result: PracticeResult

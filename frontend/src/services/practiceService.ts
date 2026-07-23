@@ -1,6 +1,7 @@
 import type {
   PracticeFinalActionRequestDto,
   PracticeAdvanceRequestDto,
+  PracticeConversationPageDto,
   PracticeResultResponseDto,
   PracticeScenarioDetailDto,
   PracticeScenarioSummaryDto,
@@ -30,6 +31,13 @@ export const practiceService = {
     apiClient<PracticeSessionDto>("/api/practice-sessions", jsonOptions("POST", { scenario_id: scenarioId })),
   getSession: (sessionId: string) =>
     apiClient<PracticeSessionDto>(`/api/practice-sessions/${sessionId}`),
+  getMessages: (sessionId: string, before?: string, limit = 30) => {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (before) query.set("before", before);
+    return apiClient<PracticeConversationPageDto>(
+      `/api/practice-sessions/${sessionId}/messages?${query.toString()}`,
+    );
+  },
   submitTurn: (sessionId: string, body: PracticeTurnRequestDto) =>
     apiClient<PracticeTurnResponseDto>(
       `/api/practice-sessions/${sessionId}/turns`,

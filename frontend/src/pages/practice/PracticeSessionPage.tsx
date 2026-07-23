@@ -4,19 +4,15 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
 import { PracticeAvatarStage } from "./PracticeAvatarStage";
+import { PracticeChatPanel } from "./PracticeChatPanel";
 import { PracticeMissionCard } from "./PracticeMissionCard";
 import type {
   PracticeScenarioDetailDto,
   PracticeSelectedAction,
   PracticeSessionDto,
+  PracticeConversationTurnDto,
   PracticeTurnResponseDto,
 } from "../../types/api";
-
-interface DialogueHistoryItem {
-  id: string;
-  userAnswer: string;
-  response: string | null;
-}
 
 const money = new Intl.NumberFormat("ko-KR");
 
@@ -43,7 +39,8 @@ export function PracticeSessionPage() {
   const [contractPage, setContractPage] = useState(1);
   const [contractZoomed, setContractZoomed] = useState(false);
   const [lastResponse, setLastResponse] = useState<PracticeTurnResponseDto | null>(null);
-  const [dialogueHistory, setDialogueHistory] = useState<DialogueHistoryItem[]>([]);
+  const [latestConversationTurn, setLatestConversationTurn] = useState<PracticeConversationTurnDto | null>(null);
+  const [conversationRefreshToken, setConversationRefreshToken] = useState(0);
   const [answer, setAnswer] = useState("");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +72,8 @@ export function PracticeSessionPage() {
 
   async function sendTurn(timedOut: boolean) {
     if (!session?.current_turn || (!timedOut && !answer.trim())) return;
+    const answeredTurn = session.current_turn;
+    const submittedAnswer = timedOut ? null : answer.trim();
     setSubmitting(true);
     setErrorMessage("");
     try {
@@ -87,16 +86,16 @@ export function PracticeSessionPage() {
       });
       setLastResponse(response);
       setSession(response.session);
-      setDialogueHistory((current) => [
-        ...current,
-        {
-          id: response.practice_turn_id,
-          userAnswer: timedOut ? "답변하지 못했어요." : answer.trim(),
-          response: timedOut
-            ? response.dialogue_response
-            : response.session.current_turn?.prompt ?? response.dialogue_response,
-        },
-      ]);
+      setLatestConversationTurn({
+        practice_turn_id: response.practice_turn_id,
+        turn_id: answeredTurn.turn_id,
+        prompt: answeredTurn.prompt,
+        user_answer: submittedAnswer,
+        timed_out: timedOut,
+        dialogue_response: response.dialogue_response,
+        created_at: new Date().toISOString(),
+      });
+      setConversationRefreshToken((current) => current + 1);
       setAnswer("");
       turnStartedAt.current = Date.now();
     } catch (error) {
@@ -239,22 +238,12 @@ export function PracticeSessionPage() {
                       </footer>
                     </article>
                   ) : (
-                    <section className="practice-conversation-history practice-conversation-history--panel" role="tabpanel" aria-label="지금까지의 대화" aria-live="polite">
-                      <h2>지금까지의 대화</h2>
-                      <ol>
-                        {dialogueHistory.length === 0 && (
-                          <li>
-                            <div className="practice-conversation-history__counterparty"><strong>공인중개사</strong><p>{session.current_turn.prompt}</p></div>
-                          </li>
-                        )}
-                          {dialogueHistory.map((item) => (
-                            <li key={item.id}>
-                              <div className="practice-conversation-history__user"><strong>나</strong><p>{item.userAnswer}</p></div>
-                              {item.response && <div className="practice-conversation-history__counterparty"><strong>공인중개사</strong><p>{item.response}</p></div>}
-                            </li>
-                          ))}
-                      </ol>
-                    </section>
+                    <PracticeChatPanel
+                      sessionId={session.practice_session_id}
+                      currentTurn={session.current_turn}
+                      latestTurn={latestConversationTurn}
+                      refreshToken={conversationRefreshToken}
+                    />
                   )}
                 </div>}
                 <PracticeAvatarStage

@@ -490,6 +490,22 @@ export interface PracticeTurnResponseDto {
   session: PracticeSessionDto;
 }
 
+export interface PracticeConversationTurnDto {
+  practice_turn_id: string;
+  turn_id: string;
+  prompt: string;
+  user_answer: string | null;
+  timed_out: boolean;
+  dialogue_response: string | null;
+  created_at: string;
+}
+
+export interface PracticeConversationPageDto {
+  items: PracticeConversationTurnDto[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
 export interface PracticeResultDto {
   schema_version: SchemaVersion;
   session_id: string;
