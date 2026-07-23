@@ -68,8 +68,9 @@ def _expected_urgency(judgment_id: str, status: RuleStatus) -> Urgency:
     strict=True,
     reason=(
         "judgment_goldset.jsonl에 J13 레코드가 아직 없음(dev goldset 확장은 "
-        "AGENTS.md 2026-07-23 J13 후속 과제에서 처리). J13 goldset 블록이 추가되면 "
-        "이 마커를 지운다."
+        "docs/decisions/2026-07-23-j13-tenant-protection-restriction.md 후속 과제에서 "
+        "처리). J13의 허용 상태 3개(확인 필요 / 적용 제외 / 확인 불가)를 모두 담은 "
+        "goldset 블록이 추가되면 이 마커를 지운다."
     ),
 )
 def test_judgment_goldset_covers_every_allowed_status_with_valid_inputs():

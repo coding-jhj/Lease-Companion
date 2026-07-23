@@ -970,7 +970,7 @@
             "schema": {
               "type": "string",
               "maxLength": 100,
-              "pattern": "^(?:R\\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+              "pattern": "^(?:R\\d{2}|(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)):(checklist|post_action):[0-9a-f]{12}$",
               "title": "Item Key"
             }
           }
@@ -1665,7 +1665,7 @@
               "$ref": "#/components/schemas/JudgmentResult"
             },
             "type": "array",
-            "maxItems": 12,
+            "maxItems": 13,
             "title": "Judgments"
           },
           "damage_patterns": {
@@ -2317,7 +2317,7 @@
           "item_key": {
             "type": "string",
             "maxLength": 100,
-            "pattern": "^(?:R\\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+            "pattern": "^(?:R\\d{2}|(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)):(checklist|post_action):[0-9a-f]{12}$",
             "title": "Item Key"
           },
           "text": {
@@ -2398,7 +2398,7 @@
         "properties": {
           "judgment_id": {
             "type": "string",
-            "pattern": "^J(?:0[1-9]|1[0-2])$",
+            "pattern": "^(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)$",
             "title": "Judgment Id"
           },
           "explanation": {
@@ -2496,13 +2496,13 @@
           "generation_method"
         ],
         "title": "JudgmentGuidance",
-        "description": "검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내."
+        "description": "검증 또는 fallback을 마친 J01~J13 판정 1개의 공개 사용자 안내."
       },
       "JudgmentResult": {
         "properties": {
           "judgment_id": {
             "type": "string",
-            "pattern": "^J(?:0[1-9]|1[0-2])$",
+            "pattern": "^(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)$",
             "title": "Judgment Id"
           },
           "judgment_name": {
@@ -2568,7 +2568,7 @@
           "limitations"
         ],
         "title": "JudgmentResult",
-        "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다."
+        "description": "J01~J13 판정 1개. R 규칙 결과와 별도 축으로 저장한다."
       },
       "LoginRequest": {
         "properties": {
@@ -3784,7 +3784,7 @@
           "related_judgment_ids": {
             "items": {
               "type": "string",
-              "pattern": "^J(?:0[1-9]|1[0-2])$"
+              "pattern": "^(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)$"
             },
             "type": "array",
             "title": "Related Judgment Ids",

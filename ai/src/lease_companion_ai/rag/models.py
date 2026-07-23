@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from lease_companion_ai.schemas.unified import _JUDGMENT_ID_PATTERN, RuleStatus
+from lease_companion_ai.schemas.unified import JUDGMENT_ID_PATTERN, RuleStatus
 
 
 _SOURCE_ID_PATTERN = r"^SRC-[A-Z0-9-]+$"
@@ -96,7 +96,7 @@ class JudgmentRetrievalQuery(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    judgment_id: str = Field(pattern=_JUDGMENT_ID_PATTERN)
+    judgment_id: str = Field(pattern=JUDGMENT_ID_PATTERN)
     judgment_name: str = Field(min_length=1)
     status: RuleStatus
     allowed_source_ids: tuple[SourceId, ...] = Field(min_length=1)

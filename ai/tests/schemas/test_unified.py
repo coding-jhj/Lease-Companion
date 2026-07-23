@@ -670,13 +670,13 @@ def test_analysis_run_accepts_empty_or_complete_judgments_only():
     assert [item.judgment_id for item in complete.judgments] == [
         f"J{i:02d}" for i in range(1, 13)
     ]
-    with pytest.raises(ValidationError, match="J01~J12"):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(**base, judgments=_complete_judgments()[:-1])
-    with pytest.raises(ValidationError, match="J01~J12"):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(**base, judgments=list(reversed(_complete_judgments())))
     duplicate = _complete_judgments()
     duplicate[-1] = _judgment_result("J11", "명확")
-    with pytest.raises(ValidationError, match="J01~J12"):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(**base, judgments=duplicate)
 
 
@@ -1109,3 +1109,77 @@ def test_analysis_run_result_still_accepts_legacy_j01_to_j12():
     )
 
     assert [item.judgment_id for item in result.judgments] == legacy_ids
+
+
+def test_analysis_run_result_rejects_non_historical_length_prefix():
+    """길이가 이력에 없는 부분 시퀀스(J01~J05)는 prefix 규칙을 우회해도 거부돼야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        JUDGMENT_IDS,
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    short_ids = list(JUDGMENT_IDS[:5])
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="테스트용 판정입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in short_ids
+    ]
+
+    with pytest.raises(ValidationError):
+        AnalysisRunResult(
+            analysis_run_id="AR-SHORT",
+            input_snapshot_id="SNAP-SHORT",
+            contract_id=1,
+            results=_rule_results_r01_to_r24(),
+            judgments=judgments,
+        )
+
+
+def test_analysis_run_result_rejects_same_length_wrong_content_sequence():
+    """길이는 historical length(13)와 같지만 순서가 canonical과 다르면 거부돼야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        JUDGMENT_IDS,
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    # canonical 순서에서 앞의 두 항목(J01·J02)을 맞바꿔, 길이는 같지만 내용이
+    # canonical과 다른(순서가 어긋난) 시퀀스를 만든다. 이는 JudgmentResult의
+    # judgment_id 패턴 검증은 통과하고 AnalysisRunResult의 시퀀스 검증만 걸린다.
+    bogus_ids = [JUDGMENT_IDS[1], JUDGMENT_IDS[0], *JUDGMENT_IDS[2:]]
+    assert len(bogus_ids) == len(JUDGMENT_IDS)
+    assert bogus_ids != list(JUDGMENT_IDS)
+
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="테스트용 판정입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in bogus_ids
+    ]
+
+    with pytest.raises(ValidationError):
+        AnalysisRunResult(
+            analysis_run_id="AR-BOGUS",
+            input_snapshot_id="SNAP-BOGUS",
+            contract_id=1,
+            results=_rule_results_r01_to_r24(),
+            judgments=judgments,
+        )

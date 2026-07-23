@@ -129,8 +129,19 @@ class ContractStage(str, Enum):
 
 JUDGMENT_IDS: tuple[str, ...] = tuple(f"J{index:02d}" for index in range(1, 14))
 
+# 지금까지 실제로 저장된 적이 있는 judgments 시퀀스 길이의 append-only 이력이다.
+# 과거 분석 결과는 당시의 JUDGMENT_IDS 길이만큼 J01부터 순서대로 저장됐으므로,
+# `JUDGMENT_IDS[:n]`이 그 시점의 canonical 시퀀스와 같다. 현재값은 13(J01~J13),
+# 12는 J13 도입 이전(J01~J12) 레거시다.
+#
+# 유지보수 규칙: 판정 축이 늘어날 때(J14 등) 이 목록에서 항목을 지우거나 바꾸지
+# 말고, JUDGMENT_IDS를 늘리기 *전에* 현재 len(JUDGMENT_IDS) 값을 여기에 먼저
+# append한다. 그래야 이번 릴리스에서 저장된 결과가 다음 릴리스에서도 계속 읽힌다.
+HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS: tuple[int, ...] = (12,)
+
 # judgment id 정규식을 상수에서 만든다. 두 곳에 하드코딩하면 확장 시 어긋난다.
-_JUDGMENT_ID_PATTERN: str = "^(?:" + "|".join(JUDGMENT_IDS) + ")$"
+# GUIDANCE_ITEM_KEY_PATTERN처럼 공개 이름이다 — schemas 밖(rag 등)에서도 import해서 쓴다.
+JUDGMENT_ID_PATTERN: str = "^(?:" + "|".join(JUDGMENT_IDS) + ")$"
 _JUDGMENT_ID_ALTERNATION: str = "|".join(JUDGMENT_IDS)
 
 # R/J 체크리스트·계약 직후 행동 항목의 안정 식별자 패턴 — canonical judgment id
@@ -1162,7 +1173,7 @@ class DamagePatternComparison(BaseModel):
 
 
 _RuleId = Annotated[str, Field(pattern=r"^R\d{2}$")]
-_JudgmentId = Annotated[str, Field(pattern=_JUDGMENT_ID_PATTERN)]
+_JudgmentId = Annotated[str, Field(pattern=JUDGMENT_ID_PATTERN)]
 
 
 class SpecialClauseReview(BaseModel):
@@ -1252,7 +1263,7 @@ class JudgmentResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    judgment_id: str = Field(pattern=_JUDGMENT_ID_PATTERN)
+    judgment_id: str = Field(pattern=JUDGMENT_ID_PATTERN)
     judgment_name: str = Field(min_length=1)
     status: RuleStatus
     urgency: Urgency
@@ -1318,15 +1329,19 @@ class AnalysisRunResult(BaseModel):
             raise ValueError("results에는 R01~R10 또는 R01~R24가 순서대로 각각 정확히 1개씩 있어야 합니다.")
         if self.judgments:
             judgment_ids = [result.judgment_id for result in self.judgments]
-            # 레거시 J01~J12는 영구히 허용한다. 저장된 과거 결과를 계속 읽기 위해서다.
-            allowed_judgment_sequences = (
-                [f"J{index:02d}" for index in range(1, 13)],
-                list(JUDGMENT_IDS),
-            )
-            if judgment_ids not in allowed_judgment_sequences:
+            # 저장된 적이 있는 모든 길이(HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS)와 현행
+            # 길이(len(JUDGMENT_IDS), 목록에 없어도 항상 허용)를 합쳐 허용 길이를
+            # 만들고, 각 길이에서 JUDGMENT_IDS의 접두어(prefix)와 정확히 같은지 본다.
+            allowed_lengths = set(HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS)
+            allowed_lengths.add(len(JUDGMENT_IDS))
+            allowed_judgment_sequences = {
+                length: list(JUDGMENT_IDS[:length]) for length in allowed_lengths
+            }
+            if judgment_ids not in allowed_judgment_sequences.values():
                 raise ValueError(
-                    "judgments에는 레거시 J01~J12 또는 현행 canonical 순서가 "
-                    "각각 정확히 1개씩 있거나, R-only 실행을 나타내는 빈 목록이어야 합니다."
+                    "judgments에는 과거에 저장된 적이 있는 길이(레거시 포함) 또는 "
+                    "현행 canonical 길이의 JUDGMENT_IDS 접두어 순서가 각각 정확히 "
+                    "1개씩 있거나, R-only 실행을 나타내는 빈 목록이어야 합니다."
                 )
         if self.damage_patterns:
             pattern_ids = [item.pattern_id for item in self.damage_patterns]
@@ -1441,7 +1456,7 @@ class JudgmentGuidance(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    judgment_id: str = Field(pattern=_JUDGMENT_ID_PATTERN)
+    judgment_id: str = Field(pattern=JUDGMENT_ID_PATTERN)
     explanation: str = Field(min_length=1)
     questions: tuple[str, ...] = ()
     request_templates: tuple[str, ...] = ()

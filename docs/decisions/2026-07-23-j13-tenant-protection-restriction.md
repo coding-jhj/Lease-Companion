@@ -151,20 +151,37 @@ J13이 항상 존재하는 한 R 링크는 쓰이지 않는다. 검증 대상만
 
 ## 스키마 하위호환
 
-### 허용 시퀀스를 2개로
+### 허용 시퀀스는 "저장된 적이 있는 길이" 이력으로 판정한다
+
+**(2026-07-23 재검토 후 결정, owner 승인)** 시퀀스를 2개(레거시/현행)만 하드코딩하면
+J14가 추가되는 순간 이번 릴리스가 저장한 J01~J13 결과가 전부 `ValidationError`로
+읽히지 않는다 — 이 문서 전체가 막으려는 사고를 한 릴리스 뒤로 미루는 것뿐이다.
+
+대신 append-only 상수로 "지금까지 실제로 저장된 적이 있는 시퀀스 길이"의 이력을
+남긴다.
 
 ```python
-allowed_judgment_sequences = (
-    [f"J{index:02d}" for index in range(1, 13)],  # 레거시: 영구 허용
-    list(JUDGMENT_IDS),                            # 현행: 상수 기반
-)
+# unified.py, JUDGMENT_IDS 옆에 정의
+HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS: tuple[int, ...] = (12,)  # J13 이전 레거시
 ```
 
-레거시 J01~J12를 영구히 허용한다. DB에 저장된 과거 `AnalysisRun.result`가 계속 읽힌다.
-이후 J14 이상이 추가돼도 `JUDGMENT_IDS`만 늘리면 되고 이 코드는 다시 고치지 않는다.
+검증기는 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 현재 길이(`len(JUDGMENT_IDS)`,
+목록에 없어도 항상 자동으로 포함됨)를 더한 각 길이 `n`에 대해
+`judgment_ids == list(JUDGMENT_IDS[:n])`인지 확인한다. 현재 길이를 목록에 넣어
+두는 걸 사람이 잊어도 항상 통과하도록 코드가 파생시키며, 목록 자체에는 넣지
+않는다(현재 값을 넣으면 다음 릴리스에서 지워야 할지 헷갈리는 항목이 생긴다).
 
-이 변경을 빠뜨리면 과거 분석 결과 전량이 `ValidationError`로 읽히지 않는다. 리포트
-재조회·체크리스트·이력이 모두 깨지는 데이터 손실급 사고다.
+**유지보수 규칙(필수, 지키지 않으면 위와 같은 사고가 재발한다):** 판정 축이 늘어날
+때(J14 등) `JUDGMENT_IDS`를 늘리기 *전에* 그 시점의 `len(JUDGMENT_IDS)`(예: 13)를
+`HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 먼저 append한다. 이 목록에서 항목을
+지우거나 바꾸지 않는다 — append-only다.
+
+레거시 J01~J12는 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 12가 남아있는 한
+영구히 허용된다. DB에 저장된 과거 `AnalysisRun.result`가 계속 읽힌다.
+
+이 변경(또는 이후 유지보수 규칙)을 빠뜨리면 과거 분석 결과 전량이
+`ValidationError`로 읽히지 않는다. 리포트 재조회·체크리스트·이력이 모두 깨지는
+데이터 손실급 사고다.
 
 ### 하드코딩 제거
 
