@@ -4,6 +4,7 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { practiceService } from "../../services/practiceService";
 import type { PracticeScenarioDetailDto } from "../../types/api";
+import { PracticeMissionCard } from "./PracticeMissionCard";
 
 const money = new Intl.NumberFormat("ko-KR");
 
@@ -47,6 +48,7 @@ export function PracticeScenarioPage() {
         {status === "error" && <ErrorState title="연습 상황을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadScenario()} />}
         {status === "success" && scenario && (
           <>
+            <PracticeMissionCard scenarioId={scenario.scenario_id} />
             <section className="practice-contract-card" aria-labelledby="practice-contract-title">
               <h2 id="practice-contract-title">주택임대차계약서</h2>
               <h3 className="practice-contract-card__section-title">계약 내용</h3>

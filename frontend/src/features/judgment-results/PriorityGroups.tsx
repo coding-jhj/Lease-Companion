@@ -47,15 +47,17 @@ function ResultCard({ item, idPrefix }: { item: ReportResultDto; idPrefix: strin
   const guide = plainGuideById(item.judgment_id ?? ("rule_id" in item ? item.rule_id : null));
   return (
     <article className="result-card">
-      <p className="result-meta">
-        <strong>{resultId(item)}</strong>
-        {" · "}
-        {resultScope(item)}
-        {" · 상태: "}{item.status}
-        {" · 시급도: "}{item.urgency}
-      </p>
       <h3>{resultName(item)}</h3>
       <p>{item.reason}</p>
+      <details className="result-technical-details">
+        <summary>세부 판정 정보</summary>
+        <p className="result-meta">
+          <strong>{resultId(item)}</strong>
+          {" · "}{resultScope(item)}
+          {" · 상태: "}{item.status}
+          {" · 시급도: "}{item.urgency}
+        </p>
+      </details>
       <details className="result-support">
         <summary>근거와 판정 한계 확인</summary>
         <EvidenceDisclosure

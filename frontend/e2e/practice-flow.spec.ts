@@ -79,8 +79,8 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
-  await expect(page.getByRole("heading", { name: "어떤 방식으로 시작할까요?" })).toBeVisible();
-  await page.getByRole("link", { name: "연습 시뮬레이션 시작" }).click();
+  await expect(page.getByRole("heading", { name: "현재 어떤 상황인가요?" })).toBeVisible();
+  await page.getByRole("link", { name: "가상 상황으로 연습하기" }).click();
   await expect(page.getByRole("heading", { name: "계약 대화 연습" })).toBeVisible();
 
   const catalog = page.getByRole("region", { name: "연습 시나리오 목록" });
@@ -170,14 +170,14 @@ test.describe("세 가지 계약 대화 연습", () => {
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
 
       await submitAnswer(page, scenario.answers[0], "TURN-02");
-      await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("확인한 행동 1개");
+      await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("확인 행동 1개");
 
       await page.reload();
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-02");
-      await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("확인한 행동 1개");
+      await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("확인 행동 1개");
 
       await submitAnswer(page, scenario.answers[1], "TURN-03");
-      await submitAnswer(page, scenario.answers[2], "최종 행동 선택");
+      await submitAnswer(page, scenario.answers[2], "마지막 행동 선택");
       await expect(page.getByRole("heading", { name: "이 계약 상황에서 어떻게 행동하시겠습니까?" })).toBeVisible();
       await page.getByRole("button", { name: "보류", exact: true }).click();
 

@@ -13,7 +13,7 @@ interface PageShellProps {
   eyebrow?: string;
 }
 
-const journeySteps = ["시작", "계약", "상황", "문서", "확인", "분석", "리포트", "행동"];
+const journeySteps = ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
 
 export function PageShell({
   step,

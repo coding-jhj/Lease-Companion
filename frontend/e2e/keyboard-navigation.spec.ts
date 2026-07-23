@@ -12,11 +12,12 @@ test("critical upload, review, analysis, and report actions work with the keyboa
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
-  await page.getByRole("link", { name: "새 계약 만들기" }).click();
+  await page.getByRole("link", { name: "내 계약서 점검 시작" }).click();
+  await page.getByRole("link", { name: "새 계약 점검 시작" }).click();
   await page.getByLabel("계약 이름").fill("키보드 접근성 계약");
-  await page.getByRole("button", { name: "계약 상황 입력하기" }).click();
-  await page.getByLabel("대리 계약 여부").selectOption("no");
-  await page.getByRole("button", { name: "문서 업로드하기" }).click();
+  await page.getByRole("button", { name: "다음: 내 상황 알려주기" }).click();
+  await page.getByLabel(/집주인이 아닌 사람이 대신 계약하나요/).selectOption("no");
+  await page.getByRole("button", { name: "다음: 준비한 문서 확인" }).click();
 
   const contractPicker = page.getByRole("button", { name: "계약서 파일 선택" });
   const registryPicker = page.getByRole("button", { name: "등기사항증명서 파일 선택" });

@@ -30,13 +30,13 @@ describe("login mode selection", () => {
     fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: "password1!" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인하고 시작" }));
 
-    expect(await screen.findByRole("heading", { name: "어떤 방식으로 시작할까요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "현재 어떤 상황인가요?" })).toBeInTheDocument();
   });
 
   it("offers separate practice and real contract destinations", () => {
     render(<MemoryRouter><ModeSelectPage /></MemoryRouter>);
 
-    expect(screen.getByRole("link", { name: "연습 시뮬레이션 시작" })).toHaveAttribute("href", "/practice");
-    expect(screen.getByRole("link", { name: "실전 계약 점검 시작" })).toHaveAttribute("href", "/contracts");
+    expect(screen.getByRole("link", { name: "가상 상황으로 연습하기" })).toHaveAttribute("href", "/practice");
+    expect(screen.getByRole("link", { name: "내 계약서 점검 시작" })).toHaveAttribute("href", "/contracts");
   });
 });

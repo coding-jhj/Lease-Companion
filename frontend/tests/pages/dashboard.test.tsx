@@ -43,12 +43,12 @@ describe("DashboardPage grouping", () => {
 
     render(<MemoryRouter><DashboardPage /></MemoryRouter>);
 
-    const notStarted = await screen.findByRole("region", { name: "미행동 계약 1개" });
+    const notStarted = await screen.findByRole("region", { name: "점검을 시작하지 않은 계약 1개" });
     expect(within(notStarted).getByText("미행동 계약건")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "행동중 계약 1개" })).getByText("행동중 계약건")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "확인 중인 계약 1개" })).getByText("행동중 계약건")).toBeInTheDocument();
 
     // 행동 완료 그룹은 기본 접힌 details (완료 계약은 숨겨두고 펼쳐서 확인).
-    const doneDetails = screen.getByText("행동 완료 계약 1개").closest("details");
+    const doneDetails = screen.getByText("확인을 마친 계약 1개").closest("details");
     expect(doneDetails).not.toHaveAttribute("open");
     expect(within(doneDetails as HTMLElement).getByText("완료 계약건")).toBeInTheDocument();
   });

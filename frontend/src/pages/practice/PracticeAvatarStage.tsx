@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { practiceMediaForScenario } from "./practiceMediaManifest";
 
 type AvatarMode = "idle" | "speaking" | "listening" | "pressure";
-
-const avatarVideos: Record<AvatarMode, string> = {
-  idle: "/practice/avatar/idle.mp4",
-  speaking: "/practice/avatar/speaking.mp4",
-  listening: "/practice/avatar/listening.mp4",
-  pressure: "/practice/avatar/pressure.mp4",
-};
 
 const avatarLabels: Record<AvatarMode, string> = {
   idle: "대화를 준비하고 있습니다",
@@ -17,6 +11,7 @@ const avatarLabels: Record<AvatarMode, string> = {
 };
 
 interface PracticeAvatarStageProps {
+  scenarioId?: string;
   prompt: string;
   pressureDelaySeconds: number | null;
   hasUserInput: boolean;
@@ -24,11 +19,13 @@ interface PracticeAvatarStageProps {
 }
 
 export function PracticeAvatarStage({
+  scenarioId,
   prompt,
   pressureDelaySeconds,
   hasUserInput,
   submitting,
 }: PracticeAvatarStageProps) {
+  const avatarVideos = practiceMediaForScenario(scenarioId);
   const [mode, setMode] = useState<AvatarMode>("idle");
   const [playbackId, setPlaybackId] = useState(0);
   const pressurePlayedForPrompt = useRef<string | null>(null);

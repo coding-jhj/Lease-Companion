@@ -4,6 +4,7 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
 import { PracticeAvatarStage } from "./PracticeAvatarStage";
+import { PracticeMissionCard } from "./PracticeMissionCard";
 import type {
   PracticeScenarioDetailDto,
   PracticeSelectedAction,
@@ -171,9 +172,10 @@ export function PracticeSessionPage() {
         {status === "success" && session && (
           <>
             <div className="practice-progress" role="status" aria-label="연습 진행 상태" aria-live="polite">
-              <span>현재 단계 <strong>{isActionSelection ? "최종 행동 선택" : session.current_turn?.turn_id}</strong></span>
-              <span>확인한 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
+              <span>대화 단계 <strong>{isActionSelection ? "마지막 행동 선택" : session.current_turn?.turn_id}</strong></span>
+              <span>확인 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
             </div>
+            {scenario && <PracticeMissionCard scenarioId={scenario.scenario_id} confirmedCount={session.confirmed_action_ids.length} />}
             {!isActionSelection && session.current_turn && scenario && (
               <section className={`practice-simulation-workspace${drawerOpen ? "" : " practice-simulation-workspace--drawer-closed"}`} aria-label="계약서와 공인중개사 대화 화면">
                 {!drawerOpen && (
@@ -256,6 +258,7 @@ export function PracticeSessionPage() {
                   )}
                 </div>}
                 <PracticeAvatarStage
+                  scenarioId={scenario.scenario_id}
                   prompt={session.current_turn.prompt}
                   pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                   hasUserInput={Boolean(answer.trim())}
@@ -265,6 +268,7 @@ export function PracticeSessionPage() {
             )}
             {!isActionSelection && session.current_turn && !scenario && (
               <PracticeAvatarStage
+                scenarioId={session.scenario_id}
                 prompt={session.current_turn.prompt}
                 pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                 hasUserInput={Boolean(answer.trim())}

@@ -173,6 +173,7 @@ describe("Practice scenario pages", () => {
 
     expect(await screen.findByRole("heading", { name: "주택임대차계약서 확인" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
+    expect(screen.getByText("오늘의 미션")).toBeInTheDocument();
     expect(screen.queryByText(title)).not.toBeInTheDocument();
     expect(screen.queryByText("계약을 바로 진행하시겠습니까?")).not.toBeInTheDocument();
     expect(screen.queryByText("가상 연습")).not.toBeInTheDocument();
@@ -217,6 +218,8 @@ describe("PracticeSessionPage", () => {
     renderSession();
 
     expect(await screen.findByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "보증금 반환 조건 확인하기" })).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "미션 진행률" })).toHaveAttribute("aria-valuenow", "0");
     expect(screen.getByRole("heading", { name: "1. 기본 계약 내용" })).toBeInTheDocument();
     expect(screen.getByText("1 / 3 페이지")).toBeInTheDocument();
 

@@ -65,4 +65,17 @@ describe("PageShell logout", () => {
 
     expect(screen.getByRole("main")).toHaveClass("app-shell", "app-shell--workspace");
   });
+
+  it("describes progress with user actions instead of system processing terms", () => {
+    render(
+      <MemoryRouter>
+        <PageShell step="4 / 8" title="문서 올리기" description="문서 준비"><p>본문</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    const journey = screen.getByRole("navigation", { name: "계약 확인 진행 단계" });
+    for (const label of ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"]) {
+      expect(journey).toHaveTextContent(label);
+    }
+  });
 });

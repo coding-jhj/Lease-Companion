@@ -312,7 +312,7 @@ export function ExtractionReviewPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="5 / 8" title="추출값 확인·수정" description="분석 전에 문서에서 읽은 값이 맞는지 직접 확인하세요.">
+    <PageShell layout="workspace" step="5 / 8" title="문서에서 읽은 내용 확인" description="잘못 읽힌 내용이 있으면 고치고, 맞는 내용은 확인해 주세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="추출 상태를 확인하는 중" description="서버의 최신 추출 실행을 찾고 있습니다." />}
         {status === "processing" && <LoadingState title={runStatus === "pending" ? "추출 대기 중" : "문서에서 값을 추출하는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
@@ -321,15 +321,15 @@ export function ExtractionReviewPage() {
         {status === "success" && fields.length > 0 && (
           <section className="review-focus" aria-labelledby="review-focus-title">
             <div className="section-heading">
-              <p>모든 추출값을 펼치지 않고 분석에 중요한 세 부분만 먼저 봅니다</p>
+              <p>모든 내용을 한꺼번에 보지 않고 중요한 세 부분부터 확인합니다</p>
               <h2 id="review-focus-title">이번 단계에서 확인할 내용</h2>
             </div>
             <div className="review-focus__grid">
               <article className="review-focus__card review-focus__card--manual">
-                <span>수동 확인</span>
+                <span>직접 확인</span>
                 <h3>표준계약서 서식</h3>
-                <strong>자동 비교 준비 전</strong>
-                <p>현재 추출값에는 서식명과 개정일이 없어 자동 판정하지 않습니다. 계약서 첫 장에서 법무부 주택임대차 표준계약서와 2023.10.6. 개정 표시를 직접 확인해 주세요.</p>
+                <strong>직접 확인이 필요해요</strong>
+                <p>계약서 첫 장에서 ‘법무부 주택임대차 표준계약서’와 2023.10.6. 개정 표시가 있는지 확인해 주세요.</p>
               </article>
               <article className="review-focus__card review-focus__card--clause">
                 <span>반드시 확인</span>
@@ -339,7 +339,7 @@ export function ExtractionReviewPage() {
               </article>
               <article className="review-focus__card">
                 <span>분석 준비</span>
-                <h3>금전피해 관련 핵심값</h3>
+                <h3>돈과 권리에 관련된 중요 내용</h3>
                 <strong>{unresolvedFinancialFields.length > 0 ? `${unresolvedFinancialFields.length}개 확인 필요` : "필요값 추출됨"}</strong>
                 <p>금액·지급일·예금주·소유자·근저당 등은 읽지 못한 값만 아래에 표시하고, 실제 관련 신호는 확인 완료 후 분석합니다.</p>
               </article>

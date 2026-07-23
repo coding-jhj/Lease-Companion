@@ -82,7 +82,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByRole("heading", { name: "이번 단계에서 확인할 내용" })).toBeInTheDocument();
     expect(screen.getByText("표준계약서 서식")).toBeInTheDocument();
     expect(screen.getByText("특약 원문")).toBeInTheDocument();
-    expect(screen.getByText("금전피해 관련 핵심값")).toBeInTheDocument();
+    expect(screen.getByText("돈과 권리에 관련된 중요 내용")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /특약·핵심값 확인/ })).toBeInTheDocument();
     expect(screen.getByText("문서에서 읽힌 값").closest("details")).not.toHaveAttribute("open");
     expect(screen.getByText("그 밖에 읽지 못한 값").closest("details")).not.toHaveAttribute("open");

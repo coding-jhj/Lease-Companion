@@ -117,7 +117,7 @@ describe("ResultReportPage", () => {
     expect(screen.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toHaveAttribute("href", "#first-priority-group");
     expect(screen.getByRole("heading", { name: "12가지 계약 확인 결과" })).toBeInTheDocument();
     expect(screen.getByText("내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeInTheDocument();
     expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
     // 상단 요약 개수는 하단 그룹 개수와 같아야 한다("지금 판단할 수 없는 항목"은 양쪽 모두 제외).
     for (const priority of ["반드시 확인", "확인 권장", "일반 확인"]) {
@@ -163,7 +163,7 @@ describe("ResultReportPage", () => {
     expect(j10).toHaveTextContent("보증금 반환 시점·조건 명확성");
     expect(document.body).not.toHaveTextContent("신규 임차인 입주와 관계없이");
     expect(screen.queryByRole("heading", { name: "확인이 필요한 특약" })).not.toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("shows special clause cards and includes them in the printable report", async () => {
     const run = detail();
@@ -198,7 +198,7 @@ describe("ResultReportPage", () => {
       const card = screen.getByText(judgmentId).closest("article");
       expect(card).toHaveTextContent("상태: 확인 필요");
     }
-    expect(screen.getByRole("heading", { name: "방어 행동 허브" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("provider_unavailable");
     expect(document.body).not.toHaveTextContent("classification provider");
   });

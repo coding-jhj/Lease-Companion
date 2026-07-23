@@ -108,18 +108,27 @@ export function DocumentUploadPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="4 / 8" title="계약 문서 준비" description="계약서는 꼭 필요하고, 나머지 문서는 있으면 더 많은 항목을 확인할 수 있습니다.">
+    <PageShell layout="workspace" step="4 / 8" title="가지고 있는 문서 올리기" description="계약서는 필요하며, 다른 문서는 가지고 있는 것만 추가하면 됩니다.">
       <form className="stack" onSubmit={submit}>
         <div className="helper-banner">
-          <strong>한 번에 모두 준비하지 않아도 괜찮아요.</strong>
-          <p>등기사항증명서가 없으면 관련 항목을 추측하지 않고 ‘확인 불가’로 안내합니다.</p>
+          <strong>먼저 계약서 초안을 준비해 주세요.</strong>
+          <p>등기사항증명서나 확인설명서가 없어도 진행할 수 있습니다. 없는 자료의 내용은 추측하지 않고 ‘확인하지 못함’으로 알려드립니다.</p>
         </div>
+        <section className="upload-preparation" aria-labelledby="upload-preparation-title">
+          <h2 id="upload-preparation-title">어떤 문서인가요?</h2>
+          <ul>
+            <li><strong>계약서</strong><span>금액·기간·특약이 적힌 계약서 초안 또는 작성 중인 계약서</span></li>
+            <li><strong>등기사항증명서</strong><span>집의 소유자와 근저당 등 권리관계가 적힌 문서</span></li>
+            <li><strong>중개대상물 확인설명서</strong><span>중개사가 집의 상태와 권리관계를 설명하며 제공하는 문서</span></li>
+          </ul>
+        </section>
+        <p className="privacy-notice"><strong>개인정보를 확인해 주세요.</strong> 문서에는 이름·주소·연락처·계좌번호가 포함될 수 있습니다. 테스트 환경에서는 실제 개인정보 대신 비식별 문서를 사용해 주세요.</p>
         <p className="file-help" id="upload-file-help">PDF·JPG·PNG 파일을 20MB 이하로 올려주세요. TXT는 비식별 데모 데이터에만 사용할 수 있습니다.</p>
         <div className="upload-card-grid">
           <DocumentUploadCard
             docType="계약서"
             title="계약서"
-            description="본문과 특약을 포함한 임대차계약서를 올려주세요."
+            description="금액·기간·특약이 보이도록 계약서 전체를 올려주세요. 초안도 가능합니다."
             required
             file={files.계약서}
             status={statuses.계약서}
@@ -131,7 +140,7 @@ export function DocumentUploadPage() {
           <DocumentUploadCard
             docType="등기사항증명서"
             title="등기사항증명서"
-            description="소유자·주소·권리관계를 교차 확인할 때 사용합니다."
+            description="집주인과 등기상 소유자가 같은지, 근저당 등 확인할 내용이 있는지 비교할 때 사용합니다."
             file={files.등기사항증명서}
             status={statuses.등기사항증명서}
             error={uploadErrors.등기사항증명서}

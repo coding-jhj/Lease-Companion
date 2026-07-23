@@ -103,7 +103,7 @@ export function ResultReportPage() {
   }
 
   return (
-    <PageShell layout="report" step="7 / 8" title="임차인 방어 리포트" description="판정 자체보다 무엇을 확인하고 어떻게 행동할지 차근차근 살펴보세요.">
+    <PageShell layout="report" step="7 / 8" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 물어볼 말을 순서대로 살펴보세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="리포트를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
         {status === "error" && <ErrorState title="리포트를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}

@@ -84,11 +84,11 @@ export function DashboardPage() {
         {status === "success" && contracts.length === 0 && <EmptyState title="아직 저장된 계약이 없습니다" description="새 계약을 만들어 확인을 시작해 보세요." />}
         {status === "success" && contracts.length > 0 && (
           <div className="contract-groups">
-            <ContractGroup title="미행동 계약" contracts={notStarted} onDeleted={loadContracts} />
-            <ContractGroup title="행동중 계약" contracts={inProgress} onDeleted={loadContracts} />
+            <ContractGroup title="점검을 시작하지 않은 계약" contracts={notStarted} onDeleted={loadContracts} />
+            <ContractGroup title="확인 중인 계약" contracts={inProgress} onDeleted={loadContracts} />
             {done.length > 0 && (
               <details className="contract-group contract-group--done">
-                <summary>행동 완료 계약 {done.length}개</summary>
+                <summary>확인을 마친 계약 {done.length}개</summary>
                 <div className="contract-grid">
                   {done.map((contract) => <ContractCard contract={contract} onDeleted={loadContracts} key={contract.id} />)}
                 </div>

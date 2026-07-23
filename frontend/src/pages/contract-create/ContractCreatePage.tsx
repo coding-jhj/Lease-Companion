@@ -5,7 +5,7 @@ import { mvpService } from "../../services/mvpService";
 
 export function ContractCreatePage() {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("상도동 전세 계약");
+  const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -23,11 +23,14 @@ export function ContractCreatePage() {
   }
 
   return (
-    <PageShell step="3 / 8" title="계약 건 만들기" description="나중에 알아보기 쉬운 계약 이름을 정하세요.">
+    <PageShell step="3 / 8" title="확인할 집 등록하기" description="주소 전체를 적지 않아도 됩니다. 나중에 구분하기 쉬운 이름을 붙여 주세요.">
       <form className="stack" onSubmit={submit}>
-        <label>계약 이름<input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+        <label>
+          <span className="field-label">계약 이름<small>예: 신림동 원룸 전세, 학교 앞 월세</small></span>
+          <input required placeholder="집을 구분할 이름을 입력하세요" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={submitting}>{submitting ? "계약 생성 중" : "계약 상황 입력하기"}</button>
+        <button type="submit" disabled={submitting}>{submitting ? "저장하는 중" : "다음: 내 상황 알려주기"}</button>
       </form>
     </PageShell>
   );

@@ -34,6 +34,10 @@ h2 { margin: 8px 0; font-size: 18px; }
 .journey-step--current > span { background: #245c38; color: #fff; box-shadow: 0 0 0 4px #deeadf; }
 .stack { display: grid; gap: 14px; }
 label { display: grid; gap: 8px; font-weight: 700; }
+.field-label { display: grid; gap: 4px; }
+.field-label small { color: #667269; font-size: 13px; font-weight: 500; line-height: 1.45; }
+.beginner-guide { padding: 16px 18px; border: 1px solid #cbd9ce; border-radius: 14px; background: #f2f8f3; }
+.beginner-guide p { margin: 5px 0 0; color: #526159; line-height: 1.55; }
 input, select { width: 100%; padding: 13px 14px; border: 1px solid #bdc9bf; border-radius: 12px; background: #fff; }
 button, .button-link { display: block; width: 100%; padding: 14px 16px; border: 0; border-radius: 12px; background: #245c38; color: #fff; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
 button:disabled { background: #9eaaa1; cursor: not-allowed; }
@@ -192,6 +196,12 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .helper-banner strong { font-size: 18px; }
 .helper-banner p { margin: 6px 0 0; color: #e2eee5; line-height: 1.5; }
 .upload-card-grid { display: grid; gap: 14px; }
+.upload-preparation { padding: 16px 18px; border: 1px solid #ddd5c6; border-radius: 16px; background: #fff; }
+.upload-preparation h2 { margin: 0 0 12px; font-size: 17px; }
+.upload-preparation ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.upload-preparation li { display: grid; grid-template-columns: minmax(120px, .35fr) minmax(0, 1fr); gap: 10px; line-height: 1.5; }
+.upload-preparation li span { color: #5f6a62; }
+.privacy-notice { margin: 0; padding: 13px 15px; border-radius: 12px; background: #fff3d8; color: #67521d; line-height: 1.55; }
 .upload-card { display: grid; gap: 14px; min-width: 0; padding: 18px; border: 1px solid #ddd5c6; border-radius: 18px; background: #fff; }
 .upload-card--success { border-color: #83aa8c; background: #fbfffb; }
 .upload-card--error { border-color: #d49a94; background: #fff9f8; }
@@ -241,6 +251,9 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .result-card { background: #fffdf9; }
 .result-card h3 { margin: 2px 0; font-size: 17px; }
 .result-meta { color: #58645b; font-size: 13px; font-weight: 700; }
+.result-technical-details { margin-top: 8px; }
+.result-technical-details summary { color: #5b685e; font-size: 13px; font-weight: 700; cursor: pointer; }
+.result-technical-details .result-meta { margin-top: 7px; }
 .group-empty { margin: 0; padding: 14px; border-radius: 10px; background: rgba(255, 255, 255, 0.72); color: #58645b; }
 .result-support { margin-top: 8px; border-top: 1px solid #e5dfd4; }
 .result-support summary { padding: 12px 0 4px; color: #355a40; font-weight: 800; cursor: pointer; }
@@ -340,6 +353,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-safety-note { border-left: 5px solid #315d70; background: #edf5f8; }
 .practice-safety-note p, .practice-safety-note strong { margin: 0; }
 .practice-safety-note p { margin-top: 5px; color: #405965; line-height: 1.55; }
+.practice-mission-card { display: grid; gap: 11px; padding: 18px 20px; border: 2px solid #2f6743; border-radius: 16px; background: linear-gradient(135deg, #f2f8f3, #fffdf8); }
+.practice-mission-card__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.practice-mission-card__heading p, .practice-mission-card__heading h2, .practice-mission-card > p { margin: 0; }
+.practice-mission-card__heading p { color: #42704f; font-size: 12px; font-weight: 900; }
+.practice-mission-card__heading h2 { margin-top: 3px; color: #204e31; font-size: 20px; }
+.practice-mission-card__heading > strong { flex: 0 0 auto; padding: 7px 10px; border-radius: 999px; background: #245c38; color: #fff; }
+.practice-mission-card > p { color: #405047; line-height: 1.6; }
+.practice-mission-card > small { color: #647168; line-height: 1.5; }
+.practice-mission-progress { height: 8px; overflow: hidden; border-radius: 999px; background: #d9e5dc; }
+.practice-mission-progress span { display: block; height: 100%; border-radius: inherit; background: #2f7549; transition: width 180ms ease; }
 .practice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .practice-scenario-card { display: grid; align-content: start; gap: 14px; min-width: 0; padding: 18px; border: 1px solid #d8e2da; border-radius: 16px; background: #fff; }
 .practice-scenario-card h2 { margin: 0; font-size: 19px; line-height: 1.45; }

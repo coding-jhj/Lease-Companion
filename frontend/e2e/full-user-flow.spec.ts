@@ -25,8 +25,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
-  await expect(page.getByRole("heading", { name: "어떤 방식으로 시작할까요?" })).toBeVisible();
-  await page.getByRole("link", { name: "실전 계약 점검 시작" }).click();
+  await expect(page.getByRole("heading", { name: "현재 어떤 상황인가요?" })).toBeVisible();
+  await page.getByRole("link", { name: "내 계약서 점검 시작" }).click();
   await expect(page.getByRole("heading", { name: "내 계약" })).toBeVisible();
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--workspace/);
@@ -35,9 +35,9 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
 
   await page.getByRole("link", { name: "새 계약 점검 시작" }).click();
   await page.getByLabel("계약 이름").fill("E2E 전세 계약");
-  await page.getByRole("button", { name: "계약 상황 입력하기" }).click();
-  await page.getByLabel("대리 계약 여부").selectOption("no");
-  await page.getByRole("button", { name: "문서 업로드하기" }).click();
+  await page.getByRole("button", { name: "다음: 내 상황 알려주기" }).click();
+  await page.getByLabel(/집주인이 아닌 사람이 대신 계약하나요/).selectOption("no");
+  await page.getByRole("button", { name: "다음: 준비한 문서 확인" }).click();
 
   await page.getByLabel("계약서", { exact: true }).setInputFiles({
     name: "contract.txt",
@@ -56,7 +56,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expect(page.getByText("contract.txt")).toBeVisible();
   await page.getByRole("button", { name: "업로드하고 추출 시작하기" }).click();
 
-  await expect(page.getByRole("heading", { name: "추출값 확인·수정" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "문서에서 읽은 내용 확인" })).toBeVisible();
   await expect(page.getByRole("button", { name: "읽힌 값 모두 확인" })).toBeVisible({ timeout: 60_000 });
   if (isRealApi) {
     await expect.poll(() => page.locator(".field-card").count()).toBeGreaterThan(0);
@@ -87,7 +87,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
 
   await expect(page.getByRole("heading", { name: "분석 완료" })).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "리포트 보기" }).click();
-  await expect(page.getByRole("heading", { name: "방어 행동 허브" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeVisible();
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--report/);
     const resultsBox = await page.locator(".report-results-column").boundingBox();
@@ -124,7 +124,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expect(page.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "방어 행동 허브" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeVisible();
   await expandAllResultGroups(page);
   await expect(allResults).toContainText("J01");
   await expect(allResults).toContainText("J12");

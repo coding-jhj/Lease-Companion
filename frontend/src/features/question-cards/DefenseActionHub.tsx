@@ -152,9 +152,9 @@ export function DefenseActionHub({
   return (
     <section className="action-hub" aria-labelledby="action-hub-title">
       <header className="action-hub__header">
-        <p>나를 지키는 다음 단계</p>
-        <h2 id="action-hub-title">방어 행동 허브</h2>
-        <span>같은 내용은 한 번만 모아 보여드립니다.</span>
+        <p>결과를 확인한 뒤 바로 할 수 있어요</p>
+        <h2 id="action-hub-title">지금 할 일과 물어볼 말</h2>
+        <span>중요한 순서대로 정리했으며, 같은 내용은 한 번만 보여드립니다.</span>
       </header>
       <div className="action-hub__grid">
         <ActionList collapsible title="먼저 물어볼 질문" description="입금이나 서명 전에 상대방에게 확인하세요." items={questions} />
