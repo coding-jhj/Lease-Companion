@@ -282,7 +282,7 @@ def analyze_snapshot(
     analysis_run_id: str,
     classification_result: ClassificationResult | None = None,
 ) -> AnalysisRunResult:
-    """확인 완료 스냅샷으로 R01~R24와 J01~J12를 실행한다."""
+    """확인 완료 스냅샷으로 R01~R24와 J01~J13를 실행한다."""
     contract_inputs = rule_inputs(snapshot.confirmed_fields.contract)
     contract_inputs["is_proxy_contract"] = snapshot.contract_context.is_proxy_contract
     legacy_results = run_rules(

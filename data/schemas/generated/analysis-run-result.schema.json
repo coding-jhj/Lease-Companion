@@ -83,7 +83,7 @@
     },
     "JudgmentResult": {
       "additionalProperties": false,
-      "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
+      "description": "J01~J13 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
       "properties": {
         "evidence_sources": {
           "items": {

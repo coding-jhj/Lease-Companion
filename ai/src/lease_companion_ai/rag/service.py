@@ -338,7 +338,7 @@ def load_judgment_search_contexts(root: Path | None = None) -> dict[str, str]:
         judgment_id = row["judgment_id"].strip()
         search_context = row["search_context"].strip()
         if (
-            re.fullmatch(r"J(?:0[1-9]|1[0-2])", judgment_id) is None
+            judgment_id not in JUDGMENT_IDS
             or not search_context
             or judgment_id in contexts
         ):

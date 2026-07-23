@@ -1,4 +1,4 @@
-"""J01~J12 결정론적 판정 엔진.
+"""J01~J13 결정론적 판정 엔진.
 
 사용자가 확인한 ``JudgmentInput``만 소비한다. LLM·RAG는 이 모듈이 정한
 ``RuleStatus``와 ``Urgency``를 변경하지 않는다.
@@ -456,7 +456,8 @@ def _j13(data: JudgmentInput) -> RuleStatus:
         return RuleStatus.CANNOT_CHECK
     clauses = [clause for clause in special if isinstance(clause, str) and clause.strip()]
     if not clauses:
-        # present=True인데 원문 목록이 비면 신호가 어긋난 것이므로 확인 불가로 둔다.
+        # present=False면 특약이 없다는 신호와 일치하므로 적용 제외.
+        # 그 외(present=True인데 원문 목록이 비거나 공백뿐)는 신호가 어긋난 것이므로 확인 불가.
         return RuleStatus.NOT_APPLICABLE if present is False else RuleStatus.CANNOT_CHECK
     if _j13_matched_catalog_ids(clauses):
         return RuleStatus.CHECK_NEEDED

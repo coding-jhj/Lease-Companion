@@ -18,6 +18,9 @@ from lease_companion_ai.schemas.unified import (
     InputSnapshot,
     RuleStatus,
 )
+from lease_companion_ai.generation.service import GenerationService
+from lease_companion_ai.providers.generation import FakeGenerationProvider
+from lease_companion_ai.rag.service import EvidenceRetrievalService
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURE_PATH = ROOT / "data" / "sample" / "fixtures" / "case-001" / "input_snapshot.json"
@@ -64,6 +67,29 @@ def _status(analysis, judgment_id: str) -> RuleStatus:
     )
 
 
+def _snapshot_with_unreadable_special_clauses() -> InputSnapshot:
+    """special_clauses가 PARSE_FAILED인 스냅샷 — J13이 확인 불가로 triggers_actions=True가 된다."""
+    payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    payload["schema_version"] = "1.9.0"
+    payload["contract_context"]["schema_version"] = "1.9.0"
+    contract = payload["confirmed_fields"]["contract"]
+    contract["deposit_return_clause"].update(
+        extracted_value="임대인은 계약 종료일에 보증금을 반환한다.",
+        confidence="추출됨",
+        issue_code=None,
+        failure_reason=None,
+    )
+    contract["special_clauses"].update(
+        extracted_value=None,
+        normalized_value=None,
+        user_corrected_value=None,
+        confidence="실패",
+        issue_code="parse_failed",
+        failure_reason="특약 원문을 판독하지 못했습니다.",
+    )
+    return InputSnapshot.model_validate(payload)
+
+
 def test_provider_candidates_are_passed_to_judgment_analysis() -> None:
     snapshot = _snapshot()
     expected = _provider_result(snapshot)
@@ -79,6 +105,43 @@ def test_provider_candidates_are_passed_to_judgment_analysis() -> None:
     assert _status(analysis, "J10") is RuleStatus.CLEAR
     assert analysis.input_snapshot_id == classification.input_snapshot_id
     assert analysis.contract_id == classification.contract_id
+
+
+class _EmptyRetriever:
+    """검색 결과가 없어도 J13처럼 새 판정 id가 pydantic pattern에서 거부되면 크래시가 재현돼야 한다."""
+
+    def search(self, _query, *, top_k=20):
+        return []
+
+
+def test_unreadable_special_clauses_flow_through_rag_and_generation_without_crash() -> None:
+    """J13 확인 불가(=judgment_id 패턴이 J01~J12만 허용하던 시절엔 크래시)가
+    분석 → RAG 판정 근거 보강 → 생성 전체 경로에서 예외 없이 끝까지 흘러야 한다.
+    유닛 테스트로 `_j13`만 부르는 것으로는 이 경로의 크래시를 잡아내지 못한다.
+    """
+    snapshot = _snapshot_with_unreadable_special_clauses()
+
+    classification, analysis = analyze_with_classification(
+        snapshot,
+        analysis_run_id="RUN-J13-UNREADABLE",
+        classification_service=ClassificationService(),
+    )
+
+    j13 = next(result for result in analysis.judgments if result.judgment_id == "J13")
+    assert j13.status is RuleStatus.CANNOT_CHECK
+    assert j13.triggers_actions is True
+
+    enriched = EvidenceRetrievalService(_EmptyRetriever()).enrich(analysis)
+    enriched_j13 = next(
+        result for result in enriched.judgments if result.judgment_id == "J13"
+    )
+    assert enriched_j13.status is RuleStatus.CANNOT_CHECK
+
+    generated = GenerationService(FakeGenerationProvider({})).generate(
+        enriched, snapshot.contract_context
+    )
+    guidance_ids = {item.judgment_id for item in generated.judgment_items}
+    assert "J13" in guidance_ids
 
 
 def test_safe_fallback_keeps_analysis_available_without_candidates() -> None:

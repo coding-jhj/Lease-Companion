@@ -3,10 +3,10 @@
 실행: python data/check_dataset.py
 검증 항목:
   1) rule_spec R01–R24 × 14열, 결과상태 어휘
-  2) judgment_spec J01–J12 메타데이터·상태·구현 경로
+  2) judgment_spec J01–J13(현재 판정 범위) 메타데이터·상태·구현 경로
   3) 스키마 파싱
   4) source_inventory / RAG manifest / rule_evidence_map 유효성
-  5) dev R goldset 3종 정합성 + J01~J12 입력·상태 goldset 파싱
+  5) dev R goldset 3종 정합성 + J01~J13 입력·상태 goldset 파싱
   6) 커버리지: 규칙별 해당≥10·비해당≥10 (R07은 항상 발동 → 보고만)
   7) 누수: dev∩test 문서 본문(case_id 제외) 중복 0
   8) 테스트셋(final_testset) 파싱·문서 존재·근거 유효
@@ -29,7 +29,6 @@ CLEAN = {"일치", "명확", "적용 제외"}                        # 비해당
 FIRED = {"불일치", "확인 필요", "불명확", "미기재", "상충 가능"}  # 해당
 RULE_IDS = [f"R{n:02d}" for n in range(1, 25)]
 CORE_RULE_IDS = [f"R{n:02d}" for n in range(1, 11)]
-JUDGMENT_IDS = [f"J{n:02d}" for n in range(1, 13)]
 QUOTA_RULES = [r for r in CORE_RULE_IDS if r != "R07"]      # 기존 goldset 쿼터는 R01~R10만 유지
 QUOTA = 10
 
@@ -50,6 +49,19 @@ def body_hash(path):
     lines = [line for line in open(path, encoding="utf-8").read().splitlines() if "case_id" not in line]
     norm = re.sub(r"\s+", " ", " ".join(lines)).strip()
     return hashlib.sha1(norm.encode("utf-8")).hexdigest()
+
+
+def contiguous_judgment_ids(judgment_ids):
+    """judgment_spec.csv 행 순서 그대로 J01부터 빈틈없이 이어지는지 검증한다.
+
+    하드코딩된 range(1, 13) 대신 CSV 쪽 judgment_id 자체에서 canonical 목록을
+    도출한다. J14 등 후속 확장에서 이 스크립트를 다시 고칠 필요가 없게 한다.
+    """
+    expected = [f"J{n:02d}" for n in range(1, len(judgment_ids) + 1)]
+    assert judgment_ids == expected, (
+        f"judgment_spec judgment_id가 J01부터 연속·정렬돼 있지 않음: {judgment_ids}"
+    )
+    return judgment_ids
 
 
 def file_sha256(path):
@@ -74,7 +86,7 @@ def main():
     # 2) J 판정 메타데이터
     with open(os.path.join(BASE, "rules/judgment_spec.csv"), encoding="utf-8") as f:
         judgment_rows = list(csv.DictReader(f))
-    assert [row["judgment_id"] for row in judgment_rows] == JUDGMENT_IDS
+    JUDGMENT_IDS = contiguous_judgment_ids([row["judgment_id"] for row in judgment_rows])
     assert len(judgment_rows[0].keys()) == 15
     for row in judgment_rows:
         assert row["version"], f"{row['judgment_id']} version 누락"

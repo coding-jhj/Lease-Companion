@@ -3,7 +3,7 @@
 근거: docs/decisions/2026-07-16-shared-pydantic-schema.md
 - 이 모듈의 Pydantic 모델이 canonical runtime schema다. Backend는 import해 재사용한다.
 - JSON Schema는 손으로 쓰지 않고 scripts/generate_unified_schemas.py 로 생성한다.
-- J01~J12 확장은 필드 "추가"로만 진행한다. 기존 필드 이름·의미를 바꾸지 않는다(하위 호환).
+- J 판정 확장(현재 J01~J13)은 필드 "추가"로만 진행한다. 기존 필드 이름·의미를 바꾸지 않는다(하위 호환).
 
 식별자 구분(혼용 금지):
 - contract_id        실제 사용자 계약 건
@@ -131,6 +131,14 @@ JUDGMENT_IDS: tuple[str, ...] = tuple(f"J{index:02d}" for index in range(1, 14))
 
 # judgment id 정규식을 상수에서 만든다. 두 곳에 하드코딩하면 확장 시 어긋난다.
 _JUDGMENT_ID_PATTERN: str = "^(?:" + "|".join(JUDGMENT_IDS) + ")$"
+_JUDGMENT_ID_ALTERNATION: str = "|".join(JUDGMENT_IDS)
+
+# R/J 체크리스트·계약 직후 행동 항목의 안정 식별자 패턴 — canonical judgment id
+# 목록에서 만들어 J14 등 후속 확장에서 이 문자열만 다시 손대면 되게 한다.
+# Backend는 이 상수를 import해서 쓴다(같은 도메인 정규식을 중복 정의하지 않는다).
+GUIDANCE_ITEM_KEY_PATTERN: str = (
+    rf"^(?:R\d{{2}}|(?:{_JUDGMENT_ID_ALTERNATION})):(checklist|post_action):[0-9a-f]{{12}}$"
+)
 
 DEFAULT_JUDGMENT_URGENCY: dict[str, Urgency] = {
     "J01": Urgency.IMMEDIATE,
@@ -1240,7 +1248,7 @@ class RuleResult(BaseModel):
 
 
 class JudgmentResult(BaseModel):
-    """J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다."""
+    """J01~J13 판정 1개. R 규칙 결과와 별도 축으로 저장한다."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1290,7 +1298,7 @@ class AnalysisRunResult(BaseModel):
     case_id: str | None = None
     # v1.9의 기존 R01~R10 저장 결과도 계속 읽되, 신규 실행은 R01~R24를 생성한다.
     results: list[RuleResult] = Field(min_length=10, max_length=24)
-    # 1단계 R-only 실행은 빈 목록, 2단계 J 확장 실행은 J01~J12 전체를 요구한다.
+    # 1단계 R-only 실행은 빈 목록, 2단계 J 확장 실행은 canonical 전체(현재 J01~J13)를 요구한다.
     judgments: list[JudgmentResult] = Field(default_factory=list, max_length=len(JUDGMENT_IDS))
     # 과거 결과에는 필드가 없으므로 빈 목록을 기본값으로 유지한다.
     damage_patterns: list[DamagePatternComparison] = Field(default_factory=list, max_length=8)
@@ -1367,7 +1375,7 @@ class GuidanceActionItem(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     item_key: str = Field(
-        pattern=r"^(?:R\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+        pattern=GUIDANCE_ITEM_KEY_PATTERN,
         max_length=100,
     )
     text: str = Field(min_length=1)
@@ -1429,11 +1437,11 @@ class RuleGuidance(BaseModel):
 
 
 class JudgmentGuidance(BaseModel):
-    """검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내."""
+    """검증 또는 fallback을 마친 J01~J13 판정 1개의 공개 사용자 안내."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    judgment_id: str = Field(pattern=_JUDGMENT_ID_PATTERN)
     explanation: str = Field(min_length=1)
     questions: tuple[str, ...] = ()
     request_templates: tuple[str, ...] = ()
