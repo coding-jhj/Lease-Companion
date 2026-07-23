@@ -4,6 +4,7 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
 import type {
+  PracticeScenarioDetailDto,
   PracticeSelectedAction,
   PracticeSessionDto,
   PracticeTurnResponseDto,
@@ -14,6 +15,8 @@ interface DialogueHistoryItem {
   userAnswer: string;
   response: string | null;
 }
+
+const money = new Intl.NumberFormat("ko-KR");
 
 function elapsedSeconds(startedAt: number) {
   return Math.min(3600, Math.max(0, (Date.now() - startedAt) / 1000));
@@ -32,6 +35,8 @@ export function PracticeSessionPage() {
   const navigate = useNavigate();
   const turnStartedAt = useRef(Date.now());
   const [session, setSession] = useState<PracticeSessionDto | null>(null);
+  const [scenario, setScenario] = useState<PracticeScenarioDetailDto | null>(null);
+  const [contractOpen, setContractOpen] = useState(true);
   const [lastResponse, setLastResponse] = useState<PracticeTurnResponseDto | null>(null);
   const [dialogueHistory, setDialogueHistory] = useState<DialogueHistoryItem[]>([]);
   const [answer, setAnswer] = useState("");
@@ -48,6 +53,11 @@ export function PracticeSessionPage() {
         return;
       }
       setSession(loaded);
+      try {
+        setScenario(await practiceService.getScenario(loaded.scenario_id));
+      } catch {
+        setScenario(null);
+      }
       turnStartedAt.current = Date.now();
       setStatus("success");
     } catch (error) {
@@ -158,6 +168,40 @@ export function PracticeSessionPage() {
               <span>현재 단계 <strong>{isActionSelection ? "최종 행동 선택" : session.current_turn?.turn_id}</strong></span>
               <span>확인한 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
             </div>
+            {scenario && (
+              <section className={`practice-contract-reference${contractOpen ? "" : " practice-contract-reference--collapsed"}`} aria-labelledby="practice-contract-reference-title">
+                <div className="practice-contract-reference__header">
+                  <div>
+                    <p>시뮬레이션 자료</p>
+                    <h2 id="practice-contract-reference-title">주택임대차계약서</h2>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary practice-contract-reference__toggle"
+                    aria-expanded={contractOpen}
+                    aria-controls="practice-contract-reference-content"
+                    onClick={() => setContractOpen((current) => !current)}
+                  >
+                    {contractOpen ? "계약서 접기" : "계약서 펼치기"}
+                  </button>
+                </div>
+                <div id="practice-contract-reference-content" hidden={!contractOpen}>
+                  <dl className="practice-contract-reference__facts">
+                    <div><dt>계약 유형</dt><dd>{scenario.synthetic_contract.contract_type}</dd></div>
+                    <div><dt>보증금</dt><dd>{money.format(scenario.synthetic_contract.deposit)}원</dd></div>
+                    <div><dt>임대인</dt><dd>{scenario.synthetic_contract.landlord_name}</dd></div>
+                    <div><dt>계약기간</dt><dd>{scenario.synthetic_contract.start_date} ~ {scenario.synthetic_contract.end_date}</dd></div>
+                    <div className="practice-contract-reference__wide"><dt>주택 주소</dt><dd>{scenario.synthetic_contract.property_address}</dd></div>
+                  </dl>
+                  <div className="practice-contract-reference__clauses">
+                    <h3>특약사항</h3>
+                    <ol>
+                      {scenario.synthetic_contract.special_clauses.map((clause) => <li key={clause}>{clause}</li>)}
+                    </ol>
+                  </div>
+                </div>
+              </section>
+            )}
             {dialogueHistory.length > 0 && (
               <section className="practice-conversation-history" aria-label="지금까지의 대화" aria-live="polite">
                 <h2>지금까지의 대화</h2>

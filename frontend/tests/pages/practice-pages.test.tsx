@@ -171,13 +171,18 @@ describe("Practice scenario pages", () => {
     );
     renderScenario(scenarioId);
 
-    expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "주택임대차계약서 확인" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
+    expect(screen.queryByText(title)).not.toBeInTheDocument();
+    expect(screen.queryByText("계약을 바로 진행하시겠습니까?")).not.toBeInTheDocument();
+    expect(screen.queryByText("가상 연습")).not.toBeInTheDocument();
+    expect(screen.queryByText("합성 시나리오")).not.toBeInTheDocument();
     const address = screen.getByText("서울특별시 가온구 연습로 1");
     expect(address).toHaveClass("practice-facts__address");
     expect(address.parentElement).toHaveClass("practice-facts__wide", "practice-facts__wide--aligned");
     expect(address.parentElement).not.toHaveAttribute("style");
     expect(screen.getByText(clause)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "대화 연습 시작" }));
+    fireEvent.click(screen.getByRole("button", { name: "계약서 확인 완료 · 대화 시작" }));
 
     await waitFor(() => expect(createSession).toHaveBeenCalledWith(scenarioId));
     expect(await screen.findByText("대화 세션 진입 완료")).toBeInTheDocument();
@@ -185,6 +190,22 @@ describe("Practice scenario pages", () => {
 });
 
 describe("PracticeSessionPage", () => {
+  it("shows the scenario contract and lets the user collapse it during the dialogue", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    vi.spyOn(practiceService, "getScenario").mockResolvedValue(
+      detail("PRACTICE-DEFERRED-REFUND-001", "보증금 반환 조건 확인", "후임 임차인의 보증금이 입금된 후 반환한다."),
+    );
+    renderSession();
+
+    expect(await screen.findByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
+    const contractContent = document.getElementById("practice-contract-reference-content");
+    expect(contractContent).not.toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "계약서 접기" }));
+    expect(contractContent).toHaveAttribute("hidden");
+    expect(screen.getByRole("button", { name: "계약서 펼치기" })).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("restores the current turn, submits an answer, and renders the next turn", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     const next = session({ current_state: "TURN-02", current_turn: dialogueTurn("TURN-02", "권한 자료도 필요할까요?"), confirmed_action_ids: ["PA01"] });
