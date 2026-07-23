@@ -133,11 +133,31 @@ test.describe("세 가지 계약 대화 연습", () => {
       await expect(page.locator("video[src='/practice/avatar/speaking.mp4']")).toBeVisible();
       await expect(page.getByRole("link", { name: "모드 선택" })).toHaveAttribute("href", "/choose-mode");
 
+      const workspace = page.getByRole("region", { name: "계약서와 공인중개사 대화 화면" });
+      const documentViewer = workspace.locator(".practice-document-viewer");
+      const avatarStage = workspace.locator(".practice-avatar-stage");
+      const documentBox = await documentViewer.boundingBox();
+      const avatarBox = await avatarStage.boundingBox();
+      expect(documentBox).not.toBeNull();
+      expect(avatarBox).not.toBeNull();
+      if ((page.viewportSize()?.width ?? 0) >= 1024) {
+        expect((avatarBox?.x ?? 0) > (documentBox?.x ?? 0)).toBeTruthy();
+      } else {
+        expect((avatarBox?.y ?? 0) > (documentBox?.y ?? 0)).toBeTruthy();
+      }
+
       const contractTitle = await page.getByRole("heading", { name: "주택임대차계약서" }).boundingBox();
       expect(contractTitle).not.toBeNull();
       expect((contractTitle?.width ?? 0) > (contractTitle?.height ?? 0)).toBeTruthy();
 
+      if (scenario === scenarios[0]) {
+        await workspace.getByRole("button", { name: "다음" }).click();
+        await expect(workspace.getByRole("heading", { name: "2. 일반 계약 조항" })).toBeVisible();
+        await workspace.getByRole("button", { name: "이전" }).click();
+      }
+
       await page.getByRole("button", { name: "답변하지 못했어요" }).click();
+      await page.getByRole("tab", { name: /대화 내용/ }).click();
       await expect(page.getByText("답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요.")).toBeVisible();
       await expect(page.getByRole("status", { name: "연습 진행 상태" })).toContainText("TURN-01");
 

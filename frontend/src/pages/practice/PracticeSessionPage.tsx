@@ -37,7 +37,9 @@ export function PracticeSessionPage() {
   const turnStartedAt = useRef(Date.now());
   const [session, setSession] = useState<PracticeSessionDto | null>(null);
   const [scenario, setScenario] = useState<PracticeScenarioDetailDto | null>(null);
-  const [contractOpen, setContractOpen] = useState(true);
+  const [workspaceTab, setWorkspaceTab] = useState<"contract" | "conversation">("contract");
+  const [contractPage, setContractPage] = useState(1);
+  const [contractZoomed, setContractZoomed] = useState(false);
   const [lastResponse, setLastResponse] = useState<PracticeTurnResponseDto | null>(null);
   const [dialogueHistory, setDialogueHistory] = useState<DialogueHistoryItem[]>([]);
   const [answer, setAnswer] = useState("");
@@ -171,41 +173,83 @@ export function PracticeSessionPage() {
               <span>현재 단계 <strong>{isActionSelection ? "최종 행동 선택" : session.current_turn?.turn_id}</strong></span>
               <span>확인한 행동 <strong>{session.confirmed_action_ids.length}개</strong></span>
             </div>
-            {scenario && (
-              <section className={`practice-contract-reference${contractOpen ? "" : " practice-contract-reference--collapsed"}`} aria-labelledby="practice-contract-reference-title">
-                <div className="practice-contract-reference__header">
-                  <div>
-                    <p>시뮬레이션 자료</p>
-                    <h2 id="practice-contract-reference-title">주택임대차계약서</h2>
+            {!isActionSelection && session.current_turn && scenario && (
+              <section className="practice-simulation-workspace" aria-label="계약서와 공인중개사 대화 화면">
+                <div className="practice-document-viewer">
+                  <div className="practice-workspace-tabs" role="tablist" aria-label="연습 자료 보기">
+                    <button type="button" role="tab" aria-selected={workspaceTab === "contract"} onClick={() => setWorkspaceTab("contract")}>계약서</button>
+                    <button type="button" role="tab" aria-selected={workspaceTab === "conversation"} onClick={() => setWorkspaceTab("conversation")}>
+                      대화 내용 {dialogueHistory.length > 0 && <span className="practice-tab-dot" aria-label="새 대화 있음">●</span>}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="secondary practice-contract-reference__toggle"
-                    aria-expanded={contractOpen}
-                    aria-controls="practice-contract-reference-content"
-                    onClick={() => setContractOpen((current) => !current)}
-                  >
-                    {contractOpen ? "계약서 접기" : "계약서 펼치기"}
-                  </button>
+                  {workspaceTab === "contract" ? (
+                    <article className={`practice-contract-document${contractZoomed ? " practice-contract-document--zoomed" : ""}`} aria-labelledby="practice-contract-reference-title">
+                      <header>
+                        <h2 id="practice-contract-reference-title">주택임대차계약서</h2>
+                        <h3>
+                          {contractPage === 1 ? "1. 기본 계약 내용" : contractPage === 2 ? "2. 일반 계약 조항" : "3. 특약사항"}
+                        </h3>
+                      </header>
+                      <div className="practice-contract-document__page">
+                        {contractPage === 1 && (
+                          <dl className="practice-contract-document__facts">
+                            <div><dt>계약 유형</dt><dd>{scenario.synthetic_contract.contract_type}</dd></div>
+                            <div><dt>보증금</dt><dd>{money.format(scenario.synthetic_contract.deposit)}원</dd></div>
+                            <div><dt>계약금</dt><dd>{money.format(scenario.synthetic_contract.contract_payment)}원</dd></div>
+                            <div><dt>잔금</dt><dd>{money.format(scenario.synthetic_contract.balance_payment)}원</dd></div>
+                            <div><dt>임대인</dt><dd>{scenario.synthetic_contract.landlord_name}</dd></div>
+                            <div><dt>공인중개사</dt><dd>{scenario.synthetic_contract.broker_name}</dd></div>
+                            <div><dt>계약 기간</dt><dd>{scenario.synthetic_contract.start_date} ~ {scenario.synthetic_contract.end_date}</dd></div>
+                            <div><dt>주택 주소</dt><dd>{scenario.synthetic_contract.property_address}</dd></div>
+                          </dl>
+                        )}
+                        {contractPage === 2 && (
+                          <ol className="practice-contract-document__clauses">
+                            <li>임대차 기간은 {scenario.synthetic_contract.start_date}부터 {scenario.synthetic_contract.end_date}까지로 한다.</li>
+                            <li>계약금 {money.format(scenario.synthetic_contract.contract_payment)}원은 {scenario.synthetic_contract.contract_payment_date}에, 잔금 {money.format(scenario.synthetic_contract.balance_payment)}원은 {scenario.synthetic_contract.balance_payment_date}에 지급한다.</li>
+                            <li>{scenario.synthetic_contract.deposit_return_clause}</li>
+                          </ol>
+                        )}
+                        {contractPage === 3 && (
+                          <ol className="practice-contract-document__clauses">
+                            {scenario.synthetic_contract.special_clauses.map((clause) => <li key={clause}>{clause}</li>)}
+                          </ol>
+                        )}
+                      </div>
+                      <footer className="practice-contract-document__footer">
+                        <span>{contractPage} / 3 페이지</span>
+                        <div>
+                          <button type="button" className="secondary" disabled={contractPage === 1} onClick={() => setContractPage((page) => Math.max(1, page - 1))}>이전</button>
+                          <button type="button" className="secondary" disabled={contractPage === 3} onClick={() => setContractPage((page) => Math.min(3, page + 1))}>다음</button>
+                          <button type="button" className="secondary" aria-pressed={contractZoomed} onClick={() => setContractZoomed((zoomed) => !zoomed)}>{contractZoomed ? "축소" : "확대"}</button>
+                        </div>
+                      </footer>
+                    </article>
+                  ) : (
+                    <section className="practice-conversation-history practice-conversation-history--panel" role="tabpanel" aria-label="지금까지의 대화" aria-live="polite">
+                      <h2>지금까지의 대화</h2>
+                      {dialogueHistory.length === 0 ? <p className="practice-conversation-history__empty">아직 주고받은 대화가 없습니다.</p> : (
+                        <ol>
+                          {dialogueHistory.map((item) => (
+                            <li key={item.id}>
+                              <div className="practice-conversation-history__user"><strong>나</strong><p>{item.userAnswer}</p></div>
+                              {item.response && <div className="practice-conversation-history__counterparty"><strong>상대방</strong><p>{item.response}</p></div>}
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </section>
+                  )}
                 </div>
-                <div id="practice-contract-reference-content" hidden={!contractOpen}>
-                  <dl className="practice-contract-reference__facts">
-                    <div><dt>계약 유형</dt><dd>{scenario.synthetic_contract.contract_type}</dd></div>
-                    <div><dt>보증금</dt><dd>{money.format(scenario.synthetic_contract.deposit)}원</dd></div>
-                    <div><dt>임대인</dt><dd>{scenario.synthetic_contract.landlord_name}</dd></div>
-                    <div><dt>계약기간</dt><dd>{scenario.synthetic_contract.start_date} ~ {scenario.synthetic_contract.end_date}</dd></div>
-                    <div className="practice-contract-reference__wide"><dt>주택 주소</dt><dd>{scenario.synthetic_contract.property_address}</dd></div>
-                  </dl>
-                  <div className="practice-contract-reference__clauses">
-                    <h3>특약사항</h3>
-                    <ol>
-                      {scenario.synthetic_contract.special_clauses.map((clause) => <li key={clause}>{clause}</li>)}
-                    </ol>
-                  </div>
-                </div>
+                <PracticeAvatarStage
+                  prompt={session.current_turn.prompt}
+                  pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
+                  hasUserInput={Boolean(answer.trim())}
+                  submitting={submitting}
+                />
               </section>
             )}
-            {!isActionSelection && session.current_turn && (
+            {!isActionSelection && session.current_turn && !scenario && (
               <PracticeAvatarStage
                 prompt={session.current_turn.prompt}
                 pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
@@ -213,34 +257,21 @@ export function PracticeSessionPage() {
                 submitting={submitting}
               />
             )}
-            {dialogueHistory.length > 0 && (
-              <section className="practice-conversation-history" aria-label="지금까지의 대화" aria-live="polite">
-                <h2>지금까지의 대화</h2>
-                <ol>
-                  {dialogueHistory.map((item) => (
-                    <li key={item.id}>
-                      <div className="practice-conversation-history__user"><strong>나</strong><p>{item.userAnswer}</p></div>
-                      {item.response && <div className="practice-conversation-history__counterparty"><strong>상대방</strong><p>{item.response}</p></div>}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
             {!isActionSelection && session.current_turn && (
-              <section className="practice-dialogue" aria-labelledby="practice-prompt-title">
+              <section className="practice-dialogue practice-dialogue--composer" aria-labelledby="practice-prompt-title">
                 <p className="sr-only">공인중개사의 말</p>
                 <span className="sr-only" id="practice-prompt-title">현재 대사에 대한 답변 입력</span>
                 {session.current_turn.wait_sequence.some((step) => step.line) && (
                   <p className="practice-pressure-hint">잠시 뒤 상대방이 재촉할 수 있습니다. 서두르지 말고 확인할 내용을 말해 보세요.</p>
                 )}
-                <form className="stack" onSubmit={submitAnswer}>
-                  <label htmlFor="practice-answer">내 답변</label>
-                  <textarea id="practice-answer" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="예: 이 조건을 계약서에서 먼저 확인하고, 확인되기 전에는 진행하지 않겠습니다." disabled={submitting} />
-                  <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
-                  <div className="practice-answer-actions">
-                    <button type="button" className="secondary" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
-                    <button type="submit" disabled={submitting || !answer.trim()}>{submitting ? "답변 확인 중…" : "답변 보내기"}</button>
+                <form className="practice-answer-composer" onSubmit={submitAnswer}>
+                  <div className="practice-answer-composer__row">
+                    <label htmlFor="practice-answer">말하기</label>
+                    <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="궁금한 내용이나 확인할 조건을 입력하세요…" disabled={submitting} />
+                    <button type="submit" aria-label="답변 보내기" disabled={submitting || !answer.trim()}>{submitting ? "확인 중…" : "전송"}</button>
                   </div>
+                  <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
+                  <button type="button" className="secondary practice-answer-composer__skip" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
                 </form>
                 <div className="practice-dialogue-actions" aria-label="대화 진행 선택">
                   <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue("next_turn")}>이 확인은 남기고 다음 상황</button>

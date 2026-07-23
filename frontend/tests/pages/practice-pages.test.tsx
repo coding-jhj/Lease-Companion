@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PracticeHomePage } from "../../src/pages/practice/PracticeHomePage";
 import { PracticeResultPage } from "../../src/pages/practice/PracticeResultPage";
 import { PracticeScenarioPage } from "../../src/pages/practice/PracticeScenarioPage";
@@ -190,6 +190,12 @@ describe("Practice scenario pages", () => {
 });
 
 describe("PracticeSessionPage", () => {
+  beforeEach(() => {
+    vi.spyOn(practiceService, "getScenario").mockResolvedValue(
+      detail("PRACTICE-DEFERRED-REFUND-001", "보증금 반환 조건 확인", "후임 임차인의 보증금이 입금된 후 반환한다."),
+    );
+  });
+
   it("moves the shared broker avatar from speaking to listening", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     const view = renderSession();
@@ -203,7 +209,7 @@ describe("PracticeSessionPage", () => {
     expect(view.container.querySelector("video")).toHaveAttribute("src", "/practice/avatar/listening.mp4");
   });
 
-  it("shows the scenario contract and lets the user collapse it during the dialogue", async () => {
+  it("shows the scenario contract as three navigable pages", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     vi.spyOn(practiceService, "getScenario").mockResolvedValue(
       detail("PRACTICE-DEFERRED-REFUND-001", "보증금 반환 조건 확인", "후임 임차인의 보증금이 입금된 후 반환한다."),
@@ -211,12 +217,17 @@ describe("PracticeSessionPage", () => {
     renderSession();
 
     expect(await screen.findByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
-    const contractContent = document.getElementById("practice-contract-reference-content");
-    expect(contractContent).not.toHaveAttribute("hidden");
+    expect(screen.getByRole("heading", { name: "1. 기본 계약 내용" })).toBeInTheDocument();
+    expect(screen.getByText("1 / 3 페이지")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "계약서 접기" }));
-    expect(contractContent).toHaveAttribute("hidden");
-    expect(screen.getByRole("button", { name: "계약서 펼치기" })).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByRole("heading", { name: "2. 일반 계약 조항" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getByRole("heading", { name: "3. 특약사항" })).toBeInTheDocument();
+    expect(screen.getByText("후임 임차인의 보증금이 입금된 후 반환한다.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "확대" }));
+    expect(screen.getByRole("button", { name: "축소" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("restores the current turn, submits an answer, and renders the next turn", async () => {
@@ -234,6 +245,7 @@ describe("PracticeSessionPage", () => {
       timed_out: false,
     })));
     expect(await screen.findByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /대화 내용/ }));
     expect(screen.getByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
     expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(2);
     expect(screen.queryByText("확인 요청을 반영했습니다.")).not.toBeInTheDocument();
@@ -300,6 +312,7 @@ describe("PracticeSessionPage", () => {
       user_answer: null,
       timed_out: true,
     })));
+    fireEvent.click(screen.getByRole("tab", { name: /대화 내용/ }));
     expect(screen.getByText("답변하지 못했어요.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
   });
@@ -313,6 +326,7 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "답변 보내기" }));
 
     expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /대화 내용/ }));
     expect(screen.getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
     expect(screen.queryByText("답변을 다시 말씀해 주세요.")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(

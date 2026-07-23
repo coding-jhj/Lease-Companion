@@ -23,6 +23,17 @@ afterEach(() => {
 });
 
 describe("DashboardPage grouping", () => {
+  it("keeps only the new contract action below the contract list", async () => {
+    vi.spyOn(mvpService, "getContracts").mockResolvedValue([]);
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByRole("link", { name: "새 계약 점검 시작" })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.queryByText("실전 계약 점검 모드")).not.toBeInTheDocument();
+    expect(screen.queryByText("계약 연습 시뮬레이션 모드")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "계약 연습 시작" })).not.toBeInTheDocument();
+  });
+
   it("splits contracts into action groups and collapses completed ones", async () => {
     vi.spyOn(mvpService, "getContracts").mockResolvedValue([
       contract(1, "미행동 계약건", "none"),
