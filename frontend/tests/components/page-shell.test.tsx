@@ -19,7 +19,7 @@ describe("PageShell logout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "모드 선택" })).toHaveAttribute("href", "/choose-mode");
+    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
   });
 
   it("does not show a self-link on the mode selection screen", () => {
@@ -29,6 +29,7 @@ describe("PageShell logout", () => {
       </MemoryRouter>,
     );
 
+    expect(screen.queryByRole("link", { name: "처음으로" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "모드 선택" })).not.toBeInTheDocument();
   });
 
@@ -77,5 +78,52 @@ describe("PageShell logout", () => {
     for (const label of ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"]) {
       expect(journey).toHaveTextContent(label);
     }
+  });
+
+  it("shows current and next actions before disclosing the full journey", () => {
+    render(
+      <MemoryRouter>
+        <PageShell
+          step="5 / 8"
+          journey={{ current: 5, currentLabel: "문서 내용 확인", nextLabel: "확인 결과 준비" }}
+          title="문서에서 읽은 내용 확인하기"
+          description="중요한 내용부터 하나씩 확인합니다."
+        >
+          <p>내용</p>
+        </PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("현재: 문서 내용 확인")).toBeInTheDocument();
+    expect(screen.getByText("다음: 확인 결과 준비")).toBeInTheDocument();
+    expect(screen.queryByText("시작 방법")).not.toBeInTheDocument();
+    expect(screen.queryByText("집 등록")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("전체 과정 보기"));
+
+    expect(screen.getByText("시작 방법")).toBeInTheDocument();
+    expect(screen.getByText("집 등록")).toBeInTheDocument();
+    expect(screen.getByText("내용 확인").parentElement).toHaveAttribute("aria-current", "step");
+  });
+
+  it("keeps every journey display hidden when showJourney is false", () => {
+    render(
+      <MemoryRouter>
+        <PageShell
+          step="5 / 8"
+          journey={{ current: 5, currentLabel: "문서 내용 확인", nextLabel: "확인 결과 준비" }}
+          title="준비 화면"
+          description="진행 표시 없음"
+          showJourney={false}
+        >
+          <p>내용</p>
+        </PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("현재: 문서 내용 확인")).not.toBeInTheDocument();
+    expect(screen.queryByText("다음: 확인 결과 준비")).not.toBeInTheDocument();
+    expect(screen.queryByText("전체 과정 보기")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "계약 확인 진행 단계" })).not.toBeInTheDocument();
   });
 });

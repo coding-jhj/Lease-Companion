@@ -1,5 +1,7 @@
 type PracticeAvatarMode = "idle" | "speaking" | "listening" | "pressure";
-type PracticeMediaSet = Record<PracticeAvatarMode, string>;
+export type PracticeMediaSet = Record<PracticeAvatarMode, string>;
+
+export const sharedPoster = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 360'%3E%3Crect width='640' height='360' fill='%2317251c'/%3E%3Ctext x='320' y='180' text-anchor='middle' fill='%23ffffff' font-size='28'%3E%EA%B3%84%EC%95%BD%20%EC%97%B0%EC%8A%B5%3C/text%3E%3C/svg%3E";
 
 const sharedMedia: PracticeMediaSet = {
   idle: "/practice/avatar/idle.mp4",

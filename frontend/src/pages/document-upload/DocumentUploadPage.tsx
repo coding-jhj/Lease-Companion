@@ -10,7 +10,7 @@ import type { UploadDocumentType } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".txt"];
+const ALLOWED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"];
 
 type UploadFiles = Record<UploadDocumentType, File | null>;
 type UploadStatuses = Record<UploadDocumentType, DocumentUploadStatus>;
@@ -35,7 +35,7 @@ const initialErrors: UploadErrors = {
 function fileValidationMessage(file: File): string {
   const lowerName = file.name.toLowerCase();
   if (!ALLOWED_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
-    return "PDF, JPG, PNG 또는 비식별 데모용 TXT 파일만 업로드할 수 있습니다.";
+    return "PDF, JPG, JPEG 또는 PNG 파일만 업로드할 수 있습니다.";
   }
   if (file.size === 0) return "빈 파일은 업로드할 수 없습니다.";
   if (file.size > MAX_FILE_SIZE) return "파일은 20MB 이하여야 합니다.";
@@ -49,8 +49,6 @@ export function DocumentUploadPage() {
   const [files, setFiles] = useState<UploadFiles>(initialFiles);
   const [statuses, setStatuses] = useState<UploadStatuses>(initialStatuses);
   const [uploadErrors, setUploadErrors] = useState<UploadErrors>(initialErrors);
-  const [useMockRegistry, setUseMockRegistry] = useState(false);
-  const [caseId, setCaseId] = useState("CASE-001");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,7 +83,7 @@ export function DocumentUploadPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!files.계약서) {
-      setError("다음 단계로 진행하려면 계약서를 선택해 주세요.");
+      setError("계약서 초안을 올리거나 문서 없이 준비할 내용을 확인해 주세요.");
       return;
     }
     setError("");
@@ -98,7 +96,6 @@ export function DocumentUploadPage() {
       }
     }
     try {
-      if (!files.등기사항증명서 && useMockRegistry) await mvpService.linkRegistry(contractId, caseId);
       await mvpService.startExtraction(contractId);
       navigate(`/contracts/${contractId}/review`);
     } catch (caught) {
@@ -118,17 +115,21 @@ export function DocumentUploadPage() {
           <h2 id="upload-preparation-title">어떤 문서인가요?</h2>
           <ul>
             <li><strong>계약서</strong><span>금액·기간·특약이 적힌 계약서 초안 또는 작성 중인 계약서</span></li>
-            <li><strong>등기사항증명서</strong><span>집의 소유자와 근저당 등 권리관계가 적힌 문서</span></li>
+            <li><strong>등기사항증명서</strong><span>서명 전에 중개사에게 받아볼 수 있습니다.</span></li>
             <li><strong>중개대상물 확인설명서</strong><span>중개사가 집의 상태와 권리관계를 설명하며 제공하는 문서</span></li>
           </ul>
         </section>
-        <p className="privacy-notice"><strong>개인정보를 확인해 주세요.</strong> 문서에는 이름·주소·연락처·계좌번호가 포함될 수 있습니다. 테스트 환경에서는 실제 개인정보 대신 비식별 문서를 사용해 주세요.</p>
-        <p className="file-help" id="upload-file-help">PDF·JPG·PNG 파일을 20MB 이하로 올려주세요. TXT는 비식별 데모 데이터에만 사용할 수 있습니다.</p>
+        <p className="privacy-notice">
+          <strong>현재 시연용 서비스입니다.</strong>
+          실제 주민등록번호·연락처·계좌번호가 포함된 문서는 올리지 마세요.
+          비식별 처리된 문서만 사용해 주세요.
+        </p>
+        <p className="file-help" id="upload-file-help">PDF·JPG·JPEG·PNG 파일을 20MB 이하로 올려주세요.</p>
         <div className="upload-card-grid">
           <DocumentUploadCard
             docType="계약서"
             title="계약서"
-            description="금액·기간·특약이 보이도록 계약서 전체를 올려주세요. 초안도 가능합니다."
+            description="서명 전에 받은 초안도 가능합니다. 금액·날짜·특약을 확인합니다."
             required
             file={files.계약서}
             status={statuses.계약서}
@@ -140,7 +141,7 @@ export function DocumentUploadPage() {
           <DocumentUploadCard
             docType="등기사항증명서"
             title="등기사항증명서"
-            description="집주인과 등기상 소유자가 같은지, 근저당 등 확인할 내용이 있는지 비교할 때 사용합니다."
+            description="소유자와 권리관계를 확인합니다. 지금 없어도 계약서부터 확인할 수 있습니다."
             file={files.등기사항증명서}
             status={statuses.등기사항증명서}
             error={uploadErrors.등기사항증명서}
@@ -151,7 +152,7 @@ export function DocumentUploadPage() {
           <DocumentUploadCard
             docType="중개대상물 확인설명서"
             title="중개대상물 확인설명서"
-            description="보유하고 있다면 함께 보관할 수 있습니다. 현재 자동 추출 대상은 아닙니다."
+            description="중개사가 설명한 내용을 확인합니다. 지금 없어도 진행할 수 있습니다."
             file={files["중개대상물 확인설명서"]}
             status={statuses["중개대상물 확인설명서"]}
             error={uploadErrors["중개대상물 확인설명서"]}
@@ -160,18 +161,8 @@ export function DocumentUploadPage() {
             onRetry={() => void uploadOne("중개대상물 확인설명서")}
           />
         </div>
-        {!files.등기사항증명서 && (
-          <details className="demo-registry-options">
-            <summary>비식별 데모용 모의 등기 사용</summary>
-            <label className="check-item">
-              <input type="checkbox" checked={useMockRegistry} onChange={(event) => setUseMockRegistry(event.target.checked)} />
-              <span>실제 등기 대신 모의 등기 사례를 연결합니다.</span>
-            </label>
-            {useMockRegistry && <label>모의 등기 사례 번호<input value={caseId} onChange={(event) => setCaseId(event.target.value)} /></label>}
-          </details>
-        )}
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={!files.계약서 || submitting}>{submitting ? "문서를 준비하는 중…" : "업로드하고 다음 단계로"}</button>
+        <button type="submit" disabled={submitting}>{submitting ? "문서를 준비하는 중…" : "업로드하고 다음 단계로"}</button>
       </form>
     </PageShell>
   );

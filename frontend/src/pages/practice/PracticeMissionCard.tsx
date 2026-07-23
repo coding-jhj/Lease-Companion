@@ -3,9 +3,11 @@ import { practiceMissionForScenario } from "./practiceMissionCatalog";
 export function PracticeMissionCard({
   scenarioId,
   confirmedCount,
+  showProgress = true,
 }: {
   scenarioId: string;
   confirmedCount?: number;
+  showProgress?: boolean;
 }) {
   const mission = practiceMissionForScenario(scenarioId);
   const confirmed = confirmedCount ?? 0;
@@ -22,12 +24,15 @@ export function PracticeMissionCard({
           <p>오늘의 미션</p>
           <h2 id="practice-mission-title">{mission.title}</h2>
         </div>
-        {active && (hasTarget
+        {showProgress && active && (hasTarget
           ? <strong>{progress} / {mission.targetCount}</strong>
           : <strong>{confirmed}개 확인</strong>)}
       </div>
       <p>{mission.description}</p>
-      {active && hasTarget && (
+      {showProgress && hasTarget
+        ? <p>연습에서 확인 행동 {mission.targetCount}개를 하나씩 자신의 말로 해 보세요.</p>
+        : showProgress && <p>연습에서 필요한 확인 행동을 자신의 말로 하나씩 해 보세요.</p>}
+      {showProgress && active && hasTarget && (
         <div
           className="practice-mission-progress"
           role="progressbar"

@@ -145,23 +145,51 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+beforeEach(() => {
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+});
+
 function mockDesktopKeyboard(matches: boolean) {
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches }));
 }
 
 describe("Practice scenario pages", () => {
-  it("shows all three approved synthetic scenarios without answer data", async () => {
+  it("does not show synthetic-scenario wording while the home list is loading", () => {
+    vi.spyOn(practiceService, "listScenarios").mockReturnValue(new Promise(() => {}));
+    render(<MemoryRouter><PracticeHomePage /></MemoryRouter>);
+
+    expect(screen.getByText("연습 목록을 불러오는 중")).toBeInTheDocument();
+    expect(screen.queryByText(/합성 시나리오/)).not.toBeInTheDocument();
+  });
+
+  it("uses a non-numeric fallback card for an unregistered scenario", async () => {
+    vi.spyOn(practiceService, "listScenarios").mockResolvedValue([
+      summary("PRACTICE-UNKNOWN-999", "확인할 내용이 있는 계약 상황"),
+    ]);
+    render(<MemoryRouter><PracticeHomePage /></MemoryRouter>);
+
+    const card = (await screen.findByRole("heading", { name: "확인할 내용이 있는 계약 상황" })).closest("article")!;
+    expect(within(card).getByText("확인할 내용 살펴보기")).toBeInTheDocument();
+    expect(within(card).queryByText(/확인 행동 \d+개/)).not.toBeInTheDocument();
+    expect(within(card).queryByText("PRACTICE-UNKNOWN-999")).not.toBeInTheDocument();
+  });
+
+  it("shows mission-centered scenario cards without internal labels or answer data", async () => {
     vi.spyOn(practiceService, "listScenarios").mockResolvedValue(
       scenarioCases.map(([id, title]) => summary(id, title)),
     );
     render(<MemoryRouter><PracticeHomePage /></MemoryRouter>);
 
+    expect(await screen.findByRole("heading", { name: "계약 상황을 미리 연습해 보세요" })).toBeInTheDocument();
     const list = await screen.findByRole("region", { name: "연습 시나리오 목록" });
     for (const [, title] of scenarioCases) {
-      expect(within(list).getByRole("heading", { name: title })).toBeInTheDocument();
+      const card = within(list).getByRole("heading", { name: title }).closest("article")!;
+      expect(within(card).getByText(/계약서에 적힌 반환 조건을 확인하고|돈을 보내기 전에 누구에게 무엇을 확인해야 하는지|계약 상대의 권한을 확인할 자료를 요청하고/)).toBeInTheDocument();
+      expect(within(card).getByText("약 3분 · 확인 행동 3개")).toBeInTheDocument();
+      expect(within(card).getByRole("link", { name: "상황 확인하기" })).toHaveClass("text-link");
+      expect(within(card).getByRole("link", { name: "상황 확인하기" })).not.toHaveClass("button-link");
     }
-    expect(screen.getAllByText("가상 연습")).toHaveLength(3);
-    expect(screen.queryByText(/정답표|hidden_confirmation_signals|필수 의미/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/가상 연습|합성 시나리오|난이도|계약 단계|정답표|hidden_confirmation_signals|필수 의미/)).not.toBeInTheDocument();
   });
 
   it.each(scenarioCases)("renders and starts %s through the common detail page", async (scenarioId, title, clause) => {
@@ -171,19 +199,19 @@ describe("Practice scenario pages", () => {
     );
     renderScenario(scenarioId);
 
-    expect(await screen.findByRole("heading", { name: "주택임대차계약서 확인" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "이런 상황입니다" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "이미 아는 공개 정보" })).toBeInTheDocument();
     expect(screen.getByText("오늘의 미션")).toBeInTheDocument();
-    expect(screen.queryByText(title)).not.toBeInTheDocument();
+    expect(screen.getByText(title)).toBeInTheDocument();
     expect(screen.queryByText("계약을 바로 진행하시겠습니까?")).not.toBeInTheDocument();
     expect(screen.queryByText("가상 연습")).not.toBeInTheDocument();
     expect(screen.queryByText("합성 시나리오")).not.toBeInTheDocument();
-    const address = screen.getByText("서울특별시 가온구 연습로 1");
-    expect(address).toHaveClass("practice-facts__address");
-    expect(address.parentElement).toHaveClass("practice-facts__wide", "practice-facts__wide--aligned");
-    expect(address.parentElement).not.toHaveAttribute("style");
-    expect(screen.getByText(clause)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "계약서 확인 완료 · 대화 시작" }));
+    const contractDetails = screen.getByText("참고할 계약 내용 보기").closest("details")!;
+    expect(contractDetails).not.toHaveAttribute("open");
+    expect(screen.getByText("서울특별시 가온구 연습로 1").closest("section")).toHaveAttribute("hidden");
+    expect(screen.getByText(clause).closest("section")).toHaveAttribute("hidden");
+    expect(screen.getByRole("button", { name: "연습 시작하기" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "연습 시작하기" }));
 
     await waitFor(() => expect(createSession).toHaveBeenCalledWith(scenarioId));
     expect(await screen.findByText("대화 세션 진입 완료")).toBeInTheDocument();
@@ -202,51 +230,51 @@ describe("PracticeSessionPage", () => {
     const view = renderSession();
 
     expect(await screen.findByText("공인중개사가 말하고 있습니다")).toBeInTheDocument();
-    const speakingVideo = view.container.querySelector("video");
+    const speakingVideo = view.getByTestId("practice-video");
     expect(speakingVideo).toHaveAttribute("src", "/practice/avatar/speaking.mp4");
+    expect(speakingVideo).toHaveAttribute("poster");
 
     fireEvent.ended(speakingVideo!);
     expect(await screen.findByText("답변을 듣고 있습니다")).toBeInTheDocument();
     expect(view.container.querySelector("video")).toHaveAttribute("src", "/practice/avatar/listening.mp4");
   });
 
-  it("shows the scenario contract as three navigable pages", async () => {
-    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
-    vi.spyOn(practiceService, "getScenario").mockResolvedValue(
-      detail("PRACTICE-DEFERRED-REFUND-001", "보증금 반환 조건 확인", "후임 임차인의 보증금이 입금된 후 반환한다."),
-    );
+  it("keeps the session focused on one scene and one primary answer action", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session({ confirmed_action_ids: ["PA01"] }));
     renderSession();
 
-    expect(await screen.findByRole("heading", { name: "주택임대차계약서" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "보증금 반환 조건 확인하기" })).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "미션 진행률" })).toHaveAttribute("aria-valuenow", "0");
-    expect(screen.getByRole("heading", { name: "1. 기본 계약 내용" })).toBeInTheDocument();
-    expect(screen.getByText("1 / 3 페이지")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "다음" }));
-    expect(screen.getByRole("heading", { name: "2. 일반 계약 조항" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "다음" }));
-    expect(screen.getByRole("heading", { name: "3. 특약사항" })).toBeInTheDocument();
-    expect(screen.getByText("후임 임차인의 보증금이 입금된 후 반환한다.")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "확대" }));
-    expect(screen.getByRole("button", { name: "축소" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByText("미션 진행")).toBeInTheDocument();
+    expect(screen.getByText("확인 행동 1 / 3")).toBeInTheDocument();
+    expect(screen.queryByText("TURN-01")).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar", { name: "미션 진행률" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    const reference = screen.getByText("계약 내용 참고하기").closest("details")!;
+    expect(reference).not.toHaveAttribute("open");
+    expect(screen.getByText("서울특별시 가온구 연습로 1").closest("section")).toHaveAttribute("hidden");
+    expect(screen.getByRole("button", { name: "이렇게 말할게요" })).toHaveClass("primary");
+    expect(document.querySelectorAll("button.primary")).toHaveLength(1);
   });
 
-  it("shows the broker's first prompt in conversation and toggles the material drawer", async () => {
+  it("shows the current prompt and keeps the hint as a secondary action", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     renderSession();
 
-    fireEvent.click(await screen.findByRole("tab", { name: /대화 내용/ }));
-    const conversation = screen.getByRole("tabpanel", { name: "지금까지의 대화" });
-    expect(within(conversation).getByText("공인중개사")).toBeInTheDocument();
-    expect(within(conversation).getByText("계약을 바로 진행하시겠습니까?")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "말할 내용 힌트 보기" })).toHaveClass("secondary");
+    expect(screen.queryByText("확인 대상")).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "자료 접기" }));
-    expect(screen.queryByRole("tab", { name: "계약서" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "계약서·대화 열기" }));
-    expect(screen.getByRole("tab", { name: "계약서" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /대화 내용/ })).toHaveAttribute("aria-selected", "true");
+  it("does not expose the actual next fixture turn while the first scene is active", async () => {
+    const currentPrompt = "임대인분은 특약대로 다음 세입자가 들어오면 보증금을 바로 반환하겠다고 하십니다. 이 조건으로 진행해도 괜찮으시죠?";
+    const futurePrompt = "임대인분 말씀으로는 새 세입자는 금방 구해질 테니 걱정하지 않으셔도 된다고 합니다. 구두로도 확실히 약속하셨습니다.";
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session({
+      current_turn: dialogueTurn("TURN-01", currentPrompt),
+    }));
+    renderSession();
+
+    expect(await screen.findByRole("heading", { name: currentPrompt })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(futurePrompt);
+    expect(document.body).not.toHaveTextContent(/TURN-|answer key/i);
   });
 
   it("restores the current turn, submits an answer, and renders the next turn", async () => {
@@ -256,7 +284,7 @@ describe("PracticeSessionPage", () => {
     renderSession();
 
     fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: " 자료를 확인하고 보류하겠습니다. " } });
-    fireEvent.click(screen.getByRole("button", { name: "답변 보내기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
 
     await waitFor(() => expect(submit).toHaveBeenCalledWith("session-001", expect.objectContaining({
       turn_id: "TURN-01",
@@ -264,9 +292,7 @@ describe("PracticeSessionPage", () => {
       timed_out: false,
     })));
     expect(await screen.findByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /대화 내용/ }));
-    expect(screen.getByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
-    expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(2);
+    expect(screen.getByText("확인 행동 1 / 3")).toBeInTheDocument();
     expect(screen.queryByText("확인 요청을 반영했습니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
@@ -331,8 +357,6 @@ describe("PracticeSessionPage", () => {
       user_answer: null,
       timed_out: true,
     })));
-    fireEvent.click(screen.getByRole("tab", { name: /대화 내용/ }));
-    expect(screen.getByText("답변하지 못했어요.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
   });
 
@@ -342,20 +366,38 @@ describe("PracticeSessionPage", () => {
     renderSession();
 
     fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
-    fireEvent.click(screen.getByRole("button", { name: "답변 보내기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
 
     expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /대화 내용/ }));
-    expect(screen.getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
-    expect(screen.queryByText("답변을 다시 말씀해 주세요.")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "AI 연결이 원활하지 않아 답변을 판정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      "답변을 확인하지 못했습니다. 입력한 내용은 잘못된 답변으로 처리하지 않았습니다. 연습은 계속할 수 있습니다.",
     );
+    expect(screen.getByRole("button", { name: "다시 확인하기" })).toHaveClass("secondary");
+    expect(screen.getByRole("button", { name: "다음 상황으로" })).toHaveClass("secondary");
+    expect(document.body).not.toHaveTextContent("provider_timeout");
+    expect(document.body).not.toHaveTextContent("case_id");
     const retryAnswer = screen.getByLabelText("내 답변");
     expect(retryAnswer).toBeEnabled();
     expect(retryAnswer).toHaveValue("");
     fireEvent.change(retryAnswer, { target: { value: "같은 내용을 다시 확인하겠습니다." } });
-    expect(screen.getByRole("button", { name: "답변 보내기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "이렇게 말할게요" })).toBeEnabled();
+  });
+
+  it("treats a response validation failure as a non-answer fallback", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    const invalidResponse = turnResponse(session(), "needs_review");
+    invalidResponse.evaluation.fallback_reason = "response_validation_failed";
+    vi.spyOn(practiceService, "submitTurn").mockResolvedValue(invalidResponse);
+    renderSession();
+
+    fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
+    fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "답변을 확인하지 못했습니다. 입력한 내용은 잘못된 답변으로 처리하지 않았습니다. 연습은 계속할 수 있습니다.",
+    );
+    expect(screen.getByRole("button", { name: "다시 확인하기" })).toBeVisible();
+    expect(screen.getByLabelText("내 답변")).toBeEnabled();
   });
 
   it("preserves the typed answer after a network error", async () => {
@@ -365,11 +407,11 @@ describe("PracticeSessionPage", () => {
 
     const answer = await screen.findByLabelText("내 답변");
     fireEvent.change(answer, { target: { value: "권한 자료를 확인하겠습니다." } });
-    fireEvent.click(screen.getByRole("button", { name: "답변 보내기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("네트워크 연결을 확인해 주세요.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("답변을 보내지 못했습니다. 입력한 답변은 그대로 남아 있습니다. 다시 시도해 주세요.");
     expect(answer).toHaveValue("권한 자료를 확인하겠습니다.");
-    expect(screen.getByRole("button", { name: "답변 보내기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "이렇게 말할게요" })).toBeEnabled();
   });
 
   it("submits only an allowed final action and navigates to the result", async () => {
@@ -384,22 +426,28 @@ describe("PracticeSessionPage", () => {
     });
     renderSession();
 
-    const finalSection = (await screen.findByRole("heading", { name: "이 계약 상황에서 어떻게 행동하시겠습니까?" })).closest("section")!;
-    expect(within(finalSection).getAllByRole("button").map((button) => button.textContent)).toEqual(["진행", "추가 확인", "보류", "중단"]);
+    const finalSection = (await screen.findByRole("heading", { name: "연습 결과 확인하기" })).closest("section")!;
+    expect(within(finalSection).getAllByRole("button").map((button) => button.textContent)).toEqual(["진행", "추가 확인", "보류", "중단", "연습 결과 확인하기"]);
+    expect(screen.queryByText(/최종 행동/)).not.toBeInTheDocument();
     fireEvent.click(within(finalSection).getByRole("button", { name: "보류" }));
+    expect(within(finalSection).getByRole("button", { name: "연습 결과 확인하기" })).toHaveClass("primary");
+    fireEvent.click(within(finalSection).getByRole("button", { name: "연습 결과 확인하기" }));
 
     await waitFor(() => expect(submit).toHaveBeenCalledWith("session-001", expect.objectContaining({ selected_action: "보류" })));
     expect(await screen.findByText("결과 화면 이동 완료")).toBeInTheDocument();
   });
 
-  it("lets the user leave a repeated turn without confirming its action", async () => {
+  it("moves to the next situation after a provider fallback without recording an answer", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    vi.spyOn(practiceService, "submitTurn").mockResolvedValue(turnResponse(session(), "needs_review"));
     const advance = vi.spyOn(practiceService, "advanceDialogue").mockResolvedValue(
       turnResponse(session({ current_state: "TURN-02", current_turn: dialogueTurn("TURN-02", "다음 확인 상황입니다.") })),
     );
     renderSession();
 
-    fireEvent.click(await screen.findByRole("button", { name: "이 확인은 남기고 다음 상황" }));
+    fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
+    fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
+    fireEvent.click(await screen.findByRole("button", { name: "다음 상황으로" }));
 
     await waitFor(() => expect(advance).toHaveBeenCalledWith("session-001", expect.objectContaining({
       turn_id: "TURN-01",

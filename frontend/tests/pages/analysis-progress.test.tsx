@@ -24,9 +24,9 @@ function run(status: AsyncRunStatus, error: string | null = null): AnalysisRunDe
   };
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/contracts/1001/analyzing") {
   return render(
-    <MemoryRouter initialEntries={["/contracts/1001/analyzing"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/contracts/:contractId/analyzing" element={<AnalysisProgressPage />} />
       </Routes>
@@ -59,6 +59,19 @@ afterEach(() => {
 });
 
 describe("AnalysisProgressPage", () => {
+  it("resumes the supplied analysis run without starting a duplicate run", async () => {
+    const start = vi.spyOn(mvpService, "startAnalysis");
+    const getRun = vi.spyOn(mvpService, "getAnalysisRun").mockResolvedValue(run("completed"));
+
+    renderPage("/contracts/1001/analyzing?analysisRunId=RUN-SUPPLIED-001");
+    await flushPromises();
+
+    expect(start).not.toHaveBeenCalled();
+    expect(getRun).toHaveBeenCalledWith(1001, "RUN-SUPPLIED-001", expect.anything());
+    expect(screen.getByRole("heading", { name: "확인 결과 준비 완료", level: 1 }))
+      .toBeInTheDocument();
+  });
+
   it("starts only one analysis run under React StrictMode", async () => {
     vi.useFakeTimers();
     const start = vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(run("pending"));
@@ -74,12 +87,12 @@ describe("AnalysisProgressPage", () => {
     expect(screen.getByRole("heading", { name: "확인 결과 준비 완료", level: 1 })).toBeInTheDocument();
   });
 
-  it("shows the backend error when pending becomes failed and allows a new run", async () => {
+  it("keeps backend failure details out of the user-facing retry guidance", async () => {
     vi.useFakeTimers();
     const start = vi.spyOn(mvpService, "startAnalysis")
       .mockResolvedValueOnce(run("pending"))
       .mockResolvedValueOnce(run("completed"));
-    vi.spyOn(mvpService, "getAnalysisRun").mockResolvedValue(run("failed", "서버 규칙 엔진 오류"));
+    vi.spyOn(mvpService, "getAnalysisRun").mockResolvedValue(run("failed", "provider_timeout for case_id=CASE-001"));
 
     renderPage();
     await flushPromises();
@@ -88,7 +101,9 @@ describe("AnalysisProgressPage", () => {
       await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent("서버 규칙 엔진 오류");
+    expect(screen.getByRole("alert")).toHaveTextContent("확인 결과를 준비하지 못했습니다. 입력한 계약 정보는 그대로 저장되어 있습니다. 다시 시도해 주세요.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("provider_timeout");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("case_id");
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     await flushPromises();
 
@@ -152,7 +167,7 @@ describe("AnalysisProgressPage", () => {
     renderPage();
     await flushPromises();
     await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS); });
-    expect(screen.getByRole("heading", { name: "계약 확인 결과를 준비하고 있어요" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "확인 결과를 준비하고 있습니다" })).toBeInTheDocument();
 
     await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS); });
     expect(screen.getByRole("heading", { name: "확인 결과 준비 완료", level: 1 })).toBeInTheDocument();

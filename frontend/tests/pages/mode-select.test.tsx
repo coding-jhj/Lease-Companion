@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthPage } from "../../src/pages/auth/AuthPage";
+import { ContractPreparationPage } from "../../src/pages/contract-preparation/ContractPreparationPage";
 import { ModeSelectPage } from "../../src/pages/mode-select/ModeSelectPage";
 import { mvpService } from "../../src/services/mvpService";
 
@@ -30,13 +31,30 @@ describe("login mode selection", () => {
     fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: "password1!" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인하고 시작" }));
 
-    expect(await screen.findByRole("heading", { name: "현재 어떤 상황인가요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "지금 어떤 상황인가요?" })).toBeInTheDocument();
   });
 
-  it("offers separate practice and real contract destinations", () => {
+  it("routes by the renter's current situation", () => {
     render(<MemoryRouter><ModeSelectPage /></MemoryRouter>);
 
-    expect(screen.getByRole("link", { name: "가상 상황으로 연습하기" })).toHaveAttribute("href", "/practice");
-    expect(screen.getByRole("link", { name: "내 계약서 점검 시작" })).toHaveAttribute("href", "/contracts");
+    expect(screen.getByRole("link", { name: /아직 계약서를 받지 않았어요/ })).toHaveAttribute("href", "/prepare");
+    expect(screen.getByRole("link", { name: /계약서 초안을 받았어요/ })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.getByRole("link", { name: /이미 계약했어요/ })).toHaveAttribute("href", "/contracts");
+    expect(screen.queryByText("모드 선택")).not.toBeInTheDocument();
+  });
+
+  it("opens the preparation page from the first situation card", async () => {
+    render(
+      <MemoryRouter initialEntries={["/choose-mode"]}>
+        <Routes>
+          <Route path="/choose-mode" element={<ModeSelectPage />} />
+          <Route path="/prepare" element={<ContractPreparationPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: /아직 계약서를 받지 않았어요/ }));
+
+    expect(await screen.findByRole("heading", { name: "계약 전에 세 가지만 준비해 보세요" })).toBeInTheDocument();
   });
 });

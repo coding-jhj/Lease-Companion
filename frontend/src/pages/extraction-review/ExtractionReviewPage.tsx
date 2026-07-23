@@ -2,8 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
-import { ExtractionFieldCard } from "../../features/extraction-review/ExtractionFieldCard";
-import { clauseValues, correctionValue, fieldViewModels } from "../../features/extraction-review/viewModel";
+import { GuidedReviewCard } from "../../features/extraction-review/GuidedReviewCard";
+import {
+  buildReviewQueue,
+  type ReviewQueueItem,
+} from "../../features/extraction-review/reviewQueue";
+import {
+  clauseValues,
+  correctionValue,
+  fieldViewModels,
+} from "../../features/extraction-review/viewModel";
 import { mvpService } from "../../services/mvpService";
 import type {
   CorrectionRequestDto,
@@ -16,49 +24,23 @@ import { contractIdFromRoute } from "../../utils/contractId";
 import { PollTimeoutError, pollUntilTerminal } from "../../utils/pollUntilTerminal";
 
 type DraftValue = string | string[];
+type CannotVerifyReason = "not_stated" | "unreadable" | "unknown_location";
 
-const directConfirmationFields = new Set([
-  "guarantee_eligibility_confirmed",
-  "lessor_sublease_authority_confirmed",
-]);
+const reasonLabels: Record<CannotVerifyReason, string> = {
+  not_stated: "문서에 적혀 있지 않음",
+  unreadable: "글자가 흐려 확인하기 어려움",
+  unknown_location: "확인할 위치를 찾기 어려움",
+};
 
-const financialReviewFields = new Set([
-  "account_holder",
-  "agent_relationship",
-  "balance_payment",
-  "balance_payment_date",
-  "contract_payment",
-  "contract_payment_date",
-  "deposit",
-  "end_date",
-  "landlord_name",
-  "management_fee",
-  "mortgage_present",
-  "move_in_date",
-  "owner_names",
-  "owner_shares",
-  "property_address",
-  "senior_claim_amount",
-  "trust_present",
-]);
-
-const focusedClauseFields = new Set(["special_clauses"]);
-
-function requiresManualReview(view: FieldViewModel, hasDraft: boolean) {
-  return focusedClauseFields.has(view.field.field_name)
-    || directConfirmationFields.has(view.field.field_name)
-    || hasDraft
-    || ["not_stated", "not_applicable"].includes(view.field.issue_code ?? "")
-    || (
-      financialReviewFields.has(view.field.field_name)
-      && view.field.confidence === "실패"
-    );
+function displayViewValue(view: FieldViewModel, drafts: Record<string, DraftValue>): string {
+  const draft = drafts[view.key];
+  if (Array.isArray(draft)) return draft.join(" · ");
+  if (typeof draft === "string") return draft;
+  return view.formattedValue || "문서에서 읽은 내용이 없습니다.";
 }
 
-function canBulkConfirm(view: FieldViewModel) {
-  return view.field.confidence !== "실패"
-    && !directConfirmationFields.has(view.field.field_name)
-    && !focusedClauseFields.has(view.field.field_name);
+function displayValue(item: ReviewQueueItem, drafts: Record<string, DraftValue>): string {
+  return displayViewValue(item.view, drafts);
 }
 
 export function ExtractionReviewPage() {
@@ -67,40 +49,54 @@ export function ExtractionReviewPage() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocumentExtractionDto[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftValue>>({});
-  const [verificationByKey, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
+  const [, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
   const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
   const [savedDraftKeys, setSavedDraftKeys] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [unresolvedReasonByKey, setUnresolvedReasonByKey] = useState<
+    Record<string, CannotVerifyReason>
+  >({});
   const [status, setStatus] = useState<"loading" | "processing" | "success" | "error">("loading");
   const [runStatus, setRunStatus] = useState<"pending" | "running">("pending");
   const [errorMessage, setErrorMessage] = useState("");
   const [correctionError, setCorrectionError] = useState("");
   const [confirmationError, setConfirmationError] = useState("");
+  const [analysisError, setAnalysisError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [extractionConfirmed, setExtractionConfirmed] = useState(false);
+  const [confirmedInputSnapshotId, setConfirmedInputSnapshotId] = useState<string | null>(null);
+  const [analysisStartUncertain, setAnalysisStartUncertain] = useState(false);
   const activePoll = useRef<AbortController | null>(null);
+
   const fields = fieldViewModels(documents);
-  const contractWarnings = documents.find((document) => document.document_type === "contract")?.warnings ?? [];
-  const registryWarnings = documents.find((document) => document.document_type === "registry")?.warnings ?? [];
+  const queue = buildReviewQueue(fields);
+  const currentItem = queue[currentIndex] ?? null;
+  const completedCount = queue.filter((item) => reviewedKeys.includes(item.key)).length;
+  const reviewedItems = queue.filter((item) => reviewedKeys.includes(item.key));
+  const unresolvedItems = queue.filter((item) => unresolvedReasonByKey[item.key] !== undefined);
+  const rawReviewedFields = fields.filter((view) => reviewedKeys.includes(view.key));
+  const rawUnreadFields = fields.filter((view) => (
+    !reviewedKeys.includes(view.key)
+    && view.field.confidence === "실패"
+  ));
+  const rawUnreviewedFields = fields.filter((view) => (
+    !reviewedKeys.includes(view.key)
+    && view.field.confidence !== "실패"
+  ));
+  const pendingCorrectionKeys = Object.keys(drafts).filter(
+    (key) => !savedDraftKeys.includes(key),
+  );
   const schemaVersion: SchemaVersion = documents.find(
     (document) => document.document_type === "contract",
   )?.schema_version ?? documents[0]?.schema_version ?? "1.8.0";
-
-  function hasDraftInput(key: string): boolean {
-    const draft = drafts[key];
-    return Array.isArray(draft)
-      ? draft.some((item) => item.trim().length > 0)
-      : Boolean(draft?.trim());
-  }
-
-  function currentClauseValues(view: FieldViewModel): string[] {
-    const draft = drafts[view.key];
-    return Array.isArray(draft) ? draft : clauseValues(view.field);
-  }
 
   async function loadExtraction() {
     activePoll.current?.abort();
     const controller = new AbortController();
     activePoll.current = controller;
     setStatus("loading");
+    setErrorMessage("");
+
     try {
       const initialResponse = await mvpService.getLatestExtraction(contractId, controller.signal);
       if (controller.signal.aborted) return;
@@ -115,23 +111,44 @@ export function ExtractionReviewPage() {
           }
         },
       });
-      if (response.status === "failed") throw new Error(response.error ?? "문서 추출에 실패했습니다.");
+      if (response.status === "failed") {
+        throw new Error(response.error ?? "문서 추출에 실패했습니다.");
+      }
+
       const extractedDocuments = [response.contract_doc, response.registry_doc].filter(
         (document): document is DocumentExtractionDto => document !== null,
+      );
+      const loadedFields = fieldViewModels(extractedDocuments);
+      const loadedReviewedKeys = loadedFields
+        .filter((view) => view.field.verification_status !== "unverified")
+        .map((view) => view.key);
+      const loadedQueue = buildReviewQueue(loadedFields);
+      const firstUnverifiedIndex = loadedQueue.findIndex(
+        (item) => !loadedReviewedKeys.includes(item.key),
       );
       setDocuments(extractedDocuments);
       setDrafts({});
       setSavedDraftKeys([]);
-      const loadedFields = fieldViewModels(extractedDocuments);
+      setCurrentIndex(firstUnverifiedIndex === -1 ? loadedQueue.length : firstUnverifiedIndex);
+      setUnresolvedReasonByKey({});
+      setExtractionConfirmed(false);
+      setConfirmedInputSnapshotId(null);
+      setAnalysisStartUncertain(false);
+      setCorrectionError("");
+      setConfirmationError("");
+      setAnalysisError("");
       setVerificationByKey(Object.fromEntries(
         loadedFields.map((view) => [view.key, view.field.verification_status]),
       ));
-      setReviewedKeys(loadedFields
-        .filter((view) => view.field.verification_status !== "unverified")
-        .map((view) => view.key));
+      setReviewedKeys(loadedReviewedKeys);
       setStatus("success");
     } catch (error) {
-      if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
+      if (
+        controller.signal.aborted
+        || (error instanceof DOMException && error.name === "AbortError")
+      ) {
+        return;
+      }
       setErrorMessage(error instanceof PollTimeoutError
         ? error.message
         : error instanceof Error ? error.message : "문서에서 읽은 내용을 불러오지 못했습니다.");
@@ -145,15 +162,23 @@ export function ExtractionReviewPage() {
   }, [contractId]);
 
   function updateField(view: FieldViewModel, value: string) {
+    const wasSaved = savedDraftKeys.includes(view.key);
     setSavedDraftKeys((current) => current.filter((key) => key !== view.key));
-    setReviewedKeys((current) => current.filter((key) => key !== view.key));
     if (value === view.formattedValue) {
+      if (wasSaved) {
+        setDrafts((current) => ({ ...current, [view.key]: value }));
+        setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
+        return;
+      }
       setDrafts((current) => {
         const next = { ...current };
         delete next[view.key];
         return next;
       });
-      setVerificationByKey((current) => ({ ...current, [view.key]: view.field.verification_status }));
+      setVerificationByKey((current) => ({
+        ...current,
+        [view.key]: view.field.verification_status,
+      }));
       return;
     }
     setDrafts((current) => ({ ...current, [view.key]: value }));
@@ -161,121 +186,103 @@ export function ExtractionReviewPage() {
   }
 
   function updateClauseDraft(view: FieldViewModel, nextValues: string[]) {
+    const wasSaved = savedDraftKeys.includes(view.key);
     setSavedDraftKeys((current) => current.filter((key) => key !== view.key));
-    setReviewedKeys((current) => current.filter((key) => key !== view.key));
     if (JSON.stringify(nextValues) === JSON.stringify(clauseValues(view.field))) {
+      if (wasSaved) {
+        setDrafts((current) => ({ ...current, [view.key]: nextValues }));
+        setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
+        return;
+      }
       setDrafts((current) => {
         const next = { ...current };
         delete next[view.key];
         return next;
       });
-      setVerificationByKey((current) => ({ ...current, [view.key]: view.field.verification_status }));
+      setVerificationByKey((current) => ({
+        ...current,
+        [view.key]: view.field.verification_status,
+      }));
       return;
     }
     setDrafts((current) => ({ ...current, [view.key]: nextValues }));
     setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
   }
 
-  function confirmField(view: FieldViewModel) {
-    setReviewedKeys((current) => [...new Set([...current, view.key])]);
+  function advanceToNextUnreviewed() {
+    setCurrentIndex((index) => {
+      const nextIndex = queue.findIndex((item, candidateIndex) => (
+        candidateIndex > index && !reviewedKeys.includes(item.key)
+      ));
+      return nextIndex === -1 ? queue.length : nextIndex;
+    });
+  }
+
+  function markReviewed(item: ReviewQueueItem) {
+    setReviewedKeys((current) => [...new Set([...current, item.key])]);
     setVerificationByKey((current) => ({
       ...current,
-      [view.key]: current[view.key] === "corrected" ? "corrected" : "confirmed",
+      [item.key]: current[item.key] === "corrected" ? "corrected" : "confirmed",
     }));
+    setUnresolvedReasonByKey((current) => {
+      const next = { ...current };
+      delete next[item.key];
+      return next;
+    });
+    advanceToNextUnreviewed();
   }
 
-  function confirmReadableFields() {
-    const readableKeys = fields
-      .filter(canBulkConfirm)
-      .map((view) => view.key);
-    setReviewedKeys((current) => [...new Set([...current, ...readableKeys])]);
+  function changeCurrent(item: ReviewQueueItem, value: string | string[]) {
+    setExtractionConfirmed(false);
+    setAnalysisStartUncertain(false);
+    if (Array.isArray(value)) {
+      updateClauseDraft(item.view, value);
+    } else {
+      updateField(item.view, value);
+    }
+    setReviewedKeys((current) => [...new Set([...current, item.key])]);
     setVerificationByKey((current) => ({
       ...current,
-      ...Object.fromEntries(
-        fields
-          .filter(canBulkConfirm)
-          .map((view) => [view.key, drafts[view.key] === undefined ? "confirmed" : "corrected"]),
-      ),
+      [item.key]: current[item.key] === "corrected" ? "corrected" : "confirmed",
     }));
+    setUnresolvedReasonByKey((current) => {
+      const next = { ...current };
+      delete next[item.key];
+      return next;
+    });
+    advanceToNextUnreviewed();
   }
 
-  const pendingCorrectionKeys = Object.keys(drafts).filter((key) => !savedDraftKeys.includes(key));
-  const hasUnverified = fields.some(
-    (view) => !reviewedKeys.includes(view.key)
-      && (
-        view.field.confidence !== "실패"
-        || requiresManualReview(view, hasDraftInput(view.key))
-      ),
-  );
-  const confirmedFields = fields.filter((view) => reviewedKeys.includes(view.key));
-  const unreviewedFields = fields.filter((view) => !reviewedKeys.includes(view.key));
-  const readableFields = unreviewedFields.filter((view) => (
-    canBulkConfirm(view)
-  ));
-  const unresolvedFields = unreviewedFields.filter((view) => !readableFields.includes(view));
-  const attentionFields = unresolvedFields.filter((view) => (
-    requiresManualReview(view, hasDraftInput(view.key))
-  ));
-  const optionalFailedFields = unresolvedFields.filter((view) => !attentionFields.includes(view));
-  const blockingFields = unreviewedFields.filter((view) => (
-    view.field.confidence !== "실패"
-    || requiresManualReview(view, hasDraftInput(view.key))
-  ));
-  const unresolvedFinancialFields = unreviewedFields.filter((view) => (
-    financialReviewFields.has(view.field.field_name)
-    && view.field.confidence === "실패"
-  ));
-  const specialClauseView = fields.find((view) => (
-    view.document_type === "contract" && view.field.field_name === "special_clauses"
-  ));
-  const specialClauseCount = specialClauseView ? currentClauseValues(specialClauseView).filter((value) => value.trim()).length : 0;
-  const warningEntries = [
-    ...contractWarnings.map((warning) => ({ document: "계약서", warning })),
-    ...registryWarnings.map((warning) => ({ document: "등기사항증명서", warning })),
-  ];
-
-  function fieldsForDocument(items: FieldViewModel[], documentType: "contract" | "registry") {
-    return items.filter((view) => view.document_type === documentType);
+  function markCannotVerify(item: ReviewQueueItem, reason: CannotVerifyReason) {
+    setReviewedKeys((current) => current.filter((key) => key !== item.key));
+    setUnresolvedReasonByKey((current) => ({ ...current, [item.key]: reason }));
+    advanceToNextUnreviewed();
   }
 
-  function renderDocumentFields(
-    items: FieldViewModel[],
-    documentType: "contract" | "registry",
-    title: string,
-  ) {
-    const documentFields = fieldsForDocument(items, documentType);
-    if (documentFields.length === 0) return null;
+  function renderSummaryGroup(title: string, items: FieldViewModel[]) {
     return (
-      <section className="review-document-group" aria-label={title}>
-        <div className="review-document-group__heading">
-          <h3>{title}</h3>
-          <span>{documentFields.length}개</span>
-        </div>
-        <div className="review-field-grid">{documentFields.map(renderFieldCard)}</div>
+      <section className="review-source-group">
+        <h3>{title}</h3>
+        {items.length === 0 ? (
+          <p>해당 내용이 없습니다.</p>
+        ) : (
+          <ul>
+            {items.map((view) => (
+              <li key={view.key}>
+                <strong>{queue.find((item) => item.key === view.key)?.title ?? view.label}</strong>
+                <span>{displayViewValue(view, drafts)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-    );
-  }
-
-  function renderFieldCard(view: FieldViewModel) {
-    return (
-      <ExtractionFieldCard
-        key={view.key}
-        view={view}
-        draft={drafts[view.key]}
-        verification={verificationByKey[view.key] ?? view.field.verification_status}
-        reviewed={reviewedKeys.includes(view.key)}
-        allowEmptyConfirmation={financialReviewFields.has(view.field.field_name)
-          && view.field.confidence === "실패"}
-        onValueChange={(value) => updateField(view, value)}
-        onClauseChange={(values) => updateClauseDraft(view, values)}
-        onConfirm={() => confirmField(view)}
-      />
     );
   }
 
   async function confirm() {
     setCorrectionError("");
     setConfirmationError("");
+    setAnalysisError("");
     setSubmitting(true);
 
     if (pendingCorrectionKeys.length > 0) {
@@ -295,152 +302,190 @@ export function ExtractionReviewPage() {
       try {
         await mvpService.submitCorrections(request);
         setSavedDraftKeys((current) => [...new Set([...current, ...pendingCorrectionKeys])]);
-      } catch (error) {
-        setCorrectionError(error instanceof Error ? error.message : "수정 내용을 저장하지 못했습니다.");
+      } catch {
+        setCorrectionError(
+          "수정한 내용을 저장하지 못했습니다. 입력한 내용은 이 화면에 남아 있습니다.",
+        );
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    let inputSnapshotId = confirmedInputSnapshotId;
+    if (!extractionConfirmed) {
+      try {
+        const snapshot = await mvpService.confirmExtraction(contractId);
+        setExtractionConfirmed(true);
+        setConfirmedInputSnapshotId(snapshot.input_snapshot_id);
+        inputSnapshotId = snapshot.input_snapshot_id;
+      } catch {
+        setConfirmationError(
+          "문서 내용 확인을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        );
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    if (analysisStartUncertain && inputSnapshotId) {
+      try {
+        const runs = await mvpService.getAnalysisRuns(contractId);
+        const recoveredRun = runs.find((run) => run.input_snapshot_id === inputSnapshotId);
+        if (recoveredRun) {
+          navigate(
+            `/contracts/${contractId}/analyzing?analysisRunId=${encodeURIComponent(recoveredRun.analysis_run_id)}`,
+          );
+          return;
+        }
+        setAnalysisStartUncertain(false);
+      } catch {
+        setAnalysisError(
+          "확인 결과 준비를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        );
         setSubmitting(false);
         return;
       }
     }
 
     try {
-      await mvpService.confirmExtraction(contractId);
-      navigate("/contracts/" + contractId + "/analyzing");
-    } catch (error) {
-      setConfirmationError(error instanceof Error ? error.message : "문서 내용 확인을 완료하지 못했습니다.");
+      const run = await mvpService.startAnalysis(contractId);
+      navigate(
+        `/contracts/${contractId}/analyzing?analysisRunId=${encodeURIComponent(run.analysis_run_id)}`,
+      );
+    } catch {
+      if (inputSnapshotId) {
+        try {
+          const runs = await mvpService.getAnalysisRuns(contractId);
+          const recoveredRun = runs.find((run) => run.input_snapshot_id === inputSnapshotId);
+          if (recoveredRun) {
+            navigate(
+              `/contracts/${contractId}/analyzing?analysisRunId=${encodeURIComponent(recoveredRun.analysis_run_id)}`,
+            );
+            return;
+          }
+        } catch {
+          setAnalysisStartUncertain(true);
+        }
+      }
+      setAnalysisError(
+        "확인 결과 준비를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
       setSubmitting(false);
     }
   }
 
+  const reviewFinished = currentIndex >= queue.length;
+
   return (
-    <PageShell layout="workspace" step="5 / 8" title="문서에서 읽은 내용 확인" description="잘못 읽힌 내용이 있으면 고치고, 맞는 내용은 확인해 주세요.">
+    <PageShell
+      layout="workspace"
+      step="5 / 8"
+      title="문서에서 읽은 내용 확인"
+      description="중요한 내용부터 하나씩 원문과 비교해 주세요."
+    >
       <div className="stack">
-        {status === "loading" && <LoadingState title="문서 읽기 상태를 확인하는 중" description="서버에서 문서 읽기 상태를 확인하고 있습니다." />}
-        {status === "processing" && <LoadingState title={runStatus === "pending" ? "문서 읽기 대기 중" : "문서에서 값을 읽는 중"} description="완료될 때까지 실제 처리 상태를 확인하고 있습니다." />}
-        {status === "error" && <ErrorState title="문서에서 읽은 내용을 불러오지 못했습니다" description={errorMessage} retryLabel="문서 다시 올리기" onRetry={() => navigate(`/contracts/${contractId}/upload`)} />}
-        {status === "success" && fields.length === 0 && <EmptyState title="확인할 문서 내용이 없습니다" description="문서를 다시 업로드하거나 처리 상태를 확인해 주세요." />}
-        {status === "success" && fields.length > 0 && (
-          <section className="review-focus" aria-labelledby="review-focus-title">
-            <div className="section-heading">
-              <p>모든 내용을 한꺼번에 보지 않고 중요한 세 부분부터 확인합니다</p>
-              <h2 id="review-focus-title">이번 단계에서 확인할 내용</h2>
-            </div>
-            <div className="review-focus__grid">
-              <article className="review-focus__card review-focus__card--manual">
-                <span>직접 확인</span>
-                <h3>표준계약서 서식</h3>
-                <strong>직접 확인이 필요해요</strong>
-                <p>계약서 첫 장에서 ‘법무부 주택임대차 표준계약서’와 2023.10.6. 개정 표시가 있는지 확인해 주세요.</p>
-              </article>
-              <article className="review-focus__card review-focus__card--clause">
-                <span>반드시 확인</span>
-                <h3>특약 원문</h3>
-                <strong>{specialClauseCount > 0 ? `${specialClauseCount}개 조항 추출` : "원문 확인 필요"}</strong>
-                <p>보증금 반환 조건, 책임 전가, 권리변동 관련 문구가 원문과 같은지 아래에서 확인하세요.</p>
-              </article>
-              <article className="review-focus__card">
-                <span>결과 준비</span>
-                <h3>돈과 권리에 관련된 중요 내용</h3>
-                <strong>{unresolvedFinancialFields.length > 0 ? `${unresolvedFinancialFields.length}개 확인 필요` : "필요한 내용을 읽었어요"}</strong>
-                <p>금액·지급일·예금주·소유자·근저당 등은 읽지 못한 값만 아래에 표시하고, 실제 관련 신호는 확인 완료 후 결과 준비 단계에서 확인합니다.</p>
-              </article>
-            </div>
-          </section>
+        {status === "loading" && (
+          <LoadingState
+            title="문서 읽기 상태를 확인하는 중"
+            description="서버에서 문서 읽기 상태를 확인하고 있습니다."
+          />
+        )}
+        {status === "processing" && (
+          <LoadingState
+            title={runStatus === "pending" ? "문서 읽기 대기 중" : "문서에서 값을 읽는 중"}
+            description="완료될 때까지 실제 처리 상태를 확인하고 있습니다."
+          />
+        )}
+        {status === "error" && (
+          <ErrorState
+            title="문서에서 읽은 내용을 불러오지 못했습니다"
+            description={errorMessage}
+            retryLabel="문서 다시 올리기"
+            onRetry={() => navigate(`/contracts/${contractId}/upload`)}
+          />
+        )}
+        {status === "success" && fields.length === 0 && (
+          <EmptyState
+            title="확인할 문서 내용이 없습니다"
+            description="문서를 다시 업로드하거나 처리 상태를 확인해 주세요."
+          />
         )}
         {status === "success" && fields.length > 0 && (
-          <section className="review-progress" aria-labelledby="review-progress-title">
-            <div>
-              <p>현재 확인 진행 상황</p>
-              <h2 id="review-progress-title">확인이 필요한 값부터 살펴보세요</h2>
-            </div>
-            <div className="review-progress__actions">
-              <div className="review-progress__counts">
-                <span><strong>{attentionFields.length}</strong> 직접 확인</span>
-                <span><strong>{readableFields.length + optionalFailedFields.length}</strong> 접어둔 항목</span>
-                <span><strong>{confirmedFields.length}</strong> 확인 완료</span>
+          <>
+            <p className="guided-review-progress" role="status">
+              중요한 내용 {queue.length}개 중 {completedCount}개를 확인했습니다.
+            </p>
+
+            {!reviewFinished && currentItem && (
+              <section className="guided-review-step" aria-label="현재 확인할 내용">
+                <GuidedReviewCard
+                  item={currentItem}
+                  draftValue={drafts[currentItem.key]}
+                  busy={submitting}
+                  onConfirm={() => markReviewed(currentItem)}
+                  onChange={(value) => changeCurrent(currentItem, value)}
+                  onCannotVerify={(reason) => markCannotVerify(currentItem, reason)}
+                />
+                {currentIndex > 0 && (
+                  <button
+                    className="secondary guided-review-previous"
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
+                  >
+                    이전 내용 보기
+                  </button>
+                )}
+              </section>
+            )}
+
+            {reviewFinished && (
+              <section className="guided-review-complete" aria-labelledby="review-complete-title">
+                <p>내용 확인 완료</p>
+                <h2 id="review-complete-title">중요한 내용을 모두 확인했습니다</h2>
+                <div className="guided-review-complete__counts">
+                  <span>확인한 항목 <strong>{reviewedItems.length}개</strong></span>
+                  <span>확인하지 못한 항목 <strong>{unresolvedItems.length}개</strong></span>
+                </div>
+                <p>확인하지 못한 내용도 결과에서 물어볼 항목으로 안내합니다.</p>
+                {unresolvedItems.length > 0 && (
+                  <ul>
+                    {unresolvedItems.map((item) => (
+                      <li key={item.key}>
+                        {item.title} · {reasonLabels[unresolvedReasonByKey[item.key]]}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {correctionError && <p className="error" role="alert">{correctionError}</p>}
+                {confirmationError && <p className="error" role="alert">{confirmationError}</p>}
+                {analysisError && <p className="error" role="alert">{analysisError}</p>}
+                <div className="guided-review-complete__actions">
+                  <button
+                    className="secondary"
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => setCurrentIndex(Math.max(0, queue.length - 1))}
+                  >
+                    이전 내용 보기
+                  </button>
+                  <button type="button" disabled={submitting} onClick={() => void confirm()}>
+                    {submitting ? "확인 결과를 준비하는 중…" : "이 내용으로 확인 결과 준비하기"}
+                  </button>
+                </div>
+              </section>
+            )}
+
+            <details className="review-source-details">
+              <summary>문서에서 읽은 전체 내용 보기</summary>
+              <div className="review-source-details__body">
+                {renderSummaryGroup("확인한 내용", rawReviewedFields)}
+                {renderSummaryGroup("아직 확인하지 않은 내용", rawUnreviewedFields)}
+                {renderSummaryGroup("문서에서 읽지 못한 내용", rawUnreadFields)}
               </div>
-              {readableFields.length > 0 && (
-                <button className="secondary" type="button" onClick={confirmReadableFields}>읽힌 값 모두 확인</button>
-              )}
-            </div>
-          </section>
+            </details>
+          </>
         )}
-        {status === "success" && warningEntries.length > 0 && (
-          <details className="extraction-warnings">
-            <summary>문서 처리 안내 {warningEntries.length}건</summary>
-            <div>{warningEntries.map(({ document, warning }, index) => (
-              <p className="notice" role="status" key={`${document}-warning-${index}`}><strong>{document}</strong> · {warning}</p>
-            ))}</div>
-          </details>
-        )}
-        {status === "success" && fields.length > 0 && (
-          <section className="attention-review" aria-labelledby="attention-review-title">
-            <div className="section-heading">
-              <p>특약 원문과 금전 관련 확인에 필요한 누락 항목만 먼저 모았습니다</p>
-              <h2 id="attention-review-title">특약·핵심값 확인 {attentionFields.length}개</h2>
-            </div>
-            {attentionFields.length > 0 ? (
-              <div className="review-document-stack">
-                {renderDocumentFields(attentionFields, "contract", "계약서")}
-                {renderDocumentFields(attentionFields, "registry", "등기사항증명서")}
-              </div>
-            ) : <p className="group-empty">직접 확인하거나 수정할 항목이 없습니다.</p>}
-          </section>
-        )}
-        {status === "success" && readableFields.length > 0 && (
-          <details className="readable-fields">
-            <summary>
-              <span><strong>문서에서 읽힌 값</strong><small>{readableFields.length}개 · 필요할 때 펼쳐서 수정할 수 있습니다.</small></span>
-              <span className="collapse-arrow" aria-hidden="true">▸</span>
-            </summary>
-            <div className="readable-fields__body">
-              <div className="readable-fields__toolbar">
-                <p>원문과 맞는지 훑어본 뒤 한 번에 확인할 수 있습니다.</p>
-              </div>
-              <div className="review-document-stack">
-                {renderDocumentFields(readableFields, "contract", "계약서")}
-                {renderDocumentFields(readableFields, "registry", "등기사항증명서")}
-              </div>
-            </div>
-          </details>
-        )}
-        {status === "success" && optionalFailedFields.length > 0 && (
-          <details className="readable-fields optional-failed-fields">
-            <summary>
-              <span><strong>그 밖에 읽지 못한 값</strong><small>{optionalFailedFields.length}개 · 확인할 수 있는 값만 입력해도 됩니다.</small></span>
-              <span className="collapse-arrow" aria-hidden="true">▸</span>
-            </summary>
-            <div className="readable-fields__body">
-              <p className="group-empty">현재 문서에서 읽지 못한 값입니다. 결과는 해당 내용이 없는 상태로 준비되며, 원문에서 확인되는 경우에만 직접 입력하세요.</p>
-              <div className="review-document-stack">
-                {renderDocumentFields(optionalFailedFields, "contract", "계약서")}
-                {renderDocumentFields(optionalFailedFields, "registry", "등기사항증명서")}
-              </div>
-            </div>
-          </details>
-        )}
-        {status === "success" && confirmedFields.length > 0 && (
-          <details className="confirmed-fields">
-            <summary>
-              <span>확인된 항목 {confirmedFields.length}개</span>
-              <span className="collapse-arrow" aria-hidden="true">▸</span>
-            </summary>
-            <div className="confirmed-fields__items">
-              {confirmedFields.map(renderFieldCard)}
-            </div>
-          </details>
-        )}
-        {pendingCorrectionKeys.length > 0 && <p className="unsaved" role="status">저장되지 않은 수정 {pendingCorrectionKeys.length}건</p>}
-        {correctionError && <p className="error" role="alert">수정 요청 실패: {correctionError}</p>}
-        {confirmationError && <p className="error" role="alert">확인 실패: {confirmationError}</p>}
-        {status === "success" && fields.length > 0 && hasUnverified && (
-          <p className="notice review-remaining" role="status">
-            <span>확인하지 않은 항목이 남아 있어 결과 준비를 시작할 수 없습니다.</span>
-            <small> 확인이 필요한 항목 {blockingFields.length}개를 완료해 주세요.</small>
-          </p>
-        )}
-        <button type="button" disabled={status !== "success" || fields.length === 0 || hasUnverified || submitting} onClick={() => void confirm()}>
-          {submitting ? "확인 내용을 저장하는 중…" : "확인 완료하고 결과 준비하기"}
-        </button>
       </div>
     </PageShell>
   );

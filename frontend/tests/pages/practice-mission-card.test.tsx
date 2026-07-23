@@ -12,6 +12,7 @@ describe("PracticeMissionCard", () => {
     render(<PracticeMissionCard scenarioId="PRACTICE-DEFERRED-REFUND-001" confirmedCount={2} />);
     expect(screen.getByText("2 / 3")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "미션 진행률" })).toHaveAttribute("aria-valuemax", "3");
+    expect(screen.getByText("연습에서 확인 행동 3개를 하나씩 자신의 말로 해 보세요.")).toBeInTheDocument();
   });
 
   it("clamps progress to the declared target", () => {
@@ -32,6 +33,9 @@ describe("PracticeMissionCard", () => {
     render(<PracticeMissionCard scenarioId="PRACTICE-UNKNOWN-999" confirmedCount={7} />);
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByText("7개 확인")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "계약을 서두르지 않고 확인하기" })).toBeInTheDocument();
+    expect(screen.getByText("상대방의 제안을 바로 받아들이기 전에 필요한 내용을 자신의 말로 확인해 보세요.")).toBeInTheDocument();
+    expect(screen.queryByText("PRACTICE-UNKNOWN-999")).not.toBeInTheDocument();
   });
 
   it("hides all progress before the session starts", () => {

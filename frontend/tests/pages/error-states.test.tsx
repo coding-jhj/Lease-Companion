@@ -29,10 +29,11 @@ describe("primary page API errors", () => {
   });
 
   it("shows a retryable dashboard state for a 500 response", async () => {
-    vi.spyOn(mvpService, "getContracts").mockRejectedValue(new ApiError("internal_error", "계약 목록을 불러오지 못했습니다.", 500));
+    vi.spyOn(mvpService, "getContracts").mockRejectedValue(new ApiError("provider_error", "provider failed for case_id=CASE-001", 500));
     render(<MemoryRouter><DashboardPage /></MemoryRouter>);
 
-    expect(await screen.findByText("계약 목록을 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(await screen.findByText("계약 목록을 불러오지 못했습니다. 저장된 계약 정보는 변경되지 않았습니다. 다시 시도해 주세요.")).toBeInTheDocument();
+    expect(screen.queryByText(/provider failed|case_id/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다시 시도" })).toBeInTheDocument();
   });
 
@@ -54,8 +55,8 @@ describe("primary page API errors", () => {
         <Routes><Route path="/contracts/:contractId/upload" element={<DocumentUploadPage />} /></Routes>
       </MemoryRouter>,
     );
-    fireEvent.change(screen.getByLabelText("계약서"), {
-      target: { files: [new File(["synthetic"], "contract.txt", { type: "text/plain" })] },
+    fireEvent.change(screen.getByLabelText("계약서 사진 또는 파일 올리기"), {
+      target: { files: [new File(["synthetic"], "contract.pdf", { type: "application/pdf" })] },
     });
     fireEvent.click(screen.getByRole("button", { name: "업로드하고 다음 단계로" }));
 
@@ -71,11 +72,11 @@ describe("primary page API errors", () => {
         <Routes><Route path="/contracts/:contractId/upload" element={<DocumentUploadPage />} /></Routes>
       </MemoryRouter>,
     );
-    fireEvent.change(screen.getByLabelText("계약서"), {
+    fireEvent.change(screen.getByLabelText("계약서 사진 또는 파일 올리기"), {
       target: { files: [new File(["unsafe"], "contract.exe", { type: "application/octet-stream" })] },
     });
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("PDF, JPG, PNG 또는 비식별 데모용 TXT 파일만");
+    expect(await screen.findByRole("alert")).toHaveTextContent("PDF, JPG, JPEG 또는 PNG 파일만 업로드할 수 있습니다.");
     expect(upload).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { practiceMediaForScenario } from "./practiceMediaManifest";
+import { practiceMediaForScenario, sharedPoster } from "./practiceMediaManifest";
 
 type AvatarMode = "idle" | "speaking" | "listening" | "pressure";
 
@@ -18,6 +18,10 @@ interface PracticeAvatarStageProps {
   submitting: boolean;
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+}
+
 export function PracticeAvatarStage({
   scenarioId,
   prompt,
@@ -29,22 +33,42 @@ export function PracticeAvatarStage({
   const [mode, setMode] = useState<AvatarMode>("idle");
   const [playbackId, setPlaybackId] = useState(0);
   const [videoUnavailable, setVideoUnavailable] = useState(false);
+  const [reducedMotion] = useState(prefersReducedMotion);
+  const [userPlaybackRequested, setUserPlaybackRequested] = useState(false);
   const pressurePlayedForPrompt = useRef<string | null>(null);
+  const playbackFailed = useRef(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const source = avatarVideos[mode];
+  const hasVideo = Boolean(source);
+
+  function requestPlayback() {
+    if (!videoRef.current || !hasVideo) return;
+    try {
+      const result = videoRef.current.play();
+      if (result) void result.catch(() => setVideoUnavailable(true));
+    } catch {
+      setVideoUnavailable(true);
+    }
+  }
 
   useEffect(() => {
     pressurePlayedForPrompt.current = null;
+    playbackFailed.current = false;
     setMode("speaking");
     setPlaybackId((current) => current + 1);
+    setVideoUnavailable(false);
   }, [prompt]);
 
   useEffect(() => {
-    if (
-      mode !== "listening"
-      || pressureDelaySeconds === null
-      || hasUserInput
-      || pressurePlayedForPrompt.current === prompt
-    ) return;
+    if (!hasVideo) return;
+    if (!reducedMotion || userPlaybackRequested) {
+      requestPlayback();
+      setUserPlaybackRequested(false);
+    }
+  }, [hasVideo, mode, playbackId, reducedMotion, userPlaybackRequested]);
 
+  useEffect(() => {
+    if (mode !== "listening" || pressureDelaySeconds === null || hasUserInput || pressurePlayedForPrompt.current === prompt) return;
     const timer = window.setTimeout(() => {
       pressurePlayedForPrompt.current = prompt;
       setMode("pressure");
@@ -54,7 +78,10 @@ export function PracticeAvatarStage({
   }, [hasUserInput, mode, pressureDelaySeconds, prompt]);
 
   function replayPrompt() {
+    playbackFailed.current = false;
+    setVideoUnavailable(false);
     setMode("speaking");
+    setUserPlaybackRequested(true);
     setPlaybackId((current) => current + 1);
   }
 
@@ -63,33 +90,43 @@ export function PracticeAvatarStage({
   }
 
   function handleVideoError() {
-    // 영상 누락·재생 오류 시 빈 검은 화면 대신 대사·안내로 계속 진행한다.
+    playbackFailed.current = true;
     setVideoUnavailable(true);
-    // 발화·재촉 영상이 끊겨도 답변 단계로 넘어가 미션을 막지 않는다.
-    if (mode === "speaking" || mode === "pressure") setMode("listening");
   }
+
+  const fallbackMessage = !hasVideo
+    ? "재생할 영상을 찾지 못했습니다. 아래 대사로 연습을 계속할 수 있습니다."
+    : videoUnavailable
+      ? "영상을 재생하지 못했습니다. 아래 대사로 연습을 계속할 수 있습니다."
+      : null;
 
   return (
     <section className="practice-avatar-stage" aria-labelledby="practice-avatar-title">
-      <div className={`practice-avatar-stage__video-wrap${videoUnavailable ? " practice-avatar-stage__video-wrap--fallback" : ""}`}>
-        <video
-          key={`${mode}-${playbackId}`}
-          className="practice-avatar-stage__video"
-          src={avatarVideos[mode]}
-          autoPlay
-          muted
-          playsInline
-          loop={mode === "idle" || mode === "listening"}
-          preload="auto"
-          onEnded={handleEnded}
-          onError={handleVideoError}
-          onPlaying={() => setVideoUnavailable(false)}
-        />
-        {videoUnavailable && (
-          <p className="practice-avatar-stage__video-fallback" role="status">
-            영상을 재생할 수 없어 아래 대사와 안내 문구로 계속 진행합니다.
-          </p>
+      <div className={`practice-avatar-stage__video-wrap${fallbackMessage ? " practice-avatar-stage__video-wrap--fallback" : ""}`}>
+        {hasVideo && (
+          <video
+            ref={videoRef}
+            key={`${mode}-${playbackId}`}
+            data-testid="practice-video"
+            className="practice-avatar-stage__video"
+            src={source}
+            poster={sharedPoster}
+            autoPlay={!reducedMotion}
+            muted
+            playsInline
+            loop={mode === "idle" || mode === "listening"}
+            preload="auto"
+            onEnded={handleEnded}
+            onAbort={handleVideoError}
+            onError={handleVideoError}
+          onPlaying={() => {
+            if (!playbackFailed.current) {
+              setVideoUnavailable(false);
+            }
+          }}
+          />
         )}
+        {fallbackMessage && <p className="practice-avatar-stage__video-fallback" role="status">{fallbackMessage}</p>}
         <span className={`practice-avatar-stage__status practice-avatar-stage__status--${mode}`} role="status" aria-live="polite">
           {avatarLabels[mode]}
         </span>
@@ -99,8 +136,8 @@ export function PracticeAvatarStage({
           <p>공인중개사</p>
           <h2 id="practice-avatar-title">{prompt}</h2>
         </div>
-        <button type="button" className="secondary" onClick={replayPrompt} disabled={submitting}>
-          장면 다시 보기
+        <button type="button" className="secondary practice-avatar-stage__retry" onClick={replayPrompt} disabled={submitting}>
+          {reducedMotion ? "장면 재생" : "장면 다시 보기"}
         </button>
       </div>
     </section>
