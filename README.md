@@ -158,10 +158,10 @@ DB 연결을 확인하려면 같은 `backend` 터미널에서 `python -m app.cor
 ```powershell
 cd backend
 ..\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8301
 ```
 
-`http://127.0.0.1:8000/health`에서 `{"status":"ok"}`가 나오면 준비된 상태다. API 문서는 `http://127.0.0.1:8000/docs`에서 확인한다.
+`http://127.0.0.1:8301/health`에서 `{"status":"ok"}`가 나오면 준비된 상태다. API 문서는 `http://127.0.0.1:8301/docs`에서 확인한다.
 
 ### 4. 프론트엔드 실행 (터미널 2)
 
@@ -170,7 +170,15 @@ cd frontend
 npm run dev
 ```
 
-브라우저에서 `http://127.0.0.1:5173`에 접속한다. 기본 개발 모드는 MSW가 아니라 `http://127.0.0.1:8000`의 실제 백엔드 API를 사용한다.
+브라우저에서 `http://127.0.0.1:5173`에 접속한다. 기본 개발 모드는 MSW가 아니라 `http://127.0.0.1:8301`의 실제 백엔드 API를 사용한다.
+
+실전 계약 점검을 한 명령으로 직접 검증하려면 Docker Desktop을 켠 뒤 저장소 루트에서 다음을 실행한다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-dev.ps1 -RealContractValidation
+```
+
+수동 확인 순서와 실제 API E2E, Gemini·Cohere 키를 사용하는 검증 경계는 [`docs/testing/real-contract-validation.md`](docs/testing/real-contract-validation.md)를 따른다.
 
 개발 확인용 문서는 다음 합성 샘플을 사용할 수 있다.
 
@@ -207,4 +215,4 @@ python -m pip install -r requirements-minimum-mvp.txt
 - **검증 경계**: 실제 FastAPI·PostgreSQL 브라우저 E2E와 API 키 없는 fallback 흐름은 검증 기록이 있다. 실제 Gemini·Cohere 네트워크 응답 품질·비용은 아직 검증하지 않았다.
 - **현재 제한**: R20~R22 외부 데이터 자동 연결, 운영 배포·보안 정책, 실제 provider 품질 평가, 독립 평가셋 검토는 후속이다.
 
-실행 기준은 위 로컬 실행 절, [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md), [`docs/testing/practice-real-api-validation.md`](docs/testing/practice-real-api-validation.md)를 따른다.
+실행 기준은 위 로컬 실행 절, [`docs/testing/real-contract-validation.md`](docs/testing/real-contract-validation.md), [`docs/planning/minimum-mvp-runbook.md`](docs/planning/minimum-mvp-runbook.md), [`docs/testing/practice-real-api-validation.md`](docs/testing/practice-real-api-validation.md)를 따른다.

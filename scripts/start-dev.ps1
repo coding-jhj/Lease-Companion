@@ -1,4 +1,4 @@
-#requires -Version 7
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
   로컬 통합 개발 스택 기동: PostgreSQL → 백엔드(app.main:app) → 프론트(Vite, MSW off).
@@ -20,31 +20,58 @@
 .PARAMETER PracticeValidation
   계약 연습 수동 검증 모드. Gemini 키와 MSW를 끄고 Fake provider를 사용하며,
   서버 준비 후 회원가입 화면을 기본 브라우저로 연다.
+
+.PARAMETER RealContractValidation
+  실전 계약 점검 수동 검증 모드. MSW를 끄고 실제 FastAPI·PostgreSQL 경로를 사용하며,
+  backend/.env의 provider 키 설정은 그대로 유지한다.
+
+.PARAMETER NoBrowser
+  검증 모드에서 준비 완료 후 브라우저를 자동으로 열지 않는다.
 #>
 param(
     [switch]$Force,
     [switch]$SkipMigrate,
-    [switch]$PracticeValidation
+    [switch]$PracticeValidation,
+    [switch]$RealContractValidation,
+    [switch]$NoBrowser
 )
 
 $ErrorActionPreference = 'Stop'
+if ($PracticeValidation -and $RealContractValidation) {
+    throw '-PracticeValidation과 -RealContractValidation은 동시에 사용할 수 없습니다.'
+}
+
 $env:PYTHONUTF8 = '1'
 $env:PYTHONIOENCODING = 'utf-8'
 $root     = Split-Path -Parent $PSScriptRoot
 $backend  = Join-Path $root 'backend'
 $frontend = Join-Path $root 'frontend'
 $compose  = Join-Path $root 'docker-compose.yml'
+$envFile  = Join-Path $backend '.env'
+$repoPython = Join-Path $root '.venv\Scripts\python.exe'
+$python = if (Test-Path $repoPython) { $repoPython } else { 'python' }
 
-if ($PracticeValidation) {
-    $env:GEMINI_API_KEY = ''
-    $env:GOOGLE_API_KEY = ''
-    $env:PRACTICE_OFFLINE_MODE = 'true'
-    $env:VITE_ENABLE_MSW = ''
-
-    $envFile = Join-Path $backend '.env'
+if ($PracticeValidation -or $RealContractValidation) {
     if (-not (Test-Path $envFile)) {
         Copy-Item -LiteralPath (Join-Path $backend '.env.example') -Destination $envFile
     }
+    $env:GEMINI_API_KEY = ''
+    $env:GOOGLE_API_KEY = ''
+    $env:VITE_ENABLE_MSW = ''
+}
+
+if ($PracticeValidation) {
+    $env:PRACTICE_OFFLINE_MODE = 'true'
+}
+
+if ($RealContractValidation) {
+    # 실전 계약 검증은 backend/.env의 provider 설정을 그대로 사용한다.
+    Remove-Item Env:GEMINI_API_KEY -ErrorAction SilentlyContinue
+    Remove-Item Env:GOOGLE_API_KEY -ErrorAction SilentlyContinue
+}
+
+if (-not (Test-Path $envFile)) {
+    throw 'backend/.env 없음. backend/.env.example을 복사한 뒤 다시 실행하세요.'
 }
 
 $logDir = Join-Path $env:TEMP 'lease-dev-logs'
@@ -61,16 +88,16 @@ function Ok($m)   { Write-Host "✓ $m" -ForegroundColor Green }
 
 Write-Host '[점검] 사전 확인' -ForegroundColor Cyan
 
-# 0) lease 환경 확인 (uvicorn import 가능?)
-& python -c 'import uvicorn' 2>$null
+# 0) 저장소 가상환경 우선 확인 (활성화하지 않아도 실행 가능)
+& $python -c 'import uvicorn' 2>$null
 if ($LASTEXITCODE -ne 0) { Fail 'python에서 uvicorn을 찾을 수 없음. lease 환경을 활성화했는지 확인 (conda activate lease).' }
-Ok 'Python·uvicorn 확인'
+Ok "Python·uvicorn 확인 ($python)"
 
 # 1) PostgreSQL 기동 + 준비 대기
-& docker compose -f $compose up -d db | Out-Null
+& docker compose --env-file $envFile -f $compose up -d db | Out-Null
 $deadline = (Get-Date).AddSeconds(30)
 do {
-    & docker compose -f $compose exec -T db pg_isready -U lease 2>$null | Out-Null
+    & docker compose --env-file $envFile -f $compose exec -T db pg_isready -U lease 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) { break }
     Start-Sleep -Seconds 1
 } while ((Get-Date) -lt $deadline)
@@ -78,7 +105,6 @@ if ($LASTEXITCODE -ne 0) { Fail 'PostgreSQL(5433) 준비 안 됨. Docker Desktop
 Ok 'PostgreSQL 준비됨 (5433)'
 
 # 2) backend/.env · DATABASE_URL
-$envFile = Join-Path $backend '.env'
 if (-not (Test-Path $envFile)) { Fail 'backend/.env 없음. backend/.env.example 을 복사하세요.' }
 if (-not (Select-String -Path $envFile -Pattern '^DATABASE_URL=' -Quiet)) { Fail 'backend/.env에 DATABASE_URL 이 없음.' }
 Ok 'backend/.env · DATABASE_URL 확인'
@@ -106,13 +132,13 @@ Ok '포트 8301·5173 비어있음'
 # 4) migration
 if (-not $SkipMigrate) {
     Push-Location $backend
-    try { & alembic upgrade head } finally { Pop-Location }
+    try { & $python -m alembic upgrade head } finally { Pop-Location }
     if ($LASTEXITCODE -ne 0) { Fail 'alembic upgrade head 실패.' }
     Ok 'migration head 적용'
 }
 
 Write-Host '[기동] 백엔드·프론트 시작' -ForegroundColor Cyan
-$be = Start-Process -FilePath 'python' `
+$be = Start-Process -FilePath $python `
     -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8301' `
     -WorkingDirectory $backend `
     -RedirectStandardOutput $logs['BE-out'] -RedirectStandardError $logs['BE-err'] `
@@ -124,7 +150,7 @@ $fe = Start-Process -FilePath 'npm.cmd' `
     -PassThru -NoNewWindow
 Ok "백엔드 PID $($be.Id) / 프론트 PID $($fe.Id)"
 
-if ($PracticeValidation) {
+if ($PracticeValidation -or $RealContractValidation) {
     Write-Host '[대기] 검증 화면 준비 중' -ForegroundColor Cyan
     $deadline = (Get-Date).AddSeconds(60)
     do {
@@ -141,9 +167,25 @@ if ($PracticeValidation) {
 
     if ($backendReady -and $frontendReady) {
         $validationUrl = 'http://127.0.0.1:5173/signup'
-        Start-Process $validationUrl
-        Ok "검증 화면 열림: $validationUrl"
-        Write-Host '회원가입 → 로그인 → 내 계약의 [가상 계약 대화 연습]을 선택하세요.' -ForegroundColor Cyan
+        if (-not $NoBrowser) { Start-Process $validationUrl }
+        Ok "검증 화면 준비됨: $validationUrl"
+        if ($PracticeValidation) {
+            Write-Host '회원가입 → 로그인 → 내 계약의 [가상 계약 대화 연습]을 선택하세요.' -ForegroundColor Cyan
+        }
+        else {
+            $geminiConfigured = Select-String -LiteralPath $envFile -Pattern '^(GEMINI_API_KEY|GOOGLE_API_KEY)=.+$' -Quiet
+            $cohereConfigured = Select-String -LiteralPath $envFile -Pattern '^COHERE_API_KEY=.+$' -Quiet
+            Write-Host '회원가입 → 실전 계약 점검 → 계약서 초안 → 문서 업로드 순서로 확인하세요.' -ForegroundColor Cyan
+            if ($geminiConfigured) {
+                Write-Host 'Gemini 키 감지: 업로드 문서에서 실제 Gemini 호출이 발생할 수 있습니다.' -ForegroundColor Yellow
+            }
+            else {
+                Write-Host 'Gemini 키 없음: 디지털 PDF/TXT는 로컬 fallback, 스캔·사진 PDF OCR은 검증할 수 없습니다.' -ForegroundColor Yellow
+            }
+            if (-not $cohereConfigured) {
+                Write-Host 'Cohere 키 없음: 공식 근거 검색은 로컬 BM25 경로를 사용합니다.' -ForegroundColor Yellow
+            }
+        }
     }
     else {
         Write-Host '! 60초 안에 검증 화면이 준비되지 않았습니다. 아래 [BE]·[FE] 로그를 확인하세요.' -ForegroundColor Yellow

@@ -15,7 +15,9 @@ test("situation entry and critical report actions work with the keyboard", async
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
   await page.getByRole("link", { name: /실전 계약 점검/ }).click();
   const noDraftCard = page.getByRole("link", { name: /아직 계약서를 받지 않았어요/ });
-  const draftCard = page.getByRole("link", { name: /계약서 초안을 받았어요/ });
+  const draftCard = page.getByRole("link", {
+    name: "계약서 초안 등을 받아 점검해 보기",
+  });
   await noDraftCard.focus();
   await expect(noDraftCard).toBeFocused();
   await page.keyboard.press("Tab");
@@ -111,7 +113,7 @@ test("situation entry and critical report actions work with the keyboard", async
   const completeHeading = page.getByRole("heading", {
     name: "중요한 내용을 모두 확인했습니다",
   });
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
     if (await completeHeading.isVisible()) break;
     await confirmCurrent.focus();
     await expect(confirmCurrent).toBeFocused();

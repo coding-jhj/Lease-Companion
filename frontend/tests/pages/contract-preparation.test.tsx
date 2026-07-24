@@ -18,12 +18,22 @@ describe("ContractPreparationPage", () => {
   it("offers preparation actions without creating a contract", () => {
     render(<MemoryRouter><ContractPreparationPage /></MemoryRouter>);
 
-    expect(screen.getByRole("heading", { name: "계약 전에 세 가지만 준비해 보세요" })).toBeInTheDocument();
-    expect(screen.getByText("집을 볼 때")).toBeInTheDocument();
-    expect(screen.getByText("계약서 초안을 요청할 때")).toBeInTheDocument();
-    expect(screen.getByText("가계약금을 보내기 전에")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "이 상황을 연습해 볼게요" })).toHaveAttribute("href", "/practice");
-    expect(screen.getByRole("link", { name: "계약서 초안을 받았어요" })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.getByRole("heading", { name: "계약 전, 금전 피해와 분쟁을 줄이는 준비" })).toBeInTheDocument();
+    expect(screen.getByText("급하게 결정하지 않아도 괜찮아요")).toBeInTheDocument();
+    expect(screen.getByText("집을 볼 때 유의할 점")).toBeInTheDocument();
+    expect(screen.getByText("누수·곰팡이·결로·침수 흔적")).toBeInTheDocument();
+    expect(screen.getByText("가계약하기 전에 자료 요청")).toBeInTheDocument();
+    expect(screen.getByText("가계약금을 보내기 전에 다음 자료를 먼저 요청하세요.")).toBeInTheDocument();
+    expect(screen.getByText("등기사항증명서")).toBeInTheDocument();
+    expect(screen.getByText("계약서 초안 사본")).toBeInTheDocument();
+    expect(screen.getByText("특약사항")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "주의할 점" })).toBeInTheDocument();
+    expect(screen.getByText(/계약 성립 여부와 반환 조건을 둘러싼 분쟁/)).toBeInTheDocument();
+    expect(screen.getByText(/자료와 조건을 확인할 때까지 송금을 보류/)).toBeInTheDocument();
+    expect(screen.getByText("가계약금을 보내기 전에 확인하기")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "다음에 무엇을 해볼까요?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "계약서 초안 등을 받아 점검해 보기" })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.getByRole("link", { name: "계약할 때 시뮬레이션 체험하러 가기" })).toHaveAttribute("href", "/practice");
   });
 
   it("shows a status message after copying the draft request", async () => {
@@ -34,7 +44,7 @@ describe("ContractPreparationPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "문구 복사" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("요청 문장을 복사했습니다.");
-    expect(writeText).toHaveBeenCalledWith("서명하기 전에 계약서 내용을 먼저 확인하고 싶습니다. 초안을 보내주실 수 있을까요?");
+    expect(writeText).toHaveBeenCalledWith("가계약금을 보내기 전에 확인하고 싶습니다. 등기사항증명서, 계약서 초안 사본, 특약사항을 먼저 보내주실 수 있을까요?");
   });
 
   it("shows an alert when copying the draft request is rejected", async () => {
