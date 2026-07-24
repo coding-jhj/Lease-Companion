@@ -24,6 +24,7 @@ if (-not $BackendPython) {
 
 $required = @(
     (Join-Path $MuseTalkRoot 'scripts\inference.py'),
+    (Join-Path $MuseTalkRoot 'scripts\realtime_inference.py'),
     $MuseTalkPython,
     $BackendPython,
     (Join-Path $AssetRoot 'models\musetalkV15\unet.pth'),
@@ -34,6 +35,7 @@ $required = @(
     (Join-Path $AssetRoot 'models\sd-vae\diffusion_pytorch_model.bin'),
     (Join-Path $AssetRoot 'models\whisper\config.json'),
     (Join-Path $AssetRoot 'models\whisper\pytorch_model.bin'),
+    (Join-Path $repoRoot 'scripts\avatar\musetalk_realtime_worker.py'),
     (Join-Path $repoRoot 'frontend\public\practice\avatar\musetalk-source.mp4')
 )
 
@@ -59,6 +61,11 @@ try {
     & $MuseTalkPython -c "import scripts.inference, torch; assert torch.cuda.is_available(); print('musetalk=ok'); print('torch=' + torch.__version__); print('gpu=' + torch.cuda.get_device_name(0))"
     if ($LASTEXITCODE -ne 0) {
         throw 'MuseTalk import or CUDA validation failed.'
+    }
+
+    & $MuseTalkPython -m py_compile (Join-Path $repoRoot 'scripts\avatar\musetalk_realtime_worker.py')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Persistent MuseTalk runtime script validation failed.'
     }
 }
 finally {

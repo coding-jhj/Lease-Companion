@@ -35,6 +35,10 @@ from app.api.routes import (  # noqa: E402
 from app.core.db import Base, engine  # noqa: E402
 from app.core.errors import register_error_handlers  # noqa: E402
 from app.workers.analysis import fail_stale_runs  # noqa: E402
+from app.workers.practice_media import (  # noqa: E402
+    shutdown_practice_media_worker,
+    warm_practice_media_worker,
+)
 
 
 @asynccontextmanager
@@ -44,7 +48,11 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
     # 재시작으로 중단된 추출·분석·생성 실행을 failed로 정리 — 클라이언트 무한 폴링 방지
     fail_stale_runs()
-    yield
+    warm_practice_media_worker()
+    try:
+        yield
+    finally:
+        shutdown_practice_media_worker()
 
 
 app = FastAPI(title="슬기로운 계약생활 API", version="0.0.0", lifespan=lifespan)
