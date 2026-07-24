@@ -331,10 +331,30 @@ class GenerationService:
         collect = getattr(collector_service, method_name)
         for value in values:
             collect(value)
+        requests = tuple(collector.calls)
         try:
-            drafts = self._provider.generate_batch(tuple(collector.calls))
-        except ProviderError:
+            drafts = self._provider.generate_batch(requests)
+        except ProviderError as exc:
+            # 배치가 통째로 실패하면 모든 항목이 provider_error 폴백이 되는데,
+            # 지금까지 그 사유가 어디에도 남지 않아 원인 추적이 막혔다.
+            logger.warning(
+                "배치 생성 실패 method=%s 요청=%d — 전 항목 템플릿 폴백: %s",
+                method_name,
+                len(requests),
+                exc,
+            )
             drafts = {}
+        missing = [
+            request.rule_id for request in requests if request.rule_id not in drafts
+        ]
+        if missing:
+            logger.warning(
+                "배치 생성 응답 누락 method=%s 요청=%d 수신=%d 누락=%s",
+                method_name,
+                len(requests),
+                len(drafts),
+                ",".join(missing[:10]) + ("…" if len(missing) > 10 else ""),
+            )
         renderer = _DraftProvider(self._provider.model_name, drafts)
         render_service = GenerationService(
             renderer, prompts=self._prompts, guardrails=self._guardrails

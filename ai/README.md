@@ -78,7 +78,7 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 ## 현재 상태 / TODO
 
-- 구현됨(실전 계약 점검): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `classification`(Gemini provider·safe fallback), `rules`(R01~R24·J01~J12), `pipelines`, canonical `schemas` v1.8.0 읽기 호환·v1.9.0 신규 출력 경로. Backend worker가 classification과 규칙 결과를 내부 저장한다.
+- 구현됨(실전 계약 점검): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `classification`(Gemini provider·safe fallback), `rules`(R01~R24·J01~J13), `pipelines`, canonical `schemas` v1.8.0 읽기 호환·v1.9.0 신규 출력 경로. Backend worker가 classification과 규칙 결과를 내부 저장한다.
 - 구현됨(RAG·특약): 공식 출처 manifest는 `official_verified` 10건이며 그중 재배포 조건을 충족한 로컬 source 6건을 사용한다. 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R/J 근거 enrichment, 특약 6유형 매칭·검색·생성·Guardrail·평가를 구현했다. key·provider·인덱스 실패 시 로컬 BM25 또는 빈 근거로 축소한다. 실제 외부 provider 품질 검증은 미수행이다.
 - 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
 - 구현됨(평가·routing): 추출·사용자 수정·R/J 규칙·RAG·생성·Guardrail·PII·end-to-end offline 평가와 provider 오류·할당량·응답 검증 실패 분류, provider→결정적 fallback·embedding→BM25·Cohere→hybrid fallback 실행 계층.

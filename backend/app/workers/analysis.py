@@ -193,7 +193,7 @@ def run_analysis(analysis_run_pk: int) -> None:
                 )
             # 데모 해설용 단계 요약 — 판정 id·건수만. 문서 내용·개인정보는 남기지 않는다.
             logger.info(
-                "[3/4] 규칙 판정 완료 (analysis_run_id=%s R=%d J=%d 특약근거=%d "
+                "[3/4] 규칙 판정 완료 (analysis_run_id=%s R=%d J=%d 특약카드=%d "
                 "즉시확인=%d 상태=%s 근거있음=%d/%d)",
                 run.analysis_run_id,
                 len(analysis.results),

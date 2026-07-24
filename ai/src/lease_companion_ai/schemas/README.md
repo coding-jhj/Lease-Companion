@@ -13,7 +13,7 @@ AI 입출력의 정형 구조를 정의한다. 문서별 필드, 판정 결과, 
 ## 하위 구조
 
 - 문서별 필드 스키마 (계약서·등기사항증명서·건축물대장)
-- 판정 스키마 (결과 상태 9개, 시급도 5개, 판정 J01~J12)
+- 판정 스키마 (결과 상태 9개, 시급도 5개, 판정 J01~J13)
 - 조항 분류 스키마 (`clause_type`·`clarity`·`responsible_party`·`condition`·`review_required`)
 - 생성 산출물 스키마 (설명·질문·체크리스트·행동)
 
@@ -32,7 +32,7 @@ AI 입출력의 정형 구조를 정의한다. 문서별 필드, 판정 결과, 
 - CASE-001 fixture 생성: `conda run -n lease-py310 python scripts/generate_case001_fixture.py` → `data/sample/fixtures/case-001/`.
 - 사용법·인계: [`docs/api/data-contract-v1.md`](../../../../docs/api/data-contract-v1.md)
 - `minimum_mvp.py`(기존 dataclass)는 데모 API 호환 wrapper에만 유지한다. 실제 추출·분석 내부 경로는 unified 모델 검증과 어댑터를 통과하며, legacy 평면 요청에서는 수정 이력을 복원하지 않는다.
-- `InputSnapshot`은 불변 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증한다. 중첩 필드·목록·매핑까지 불변이며 명시적으로 확인된 필드만 허용한다. `AnalysisRunResult.results`는 R01~R10을 순서대로 정확히 10개 요구한다. `judgments`는 1단계 R-only 실행의 빈 목록 또는 2단계 J01~J12 전체 순서만 허용한다.
+- `InputSnapshot`은 불변 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증한다. 중첩 필드·목록·매핑까지 불변이며 명시적으로 확인된 필드만 허용한다. `AnalysisRunResult.results`는 R01~R10을 순서대로 정확히 10개 요구한다. `judgments`는 1단계 R-only 실행의 빈 목록 또는 2단계 canonical 순서 전체(현재 J01~J13, 레거시 J01~J12 읽기 호환)만 허용한다.
 - `RuleResult.result_type`은 `judgment|fact_flag`로 R01~R10별 고정되며, `triggers_actions`는 현재 status가 후속 질문·체크리스트·행동을 활성화하는지 나타낸다. 모델이 두 값의 조합을 검증한다.
-- `JudgmentResult`는 J01~J12 식별자·판정별 허용 상태·행동 트리거·`확인 불가→분석 불가`를 검증한다.
-- `JudgmentInput`은 판정별 필수 필드만 확인 완료 snapshot에서 복사하며, null 입력에는 `issue_code`를 요구한다. J10~J12는 원문 필드와 별도 불변 `classification_candidates`를 함께 받고, 후보가 R01~R10 입력을 변경하지 못한다. `rules/judgments.py`가 J01~J12를 실행한다.
+- `JudgmentResult`는 canonical J 식별자·판정별 허용 상태·행동 트리거·`확인 불가→분석 불가`를 검증한다.
+- `JudgmentInput`은 판정별 필수 필드만 확인 완료 snapshot에서 복사하며, null 입력에는 `issue_code`를 요구한다. J10~J12는 원문 필드와 별도 불변 `classification_candidates`를 함께 받고, 후보가 R01~R10 입력을 변경하지 못한다. `rules/judgments.py`가 J01~J13을 실행한다.

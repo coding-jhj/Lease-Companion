@@ -166,6 +166,72 @@ def test_gemini_generation_batches_multiple_requests_into_one_sdk_call():
     assert [item["rule"]["rule_id"] for item in payload["items"]] == ["R01", "R02"]
 
 
+def _batch_of(*rule_ids: str) -> GeneratedGuidanceBatch:
+    return GeneratedGuidanceBatch(
+        items=tuple(
+            GeneratedGuidanceBatchItem(
+                item_id=rule_id,
+                explanation=f"{rule_id}을 확인하세요.",
+                source_ids=("SRC-HTA-LAW",),
+            )
+            for rule_id in rule_ids
+        )
+    )
+
+
+def _requests(count: int) -> tuple[GenerationRequest, ...]:
+    return tuple(
+        replace(_request(), rule_id=f"R{index:02d}")
+        for index in range(1, count + 1)
+    )
+
+
+def test_gemini_generation_splits_batch_to_fit_output_budget():
+    """한 번에 다 보내면 응답이 잘려 배치 전체가 무효가 된다(2026-07-23 실측)."""
+    requests = _requests(6)
+    models = FakeModels(_batch_of(*(request.rule_id for request in requests)))
+    # 출력 예산 800 → 항목당 400 → 호출당 2건
+    provider = GeminiGenerationProvider(
+        client=SimpleNamespace(models=models), max_output_tokens=800
+    )
+
+    result = provider.generate_batch(requests)
+
+    assert set(result) == {request.rule_id for request in requests}
+    assert len(models.calls) == 3
+    for call in models.calls:
+        payload = json.loads(str(call["contents"][1]))
+        assert len(payload["items"]) == 2
+        # 출력 토큰은 청크 항목 수에 비례해야 한다.
+        assert call["config"].max_output_tokens >= 800
+
+
+def test_gemini_generation_keeps_successful_chunks_when_one_chunk_fails():
+    requests = _requests(4)
+    models = FakeModels(
+        _batch_of(*(request.rule_id for request in requests)), failures=1
+    )
+    provider = GeminiGenerationProvider(
+        client=SimpleNamespace(models=models), max_output_tokens=800, max_retries=0
+    )
+
+    result = provider.generate_batch(requests)
+
+    # 첫 청크(R01·R02)는 실패, 둘째 청크(R03·R04)는 살아남는다.
+    assert set(result) == {"R03", "R04"}
+
+
+def test_gemini_generation_raises_when_every_chunk_fails():
+    requests = _requests(4)
+    models = FakeModels(_batch_of("R01"), failures=2)
+    provider = GeminiGenerationProvider(
+        client=SimpleNamespace(models=models), max_output_tokens=800, max_retries=0
+    )
+
+    with pytest.raises(ProviderError):
+        provider.generate_batch(requests)
+
+
 def test_gemini_provider_enforces_call_budget():
     models = FakeModels(
         GeneratedGuidanceDraft(

@@ -26,6 +26,17 @@ LOCKED_TEST_FILES = {
     "generation_cases.jsonl",
 }
 BASE_PROHIBITED_TERMS = {"무효", "위법", "안전", "사기"}
+# 잠긴 평가셋이 실제로 다루는 카탈로그 항목. J13 연결 5종은 실제 계약서 문구 샘플 확보 후
+# 패턴을 넓히면서 평가셋에 넣기로 미뤘다.
+# → docs/decisions/2026-07-23-j13-tenant-protection-restriction.md "패턴 정확도의 한계"
+EVALUATED_CATALOG_IDS = {
+    "SC-DEFERRED-REFUND",
+    "SC-REPAIR-SCOPE",
+    "SC-RESTORATION-SCOPE",
+    "SC-RIGHTS-CHANGE",
+    "SC-MANAGEMENT-FEE",
+    "SC-MAIN-SPECIAL-CONFLICT",
+}
 
 
 def _jsonl(filename: str) -> list[dict]:
@@ -50,8 +61,9 @@ def _sha256(path: Path) -> str:
 
 
 def test_catalog_test_covers_every_type_and_category_once():
+    assert EVALUATED_CATALOG_IDS <= _catalog_ids(), "평가 대상 항목이 카탈로그에서 사라졌습니다."
     cases = _jsonl("catalog_test.jsonl")
-    expected_pairs = set(product(_catalog_ids(), CATEGORIES))
+    expected_pairs = set(product(EVALUATED_CATALOG_IDS, CATEGORIES))
     actual_pairs = {(case["target_catalog_id"], case["category"]) for case in cases}
 
     assert len(cases) == len(expected_pairs) == 30
@@ -89,7 +101,7 @@ def test_dev_and_test_texts_do_not_overlap():
 def test_retrieval_test_covers_six_types_and_no_evidence():
     cases = _jsonl("retrieval_test.jsonl")
     targets = {case["target_catalog_id"] for case in cases}
-    assert targets == _catalog_ids() | {None}
+    assert targets == EVALUATED_CATALOG_IDS | {None}
     assert len({case["case_id"] for case in cases}) == len(cases)
     assert any(not case["expect_evidence"] for case in cases)
 
@@ -122,7 +134,7 @@ def _jsonl_from_path(path: Path) -> list[dict]:
 
 def test_generation_cases_cover_six_types_and_no_evidence():
     cases = _jsonl("generation_cases.jsonl")
-    assert {case["target_catalog_id"] for case in cases} == _catalog_ids() | {None}
+    assert {case["target_catalog_id"] for case in cases} == EVALUATED_CATALOG_IDS | {None}
     assert len({case["case_id"] for case in cases}) == len(cases)
 
     for case in cases:

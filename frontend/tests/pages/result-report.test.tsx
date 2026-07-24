@@ -16,6 +16,11 @@ import type {
   SpecialClauseReviewDto,
 } from "../../src/types/api";
 
+// 판정 축이 늘어날 때마다 고치지 않도록 fixture에서 파생한다.
+const fixtureJudgmentIds = (analysisRunResultFixture as AnalysisRunResultDto).judgments.map(
+  (item) => item.judgment_id,
+);
+
 const specialClauseReview: SpecialClauseReviewDto = {
   clause_id: "CLAUSE-001",
   original_text: "보증금은 신규 임차인이 입주한 후 반환한다.",
@@ -131,8 +136,8 @@ describe("ResultReportPage", () => {
     expect(screen.getByRole("button", { name: /^일반 확인/ })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: /^지금 판단할 수 없는 항목/ })).toHaveAttribute("aria-expanded", "false");
     expandAllResultGroups();
-    expect(document.querySelectorAll(".result-card")).toHaveLength(12);
-    for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
+    expect(document.querySelectorAll(".result-card")).toHaveLength(fixtureJudgmentIds.length);
+    for (const judgmentId of fixtureJudgmentIds) {
       expect(screen.getByText(judgmentId)).toBeInTheDocument();
     }
     for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
@@ -221,7 +226,7 @@ describe("ResultReportPage", () => {
 
     expect(await screen.findByText("확인 결과는 준비됐지만 쉬운 설명을 만들지 못했습니다. 확인 항목과 문서 근거는 그대로 볼 수 있습니다.")).toBeInTheDocument();
     expandAllResultGroups();
-    expect(document.querySelectorAll(".result-card")).toHaveLength(12);
+    expect(document.querySelectorAll(".result-card")).toHaveLength(fixtureJudgmentIds.length);
     expect(screen.getByText("J01")).toBeInTheDocument();
     expect(screen.queryByText("R01")).not.toBeInTheDocument();
   });

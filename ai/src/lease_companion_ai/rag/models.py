@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from lease_companion_ai.schemas.unified import RuleStatus
+from lease_companion_ai.schemas.unified import JUDGMENT_ID_PATTERN, RuleStatus
 
 
 _SOURCE_ID_PATTERN = r"^SRC-[A-Z0-9-]+$"
@@ -92,11 +92,11 @@ class RetrievalQuery(BaseModel):
 
 
 class JudgmentRetrievalQuery(BaseModel):
-    """판정별 허용 공식자료 범위를 포함한 J01~J12 검색 질의."""
+    """판정별 허용 공식자료 범위를 포함한 J01~J13 검색 질의."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    judgment_id: str = Field(pattern=JUDGMENT_ID_PATTERN)
     judgment_name: str = Field(min_length=1)
     status: RuleStatus
     allowed_source_ids: tuple[SourceId, ...] = Field(min_length=1)

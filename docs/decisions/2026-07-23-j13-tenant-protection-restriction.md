@@ -1,0 +1,275 @@
+# J13 임차권 보호 제한 특약 판정 설계
+
+- 날짜: 2026-07-23
+- 상태: 설계 승인
+- 배경 결정: 팀 회의에서 `AGENTS.md`를 개정해 J13 이후로 판정 축을 확장하기로 함
+
+## 목적
+
+임차인의 법정 보호 장치를 특약으로 제한하는 조항을 판정 축에 올린다. 현재 이런 특약은
+연결할 R/J가 없어 특약 카드가 만들어지지 않고, 화면에 아무것도 표시되지 않는다.
+
+2026-07-23 실측: 실제 계약서(contract_id=76)의 확인 특약 6건이 전부 카탈로그 미매칭이었고
+`special_clause_reviews`가 0건이었다. 카탈로그 6종이 독소조항만 담고 있어 생긴 공백이다.
+
+## 범위
+
+이 설계가 다루는 유형은 5개다.
+
+1. 전입신고·확정일자 제한
+2. 계약갱신요구권 포기
+3. 임대인 변경 시 승계 배제
+4. 전세권·임차권등기 금지
+5. 보증보험 협조 배제
+
+다루지 않는 것: 중도해지 위약금(R25 별건), 잔금 전 선입주(J08 재사용), 전대 금지(민법
+제629조가 RAG 코퍼스에 없음), 반려동물 금지(제외 확정).
+
+## 결정 사항
+
+### 1. 판정은 J13 하나로 통합한다
+
+5개 유형을 각각의 판정으로 나누지 않는다.
+
+근거:
+- J축은 매 분석마다 전부 반환해야 한다(일부만 반환하는 중간 상태 불허). 5개로 나누면
+  특약이 없는 대다수 계약서에서 `적용 제외` 5줄이 리포트 상단을 채운다.
+- 유형별 원문·근거·행동은 `SpecialClauseReview` 카드가 이미 유형별로 구분해 보여준다.
+  판정 개수를 늘려야 얻는 정보가 없다.
+- 5개 유형의 성격("보호 장치를 특약으로 제한")과 행동("해당 문구 삭제 요청")이 같다.
+- 문서·골드셋·프론트 파급이 12→13으로 끝난다.
+
+`status`·`urgency`만 단일이고 `reason`·`recommended_actions`·`evidence_sources`는
+유형 수만큼 담는다.
+
+### 2. C영역(책임·특약)에 넣는다
+
+E영역을 신설하지 않는다. J10~J12와 J13이 모두 특약 원문을 입력으로 쓰므로 묶이는 근거가
+있고, `AGENTS.md`는 "4영역 12항목" → "4영역 13항목" 한 줄만 고치면 된다.
+
+### 3. 허용 상태는 3개로 제한한다
+
+`확인 필요` / `적용 제외` / `확인 불가`.
+
+`상충 가능`은 쓰지 않는다. 강행규정 위반 여부를 표현하게 되어 "AI는 적법·위법을 확정하지
+않는다"는 원칙에 닿고, J12가 `본문-특약 상충`에 같은 상태를 써서 의미가 섞인다.
+
+`명확`/`불명확` 축도 쓰지 않는다. J13은 "내용이 명확한가"가 아니라 "제한 특약이 있는가"다.
+
+`triggers_actions`는 `ACTION_TRIGGER_STATUSES`(`unified.py:428`)에서 자동 파생되며
+`적용 제외`만 false다.
+
+### 4. J12와 독립 판정한다
+
+같은 특약이 J12와 J13에 동시에 걸릴 수 있고 그것이 정상이다.
+
+- J12: 본문과 특약이 서로 어긋나는가
+- J13: 특약이 임차인의 법정 보호 장치를 제한하는가
+
+관점이 다르므로 배타 처리하지 않는다. R·J 다축 원칙과 일치한다. 중복 안내 문구는
+프론트의 기존 행동 허브 중복 제거가 처리한다.
+
+### 5. 탐지는 카탈로그를 단일 출처로 한다
+
+`data/rules/special_clause_catalog.json`에 유형별 항목을 추가하고, J13 규칙이
+`match_special_clauses()` 결과를 읽어 판정한다.
+
+검토한 대안:
+- **규칙 전용 정규식**: 같은 패턴이 카탈로그와 규칙 두 곳에 중복되어 "판정은 걸렸는데
+  카드가 없다"는 어긋남이 생긴다.
+- **classification 후보 활용**: LLM 실패 시 후보가 0이 되어 판정이 흔들린다.
+  규칙 엔진은 결정론이어야 한다(`AGENTS.md`).
+
+`special_clauses` 모듈은 `catalog`·`models`만 import하므로 `rules`에서 호출해도 순환
+의존이 없다(확인 완료).
+
+## 판정 정의
+
+| 항목 | 값 |
+|---|---|
+| ID | `J13` |
+| 이름 | 임차권 보호 제한 특약 |
+| 영역 | C (책임·특약) |
+| 입력 | `special_clauses`, `special_clauses_present` |
+| 허용 상태 | `확인 필요` / `적용 제외` / `확인 불가` |
+| 기본 시급도 | `즉시 확인` |
+
+판정 로직:
+
+```
+특약 필드 추출 실패·판독 불가                      → 확인 불가
+확인된 특약 원문이 없음                            → 적용 제외
+특약은 있으나 J13 연결 카탈로그 항목 매칭 0건       → 적용 제외
+J13 연결 카탈로그 항목 1건 이상 매칭               → 확인 필요
+```
+
+판정 대상은 **`special_clauses`의 확인된 원문 목록**이다. `special_clauses_present`는
+보조 신호로만 쓴다. 둘이 어긋나면(예: `present=true`인데 목록이 비어 있음) `확인 불가`로
+처리한다.
+
+매칭 대상은 **`related_judgment_ids`에 `J13`이 있는 카탈로그 항목만**이다. 기존
+독소조항 6종(`SC-DEFERRED-REFUND` 등)이 매칭돼도 J13에는 영향을 주지 않는다. 그쪽은
+각자 연결된 R08·R09·R10·R18·J09~J12가 담당한다.
+
+**(2026-07-24 정정, owner 승인)** 위 문단은 초안 시점의 의도였고 구현되지 않았다.
+`_result()`에는 J13 전용 분기가 없다 — J13은 다른 판정과 동일하게 `judgment_spec.csv`의
+`report_reason`·단일 `action_template`을 그대로 쓰고, `evidence_sources`는 항상 빈
+목록이다. `reason`은 걸린 유형·건수를 나열하지 않고, `recommended_actions`도 유형별로
+나뉘지 않는다.
+
+owner는 코드를 바꾸지 않고 이 문서를 구현에 맞춰 정정하기로 했다. 근거: 유형별 원문·
+`catalog_ids`·근거 조문은 이미 `SpecialClauseReview` 카드(특약별로 별도 생성됨)가
+화면에 보여준다. J13 판정 자체는 "제한 특약이 걸렸다"는 단일 status·reason·action만
+지니고, 유형별 세부 정보는 판정이 아니라 카드 쪽 책임으로 둔다.
+
+법적 효력은 단정하지 않는다. "무효"·"위법" 대신 "해당 문구 삭제를 요청하고 공인중개사에게
+확인하세요" 수준으로만 안내하며, 카탈로그의 `prohibited_terms`가 guardrail에서 강제한다.
+
+## 카탈로그 항목
+
+전부 `related_judgment_ids: ["J13"]`, `related_rule_ids: []`.
+
+`related_rule_ids`를 비우는 이유: `_build_special_clause_reviews`가 J를 우선 사용하므로
+J13이 항상 존재하는 한 R 링크는 쓰이지 않는다. 검증 대상만 늘어난다.
+
+| catalog_id | 유형 | 근거 조문 (RAG 코퍼스 확인됨) |
+|---|---|---|
+| `SC-MOVEIN-REPORT-BAN` | 전입신고·확정일자 제한 | 주택임대차보호법 제3조(대항력 등), 제3조의2(보증금의 회수), 제3조의6(확정일자 부여 및 임대차 정보제공 등) |
+| `SC-RENEWAL-WAIVER` | 계약갱신요구권 포기 | 주택임대차보호법 제6조(계약의 갱신), 제6조의3(계약갱신 요구 등) / 표준계약서 제8조(갱신요구와 거절) |
+| `SC-SUCCESSION-EXCLUSION` | 임대인 변경 시 승계 배제 | 주택임대차보호법 제3조(대항력 등) |
+| `SC-REGISTRATION-BAN` | 전세권·임차권등기 금지 | 주택임대차보호법 제3조의3(임차권등기명령), 제3조의4(「민법」에 따른 주택임대차등기의 효력 등) |
+| `SC-GUARANTEE-REFUSAL` | 보증보험 협조 배제 | 주택임대차보호법 제3조의7(임대인의 정보 제시 의무) |
+
+**(2026-07-24 정정)** 초안 작성 시 이 표에 제10조(강행규정)를 4개 행에, `SRC-HUG`를
+1개 행에 적었으나 실제 구현은 둘 다 쓰지 않는다. 위 표는 카탈로그
+`allowed_source_sections`를 그대로 반영한 정정본이다.
+
+- **제10조 제외**: `docs/planning/special-clause-rag-handoff.md`(2026-07-22)의 "주임법
+  제10조(강행규정) 조건부화" 결정에 따라 제10조는 ①구체적 주임법 조항 위반과 ②임차인
+  불리성이 모두 확인될 때만 보조 근거로 검토하는 대상이며, `allowed_source_sections`
+  같은 직접 검색 근거로 쓰지 않는다. `ai/tests/special_clauses/test_catalog_contract.py`의
+  `test_reviewed_hta_article_10_is_conditional_not_primary_evidence`가 카탈로그 전체에서
+  이를 강제한다.
+- **`SRC-HUG` 제외**: `data/rag/metadata/official_sources.jsonl`에서 `SRC-HUG`는
+  `distribution_mode: "metadata_only"`다 — 로컬 원문(`local_path`)이 없다. RAG가 원문
+  없이 근거를 만들 수 없으므로 `clause_service.py`가 `allowed_source_sections`에서
+  `metadata_only` 소스를 걸러낸다. `SC-GUARANTEE-REFUSAL`은 대신 제3조의7(임대인의
+  정보 제시 의무)만 근거로 쓴다.
+
+각 항목은 기존 6종과 동일한 구조를 따른다: `include_patterns`, `exclude_patterns`,
+`allowed_source_sections`, `legal_effect_review`, `explanation_boundary.prohibited_terms`.
+
+`legal_effect_review`는 법률 검토 전이므로 기존 6종과 동일하게
+`hta_article_10_applicable: "undetermined"`, `court_or_expert_review_needed: true`로 둔다.
+
+### 패턴 정확도의 한계
+
+실제 계약서 문구 샘플이 없는 상태에서 작성하는 초안이다. 2026-07-23 실측에서 기존
+카탈로그 6종이 실제 특약 6건을 하나도 잡지 못한 것이 같은 원인이다.
+
+따라서 초기 패턴은 **명백한 표현만 보수적으로** 잡는다. 미탐은 허용하고 오탐을 최소화한다.
+멀쩡한 특약을 위험으로 표시하는 쪽이 더 나쁘기 때문이다.
+
+문구 샘플이 확보되면 패턴을 넓히고 `catalog_test.jsonl`로 매칭률을 측정한다. 그 전까지
+카탈로그는 `review_status: unverified`를 유지한다.
+
+## 스키마 하위호환
+
+### 허용 시퀀스는 "저장된 적이 있는 길이" 이력으로 판정한다
+
+**(2026-07-23 재검토 후 결정, owner 승인)** 시퀀스를 2개(레거시/현행)만 하드코딩하면
+J14가 추가되는 순간 이번 릴리스가 저장한 J01~J13 결과가 전부 `ValidationError`로
+읽히지 않는다 — 이 문서 전체가 막으려는 사고를 한 릴리스 뒤로 미루는 것뿐이다.
+
+대신 append-only 상수로 "지금까지 실제로 저장된 적이 있는 시퀀스 길이"의 이력을
+남긴다.
+
+```python
+# unified.py, JUDGMENT_IDS 옆에 정의
+HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS: tuple[int, ...] = (12,)  # J13 이전 레거시
+```
+
+검증기는 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 현재 길이(`len(JUDGMENT_IDS)`,
+목록에 없어도 항상 자동으로 포함됨)를 더한 각 길이 `n`에 대해
+`judgment_ids == list(JUDGMENT_IDS[:n])`인지 확인한다. 현재 길이를 목록에 넣어
+두는 걸 사람이 잊어도 항상 통과하도록 코드가 파생시키며, 목록 자체에는 넣지
+않는다(현재 값을 넣으면 다음 릴리스에서 지워야 할지 헷갈리는 항목이 생긴다).
+
+**유지보수 규칙(필수, 지키지 않으면 위와 같은 사고가 재발한다):** 판정 축이 늘어날
+때(J14 등) `JUDGMENT_IDS`를 늘리기 *전에* 그 시점의 `len(JUDGMENT_IDS)`(예: 13)를
+`HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 먼저 append한다. 이 목록에서 항목을
+지우거나 바꾸지 않는다 — append-only다.
+
+레거시 J01~J12는 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 12가 남아있는 한
+영구히 허용된다. DB에 저장된 과거 `AnalysisRun.result`가 계속 읽힌다.
+
+이 변경(또는 이후 유지보수 규칙)을 빠뜨리면 과거 분석 결과 전량이
+`ValidationError`로 읽히지 않는다. 리포트 재조회·체크리스트·이력이 모두 깨지는
+데이터 손실급 사고다.
+
+### 하드코딩 제거
+
+| 위치 | 현재 | 변경 |
+|---|---|---|
+| `unified.py:130` `JUDGMENT_IDS` | `range(1, 13)` | `range(1, 14)` |
+| `unified.py:1143` `_JudgmentId` | `^J(?:0[1-9]\|1[0-2])$` | `JUDGMENT_IDS`에서 생성 |
+| `unified.py:1233` `JudgmentResult.judgment_id` | 같은 정규식 | 같은 방식 |
+| `unified.py:933` `JudgmentInput.judgment_ids` | `max_length=12` | `len(JUDGMENT_IDS)` |
+| `unified.py:1280` `AnalysisRunResult.judgments` | `max_length=12` | `len(JUDGMENT_IDS)` |
+| `unified.py:788` 오류 메시지 | `"J01~J12 canonical 순서"` | 일반 문구 |
+
+정규식을 상수에서 생성하면 두 곳이 어긋날 여지가 사라진다.
+
+### 추가 테이블 항목
+
+- `DEFAULT_JUDGMENT_URGENCY["J13"] = Urgency.IMMEDIATE`
+- `JUDGMENT_INPUT_SPECS["J13"]` — 입력은 `special_clauses`, `special_clauses_present`.
+  J12와 동일하므로 **추출 스키마·프롬프트·사용자 확인 화면 변경이 없다.**
+- `ALLOWED_JUDGMENT_STATUSES["J13"] = {CHECK_NEEDED, NOT_APPLICABLE, CANNOT_CHECK}`
+
+## 테스트 전략
+
+TDD로 진행하며 빨간불을 두 번 확인한다.
+
+```
+1. RED   J13 포함 시퀀스가 AnalysisRunResult에 들어간다   → 실패 (J13 미존재·정규식 거부)
+2. GREEN JUDGMENT_IDS·정규식·max_length·J13 규칙 구현      → 통과
+3. RED   레거시 J01~J12 결과가 여전히 읽힌다               → 실패 (허용 시퀀스가 하나뿐)
+4. GREEN HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS 도입          → 둘 다 통과
+```
+
+3번이 하위호환 사고를 재현하는 테스트다. 실제로 빨간불을 봐야 shim이 검증된다.
+
+추가 테스트:
+- J13 판정 로직 4분기(확인 불가 / 적용 제외 2종 / 확인 필요)
+- 카탈로그 5개 항목이 J13에 연결되고 카드 status가 J13과 일치
+- 같은 특약이 J12·J13에 동시에 걸려도 검증을 통과
+
+## 영향 범위
+
+| 구분 | 파일 |
+|---|---|
+| AI 스키마 | `schemas/unified.py` |
+| AI 규칙 | `rules/judgments.py` |
+| AI 카탈로그 | `data/rules/special_clause_catalog.json` |
+| RAG 근거 매핑 | `data/rules/special_clause_evidence_map.csv` |
+| 판정 명세 데이터 | `data/rules/judgment_spec.csv` |
+| 픽스처·골드셋 | `data/sample/fixtures/case-001/analysis_run_result.json`, `data/sample/expected-results/judgment_goldset.jsonl` |
+| 생성 스키마 | `data/schemas/generated/*.json` (Pydantic에서 재생성, 손으로 쓰지 않음) |
+| Backend | `app/schemas/checklist.py` |
+| Frontend | `features/judgment-results/plainGuides.ts`, `types/api.ts` |
+| 문서 | `AGENTS.md`("4영역 12항목"→"13항목"), `docs/data/judgment-spec.md`, `docs/api/data-contract-v1.md` |
+
+RAG 근거 매핑을 빠뜨리면 `generation/service.py:738`의 `missing_evidence` 경로로 빠져
+J13 안내가 전량 템플릿 폴백이 된다. 2026-07-23 실행에서 실제로 관측된 경로다.
+
+## 화면 신호등
+
+영향 없다. 신호등 3단계는 `urgency`에서 파생되므로 판정 개수와 무관하다.
+
+## 후속
+
+- 실제 계약서 특약 문구 샘플 확보 후 패턴 확장·매칭률 측정
+- 법률 검토 후 `legal_effect_review`·`review_status` 갱신
+- 민법 제629조 코퍼스 추가 후 전대 금지 유형 검토
+- `catalog.py`가 `review_status`를 확인하지 않고 무조건 로드하는 문제(별건)

@@ -260,10 +260,10 @@ def test_judgment_enrichment_preserves_decision_and_uses_source_mapping(source_m
     assert all(not item.evidence_sources for item in enriched.judgments[1:])
 
 
-def test_judgment_source_map_covers_j01_to_j12():
+def test_judgment_source_map_covers_j01_to_j13():
     mapping = load_judgment_source_ids()
 
-    assert list(mapping) == [f"J{index:02d}" for index in range(1, 13)]
+    assert list(mapping) == [f"J{index:02d}" for index in range(1, 14)]
     assert mapping["J01"] == ("SRC-STD-LEASE", "SRC-REGISTRY-SAMPLE")
 
 

@@ -83,7 +83,7 @@
     },
     "JudgmentResult": {
       "additionalProperties": false,
-      "description": "J01~J12 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
+      "description": "J01~J13 판정 1개. R 규칙 결과와 별도 축으로 저장한다.",
       "properties": {
         "evidence_sources": {
           "items": {
@@ -93,7 +93,7 @@
           "type": "array"
         },
         "judgment_id": {
-          "pattern": "^J(?:0[1-9]|1[0-2])$",
+          "pattern": "^(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)$",
           "title": "Judgment Id",
           "type": "string"
         },
@@ -472,7 +472,7 @@
         "related_judgment_ids": {
           "default": [],
           "items": {
-            "pattern": "^J(?:0[1-9]|1[0-2])$",
+            "pattern": "^(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)$",
             "type": "string"
           },
           "title": "Related Judgment Ids",
@@ -568,7 +568,7 @@
       "items": {
         "$ref": "#/$defs/JudgmentResult"
       },
-      "maxItems": 12,
+      "maxItems": 13,
       "title": "Judgments",
       "type": "array"
     },

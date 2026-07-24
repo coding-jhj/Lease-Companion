@@ -8,7 +8,7 @@
 |------|-----------|------------------|
 | 인식·추출 | `ingestion` · `extraction` | 문서 인식·핵심 필드 추출 정확도, 구조화 JSON 스키마 준수 |
 | 로컬 분류 (선택 실험) | `local_model` · `classification` | 조항 유형·명확성 분류 성능, 베이스 7B vs 파인튜닝 7B, 신뢰도. MVP 크리티컬 패스 아님 — 성능비교 실험 시에만 측정 |
-| 규칙 | `rules` | 문서 내부 판정·교차검증 정확도(9개 상태·J01–J12 기준) |
+| 규칙 | `rules` | 문서 내부 판정·교차검증 정확도(9개 상태·J01–J13 기준) |
 | 검색 | `rag` | 공식 근거 검색 적합성, 정답 근거 포함률, 인용 정확성 |
 | 생성 | `generation` | 쉬운 설명·질문·체크리스트·행동 품질, 단정 표현·근거 없는 출력 비율 |
 | 라우팅 | `routing` | 로컬 처리율·상용 LLM 재검토율, 상용 단독 vs 하이브리드 비교 |
@@ -23,12 +23,12 @@
 
 ## 현재 자동 평가 기준선 (2026-07-20)
 
-`python scripts/evaluate_ai_pipeline.py`는 held-out TEST-001~010과 J goldset 47건을 사용해 외부 호출 없는 기준선을 생성한다. 전체 결과: [`../../data/evaluation/results/offline_test_metrics.json`](../../data/evaluation/results/offline_test_metrics.json).
+`python scripts/evaluate_ai_pipeline.py`는 held-out TEST-001~010과 J goldset 51건을 사용해 외부 호출 없는 기준선을 생성한다. 전체 결과: [`../../data/evaluation/results/offline_test_metrics.json`](../../data/evaluation/results/offline_test_metrics.json).
 
 - 로컬 정규식 추출: 240/240, 100%. canonical schema 검증은 20/20 통과하고, null 판독 실패 표현은 전건 `confidence=실패`·failure reason을 유지한다.
 - 사용자 수정: CASE-001 correction의 최초 추출값 보존·수정값 effective 반영·`corrected` 상태 3개 검사를 모두 통과했다.
 - R01~R10 상태: 100/100, 100%. 시급도 라벨이 있는 27건도 27/27, 100%.
-- J01~J12: 상태·시급도 47/47, 100%. 이 값은 고정 경계 goldset 회귀 결과다.
+- J01~J13: 상태·시급도 51/51, 100%. 이 값은 고정 경계 goldset 회귀 결과다.
 - BM25 검색(2026-07-20 `SRC-MOLIT-CHECKLIST` 적재 후): top-5 정답 근거 포함 27/27, 100%; 전체 기대 source recall 38/39, 97.44%; 로컬 가용 기대 source recall 38/38, 100%; 비공식 source 노출 0건. 남은 누락 1개는 원문 부재이며 BM25 후보 누락·allowlist 제외·Top-5 밖 누락은 0개다.
 - J 검색 계약: 행동 발동 gold 32건·기대 source 41개 중 33개를 회수해 recall 80.49%이며, 로컬 원문으로 사용 가능한 기대 source 33개는 모두 회수했다. 비공식 source 노출은 0건이다. 남은 격차는 metadata-only·미수집 공식 원문으로 관리한다.
 - template 생성: schema 10/10, R trigger coverage 27/27, J trigger coverage 50/50, R/J grounding 위반 0건, 금지 단정 0건, 분석 결과 불변 10/10. 주관적 쉬운 설명 품질은 미측정.

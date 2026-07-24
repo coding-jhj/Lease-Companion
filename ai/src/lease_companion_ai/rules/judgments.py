@@ -1,4 +1,4 @@
-"""J01~J12 결정론적 판정 엔진.
+"""J01~J13 결정론적 판정 엔진.
 
 사용자가 확인한 ``JudgmentInput``만 소비한다. LLM·RAG는 이 모듈이 정한
 ``RuleStatus``와 ``Urgency``를 변경하지 않는다.
@@ -30,6 +30,7 @@ from lease_companion_ai.schemas.unified import (
     RuleStatus,
     Urgency,
 )
+from lease_companion_ai.special_clauses import load_special_clause_catalog, match_special_clauses
 
 
 def _repo_root() -> Path:
@@ -425,6 +426,56 @@ def _j12(data: JudgmentInput) -> RuleStatus:
     return RuleStatus.CLEAR
 
 
+_J13_JUDGMENT_ID = "J13"
+
+
+def _j13_linked_catalog_ids() -> frozenset[str]:
+    return frozenset(
+        entry.catalog_id
+        for entry in load_special_clause_catalog()
+        if _J13_JUDGMENT_ID in entry.related_judgment_ids
+    )
+
+
+def _j13_matched_catalog_ids(clauses: list[str]) -> tuple[str, ...]:
+    """J13에 연결된 카탈로그 항목만 세어 반환한다.
+
+    한 문장이 J13 항목과 J10 등 다른 항목을 동시에 매칭하는 경우
+    (candidate.catalog_ids)에는 J13에 연결되지 않은 catalog_id도 섞여 있을 수 있으므로,
+    후보의 related_judgment_ids가 아니라 catalog_id 단위로 J13 연결 여부를 다시 확인한다.
+    기존 독소조항 6종(SC-DEFERRED-REFUND 등)이 매칭돼도 J13에는 영향을 주지 않는다.
+    그쪽은 각자 연결된 R08·R09·R10·R18·J09~J12가 담당한다.
+    """
+    j13_ids = _j13_linked_catalog_ids()
+    return tuple(
+        catalog_id
+        for candidate in match_special_clauses(clauses)
+        for catalog_id in candidate.catalog_ids
+        if catalog_id in j13_ids
+    )
+
+
+def _j13(data: JudgmentInput) -> RuleStatus:
+    names = ("special_clauses",)
+    if _has_issue(data, names, FieldIssueCode.AMBIGUOUS, FieldIssueCode.PARSE_FAILED):
+        return RuleStatus.CANNOT_CHECK
+    present = _value(data, "special_clauses_present")
+    special = _value(data, "special_clauses")
+    if special is None:
+        # present=False면 특약이 없는 것이고, 그 외에는 판독 실패다.
+        return RuleStatus.NOT_APPLICABLE if present is False else RuleStatus.CANNOT_CHECK
+    if not isinstance(special, list):
+        return RuleStatus.CANNOT_CHECK
+    clauses = [clause for clause in special if isinstance(clause, str) and clause.strip()]
+    if not clauses:
+        # present=False면 특약이 없다는 신호와 일치하므로 적용 제외.
+        # 그 외(present=True인데 원문 목록이 비거나 공백뿐)는 신호가 어긋난 것이므로 확인 불가.
+        return RuleStatus.NOT_APPLICABLE if present is False else RuleStatus.CANNOT_CHECK
+    if _j13_matched_catalog_ids(clauses):
+        return RuleStatus.CHECK_NEEDED
+    return RuleStatus.NOT_APPLICABLE
+
+
 _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {
     "J01": _j01,
     "J02": _j02,
@@ -438,6 +489,7 @@ _EVALUATORS: dict[str, Callable[[JudgmentInput], RuleStatus]] = {
     "J10": _j10,
     "J11": _j11,
     "J12": _j12,
+    "J13": _j13,
 }
 
 

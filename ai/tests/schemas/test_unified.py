@@ -339,7 +339,7 @@ def test_build_judgment_input_rejects_missing_or_unknown_inputs():
             judgment_ids=("J03",),
         )
     with pytest.raises(ValueError, match="알 수 없는 judgment_id"):
-        build_judgment_input(_judgment_snapshot(), judgment_ids=("J13",))
+        build_judgment_input(_judgment_snapshot(), judgment_ids=("J14",))
     with pytest.raises(ValueError, match="중복"):
         build_judgment_input(_judgment_snapshot(), judgment_ids=("J01", "J01"))
 
@@ -670,13 +670,13 @@ def test_analysis_run_accepts_empty_or_complete_judgments_only():
     assert [item.judgment_id for item in complete.judgments] == [
         f"J{i:02d}" for i in range(1, 13)
     ]
-    with pytest.raises(ValidationError, match="J01~J12"):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(**base, judgments=_complete_judgments()[:-1])
-    with pytest.raises(ValidationError, match="J01~J12"):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(**base, judgments=list(reversed(_complete_judgments())))
     duplicate = _complete_judgments()
     duplicate[-1] = _judgment_result("J11", "명확")
-    with pytest.raises(ValidationError, match="J01~J12"):
+    with pytest.raises(ValidationError, match="judgments에는"):
         AnalysisRunResult(**base, judgments=duplicate)
 
 
@@ -996,3 +996,213 @@ def test_generation_special_items_source_ids_subset_of_card_evidence():
     })
     with pytest.raises(ValueError, match="특약|clause"):
         validate_generation_result_for_analysis(analysis, unknown_clause)
+
+
+def _rule_results_r01_to_r24():
+    """R01~R24 더미 RuleResult 목록.
+
+    ALLOWED_RULE_STATUSES가 규칙마다 다른 상태 집합을 허용하므로(예: R08·R09·R16·
+    R23·R24는 CANNOT_CHECK를 허용하지 않는다), 규칙별 허용 목록에서 실제로
+    유효한 status를 골라야 한다. result_type도 RESULT_TYPE_BY_RULE_ID를 따라야
+    RuleResult 검증을 통과한다.
+    """
+    from lease_companion_ai.schemas.unified import (
+        ALLOWED_RULE_STATUSES,
+        RESULT_TYPE_BY_RULE_ID,
+        RuleResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    results = []
+    for index in range(1, 25):
+        rule_id = f"R{index:02d}"
+        allowed = ALLOWED_RULE_STATUSES[rule_id]
+        status = (
+            RuleStatus.CANNOT_CHECK
+            if RuleStatus.CANNOT_CHECK in allowed
+            else RuleStatus.CHECK_NEEDED
+        )
+        results.append(
+            RuleResult(
+                rule_id=rule_id,
+                rule_name=f"{rule_id} 규칙",
+                result_type=RESULT_TYPE_BY_RULE_ID[rule_id],
+                status=status,
+                urgency=Urgency.NOT_ANALYZABLE,
+                triggers_actions=True,
+                reason="테스트용 사유입니다.",
+                limitations="테스트용 한계입니다.",
+            )
+        )
+    return results
+
+
+def test_analysis_run_result_accepts_current_judgment_sequence():
+    """JUDGMENT_IDS가 늘어나면 그 시퀀스가 그대로 수용돼야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        JUDGMENT_IDS,
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    assert "J13" in JUDGMENT_IDS, "J13이 canonical 판정 목록에 있어야 합니다."
+
+    # CHECK_NEEDED/REFERENCE는 ALLOWED_JUDGMENT_STATUSES 전 항목(J01~J13)에서
+    # 공통으로 허용되는 조합이다. CANNOT_CHECK는 일부 판정(J06 등)에서 허용되지
+    # 않으므로 시퀀스 검증용 더미 값으로 쓸 수 없다.
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="테스트용 판정입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in JUDGMENT_IDS
+    ]
+
+    result = AnalysisRunResult(
+        analysis_run_id="AR-J13",
+        input_snapshot_id="SNAP-J13",
+        contract_id=1,
+        results=_rule_results_r01_to_r24(),
+        judgments=judgments,
+    )
+
+    assert [item.judgment_id for item in result.judgments] == list(JUDGMENT_IDS)
+
+
+def test_analysis_run_result_still_accepts_legacy_j01_to_j12():
+    """DB에 저장된 과거 결과는 J01~J12다. 판정 축이 늘어도 계속 읽혀야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    legacy_ids = [f"J{index:02d}" for index in range(1, 13)]
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="과거 저장 결과입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in legacy_ids
+    ]
+
+    result = AnalysisRunResult(
+        analysis_run_id="AR-LEGACY",
+        input_snapshot_id="SNAP-LEGACY",
+        contract_id=1,
+        results=_rule_results_r01_to_r24(),
+        judgments=judgments,
+    )
+
+    assert [item.judgment_id for item in result.judgments] == legacy_ids
+
+
+def test_analysis_run_result_rejects_non_historical_length_prefix():
+    """길이가 이력에 없는 부분 시퀀스(J01~J05)는 prefix 규칙을 우회해도 거부돼야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        JUDGMENT_IDS,
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    short_ids = list(JUDGMENT_IDS[:5])
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="테스트용 판정입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in short_ids
+    ]
+
+    with pytest.raises(ValidationError, match="judgments에는"):
+        AnalysisRunResult(
+            analysis_run_id="AR-SHORT",
+            input_snapshot_id="SNAP-SHORT",
+            contract_id=1,
+            results=_rule_results_r01_to_r24(),
+            judgments=judgments,
+        )
+
+
+def test_analysis_run_result_rejects_same_length_wrong_content_sequence():
+    """길이는 현재 길이(13, HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS에는 없는 현재값)와
+    같지만 순서가 canonical과 다르면 거부돼야 한다."""
+    from lease_companion_ai.schemas.unified import (
+        JUDGMENT_IDS,
+        AnalysisRunResult,
+        JudgmentResult,
+        RuleStatus,
+        Urgency,
+    )
+
+    # canonical 순서에서 앞의 두 항목(J01·J02)을 맞바꿔, 길이는 같지만 내용이
+    # canonical과 다른(순서가 어긋난) 시퀀스를 만든다. 이는 JudgmentResult의
+    # judgment_id 패턴 검증은 통과하고 AnalysisRunResult의 시퀀스 검증만 걸린다.
+    bogus_ids = [JUDGMENT_IDS[1], JUDGMENT_IDS[0], *JUDGMENT_IDS[2:]]
+    assert len(bogus_ids) == len(JUDGMENT_IDS)
+    assert bogus_ids != list(JUDGMENT_IDS)
+
+    judgments = [
+        JudgmentResult(
+            judgment_id=judgment_id,
+            judgment_name=f"{judgment_id} 판정",
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.REFERENCE,
+            triggers_actions=True,
+            reason="테스트용 판정입니다.",
+            limitations="테스트용 한계입니다.",
+        )
+        for judgment_id in bogus_ids
+    ]
+
+    with pytest.raises(ValidationError, match="judgments에는"):
+        AnalysisRunResult(
+            analysis_run_id="AR-BOGUS",
+            input_snapshot_id="SNAP-BOGUS",
+            contract_id=1,
+            results=_rule_results_r01_to_r24(),
+            judgments=judgments,
+        )
+
+
+def test_judgment_axis_growth_requires_appending_previous_length():
+    """축을 늘리기 전에 이전 길이를 이력에 append해야 저장된 결과가 계속 읽힌다.
+
+    이 테스트가 실패하면 값을 고치기 전에 HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS를
+    먼저 확인하라. 이전 길이를 append하지 않고 JUDGMENT_IDS만 늘리면 그 길이로
+    저장된 과거 분석 결과가 전부 읽히지 않는다.
+    """
+    from lease_companion_ai.schemas.unified import (
+        HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS,
+        JUDGMENT_IDS,
+    )
+
+    assert len(JUDGMENT_IDS) == 13, (
+        "판정 축을 늘렸다면 HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS에 이전 길이를 "
+        "append한 뒤 이 기대값을 갱신하라."
+    )
+    assert HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS == (12,), (
+        "이력 길이는 append만 한다. 기존 항목을 지우거나 바꾸면 그 길이로 저장된 "
+        "과거 분석 결과가 읽히지 않는다."
+    )

@@ -278,7 +278,7 @@ def test_full_adapter_path_matches_direct_run_rules_and_goldset():
     direct_by_id = {r.rule_id: r for r in direct}
     assert len(analysis.results) == 24
     assert [item.judgment_id for item in analysis.judgments] == [
-        f"J{index:02d}" for index in range(1, 13)
+        f"J{index:02d}" for index in range(1, 14)
     ]
     for result in analysis.results:
         legacy = direct_by_id[result.rule_id]

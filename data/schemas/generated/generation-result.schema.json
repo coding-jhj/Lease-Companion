@@ -114,7 +114,7 @@
       "properties": {
         "item_key": {
           "maxLength": 100,
-          "pattern": "^(?:R\\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$",
+          "pattern": "^(?:R\\d{2}|(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)):(checklist|post_action):[0-9a-f]{12}$",
           "title": "Item Key",
           "type": "string"
         },
@@ -133,7 +133,7 @@
     },
     "JudgmentGuidance": {
       "additionalProperties": false,
-      "description": "검증 또는 fallback을 마친 J01~J12 판정 1개의 공개 사용자 안내.",
+      "description": "검증 또는 fallback을 마친 J01~J13 판정 1개의 공개 사용자 안내.",
       "properties": {
         "explanation": {
           "minLength": 1,
@@ -156,7 +156,7 @@
           "$ref": "#/$defs/GenerationMethod"
         },
         "judgment_id": {
-          "pattern": "^J(?:0[1-9]|1[0-2])$",
+          "pattern": "^(?:J01|J02|J03|J04|J05|J06|J07|J08|J09|J10|J11|J12|J13)$",
           "title": "Judgment Id",
           "type": "string"
         },

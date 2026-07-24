@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CATALOG = ROOT / "data" / "rules" / "special_clause_catalog.json"
 EVIDENCE_MAP = ROOT / "data" / "rules" / "special_clause_evidence_map.csv"
 
-ALLOWED_JUDGMENT_IDS = {"J09", "J10", "J11", "J12"}
+ALLOWED_JUDGMENT_IDS = {"J09", "J10", "J11", "J12", "J13"}
 ALLOWED_RULE_IDS = {"R08", "R09", "R10", "R18", "R19"}
 REQUIRED_FIELDS = {
     "catalog_id",
@@ -38,6 +38,11 @@ EXPECTED_CATALOG_LINKS = {
     "SC-RIGHTS-CHANGE": ({"R10", "R19"}, set()),
     "SC-MANAGEMENT-FEE": ({"R18"}, {"J09"}),
     "SC-MAIN-SPECIAL-CONFLICT": (set(), {"J12"}),
+    "SC-MOVEIN-REPORT-BAN": (set(), {"J13"}),
+    "SC-RENEWAL-WAIVER": (set(), {"J13"}),
+    "SC-SUCCESSION-EXCLUSION": (set(), {"J13"}),
+    "SC-REGISTRATION-BAN": (set(), {"J13"}),
+    "SC-GUARANTEE-REFUSAL": (set(), {"J13"}),
 }
 EXPECTED_RULE_NAMES = {
     "R08": "보증금 반환 시점·조건 명확성",
@@ -49,6 +54,7 @@ EXPECTED_JUDGMENT_NAMES = {
     "J10": "보증금 반환 시점·조건 명확성",
     "J11": "수리·원상복구 책임 명확성",
     "J12": "본문·특약 상충 가능성",
+    "J13": "임차권 보호 제한 특약",
 }
 
 

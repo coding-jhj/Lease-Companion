@@ -89,8 +89,24 @@ def attach_special_clause_reviews(
 
     규칙 엔진 결과(status/urgency/reason)는 변경하지 않는다.
     """
-    candidates = match_special_clauses(_confirmed_special_clauses(snapshot))
+    clauses = _confirmed_special_clauses(snapshot)
+    candidates = match_special_clauses(clauses)
+    matched = [candidate for candidate in candidates if candidate.catalog_ids]
     reviews = _build_special_clause_reviews(analysis, candidates)
+    # 카드 0건은 "실패"와 "위험 특약 없음"이 전혀 다른데 지금까지 구분되지 않았다.
+    # 세 숫자를 함께 남겨 어느 단계에서 걸러졌는지 로그만으로 알 수 있게 한다.
+    logger.info(
+        "특약 매칭 확인특약=%d 카탈로그매칭=%d 카드=%d",
+        len(clauses),
+        len(matched),
+        len(reviews),
+    )
+    if clauses and not matched:
+        logger.info(
+            "특약 %d건이 위험 특약 카탈로그(%s)에 해당하지 않습니다 — 정상 결과입니다.",
+            len(clauses),
+            "확인 특약 카탈로그 11종",
+        )
     if not reviews:
         return analysis
     return analysis.model_copy(update={"special_clause_reviews": reviews})

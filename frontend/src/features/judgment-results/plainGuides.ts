@@ -1,5 +1,5 @@
 // 판정·규칙 항목의 쉬운 설명 + 금전 문제 안내. 리포트(PriorityGroups)와 8번 체크리스트가 공유한다.
-// 판정 id(J01~J12)와 J에 매핑되지 않는 규칙 id(R축)를 함께 큐레이션 — 근거 없는 위험 단정이 아니라
+// 판정 id(J01~J13)와 J에 매핑되지 않는 규칙 id(R축)를 함께 큐레이션 — 근거 없는 위험 단정이 아니라
 // "확인이 필요한 이유"를 쉽게 설명한다.
 export interface PlainJudgmentGuide {
   explanation: string;
@@ -54,6 +54,12 @@ export const plainJudgmentGuides: Record<string, PlainJudgmentGuide> = {
   J12: {
     explanation: "계약서 본문과 특약에 서로 다르거나 충돌하는 조건이 있는지 확인하는 항목입니다.",
     financialImpact: "충돌하는 문구를 그대로 두면 어떤 조건을 따라야 하는지 불분명해져 추가 비용이나 금전 책임 분쟁이 생길 수 있습니다.",
+  },
+  J13: {
+    explanation:
+      "전입신고·계약갱신 요구·보증보험 가입처럼 임차인을 보호하는 장치를 특약으로 제한하는 문구가 있는지 확인하는 항목입니다.",
+    financialImpact:
+      "이런 문구를 그대로 두면 보증금을 지키는 절차를 제때 밟지 못해 보증금 회수가 어려워질 수 있습니다.",
   },
   // J 판정에 매핑되지 않는 확장 규칙(R축). 없으면 일반 안내로 폴백되어 항목마다 같은 문구가 반복되므로 개별 제공한다.
   R03: {
@@ -131,7 +137,7 @@ const GENERIC_GUIDE: PlainJudgmentGuide = {
   financialImpact: "확인하지 않으면 예상하지 못한 비용이나 책임을 부담하거나 분쟁이 생길 수 있습니다.",
 };
 
-// 판정 id(J01~J12) 또는 규칙 id(R##)로 가이드를 찾는다. 없으면(사실 플래그·미매핑) 일반 안내로 폴백한다.
+// 판정 id(J01~J13) 또는 규칙 id(R##)로 가이드를 찾는다. 없으면(사실 플래그·미매핑) 일반 안내로 폴백한다.
 export function plainGuideById(resultId: string | null | undefined): PlainJudgmentGuide {
   const guide = resultId ? plainJudgmentGuides[resultId] : undefined;
   return guide ?? GENERIC_GUIDE;

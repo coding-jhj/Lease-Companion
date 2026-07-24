@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from lease_companion_ai.schemas.unified import (
+    JUDGMENT_IDS,
     SCHEMA_VERSION,
     AnalysisRunResult,
     Confidence,
@@ -142,9 +143,7 @@ def test_fixture_analysis_matches_rule_goldset():
     }
     assert actual["R08"] == "확인 필요"
     assert actual["R09"] == "확인 필요"
-    assert [item.judgment_id for item in analysis.judgments] == [
-        f"J{index:02d}" for index in range(1, 13)
-    ]
+    assert [item.judgment_id for item in analysis.judgments] == list(JUDGMENT_IDS)
     assert all(
         result.result_type
         is (

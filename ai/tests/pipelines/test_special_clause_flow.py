@@ -109,7 +109,7 @@ def test_offline_special_clause_flow_connects_all_stages_from_locked_snapshot():
 
     assert classification.input_snapshot_id == snapshot.input_snapshot_id
     assert len(analysis.results) == 24
-    assert len(analysis.judgments) == 12
+    assert len(analysis.judgments) == 13
     reviews = {review.clause_id: review for review in analysis.special_clause_reviews}
     fixture_cases = _flow_fixture()["cases"]
     expected_review_ids = {

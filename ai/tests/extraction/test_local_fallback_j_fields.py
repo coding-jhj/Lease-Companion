@@ -399,7 +399,7 @@ def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
     results = run_judgments(build_judgment_input(snapshot))
 
     assert [result.judgment_id for result in results] == [
-        f"J{index:02d}" for index in range(1, 13)
+        f"J{index:02d}" for index in range(1, 14)
     ]
     assert {result.judgment_id: result.status.value for result in results} == {
         "J01": "일치",
@@ -414,4 +414,7 @@ def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
         "J10": "명확",
         "J11": "명확",
         "J12": "확인 필요",
+        # J13 연결 카탈로그 5종(SC-MOVEIN-REPORT-BAN 등)은 있으나, 이 픽스처의 특약 원문은
+        # 그중 어느 것도 매칭하지 않으므로 적용 제외다.
+        "J13": "적용 제외",
     }

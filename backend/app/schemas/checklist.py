@@ -9,8 +9,10 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, StringConstraints
 
+from lease_companion_ai.schemas.unified import GUIDANCE_ITEM_KEY_PATTERN
+
 ItemKind = Literal["checklist", "post_action"]
-ITEM_KEY_PATTERN = r"^(?:R\d{2}|J(?:0[1-9]|1[0-2])):(checklist|post_action):[0-9a-f]{12}$"
+ITEM_KEY_PATTERN = GUIDANCE_ITEM_KEY_PATTERN
 ItemKey = Annotated[str, StringConstraints(pattern=ITEM_KEY_PATTERN, max_length=100)]
 
 

@@ -1,4 +1,4 @@
-"""J01~J12 입력 경계·허용 상태 goldset 계약 테스트."""
+"""J 판정 입력 경계·허용 상태 goldset 계약 테스트."""
 
 from __future__ import annotations
 

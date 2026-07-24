@@ -1,13 +1,13 @@
 # 규칙 정의
 
-문서 내부 판정과 문서 교차검증에 쓰는 규칙 데이터의 필드와 예시. 규칙 엔진은 [`judgment-spec.md`](judgment-spec.md)의 J01–J12를 **명시적 최종 판정**으로 구현한다. LLM·로컬 모델은 규칙 결과를 임의로 바꾸지 않는다. 특약 카탈로그와 R08·R09·R10·R19 및 J10·J11·J12의 책임 경계는 [`2026-07-22-special-clause-rule-judgment-boundary.md`](../decisions/2026-07-22-special-clause-rule-judgment-boundary.md)를 따른다.
+문서 내부 판정과 문서 교차검증에 쓰는 규칙 데이터의 필드와 예시. 규칙 엔진은 [`judgment-spec.md`](judgment-spec.md)의 J01–J13을 **명시적 최종 판정**으로 구현한다. LLM·로컬 모델은 규칙 결과를 임의로 바꾸지 않는다. 특약 카탈로그와 R08·R09·R10·R19 및 J10·J11·J12의 책임 경계는 [`2026-07-22-special-clause-rule-judgment-boundary.md`](../decisions/2026-07-22-special-clause-rule-judgment-boundary.md)를 따른다.
 
 ## 규칙 레코드 필드
 
 | 필드 | 의미 |
 |------|------|
 | `rule_id` | 규칙 식별자 |
-| `judgment_id` | 연결 판정 (J01–J12) |
+| `judgment_id` | 연결 판정 (J01–J13) |
 | `stage` | 적용 계약 단계: `계약금 입금 전` / `서명 전` / `계약 직후` |
 | `input_fields` | 규칙이 사용하는 입력 필드 (`document-fields.md` 기준) |
 | `condition` | 판정 조건 |

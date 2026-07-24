@@ -23,6 +23,7 @@ from lease_companion_ai.providers.gemini_gateway import (
     gemini_http_options,
     get_gemini_gateway,
 )
+from lease_companion_ai.providers.gemini_schema import clean_gemini_response_schema
 from lease_companion_ai.schemas import (
     ClassificationInput,
     ClassificationMethod,
@@ -94,7 +95,12 @@ class GeminiClassificationProvider:
                     contents=[self._prompt, self._serialize_input(classification_input)],
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
-                        response_schema=_ClassificationCandidateBatch,
+                        # Pydantic 클래스를 그대로 넘기면 additionalProperties·title이
+                        # 섞여 Gemini가 400으로 거부한다(2026-07-23 실측). 추출·생성과
+                        # 같은 방식으로 정리한 JSON Schema를 보낸다.
+                        response_schema=clean_gemini_response_schema(
+                            _ClassificationCandidateBatch.model_json_schema()
+                        ),
                         temperature=0,
                     ),
                 ),

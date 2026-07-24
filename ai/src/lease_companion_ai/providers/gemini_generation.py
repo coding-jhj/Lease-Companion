@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
@@ -21,9 +22,29 @@ from lease_companion_ai.providers.gemini_schema import clean_gemini_response_sch
 from lease_companion_ai.providers.generation import GenerationRequest
 
 
+logger = logging.getLogger(__name__)
+
 _GEMINI_RESPONSE_SCHEMA = clean_gemini_response_schema(
     GeneratedGuidanceDraft.model_json_schema()
 )
+_BATCH_RESPONSE_SCHEMA = clean_gemini_response_schema(
+    GeneratedGuidanceBatch.model_json_schema()
+)
+# 한 항목의 안내(설명·질문·수정요청·체크리스트·행동)에 필요한 출력 토큰 근사치.
+# 배치 크기와 무관하게 max_output_tokens를 고정하면 항목이 늘어날수록 응답이 잘려
+# 배치 전체가 검증에 실패하고 전 항목이 템플릿 폴백이 된다(2026-07-23 실측).
+_OUTPUT_TOKENS_PER_ITEM = 400
+_BATCH_OUTPUT_TOKEN_CEILING = 8_192
+
+
+def _finish_reason(response: Any) -> str:
+    """응답 종료 사유만 안전하게 뽑는다. SDK 구조가 달라도 예외를 내지 않는다."""
+    try:
+        candidate = (getattr(response, "candidates", None) or [None])[0]
+        reason = getattr(candidate, "finish_reason", None)
+        return str(getattr(reason, "name", reason) or "unknown")
+    except Exception:
+        return "unknown"
 
 
 class GeminiGenerationProvider:
@@ -130,13 +151,49 @@ class GeminiGenerationProvider:
             raise ProviderError("Gemini generation 응답 검증에 실패했습니다.") from None
         raise ProviderError("Gemini generation 응답이 비어 있습니다.")
 
+    @property
+    def _items_per_call(self) -> int:
+        """한 호출에 담을 항목 수. 출력 토큰 예산으로 나눈다."""
+        return max(1, self._max_output_tokens // _OUTPUT_TOKENS_PER_ITEM)
+
     def generate_batch(
         self, requests: tuple[GenerationRequest, ...]
     ) -> dict[str, GeneratedGuidanceDraft]:
+        """요청을 출력 예산에 맞게 나눠 호출하고 결과를 합친다.
+
+        한 번에 전부 보내면 응답이 잘려 배치 전체가 무효가 되고 모든 항목이
+        템플릿 폴백으로 떨어진다. 청크 하나가 실패해도 나머지 청크 결과는 살린다.
+        """
         if not requests:
             return {}
         if any(not request.evidence for request in requests):
             raise ProviderError("공식 근거 없는 생성 요청은 허용되지 않습니다.")
+
+        size = self._items_per_call
+        chunks = [
+            requests[start : start + size] for start in range(0, len(requests), size)
+        ]
+        outputs: dict[str, GeneratedGuidanceDraft] = {}
+        failures: list[str] = []
+        for index, chunk in enumerate(chunks, start=1):
+            try:
+                outputs.update(self._generate_chunk(chunk))
+            except ProviderError as exc:
+                failures.append(str(exc))
+                logger.warning(
+                    "배치 청크 실패 %d/%d 항목=%d: %s",
+                    index,
+                    len(chunks),
+                    len(chunk),
+                    exc,
+                )
+        if not outputs and failures:
+            raise ProviderError(failures[0])
+        return outputs
+
+    def _generate_chunk(
+        self, requests: tuple[GenerationRequest, ...]
+    ) -> dict[str, GeneratedGuidanceDraft]:
         if self._calls_made >= self._max_calls:
             raise ProviderError("Gemini generation provider 호출 예산을 초과했습니다.")
         self._calls_made += 1
@@ -158,11 +215,15 @@ class GeminiGenerationProvider:
                     ],
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
-                        response_schema=clean_gemini_response_schema(
-                            GeneratedGuidanceBatch.model_json_schema()
-                        ),
+                        response_schema=_BATCH_RESPONSE_SCHEMA,
                         temperature=0,
-                        max_output_tokens=self._max_output_tokens,
+                        max_output_tokens=min(
+                            _BATCH_OUTPUT_TOKEN_CEILING,
+                            max(
+                                self._max_output_tokens,
+                                len(requests) * _OUTPUT_TOKENS_PER_ITEM,
+                            ),
+                        ),
                         thinking_config=types.ThinkingConfig(thinking_budget=0),
                     ),
                 ),
@@ -179,6 +240,13 @@ class GeminiGenerationProvider:
                 else GeneratedGuidanceBatch.model_validate_json(response.text)
             )
         except Exception:
+            # 잘림(MAX_TOKENS)인지 스키마 불일치인지 구분해야 재발을 막을 수 있다.
+            # 응답 원문은 남기지 않고 종료 사유만 남긴다.
+            logger.warning(
+                "배치 응답 검증 실패 항목=%d finish_reason=%s",
+                len(requests),
+                _finish_reason(response),
+            )
             raise ProviderError("Gemini generation 응답 검증에 실패했습니다.") from None
         requested_ids = {request.rule_id for request in requests}
         outputs: dict[str, GeneratedGuidanceDraft] = {}

@@ -142,7 +142,7 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
     assert detail["status"] == "completed", detail.get("error")
     assert len(detail["result"]["results"]) == 24
     assert [item["judgment_id"] for item in detail["result"]["judgments"]] == [
-        f"J{index:02d}" for index in range(1, 13)
+        f"J{index:02d}" for index in range(1, 14)
     ]
     # 생성 결과 분리 저장(2026-07-17 합의): provider 키 없으면 template fallback으로 정상 완료
     assert detail["generation_status"] == "completed"
@@ -167,7 +167,7 @@ def test_analysis_run_poll_and_reload(client, alice, contract_id):
 
     reloaded = AnalysisRunResult.model_validate(detail["result"])
     assert reloaded.analysis_run_id == run_id
-    assert len(reloaded.judgments) == 12
+    assert len(reloaded.judgments) == 13
     # 수정값이 규칙 입력에 반영됐는지 — R06(계좌 명의)이 확인 불가/확인 필요가 아님
     r06 = next(r for r in reloaded.results if r.rule_id == "R06")
     assert r06.status.value in {"일치", "불일치"}
