@@ -229,3 +229,63 @@ def test_j13_matched_catalog_ids_excludes_non_j13_linked_ids():
     matched = _j13_matched_catalog_ids([clause])
     assert matched == ("SC-MOVEIN-REPORT-BAN",)
     assert "SC-DEFERRED-REFUND" not in matched
+
+
+# --- 2026-07-24 확대 실측: Finding 1과 같은 부류가 다른 항목에도 남아 있었다 --------
+#
+# 리뷰가 지목한 3문장만 고쳐졌고 같은 구조(넓은 간격 + 맨 토큰)가 SC-RENEWAL-WAIVER에
+# 그대로 있었다. 아래는 그때 실측으로 드러난 오탐·미탐을 고정한다.
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "임대인은 임차인의 계약갱신요구권 포기를 요구하지 아니한다.",
+        "임차인의 계약갱신요구권은 본 특약으로 포기되지 아니한다.",
+        "임대인은 갱신요구권 포기를 강요할 수 없다.",
+    ],
+)
+def test_j13_does_not_flag_renewal_protective_clauses(clause):
+    """갱신요구권을 '지켜주는' 문구는 확인 필요로 뜨면 안 된다.
+
+    `갱신(?:요구)?권.{0,20}(?:포기|...)`의 맨 토큰 `포기`가 넓은 간격과 만나
+    "포기를 요구하지 아니한다"·"포기되지 아니한다"까지 잡던 문제.
+    """
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.NOT_APPLICABLE
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "임대인은 근저당을 설정하지 아니하며, 임차인은 전입신고를 하지 아니한다.",
+        "임대인은 매도하지 않기로 하고, 임차인은 전입신고를 6개월 유예한다.",
+    ],
+)
+def test_j13_flags_restriction_even_when_protective_phrase_precedes(clause):
+    """보호 문구가 앞에 있어도 뒤의 제한 문구는 탐지해야 한다.
+
+    Finding 1을 막으려 넣은 제외 패턴이 독립된 보호 문구를 잡는 형태라
+    다른 절의 진짜 제한 문구까지 함께 죽였다(수정 전 미탐).
+    """
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.CHECK_NEEDED
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "임대인은 전세권 설정에 협조한다. 다만 임차인은 임차권등기를 신청하지 아니한다.",
+        "임대인은 보증보험 가입에 협조한다. 다만 임차인은 이를 요구하지 아니한다.",
+    ],
+)
+def test_j13_known_limitation_misses_restriction_after_benign_same_topic_phrase(clause):
+    """알려진 한계를 고정한다 — 지금은 미탐이며, 그 사실을 눈에 보이게 남긴다.
+
+    include·exclude가 특약 원문 전체에 대해 항목 단위로 평가되므로
+    (special_clauses/service.py), 한 항목 안에서 exclude 주제(전세권·보증보험 협조)와
+    include 주제(임차권등기·요구 거절)가 다르면 exclude가 정당한 탐지까지 삼킨다.
+
+    설계상 미탐은 허용 범위이고 오탐 차단이 우선이라 지금은 이 상태로 둔다.
+    절 단위 매칭으로 풀려면 기존 독소조항 6종의 장범위 패턴을 함께 재작성해야 한다.
+    이 테스트가 실패하면(=탐지되기 시작하면) 한계가 해소된 것이므로 문서와 함께 갱신한다.
+    """
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.NOT_APPLICABLE
