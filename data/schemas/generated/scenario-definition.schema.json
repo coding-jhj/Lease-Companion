@@ -37,6 +37,67 @@
       "title": "ActionSelection",
       "type": "object"
     },
+    "ApprovedDialogueFact": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_intents": {
+          "items": {
+            "enum": [
+              "clause_meaning",
+              "return_timing",
+              "no_successor_case",
+              "verbal_promise",
+              "contract_fact",
+              "clause_change_request",
+              "contract_hold",
+              "unrelated",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Allowed Intents",
+          "type": "array"
+        },
+        "canonical_text": {
+          "minLength": 1,
+          "title": "Canonical Text",
+          "type": "string"
+        },
+        "claim_kind": {
+          "enum": [
+            "documented_fact",
+            "missing_information",
+            "reported_statement"
+          ],
+          "title": "Claim Kind",
+          "type": "string"
+        },
+        "disclosure": {
+          "enum": [
+            "on_request",
+            "restricted",
+            "unknown"
+          ],
+          "title": "Disclosure",
+          "type": "string"
+        },
+        "fact_id": {
+          "pattern": "^F\\d{2}$",
+          "title": "Fact Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fact_id",
+        "canonical_text",
+        "allowed_intents",
+        "claim_kind",
+        "disclosure"
+      ],
+      "title": "ApprovedDialogueFact",
+      "type": "object"
+    },
     "ClarityCandidate": {
       "enum": [
         "명확",
@@ -238,6 +299,77 @@
         "next_turn_id"
       ],
       "title": "DialogueTurn",
+      "type": "object"
+    },
+    "GroundedRoleplayConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_facts": {
+          "items": {
+            "$ref": "#/$defs/ApprovedDialogueFact"
+          },
+          "minItems": 1,
+          "title": "Approved Facts",
+          "type": "array"
+        },
+        "fallbacks": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "propertyNames": {
+            "enum": [
+              "answer_fact",
+              "state_missing_fact",
+              "relay_landlord_claim",
+              "acknowledge_request",
+              "maintain_position",
+              "respond_to_hold",
+              "clarify_user_intent",
+              "decline_unrelated"
+            ]
+          },
+          "title": "Fallbacks",
+          "type": "object"
+        },
+        "intent_keywords": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "propertyNames": {
+            "enum": [
+              "clause_meaning",
+              "return_timing",
+              "no_successor_case",
+              "verbal_promise",
+              "contract_fact",
+              "clause_change_request",
+              "contract_hold",
+              "unrelated",
+              "unknown"
+            ]
+          },
+          "title": "Intent Keywords",
+          "type": "object"
+        },
+        "prompt_version": {
+          "const": "practice-dialogue-v1",
+          "title": "Prompt Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt_version",
+        "approved_facts",
+        "intent_keywords",
+        "fallbacks"
+      ],
+      "title": "GroundedRoleplayConfig",
       "type": "object"
     },
     "ResponsiblePartyCandidate": {
@@ -621,6 +753,17 @@
       "const": "synthetic_practice_scenario",
       "title": "Fixture Type",
       "type": "string"
+    },
+    "grounded_roleplay": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GroundedRoleplayConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "hidden_confirmation_signals": {
       "items": {

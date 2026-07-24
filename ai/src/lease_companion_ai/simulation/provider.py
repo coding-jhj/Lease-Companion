@@ -12,7 +12,7 @@ from lease_companion_ai.schemas.simulation import (
     PracticeTurnEvaluation,
     allowed_next_dialogue_states,
 )
-from lease_companion_ai.schemas.unified import RuleStatus, Urgency
+from lease_companion_ai.schemas.unified import JUDGMENT_ID_PATTERN, RuleStatus, Urgency
 
 
 PRACTICE_PROMPT_VERSION: Final = "practice-evaluation-v1"
@@ -33,7 +33,7 @@ class PracticeJudgmentState(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    judgment_id: str = Field(pattern=r"^J(?:0[1-9]|1[0-2])$")
+    judgment_id: str = Field(pattern=JUDGMENT_ID_PATTERN)
     status: RuleStatus
     urgency: Urgency
 

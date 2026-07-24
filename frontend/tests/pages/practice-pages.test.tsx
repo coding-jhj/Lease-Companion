@@ -346,7 +346,8 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(screen.getByText("이전 대화 보기"));
     expect(await screen.findByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
     expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(2);
-    expect(within(screen.getByRole("tabpanel", { name: "지금까지의 대화" })).getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
+    // 응답 대사는 아바타 화면이 이미 말한다. 대화 기록에 또 넣으면 두 번 말한 것처럼 읽힌다.
+    expect(within(screen.getByRole("tabpanel", { name: "지금까지의 대화" })).queryByText("확인 요청을 반영했습니다.")).toBeNull();
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
 
@@ -425,7 +426,7 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(screen.getByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
     expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
-    expect(within(conversation).getByText("답변을 다시 말씀해 주세요.")).toBeInTheDocument();
+    expect(within(conversation).queryByText("답변을 다시 말씀해 주세요.")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "답변을 확인하지 못했습니다. 입력한 내용은 잘못된 답변으로 처리하지 않았습니다. 연습은 계속할 수 있습니다.",
     );

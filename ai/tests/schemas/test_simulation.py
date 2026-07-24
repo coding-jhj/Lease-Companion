@@ -21,6 +21,9 @@ SCENARIO_PATH = (
     / "scenario.json"
 )
 SCENARIO_ROOT = ROOT / "data" / "sample" / "practice-scenarios"
+DEFERRED_REFUND_SCENARIO_PATH = (
+    SCENARIO_ROOT / "PRACTICE-DEFERRED-REFUND-001" / "scenario.json"
+)
 NEW_SCENARIO_IDS = (
     "PRACTICE-DEFERRED-REFUND-001",
     "PRACTICE-THIRD-PARTY-PAYMENT-001",
@@ -88,6 +91,42 @@ def test_new_practice_scenario_and_answer_key_load_together(scenario_id):
         assert counts["no_response"] >= 1, turn_id
         assert counts["needs_review"] >= 2, turn_id
         assert any(example.input_context.provider_error == "timeout" for example in examples)
+
+
+def test_only_deferred_refund_scenario_enables_grounded_roleplay():
+    simulation = _models()
+    deferred = simulation.ScenarioDefinition.model_validate_json(
+        DEFERRED_REFUND_SCENARIO_PATH.read_text(encoding="utf-8")
+    )
+    broker = simulation.ScenarioDefinition.model_validate(_scenario_payload())
+
+    assert deferred.grounded_roleplay is not None
+    assert {fact.fact_id for fact in deferred.grounded_roleplay.approved_facts} == {
+        "F01",
+        "F02",
+        "F03",
+        "F04",
+    }
+    assert broker.grounded_roleplay is None
+
+
+def test_grounded_roleplay_rejects_duplicate_facts_and_short_fallback_lists():
+    simulation = _models()
+    payload = json.loads(DEFERRED_REFUND_SCENARIO_PATH.read_text(encoding="utf-8"))
+
+    duplicate = deepcopy(payload)
+    duplicate["grounded_roleplay"]["approved_facts"].append(
+        deepcopy(duplicate["grounded_roleplay"]["approved_facts"][0])
+    )
+    with pytest.raises(ValidationError, match="중복 fact_id"):
+        simulation.ScenarioDefinition.model_validate(duplicate)
+
+    short_fallback = deepcopy(payload)
+    short_fallback["grounded_roleplay"]["fallbacks"]["answer_fact"] = [
+        "현재 특약 내용을 확인해 드리겠습니다."
+    ]
+    with pytest.raises(ValidationError):
+        simulation.ScenarioDefinition.model_validate(short_fallback)
 
 
 def test_scenario_supports_proxy_facts_fixed_classification_and_clause_revision_action():

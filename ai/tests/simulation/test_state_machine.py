@@ -12,6 +12,10 @@ from lease_companion_ai.schemas.simulation import (
 )
 from lease_companion_ai.simulation.models import load_practice_assets
 from lease_companion_ai.simulation.service import PracticeSimulationService
+from lease_companion_ai.simulation.dialogue_provider import (
+    DialogueClaim,
+    DialogueGenerationResult,
+)
 from lease_companion_ai.simulation.state_machine import (
     advance_dialogue,
     advance_dialogue_without_confirmation,
@@ -127,6 +131,18 @@ class TurnProvider:
             verbal_reliance="rejected",
             evidence_text="provider 생성 문장",
         )
+
+
+class DialogueProvider:
+    model_name = "dialogue-provider-v1"
+
+    def __init__(self, results):
+        self.results = list(results)
+        self.calls = []
+
+    def generate(self, request):
+        self.calls.append(request)
+        return self.results[min(len(self.calls) - 1, len(self.results) - 1)]
 
 
 def _turn(session_id: str, turn_id: str, answer: str) -> PracticeTurnInput:
@@ -344,3 +360,96 @@ def test_user_can_leave_an_unconfirmed_turn_or_finish_the_dialogue():
     assert final_choice.current_state == "ACTION-SELECTION"
     assert next_turn.confirmed_action_ids == []
     assert final_choice.confirmed_action_ids == []
+
+
+def test_deferred_refund_uses_grounded_dialogue_without_changing_evaluation():
+    scenario, answer_key = _assets("PRACTICE-DEFERRED-REFUND-001")
+    dialogue = DialogueProvider(
+        [
+            DialogueGenerationResult(
+                response_text="그 경우의 반환 시점은 현재 특약에 따로 적혀 있지 않습니다.",
+                used_fact_ids=["F02"],
+                claims=[DialogueClaim(fact_id="F02", relation="paraphrase")],
+                speech_act="state_missing_fact",
+            )
+        ]
+    )
+    service = PracticeSimulationService(
+        scenario, answer_key, TurnProvider(), dialogue_provider=dialogue
+    )
+    session = service.start_session("practice-grounded", 1, STARTED_AT)
+
+    step = service.submit(
+        session,
+        _turn(
+            session.session_id,
+            "TURN-01",
+            "새 세입자가 안 들어오면 보증금은 언제 반환되나요?",
+        ),
+        occurred_at=STARTED_AT,
+    )
+
+    assert step.evaluation.answer_category == "appropriate_check"
+    assert step.session.current_state == "TURN-02"
+    assert step.dialogue_response == "그 경우의 반환 시점은 현재 특약에 따로 적혀 있지 않습니다."
+    assert step.dialogue_generation.fallback_used is False
+    assert step.dialogue_generation.used_fact_ids == ("F02",)
+    assert len(dialogue.calls) == 1
+
+
+def test_invalid_generated_dialogue_retries_once_then_uses_reviewed_fallback():
+    scenario, answer_key = _assets("PRACTICE-DEFERRED-REFUND-001")
+    invalid = DialogueGenerationResult(
+        response_text="좋은 질문입니다. 특약 수정을 요구하세요.",
+        used_fact_ids=["F02"],
+        claims=[DialogueClaim(fact_id="F02", relation="paraphrase")],
+        speech_act="state_missing_fact",
+    )
+    dialogue = DialogueProvider([invalid, invalid])
+    service = PracticeSimulationService(
+        scenario, answer_key, TurnProvider(), dialogue_provider=dialogue
+    )
+    session = service.start_session("practice-fallback", 1, STARTED_AT)
+
+    step = service.submit(
+        session,
+        _turn(
+            session.session_id,
+            "TURN-01",
+            "새 세입자가 안 들어오면 보증금은 언제 반환되나요?",
+        ),
+        occurred_at=STARTED_AT,
+    )
+
+    assert step.evaluation.answer_category == "appropriate_check"
+    assert step.session.current_state == "TURN-02"
+    assert step.dialogue_generation.fallback_used is True
+    assert step.dialogue_generation.generation_attempts == 2
+    assert step.dialogue_generation.validation_failure_codes == (
+        "model_answer_leak",
+        "model_answer_leak",
+    )
+    assert step.dialogue_response in scenario.grounded_roleplay.fallbacks[
+        "state_missing_fact"
+    ]
+    assert len(dialogue.calls) == 2
+    assert dialogue.calls[1].correction_codes == ("model_answer_leak",)
+
+
+def test_other_scenario_never_calls_grounded_dialogue_provider():
+    scenario, answer_key = _assets("PRACTICE-PROXY-AUTHORITY-001")
+    dialogue = DialogueProvider([])
+    service = PracticeSimulationService(
+        scenario, answer_key, TurnProvider(), dialogue_provider=dialogue
+    )
+    session = service.start_session("practice-fixed", 1, STARTED_AT)
+
+    step = service.submit(
+        session,
+        _turn(session.session_id, "TURN-01", "등기상 소유자를 확인하겠습니다."),
+        occurred_at=STARTED_AT,
+    )
+
+    assert step.dialogue_generation is None
+    assert step.dialogue_response == scenario.dialogue_turns[0].responses.appropriate_check
+    assert dialogue.calls == []
