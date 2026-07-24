@@ -20,11 +20,16 @@
 .PARAMETER PracticeValidation
   계약 연습 수동 검증 모드. Gemini 키와 MSW를 끄고 Fake provider를 사용하며,
   서버 준비 후 회원가입 화면을 기본 브라우저로 연다.
+
+.PARAMETER BackendPort
+  백엔드 uvicorn 포트 (기본 8301). 8301이 Docker 등에 점유되면 예: -BackendPort 8302.
+  프론트 Vite 프록시(VITE_BACKEND_TARGET)도 자동으로 같은 포트를 본다.
 #>
 param(
     [switch]$Force,
     [switch]$SkipMigrate,
-    [switch]$PracticeValidation
+    [switch]$PracticeValidation,
+    [int]$BackendPort = 8301
 )
 
 $ErrorActionPreference = 'Stop'
@@ -83,8 +88,8 @@ if (-not (Test-Path $envFile)) { Fail 'backend/.env 없음. backend/.env.example
 if (-not (Select-String -Path $envFile -Pattern '^DATABASE_URL=' -Quiet)) { Fail 'backend/.env에 DATABASE_URL 이 없음.' }
 Ok 'backend/.env · DATABASE_URL 확인'
 
-# 3) 포트 8301·5173
-foreach ($p in 8301, 5173) {
+# 3) 포트 $BackendPort·5173
+foreach ($p in $BackendPort, 5173) {
     if ($PracticeValidation) {
         $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
         if ($listeners.Port -contains $p) { Fail "포트 $p 사용 중. 기존 서버를 직접 종료한 뒤 다시 실행하세요." }
@@ -101,7 +106,7 @@ foreach ($p in 8301, 5173) {
         }
     }
 }
-Ok '포트 8301·5173 비어있음'
+Ok "포트 $BackendPort·5173 비어있음"
 
 # 4) migration
 if (-not $SkipMigrate) {
@@ -113,10 +118,12 @@ if (-not $SkipMigrate) {
 
 Write-Host '[기동] 백엔드·프론트 시작' -ForegroundColor Cyan
 $be = Start-Process -FilePath 'python' `
-    -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8301' `
+    -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', "$BackendPort" `
     -WorkingDirectory $backend `
     -RedirectStandardOutput $logs['BE-out'] -RedirectStandardError $logs['BE-err'] `
     -PassThru -NoNewWindow
+# 프론트 Vite 프록시가 같은 backend 포트를 보도록 넘긴다 (기본 8301은 vite.config.ts 기본값과 동일).
+$env:VITE_BACKEND_TARGET = "http://127.0.0.1:$BackendPort"
 $fe = Start-Process -FilePath 'npm.cmd' `
     -ArgumentList 'run', 'dev' `
     -WorkingDirectory $frontend `
@@ -129,7 +136,7 @@ if ($PracticeValidation) {
     $deadline = (Get-Date).AddSeconds(60)
     do {
         try {
-            $backendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:8301/health' -TimeoutSec 2).StatusCode -eq 200
+            $backendReady = (Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$BackendPort/health" -TimeoutSec 2).StatusCode -eq 200
             $frontendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:5173/signup' -TimeoutSec 2).StatusCode -eq 200
         }
         catch {
