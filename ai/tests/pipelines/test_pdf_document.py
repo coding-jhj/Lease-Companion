@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import fitz
 import pytest
 
@@ -35,6 +37,29 @@ def _pdf_bytes(text: str) -> bytes:
     payload = document.tobytes()
     document.close()
     return payload
+
+
+def test_frontend_e2e_contract_fixture_exposes_korean_refund_clause():
+    fixture = (
+        Path(__file__).resolve().parents[3]
+        / "frontend"
+        / "e2e"
+        / "fixtures"
+        / "synthetic-non-identifying-lease.pdf"
+    )
+    assert fixture.exists(), "frontend real-api E2E PDF fixture가 필요합니다."
+
+    payload = fixture.read_bytes()
+    text, read_method = extract_document_text(payload, fixture.name)
+
+    assert read_method == "digital"
+    assert "보증금 반환은 신규 임차인의 입주 및 보증금 지급 완료 후" in text
+
+    extraction = extract_documents(payload, fixture.name)
+    assert (
+        extraction["contract"]["fields"]["deposit_return_clause"]
+        == "보증금 반환은 신규 임차인의 입주 및 보증금 지급 완료 후 진행한다."
+    )
 
 
 def test_digital_pdf_text_layer_is_extracted_end_to_end():

@@ -17,6 +17,8 @@ describe("practiceService", () => {
     await practiceService.getScenario("PRACTICE-DEFERRED-REFUND-001");
     await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
     await practiceService.getSession("session-001");
+    await practiceService.getLatestMedia("session-001");
+    await practiceService.getMessages("session-001", "cursor-001", 20);
     await practiceService.submitTurn("session-001", {
       request_id: "turn-request-001",
       turn_id: "TURN-01",
@@ -24,6 +26,9 @@ describe("practiceService", () => {
       timed_out: false,
       response_time_seconds: 3,
     });
+    await practiceService.getMediaJob("media-job-001");
+    await practiceService.getMediaAudio("/api/practice-media-jobs/media-job-001/audio");
+    await practiceService.getMediaVideo("/api/practice-media-jobs/media-job-001/video");
     await practiceService.advanceDialogue("session-001", {
       request_id: "advance-request-001",
       turn_id: "TURN-01",
@@ -41,7 +46,12 @@ describe("practiceService", () => {
       "/api/practice-scenarios/PRACTICE-DEFERRED-REFUND-001",
       "/api/practice-sessions",
       "/api/practice-sessions/session-001",
+      "/api/practice-sessions/session-001/media/latest",
+      "/api/practice-sessions/session-001/messages?limit=20&before=cursor-001",
       "/api/practice-sessions/session-001/turns",
+      "/api/practice-media-jobs/media-job-001",
+      "/api/practice-media-jobs/media-job-001/audio",
+      "/api/practice-media-jobs/media-job-001/video",
       "/api/practice-sessions/session-001/advance",
       "/api/practice-sessions/session-001/final-action",
       "/api/practice-sessions/session-001/result",
@@ -50,7 +60,7 @@ describe("practiceService", () => {
       method: "POST",
       body: JSON.stringify({ scenario_id: "PRACTICE-DEFERRED-REFUND-001" }),
     });
-    expect(fetchMock.mock.calls[4][1]).toMatchObject({
+    expect(fetchMock.mock.calls[6][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
         request_id: "turn-request-001",
@@ -60,7 +70,7 @@ describe("practiceService", () => {
         response_time_seconds: 3,
       }),
     });
-    expect(fetchMock.mock.calls[5][1]).toMatchObject({
+    expect(fetchMock.mock.calls[10][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
         request_id: "advance-request-001",
@@ -68,7 +78,7 @@ describe("practiceService", () => {
         destination: "next_turn",
       }),
     });
-    expect(fetchMock.mock.calls[6][1]).toMatchObject({
+    expect(fetchMock.mock.calls[11][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
         request_id: "final-request-001",

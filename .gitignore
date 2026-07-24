@@ -84,6 +84,7 @@ logs/
 *.log
 tmp/
 work/
+backend/var/
 .cache/
 docs_dev/
 

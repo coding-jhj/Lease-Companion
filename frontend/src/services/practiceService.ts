@@ -1,6 +1,8 @@
 import type {
   PracticeFinalActionRequestDto,
+  PracticeMediaJobDto,
   PracticeAdvanceRequestDto,
+  PracticeConversationPageDto,
   PracticeResultResponseDto,
   PracticeScenarioDetailDto,
   PracticeScenarioSummaryDto,
@@ -8,7 +10,7 @@ import type {
   PracticeTurnRequestDto,
   PracticeTurnResponseDto,
 } from "../types/api";
-import { apiClient } from "./apiClient";
+import { apiBlobClient, apiClient } from "./apiClient";
 
 function jsonOptions(method: "POST", body: unknown): RequestInit {
   return {
@@ -30,11 +32,24 @@ export const practiceService = {
     apiClient<PracticeSessionDto>("/api/practice-sessions", jsonOptions("POST", { scenario_id: scenarioId })),
   getSession: (sessionId: string) =>
     apiClient<PracticeSessionDto>(`/api/practice-sessions/${sessionId}`),
+  getLatestMedia: (sessionId: string) =>
+    apiClient<PracticeMediaJobDto | null>(`/api/practice-sessions/${sessionId}/media/latest`),
+  getMessages: (sessionId: string, before?: string, limit = 30) => {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (before) query.set("before", before);
+    return apiClient<PracticeConversationPageDto>(
+      `/api/practice-sessions/${sessionId}/messages?${query.toString()}`,
+    );
+  },
   submitTurn: (sessionId: string, body: PracticeTurnRequestDto) =>
     apiClient<PracticeTurnResponseDto>(
       `/api/practice-sessions/${sessionId}/turns`,
       jsonOptions("POST", body),
     ),
+  getMediaJob: (mediaJobId: string) =>
+    apiClient<PracticeMediaJobDto>(`/api/practice-media-jobs/${mediaJobId}`),
+  getMediaAudio: (audioUrl: string) => apiBlobClient(audioUrl),
+  getMediaVideo: (videoUrl: string) => apiBlobClient(videoUrl),
   advanceDialogue: (sessionId: string, body: PracticeAdvanceRequestDto) =>
     apiClient<PracticeTurnResponseDto>(
       `/api/practice-sessions/${sessionId}/advance`,

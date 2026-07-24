@@ -8,6 +8,7 @@ import sys
 # (없으면 분류·생성이 실제 Gemini를 호출해 과금·비결정 실패가 발생한다.)
 for _offline_key in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "COHERE_API_KEY"):
     os.environ[_offline_key] = ""
+os.environ["PRACTICE_MEDIA_ENABLED"] = "false"
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "ai" / "src"))

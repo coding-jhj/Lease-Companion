@@ -113,11 +113,12 @@ describe("ResultReportPage", () => {
 
     expect(screen.getByText("확인 결과를 불러오는 중")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "계약서 임대인=등기 소유자" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "서두르지 않아도 괜찮아요." })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toHaveAttribute("href", "#first-priority-group");
-    expect(screen.getByRole("heading", { name: "12가지 계약 확인 결과" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /계약금을 보내기 전에 \d+가지를 먼저 확인해 주세요/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "첫 확인 행동으로 이동" })).toHaveAttribute("href", "#first-action-item");
+    expect(screen.getByRole("heading", { name: "먼저 할 일" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "왜 확인해야 하나요?" })).toBeInTheDocument();
     expect(screen.getByText("내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
     expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
     // 상단 요약 개수는 하단 그룹 개수와 같아야 한다("지금 판단할 수 없는 항목"은 양쪽 모두 제외).
     for (const priority of ["반드시 확인", "확인 권장", "일반 확인"]) {
@@ -134,10 +135,10 @@ describe("ResultReportPage", () => {
     for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
       expect(screen.getByText(judgmentId)).toBeInTheDocument();
     }
-    for (const title of ["먼저 물어볼 질문", "수정·추가 요청 문구", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
+    for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
-    expect(screen.getByRole("heading", { name: "주요 금전피해 유형 비교" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "비슷한 상황에서 확인할 점" })).toBeInTheDocument();
     const firstPatternDetails = document.querySelector(".damage-patterns details") as HTMLDetailsElement;
     fireEvent.click(within(firstPatternDetails).getByText("근거와 분석 한계"));
     const referenceCases = within(firstPatternDetails).getByRole("region", { name: /검증된 유사 참고 사례$/ });
@@ -145,12 +146,20 @@ describe("ResultReportPage", () => {
     expect(within(referenceCases).getByRole("link")).toHaveAttribute("href", expect.stringMatching(/^https:\/\//));
     expect(screen.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeInTheDocument();
     expect(screen.getByLabelText("제출 자료 기준 피해 유형 비교 요약")).toBeInTheDocument();
-    const questionGroup = screen.getByRole("heading", { name: "먼저 물어볼 질문" }).closest("section")!;
-    expect(within(questionGroup).getAllByRole("listitem")).toHaveLength(3);
-    fireEvent.click(within(questionGroup).getByRole("button", { name: /개 더 보기/ }));
-    expect(within(questionGroup).getAllByRole("listitem").length).toBeGreaterThan(3);
-    expect(within(questionGroup).getByRole("button", { name: "접기" })).toBeInTheDocument();
-    expect(within(questionGroup).getAllByText("등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?")).toHaveLength(1);
+    const question = "등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?";
+    expect(screen.getByRole("button", { name: `질문 복사: ${question}` })).toBeInTheDocument();
+
+    const actionFirst = document.querySelector(".action-first")!;
+    const actionHub = document.querySelector(".action-hub")!;
+    const stageGuidance = document.querySelector(".stage-guidance")!;
+    const whyResults = document.querySelector(".report-results-column")!;
+    const damageReference = document.querySelector(".damage-reference-section")!;
+    const feedback = document.querySelector(".feedback-card")!;
+    expect(actionFirst.compareDocumentPosition(actionHub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(actionHub.compareDocumentPosition(stageGuidance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(stageGuidance.compareDocumentPosition(whyResults) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(whyResults.compareDocumentPosition(damageReference) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(damageReference.compareDocumentPosition(feedback) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     expect(screen.queryByText("R01")).not.toBeInTheDocument();
 
@@ -194,13 +203,13 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "12가지 계약 확인 결과" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "왜 확인해야 하나요?" })).toBeInTheDocument();
     expandAllResultGroups();
     for (const judgmentId of ["J10", "J11", "J12"]) {
       const card = screen.getByText(judgmentId).closest("article");
       expect(card).toHaveTextContent("상태: 확인 필요");
     }
-    expect(screen.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("provider_unavailable");
     expect(document.body).not.toHaveTextContent("classification provider");
   });
@@ -210,7 +219,7 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText(/규칙 판정은 정상이며 안내 생성에 실패했습니다/)).toBeInTheDocument();
+    expect(await screen.findByText("확인 결과는 준비됐지만 쉬운 설명을 만들지 못했습니다. 확인 항목과 문서 근거는 그대로 볼 수 있습니다.")).toBeInTheDocument();
     expandAllResultGroups();
     expect(document.querySelectorAll(".result-card")).toHaveLength(12);
     expect(screen.getByText("J01")).toBeInTheDocument();
@@ -228,5 +237,29 @@ describe("ResultReportPage", () => {
     renderPage();
 
     expect(await screen.findByText("아직 준비된 확인 결과가 없습니다")).toBeInTheDocument();
+  });
+
+  it("uses neutral copy for legacy rule-only reports and keeps the final action button", async () => {
+    const run = detail();
+    vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue({
+      ...run,
+      result: run.result ? { ...run.result, judgments: [] } : null,
+    });
+
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "왜 확인해야 하나요?" })).toBeInTheDocument();
+    expect(screen.queryByText("이전 분석의 핵심 규칙 결과")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "이제 할 일 확인하기" })).toBeInTheDocument();
+  });
+
+  it("keeps raw result-loading errors out of the user-facing retry guidance", async () => {
+    vi.spyOn(mvpService, "getAnalysisDetail").mockRejectedValue(new Error("provider unavailable for case_id=CASE-001"));
+
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과를 불러오지 못했습니다. 저장된 계약 정보는 변경되지 않았습니다. 다시 시도해 주세요.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("provider unavailable");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("case_id");
   });
 });

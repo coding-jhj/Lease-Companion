@@ -1,18 +1,23 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import contractExtractionFixture from "../../../data/sample/fixtures/case-001/contract_extraction.json";
 import registryExtractionFixture from "../../../data/sample/fixtures/case-001/registry_extraction.json";
-import correctionRequestFixture from "../../../data/sample/fixtures/case-001/correction_request.json";
-import { fieldViewModels } from "../../src/features/extraction-review/viewModel";
 import { ExtractionReviewPage } from "../../src/pages/extraction-review/ExtractionReviewPage";
 import { mvpService } from "../../src/services/mvpService";
-import type { DocumentExtractionDto, ExtractedFieldDto, ExtractionStateDto, FieldValue } from "../../src/types/api";
+import type {
+  AnalysisRunDetailDto,
+  DocumentExtractionDto,
+  ExtractedFieldDto,
+  ExtractionStateDto,
+  FieldValue,
+  SchemaVersion,
+} from "../../src/types/api";
 
-const documents = [
+const fixtureDocuments = [
   contractExtractionFixture as DocumentExtractionDto,
   registryExtractionFixture as DocumentExtractionDto,
 ];
@@ -21,8 +26,8 @@ const completedExtraction: ExtractionStateDto = {
   id: 1,
   status: "completed",
   error: null,
-  contract_doc: documents[0],
-  registry_doc: documents[1],
+  contract_doc: fixtureDocuments[0],
+  registry_doc: fixtureDocuments[1],
   created_at: "2026-07-16T00:00:00Z",
 };
 
@@ -32,139 +37,205 @@ const emptyExtraction: ExtractionStateDto = {
   registry_doc: null,
 };
 
+function extractedField(
+  fieldName: string,
+  value: FieldValue,
+  options: Partial<ExtractedFieldDto> = {},
+): ExtractedFieldDto {
+  return {
+    field_name: fieldName,
+    extracted_value: value,
+    normalized_value: value,
+    user_corrected_value: null,
+    verification_status: "unverified",
+    confidence: value === null ? "실패" : "추출됨",
+    source_evidence: { page: value === null ? null : 1, text: value === null ? null : "문서 원문" },
+    issue_code: value === null ? "unreadable" : null,
+    failure_reason: null,
+    ...options,
+  };
+}
+
+function extractionWith(
+  fields: Record<string, ExtractedFieldDto>,
+  schemaVersion: SchemaVersion = "1.9.0",
+): ExtractionStateDto {
+  return {
+    id: 19,
+    status: "completed",
+    error: null,
+    contract_doc: {
+      schema_version: schemaVersion,
+      document_id: "DOC-TEST",
+      document_type: "contract",
+      warnings: [],
+      fields,
+    },
+    registry_doc: null,
+    created_at: "2026-07-18T00:00:00Z",
+  };
+}
+
+function analysisRun(): AnalysisRunDetailDto {
+  return {
+    analysis_run_id: "RUN-1001-001",
+    input_snapshot_id: "SNAP-1001",
+    status: "pending",
+    error: null,
+    created_at: "2026-07-16T00:00:00Z",
+    result: null,
+    generation_result: null,
+    generation_status: null,
+    generation_error: null,
+  };
+}
+
+function AnalysisDestination() {
+  const location = useLocation();
+  return <p>분석 화면 {location.search}</p>;
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/contracts/1001/review"]}>
       <Routes>
         <Route path="/contracts/:contractId/review" element={<ExtractionReviewPage />} />
-        <Route path="/contracts/:contractId/analyzing" element={<p>분석 화면</p>} />
+        <Route path="/contracts/:contractId/analyzing" element={<AnalysisDestination />} />
         <Route path="/contracts/:contractId/upload" element={<p>문서 업로드 화면</p>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
-function confirmRemainingDirectFields() {
-  for (const button of screen.queryAllByRole("button", {
-    name: /(?:직접 확인|확인할 수 없음으로 저장)$/,
-  })) {
-    fireEvent.click(button);
+function finishRemainingQueue() {
+  for (let guard = 0; guard < 100; guard += 1) {
+    const confirmButton = screen.queryByRole("button", { name: "네, 맞아요" });
+    if (!confirmButton) return;
+    fireEvent.click(confirmButton);
   }
+  throw new Error("review queue did not finish");
 }
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("ExtractionReviewPage", () => {
-  it("shows canonical states and sends only changed fields before confirmation", async () => {
+  it("guides the user through one important item at a time without technical labels", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
-    const submit = vi.spyOn(mvpService, "submitCorrections").mockResolvedValue(
-      completedExtraction,
-    );
-    const confirm = vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
-      { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" },
-    );
 
-    renderPage();
+    const view = renderPage();
 
-    expect(screen.getByText("문서 읽기 상태를 확인하는 중")).toBeInTheDocument();
-    expect(await screen.findByLabelText("입금 계좌 예금주 값")).toHaveValue("");
-    expect(screen.getAllByText("추출됨").length).toBeGreaterThan(0);
-    expect(screen.getByText("불확실")).toBeInTheDocument();
-    expect(screen.getAllByText("판독 실패").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("판독 실패 해결 방법").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/직접 입력한 내용은 자동으로 읽은 값이 아니라/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("미확인").length).toBe(fieldViewModels(documents).length);
-    expect(screen.queryByText("원문 위치 미확인")).not.toBeInTheDocument();
-    expect(screen.getByText("입금 계좌 예금주 칸을 문서에서 읽지 못했습니다.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "이번 단계에서 확인할 내용" })).toBeInTheDocument();
-    expect(screen.getByText("표준계약서 서식")).toBeInTheDocument();
-    expect(screen.getByText("특약 원문")).toBeInTheDocument();
-    expect(screen.getByText("돈과 권리에 관련된 중요 내용")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /특약·핵심값 확인/ })).toBeInTheDocument();
-    expect(screen.getByText("문서에서 읽힌 값").closest("details")).not.toHaveAttribute("open");
-    expect(screen.getByText("그 밖에 읽지 못한 값").closest("details")).not.toHaveAttribute("open");
-
-    fireEvent.click(screen.getByRole("button", { name: "읽힌 값 모두 확인" }));
-    fireEvent.click(screen.getByRole("button", { name: "특약사항 이 값 확인" }));
-    const confirmedSummary = screen.getByText(/확인된 항목 \d+개/);
-    expect(confirmedSummary.closest("details")).not.toHaveAttribute("open");
-    fireEvent.change(screen.getByLabelText("입금 계좌 예금주 값"), {
-      target: { value: "이정훈" },
-    });
-
-    expect(screen.getAllByText("확인됨").length).toBeGreaterThan(0);
-    expect(screen.getByText("수정됨")).toBeInTheDocument();
-    expect(screen.getByText("저장되지 않은 수정 1건")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
-    confirmRemainingDirectFields();
-    const analyzeButton = screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" });
-    expect(analyzeButton).toBeEnabled();
-    fireEvent.click(analyzeButton);
-
-    await waitFor(() => {
-      expect(submit).toHaveBeenCalledWith(correctionRequestFixture);
-      expect(confirm).toHaveBeenCalledWith(1001);
-    });
-    expect(await screen.findByText("분석 화면")).toBeInTheDocument();
+    expect(await screen.findByText(/중요한 내용 .*개 중 .*개를 확인했습니다/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /주소/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    expect(await screen.findByRole("heading", { name: "등기사항증명서 계약하려는 집 주소" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    expect(await screen.findByRole("heading", { name: /임대인/ })).toBeInTheDocument();
+    expect(view.container.textContent).not.toMatch(/추출값|필드|confidence|스냅샷/);
   });
 
-  it("submits v1.9 clause arrays item by item without comma splitting", async () => {
-    function field(field_name: string, extracted_value: FieldValue): ExtractedFieldDto {
-      return {
-        field_name,
-        extracted_value,
-        normalized_value: null,
-        user_corrected_value: null,
-        verification_status: "confirmed",
-        confidence: extracted_value === null ? "실패" : "추출됨",
-        source_evidence: { page: 2, text: "조항 원문" },
-        issue_code: extracted_value === null ? "unreadable" : null,
-        failure_reason: null,
-      };
-    }
-
-    const contract: DocumentExtractionDto = {
+  it("keeps one guided card and requires both contract and registry values", async () => {
+    const extraction = extractionWith({
+      property_address: extractedField("property_address", "계약서 주소"),
+    });
+    extraction.registry_doc = {
       schema_version: "1.9.0",
-      document_id: "DOC-19",
-      document_type: "contract",
+      document_id: "REG-TEST",
+      document_type: "registry",
       warnings: [],
       fields: {
-        deposit_return_condition: field("deposit_return_condition", null),
-        repair_responsibility: field("repair_responsibility", null),
-        deposit_return_clause: field("deposit_return_clause", "계약 종료일에 반환한다."),
-        repair_responsibility_clause: field("repair_responsibility_clause", "임대인이 수리한다."),
-        main_clauses: field("main_clauses", ["첫 조항", "둘째 조항"]),
-        special_clauses: field("special_clauses", ["첫 특약"]),
+        property_address: extractedField("property_address", "등기 주소", {
+          confidence: "불확실",
+        }),
       },
     };
-    const v19Extraction: ExtractionStateDto = {
-      id: 19,
-      status: "completed",
-      error: null,
-      contract_doc: contract,
-      registry_doc: null,
-      created_at: "2026-07-18T00:00:00Z",
-    };
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(v19Extraction);
-    const submit = vi.spyOn(mvpService, "submitCorrections").mockResolvedValue(v19Extraction);
-    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
-      { input_snapshot_id: "SNAP-19", created_at: "2026-07-18T00:00:00Z" },
-    );
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extraction);
 
     renderPage();
 
-    expect(await screen.findByLabelText("계약서 본문 주요 조항 2 값")).toHaveValue("둘째 조항");
-    expect(screen.queryByLabelText("보증금 반환 조건 값")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("수리·원상복구 책임 값")).not.toBeInTheDocument();
+    await screen.findByRole("heading", { name: "계약서 계약하려는 집 주소" });
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    const disclosure = screen.getByText("문서에서 읽은 전체 내용 보기").closest("details");
+    expect(disclosure).not.toBeNull();
+    expect(within(disclosure!).getByText("계약서 주소")).toBeInTheDocument();
+    expect(within(disclosure!).getByText("등기 주소")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    expect(await screen.findByRole("heading", { name: "등기사항증명서 계약하려는 집 주소" })).toBeInTheDocument();
+  });
 
-    fireEvent.change(screen.getByLabelText("계약서 본문 주요 조항 2 값"), {
-      target: { value: "둘째 조항은 유지하고, 쉼표도 보존한다." },
+  it("keeps edits and unresolved reasons when moving backward and shows the completion summary", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+      landlord_name: extractedField("landlord_name", "이정훈"),
+    }));
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
+      target: { value: "수정 주소" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "계약서 본문 주요 조항 이 값 확인" }));
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    expect(screen.getByRole("textbox", { name: /주소 수정 내용/ })).toHaveValue("수정 주소");
+    fireEvent.click(screen.getByRole("button", { name: "수정 취소" }));
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "문서에서 확인하기 어려워요" }));
+    fireEvent.click(screen.getByLabelText("어디를 봐야 할지 모르겠어요"));
+
+    expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
+      .toBeInTheDocument();
+    expect(screen.getByText(/확인한 항목/)).toHaveTextContent("1개");
+    expect(screen.getByText(/확인하지 못한 항목/)).toHaveTextContent("1개");
+    expect(screen.getByText(/확인하지 못한 내용도 결과에서 물어볼 항목으로 안내합니다/))
+      .toBeInTheDocument();
+    expect(screen.getByText("임대인 이름 · 확인할 위치를 찾기 어려움")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("문서에서 읽은 전체 내용 보기"));
+    expect(screen.getByRole("heading", { name: "확인한 내용" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "아직 확인하지 않은 내용" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "문서에서 읽지 못한 내용" })).toBeInTheDocument();
+  });
+
+  it("sends only changed fields, then confirms, starts analysis, and navigates with the run id", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+      landlord_name: extractedField("landlord_name", "이정훈"),
+    }));
+    const callOrder: string[] = [];
+    const submit = vi.spyOn(mvpService, "submitCorrections").mockImplementation(async () => {
+      callOrder.push("correction");
+      return extractionWith({});
+    });
+    const confirm = vi.spyOn(mvpService, "confirmExtraction").mockImplementation(async () => {
+      callOrder.push("confirm");
+      return { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" };
+    });
+    const start = vi.spyOn(mvpService, "startAnalysis").mockImplementation(async () => {
+      callOrder.push("analysis");
+      return analysisRun();
+    });
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
+      target: { value: "수정 주소" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => {
       expect(submit).toHaveBeenCalledWith({
@@ -172,189 +243,398 @@ describe("ExtractionReviewPage", () => {
         contract_id: 1001,
         corrections: [{
           document_type: "contract",
-          field_name: "main_clauses",
-          corrected_value: ["첫 조항", "둘째 조항은 유지하고, 쉼표도 보존한다."],
+          field_name: "property_address",
+          corrected_value: "수정 주소",
         }],
       });
+      expect(confirm).toHaveBeenCalledWith(1001);
+      expect(start).toHaveBeenCalledWith(1001);
     });
+    expect(callOrder).toEqual(["correction", "confirm", "analysis"]);
+    expect(await screen.findByText(/분석 화면 \?analysisRunId=RUN-1001-001/))
+      .toBeInTheDocument();
   });
 
-  it("requires choice-based guarantee and sublease authority confirmations", async () => {
-    const failedField = (field_name: string): ExtractedFieldDto => ({
-      field_name,
-      extracted_value: null,
-      normalized_value: null,
-      user_corrected_value: null,
-      verification_status: "unverified",
-      confidence: "실패",
-      source_evidence: { page: null, text: null },
-      issue_code: "not_stated",
-      failure_reason: "사용자가 직접 확인하는 항목입니다.",
+  it("recovers a lost analysis POST response from a run with the confirmed snapshot", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue({
+      input_snapshot_id: "SNAP-RECOVER", created_at: "2026-07-23T00:00:00Z",
     });
-    const contract: DocumentExtractionDto = {
-      schema_version: "1.9.0",
-      document_id: "DOC-CHOICES",
-      document_type: "contract",
-      warnings: [],
-      fields: {
-        guarantee_eligibility_confirmed: failedField("guarantee_eligibility_confirmed"),
-        lessor_sublease_authority_confirmed: failedField("lessor_sublease_authority_confirmed"),
-      },
-    };
-    const choiceExtraction: ExtractionStateDto = {
-      id: 20,
-      status: "completed",
-      error: null,
-      contract_doc: contract,
-      registry_doc: null,
-      created_at: "2026-07-21T00:00:00Z",
-    };
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(choiceExtraction);
-    const submit = vi.spyOn(mvpService, "submitCorrections").mockResolvedValue(choiceExtraction);
-    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
-      { input_snapshot_id: "SNAP-CHOICES", created_at: "2026-07-21T00:00:00Z" },
-    );
+    const start = vi.spyOn(mvpService, "startAnalysis").mockRejectedValue(new Error("response lost"));
+    const list = vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([{
+      analysis_run_id: "RUN-RECOVER", input_snapshot_id: "SNAP-RECOVER", status: "pending", created_at: "2026-07-23T00:00:00Z",
+    }]);
 
     renderPage();
 
-    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 결과 준비하기" });
-    expect(analyzeButton).toBeDisabled();
-    expect(screen.getAllByRole("button", { name: /직접 확인$/ })).toHaveLength(2);
-    fireEvent.click(screen.getByRole("radio", { name: "가입 가능" }));
-    fireEvent.click(screen.getByRole("radio", { name: "등기 소유자와 직접 계약" }));
-    fireEvent.click(screen.getByRole("button", { name: "전세보증 가입 요건 확인 이 값 확인" }));
-    fireEvent.click(screen.getByRole("button", { name: "임대·전대 권한 확인 이 값 확인" }));
-    expect(analyzeButton).toBeEnabled();
-    fireEvent.click(analyzeButton);
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(list).toHaveBeenCalledWith(1001));
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/분석 화면 \?analysisRunId=RUN-RECOVER/)).toBeInTheDocument();
+  });
+
+  it("recovers an uncertain analysis start before retrying POST when the run appears", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue({
+      input_snapshot_id: "SNAP-UNCERTAIN", created_at: "2026-07-24T00:00:00Z",
+    });
+    const start = vi.spyOn(mvpService, "startAnalysis")
+      .mockRejectedValueOnce(new Error("response lost"))
+      .mockResolvedValueOnce(analysisRun());
+    const list = vi.spyOn(mvpService, "getAnalysisRuns")
+      .mockRejectedValueOnce(new Error("recovery unavailable"))
+      .mockResolvedValueOnce([{
+        analysis_run_id: "RUN-RECOVERED", input_snapshot_id: "SNAP-UNCERTAIN", status: "pending", created_at: "2026-07-24T00:00:00Z",
+      }]);
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
+    expect(start).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/분석 화면 \?analysisRunId=RUN-RECOVERED/)).toBeInTheDocument();
+  });
+
+  it("keeps an uncertain analysis start retryable without another POST when recovery still fails", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue({
+      input_snapshot_id: "SNAP-UNCERTAIN", created_at: "2026-07-24T00:00:00Z",
+    });
+    const start = vi.spyOn(mvpService, "startAnalysis")
+      .mockRejectedValueOnce(new Error("response lost"))
+      .mockResolvedValueOnce(analysisRun());
+    const list = vi.spyOn(mvpService, "getAnalysisRuns")
+      .mockRejectedValueOnce(new Error("first recovery unavailable"))
+      .mockRejectedValueOnce(new Error("retry recovery unavailable"));
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
+
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
+  });
+
+  it("starts a new analysis only after an uncertain retry confirms no matching run", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue({
+      input_snapshot_id: "SNAP-UNCERTAIN", created_at: "2026-07-24T00:00:00Z",
+    });
+    const start = vi.spyOn(mvpService, "startAnalysis")
+      .mockRejectedValueOnce(new Error("response lost"))
+      .mockResolvedValueOnce(analysisRun());
+    const list = vi.spyOn(mvpService, "getAnalysisRuns")
+      .mockRejectedValueOnce(new Error("first recovery unavailable"))
+      .mockResolvedValueOnce([]);
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
+
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    expect(await screen.findByText(/분석 화면 \?analysisRunId=RUN-1001-001/)).toBeInTheDocument();
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(start).toHaveBeenCalledTimes(2);
+  });
+
+  it("submits special clauses as a newline-derived array", async () => {
+    const extraction = extractionWith({
+      special_clauses: extractedField("special_clauses", ["첫 특약"]),
+    });
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extraction);
+    const submit = vi.spyOn(mvpService, "submitCorrections").mockResolvedValue(extraction);
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
+      { input_snapshot_id: "SNAP-19", created_at: "2026-07-18T00:00:00Z" },
+    );
+    vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "특약 내용" });
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "특약사항 수정 내용" }), {
+      target: { value: "첫 특약\n둘째 특약은 쉼표, 그대로" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => expect(submit).toHaveBeenCalledWith({
       schema_version: "1.9.0",
       contract_id: 1001,
-      corrections: [
-        {
-          document_type: "contract",
-          field_name: "guarantee_eligibility_confirmed",
-          corrected_value: true,
-        },
-        {
-          document_type: "contract",
-          field_name: "lessor_sublease_authority_confirmed",
-          corrected_value: true,
-        },
-      ],
+      corrections: [{
+        document_type: "contract",
+        field_name: "special_clauses",
+        corrected_value: ["첫 특약", "둘째 특약은 쉼표, 그대로"],
+      }],
     }));
   });
 
-  it("moves a not-stated field to confirmed items through direct confirmation", async () => {
-    const contract: DocumentExtractionDto = {
-      schema_version: "1.9.0",
-      document_id: "DOC-NOT-STATED",
-      document_type: "contract",
-      warnings: [],
-      fields: {
-        account_holder: {
-          field_name: "account_holder",
-          extracted_value: null,
-          normalized_value: null,
-          user_corrected_value: null,
-          verification_status: "unverified",
-          confidence: "불확실",
-          source_evidence: { page: null, text: null },
-          issue_code: "not_stated",
-          failure_reason: "문서에 예금주가 기재되어 있지 않습니다.",
-        },
-      },
-    };
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue({
-      id: 21,
-      status: "completed",
-      error: null,
-      contract_doc: contract,
-      registry_doc: null,
-      created_at: "2026-07-21T00:00:00Z",
+  it("keeps the corrected draft and completion screen after correction failure, then retries", async () => {
+    const extraction = extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
     });
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extraction);
+    const submit = vi.spyOn(mvpService, "submitCorrections")
+      .mockRejectedValueOnce(new Error("correction down"))
+      .mockResolvedValueOnce(extraction);
+    const confirm = vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
+      { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" },
+    );
+    vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
 
     renderPage();
 
-    fireEvent.click(await screen.findByRole("button", { name: "입금 계좌 예금주 직접 확인" }));
-    expect(screen.getByText("확인된 항목 1개")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeEnabled();
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /주소 수정 내용/ }), {
+      target: { value: "수정 주소" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "수정한 내용을 저장하지 못했습니다. 입력한 내용은 이 화면에 남아 있습니다.",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent("correction down");
+    expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
+      .toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    expect(screen.getByRole("textbox", { name: /주소 수정 내용/ })).toHaveValue("수정 주소");
+    fireEvent.click(screen.getByRole("button", { name: "수정 취소" }));
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+    expect(confirm).toHaveBeenCalledTimes(1);
   });
 
-  it("blocks analysis when a financial field could not be read", async () => {
-    const contract: DocumentExtractionDto = {
-      schema_version: "1.9.0",
-      document_id: "DOC-FAILED-DEPOSIT",
-      document_type: "contract",
-      warnings: [],
-      fields: {
-        deposit: {
-          field_name: "deposit",
-          extracted_value: null,
-          normalized_value: null,
-          user_corrected_value: null,
-          verification_status: "unverified",
-          confidence: "실패",
-          source_evidence: { page: null, text: null },
-          issue_code: "unreadable",
-          failure_reason: "보증금 칸을 읽지 못했습니다.",
-        },
-      },
-    };
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue({
-      id: 22,
-      status: "completed",
-      error: null,
-      contract_doc: contract,
-      registry_doc: null,
-      created_at: "2026-07-22T00:00:00Z",
+  it("keeps confirmation and analysis failures separate and retryable", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    const confirm = vi.spyOn(mvpService, "confirmExtraction")
+      .mockRejectedValueOnce(new Error("confirmation down"))
+      .mockResolvedValueOnce(
+        { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" },
+      );
+    const start = vi.spyOn(mvpService, "startAnalysis")
+      .mockRejectedValueOnce(new Error("analysis down"))
+      .mockResolvedValueOnce(analysisRun());
+    vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([]);
+
+    renderPage();
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "문서 내용 확인을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent("confirmation down");
+    expect(start).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "확인 결과 준비를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent("analysis down");
+    expect(confirm).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
+    expect(confirm).toHaveBeenCalledTimes(2);
+  });
+
+  it("reconfirms after a saved correction is restored to the original value", async () => {
+    const extraction = extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
     });
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extraction);
+    const callOrder: string[] = [];
+    const submit = vi.spyOn(mvpService, "submitCorrections").mockImplementation(async () => {
+      callOrder.push("correction");
+      return extraction;
+    });
+    const confirm = vi.spyOn(mvpService, "confirmExtraction").mockImplementation(async () => {
+      callOrder.push("confirm");
+      return { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" };
+    });
+    const start = vi.spyOn(mvpService, "startAnalysis")
+      .mockImplementationOnce(async () => {
+        callOrder.push("analysis");
+        throw new Error("analysis down");
+      })
+      .mockImplementationOnce(async () => {
+        callOrder.push("analysis");
+        return analysisRun();
+      });
+
+    renderPage();
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /주소 수정 내용/ }), {
+      target: { value: "첫 수정 주소" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "확인 결과 준비를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /주소 수정 내용/ }), {
+      target: { value: "기존 주소" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
+    expect(submit).toHaveBeenCalledTimes(2);
+    expect(submit).toHaveBeenLastCalledWith({
+      schema_version: "1.9.0",
+      contract_id: 1001,
+      corrections: [{
+        document_type: "contract",
+        field_name: "property_address",
+        corrected_value: "기존 주소",
+      }],
+    });
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(callOrder).toEqual([
+      "correction",
+      "confirm",
+      "analysis",
+      "correction",
+      "confirm",
+      "analysis",
+    ]);
+  });
+
+  it("allows unresolved items to reach analysis without sending their reasons to the backend", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    const submit = vi.spyOn(mvpService, "submitCorrections");
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
+      { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" },
+    );
+    const start = vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
+
+    renderPage();
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "문서에서 확인하기 어려워요" }));
+    fireEvent.click(screen.getByLabelText("문서에 적혀 있지 않아요"));
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(start).toHaveBeenCalledWith(1001));
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it("polls pending extraction to completion", async () => {
+    vi.useFakeTimers();
+    const pending: ExtractionStateDto = {
+      ...emptyExtraction,
+      status: "pending",
+    };
+    vi.spyOn(mvpService, "getLatestExtraction")
+      .mockResolvedValueOnce(pending)
+      .mockResolvedValueOnce(extractionWith({
+        property_address: extractedField("property_address", "기존 주소"),
+      }));
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "특약·핵심값 확인 1개" })).toBeInTheDocument();
-    expect(screen.getByLabelText("보증금 값")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeDisabled();
-  });
-
-  it("allows analysis when only a noncritical optional field could not be read", async () => {
-    const contract: DocumentExtractionDto = {
-      schema_version: "1.9.0",
-      document_id: "DOC-FAILED-OPTIONAL",
-      document_type: "contract",
-      warnings: [],
-      fields: {
-        tenant_name: {
-          field_name: "tenant_name",
-          extracted_value: null,
-          normalized_value: null,
-          user_corrected_value: null,
-          verification_status: "unverified",
-          confidence: "실패",
-          source_evidence: { page: null, text: null },
-          issue_code: "unreadable",
-          failure_reason: "임차인 이름을 읽지 못했습니다.",
-        },
-      },
-    };
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue({
-      id: 23,
-      status: "completed",
-      error: null,
-      contract_doc: contract,
-      registry_doc: null,
-      created_at: "2026-07-22T00:00:00Z",
+    await act(async () => {
+      await Promise.resolve();
     });
-
-    renderPage();
-
-    expect(await screen.findByText("그 밖에 읽지 못한 값")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeEnabled();
+    expect(screen.getByText("문서 읽기 대기 중")).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(screen.getByRole("heading", { name: "계약하려는 집 주소" })).toBeInTheDocument();
   });
 
-  it("sends the user back to upload when extraction cannot be loaded", async () => {
-    // 잘못된 문서로 추출이 실패하면 재폴링은 같은 실패만 반환하므로,
-    // 복구 경로는 문서를 다시 올리는 것뿐이다.
+  it("shows extraction failures and empty results", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValueOnce({
+      ...emptyExtraction,
+      status: "failed",
+      error: "문서 형식을 읽지 못했습니다.",
+    });
+    const first = renderPage();
+    expect(await screen.findByRole("alert")).toHaveTextContent("문서 형식을 읽지 못했습니다.");
+    first.unmount();
+
+    vi.restoreAllMocks();
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(emptyExtraction);
+    renderPage();
+    expect(await screen.findByText("확인할 문서 내용이 없습니다")).toBeInTheDocument();
+  });
+
+  it("shows polling timeout and aborts an active poll on unmount", async () => {
+    vi.useFakeTimers();
+    const pending: ExtractionStateDto = {
+      ...emptyExtraction,
+      status: "pending",
+    };
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(pending);
+    const first = renderPage();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByText("문서 읽기 대기 중")).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "처리가 예상보다 오래 걸리고 있습니다.",
+    );
+    first.unmount();
+
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    const pendingAgain = vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(pending);
+    const second = renderPage();
+    await screen.findByText("문서 읽기 대기 중");
+    const signal = pendingAgain.mock.calls[0]?.[1];
+    expect(signal?.aborted).toBe(false);
+    second.unmount();
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it("returns to upload when extraction loading rejects", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockRejectedValue(new Error("network down"));
 
     renderPage();
@@ -364,53 +644,35 @@ describe("ExtractionReviewPage", () => {
     expect(await screen.findByText("문서 업로드 화면")).toBeInTheDocument();
   });
 
-  it("renders the empty extraction state", async () => {
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(emptyExtraction);
+  it("starts on the first unverified item while preserving already reviewed progress", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소", {
+        verification_status: "confirmed",
+      }),
+      landlord_name: extractedField("landlord_name", "이정훈"),
+    }));
 
     renderPage();
 
-    expect(await screen.findByText("확인할 문서 내용이 없습니다")).toBeInTheDocument();
+    expect(await screen.findByText("중요한 내용 2개 중 1개를 확인했습니다."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
   });
 
-  it("blocks analysis while unverified fields remain", async () => {
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
+  it("skips already reviewed items while advancing the queue", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+      landlord_name: extractedField("landlord_name", "이정훈", {
+        verification_status: "confirmed",
+      }),
+      deposit: extractedField("deposit", 300_000_000),
+    }));
+
     renderPage();
 
-    const analyzeButton = await screen.findByRole("button", { name: "확인 완료하고 결과 준비하기" });
-    expect(analyzeButton).toBeDisabled();
-    expect(screen.getByText("확인하지 않은 항목이 남아 있어 결과 준비를 시작할 수 없습니다.")).toBeInTheDocument();
-  });
-
-  it("keeps correction and confirmation failures separate and retryable", async () => {
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
-    vi.spyOn(mvpService, "submitCorrections")
-      .mockRejectedValueOnce(new Error("correction down"))
-      .mockResolvedValueOnce(completedExtraction);
-    vi.spyOn(mvpService, "confirmExtraction").mockRejectedValue(
-      new Error("confirmation down"),
-    );
-    renderPage();
-
-    await screen.findByLabelText("입금 계좌 예금주 값");
-    fireEvent.click(screen.getByRole("button", { name: "읽힌 값 모두 확인" }));
-    fireEvent.click(screen.getByRole("button", { name: "특약사항 이 값 확인" }));
-    fireEvent.change(screen.getByLabelText("입금 계좌 예금주 값"), {
-      target: { value: "이정훈" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }));
-    confirmRemainingDirectFields();
-
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "수정 요청 실패: correction down",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" }));
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "확인 실패: confirmation down",
-      );
-    });
-    expect(screen.getByRole("button", { name: "확인 완료하고 결과 준비하기" })).toBeEnabled();
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    expect(screen.getByRole("heading", { name: "보증금" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "임대인 이름" })).not.toBeInTheDocument();
   });
 });

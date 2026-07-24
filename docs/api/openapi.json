@@ -1287,6 +1287,136 @@
         }
       }
     },
+    "/api/practice-sessions/{practice_session_id}/media/latest": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Latest Session Media",
+        "operationId": "get_latest_session_media_api_practice_sessions__practice_session_id__media_latest_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PracticeMediaJobResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Latest Session Media Api Practice Sessions  Practice Session Id  Media Latest Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-sessions/{practice_session_id}/messages": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Conversation Messages",
+        "operationId": "get_conversation_messages_api_practice_sessions__practice_session_id__messages_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "practice_session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Practice Session Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeConversationPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/practice-sessions/{practice_session_id}/turns": {
       "post": {
         "tags": [
@@ -1328,6 +1458,143 @@
                 "schema": {
                   "$ref": "#/components/schemas/PracticeTurnResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-media-jobs/{media_job_id}": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Media Job",
+        "operationId": "get_media_job_api_practice_media_jobs__media_job_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "media_job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Media Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeMediaJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-media-jobs/{media_job_id}/audio": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Media Audio",
+        "operationId": "get_media_audio_api_practice_media_jobs__media_job_id__audio_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "media_job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Media Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice-media-jobs/{media_job_id}/video": {
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Get Media Video",
+        "operationId": "get_media_video_api_practice_media_jobs__media_job_id__video_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "media_job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Media Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -2704,6 +2971,97 @@
         ],
         "title": "PracticeAdvanceRequest"
       },
+      "PracticeConversationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PracticeConversationTurn"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "has_more"
+        ],
+        "title": "PracticeConversationPage"
+      },
+      "PracticeConversationTurn": {
+        "properties": {
+          "practice_turn_id": {
+            "type": "string",
+            "title": "Practice Turn Id"
+          },
+          "turn_id": {
+            "type": "string",
+            "title": "Turn Id"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "user_answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Answer"
+          },
+          "timed_out": {
+            "type": "boolean",
+            "title": "Timed Out"
+          },
+          "dialogue_response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialogue Response"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "practice_turn_id",
+          "turn_id",
+          "prompt",
+          "user_answer",
+          "timed_out",
+          "dialogue_response",
+          "created_at"
+        ],
+        "title": "PracticeConversationTurn"
+      },
       "PracticeDialogueTurnView": {
         "properties": {
           "turn_id": {
@@ -2762,6 +3120,97 @@
           "selected_action"
         ],
         "title": "PracticeFinalActionRequest"
+      },
+      "PracticeMediaJobResponse": {
+        "properties": {
+          "media_job_id": {
+            "type": "string",
+            "title": "Media Job Id"
+          },
+          "practice_turn_id": {
+            "type": "string",
+            "title": "Practice Turn Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "generating_audio",
+              "generating_video",
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "speech_text": {
+            "type": "string",
+            "title": "Speech Text"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "video_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Url"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "media_job_id",
+          "practice_turn_id",
+          "status",
+          "provider",
+          "speech_text",
+          "created_at"
+        ],
+        "title": "PracticeMediaJobResponse"
       },
       "PracticeResult": {
         "properties": {
@@ -3257,6 +3706,16 @@
               }
             ],
             "title": "Dialogue Response"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticeMediaJobResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "session": {
             "$ref": "#/components/schemas/PracticeSessionResponse"

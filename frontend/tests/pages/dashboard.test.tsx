@@ -52,6 +52,31 @@ describe("DashboardPage grouping", () => {
     expect(doneDetails).not.toHaveAttribute("open");
     expect(within(doneDetails as HTMLElement).getByText("완료 계약건")).toBeInTheDocument();
   });
+
+  it("uses one status-specific primary action and keeps deletion in closed contract management", async () => {
+    vi.spyOn(mvpService, "getContracts").mockResolvedValue([
+      contract(1, "시작 전 계약", "none"),
+      contract(2, "확인 중 계약", "in_progress"),
+      contract(3, "완료 계약", "done"),
+    ]);
+
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    const notStarted = (await screen.findByText("시작 전 계약")).closest("article")!;
+    expect(within(notStarted).getByRole("link", { name: "점검 시작하기" })).toHaveAttribute("href", "/contracts/1/situation");
+
+    const inProgress = screen.getByText("확인 중 계약").closest("article")!;
+    expect(within(inProgress).getByRole("link", { name: "이어서 확인하기" })).toHaveAttribute("href", "/contracts/2");
+
+    const done = screen.getByText("완료 계약").closest("article")!;
+    expect(within(done).getByRole("link", { name: "확인 결과 보기" })).toHaveAttribute("href", "/contracts/3/report");
+    expect(within(done).queryByText("기존 리포트 다시 보기")).not.toBeInTheDocument();
+
+    const management = within(notStarted).getByText("계약 관리").closest("details")!;
+    expect(management).not.toHaveAttribute("open");
+    expect(within(management).getByRole("button", { name: "계약 삭제" })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/모드 선택|추출값|필드|분석 실행|리포트|최종 행동|provider|case_id/);
+  });
 });
 
 describe("DashboardPage delete", () => {

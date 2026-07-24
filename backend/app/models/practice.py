@@ -59,3 +59,32 @@ class PracticeTurn(Base):
     evaluation_payload: Mapped[dict | None] = mapped_column(_JSON)
     dialogue_response: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PracticeMediaJob(Base):
+    """A best-effort TTS/lip-sync artifact for one saved practice turn."""
+
+    __tablename__ = "practice_media_jobs"
+    __table_args__ = (
+        UniqueConstraint("practice_turn_fk", name="uq_practice_media_job_turn"),
+        Index("ix_practice_media_job_session_status", "practice_session_fk", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    media_job_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    practice_session_fk: Mapped[int] = mapped_column(
+        ForeignKey("practice_sessions.id", ondelete="CASCADE"), index=True
+    )
+    practice_turn_fk: Mapped[int] = mapped_column(
+        ForeignKey("practice_turns.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    speech_text: Mapped[str] = mapped_column(Text)
+    provider: Mapped[str] = mapped_column(String(40), default="supertonic-3+musetalk-1.5")
+    settings_payload: Mapped[dict] = mapped_column(_JSON, default=dict)
+    audio_relpath: Mapped[str | None] = mapped_column(String(255))
+    video_relpath: Mapped[str | None] = mapped_column(String(255))
+    error_code: Mapped[str | None] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

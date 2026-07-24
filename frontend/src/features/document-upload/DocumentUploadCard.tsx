@@ -43,6 +43,7 @@ export function DocumentUploadCard({
   const inputId = `document-${docType}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const extension = file?.name.split(".").pop()?.toUpperCase() ?? "";
+  const fileSelectionLabel = `${title} ${file ? "다른 파일 선택" : "새 파일 선택"}`;
 
   return (
     <article className={`upload-card upload-card--${status}`}>
@@ -69,11 +70,11 @@ export function DocumentUploadCard({
         className="sr-only"
         ref={inputRef}
         id={inputId}
-        aria-label={title}
+        aria-label={`${title} 사진 또는 파일 올리기`}
         aria-describedby="upload-file-help"
         type="file"
         tabIndex={-1}
-        accept="application/pdf,image/jpeg,image/png,.txt"
+        accept="application/pdf,image/jpeg,image/png"
         disabled={disabled}
         onChange={(event) => onSelect(event.target.files?.[0] ?? null)}
       />
@@ -84,7 +85,7 @@ export function DocumentUploadCard({
           role="button"
           tabIndex={disabled ? -1 : 0}
           aria-disabled={disabled}
-          aria-label={`${title} 파일 선택`}
+          aria-label={fileSelectionLabel}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
@@ -92,9 +93,9 @@ export function DocumentUploadCard({
             }
           }}
         >
-          {file ? "다른 파일 선택" : "파일 선택"}
+          {file ? "다른 파일 선택" : "새 파일 선택"}
         </label>
-        {status === "error" && onRetry && (
+        {status === "error" && file && onRetry && (
           <button className="secondary" type="button" disabled={disabled} onClick={onRetry}>이 문서 다시 업로드</button>
         )}
       </div>

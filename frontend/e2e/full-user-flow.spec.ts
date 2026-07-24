@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { syntheticLeasePdfFixture } from "./fixtures/syntheticLeasePdf";
 
 async function expandAllResultGroups(page: import("@playwright/test").Page) {
   for (const label of ["확인 권장", "일반 확인"]) {
@@ -11,8 +12,32 @@ async function expandAllResultGroups(page: import("@playwright/test").Page) {
   }
 }
 
+async function confirmGuidedReview(page: import("@playwright/test").Page) {
+  const completeHeading = page.getByRole("heading", {
+    name: "중요한 내용을 모두 확인했습니다",
+  });
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (await completeHeading.isVisible()) break;
+    const confirmButton = page.getByRole("button", { name: "네, 맞아요" });
+    await expect(confirmButton).toBeVisible();
+    await confirmButton.click();
+  }
+
+  await expect(completeHeading).toBeVisible();
+}
+
 test("v1.9 signup through saved checklist follows the complete MVP flow", async ({ page }, testInfo) => {
   const isRealApi = testInfo.project.name.startsWith("real-api");
+  let analysisPostCount = 0;
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST"
+      && /\/api\/contracts\/\d+\/analysis-runs$/.test(new URL(request.url()).pathname)
+    ) {
+      analysisPostCount += 1;
+    }
+  });
   const userSuffix = Date.now().toString(36);
   const username = `e2e_${userSuffix}`;
   await page.goto("/signup");
@@ -25,78 +50,105 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
-  await expect(page.getByRole("heading", { name: "현재 어떤 상황인가요?" })).toBeVisible();
-  await page.getByRole("link", { name: "내 계약서 점검 시작" }).click();
-  await expect(page.getByRole("heading", { name: "내 계약" })).toBeVisible();
-  if ((page.viewportSize()?.width ?? 0) >= 1024) {
-    await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--workspace/);
-    await expect.poll(async () => (await page.locator("main.app-shell").boundingBox())?.width ?? 0).toBeGreaterThan(1000);
-  }
-
-  await page.getByRole("link", { name: "새 계약 점검 시작" }).click();
+  await expect(page.getByRole("heading", { name: "지금 어떤 상황인가요?" })).toBeVisible();
+  await page.getByRole("link", { name: /아직 계약서를 받지 않았어요/ }).click();
+  await expect(page).toHaveURL(/\/prepare$/);
+  await page.getByRole("link", { name: /계약서 초안을 받았어요/ }).click();
   await page.getByLabel("계약 이름").fill("E2E 전세 계약");
   await page.getByRole("button", { name: "다음: 내 상황 알려주기" }).click();
-  await page.getByLabel(/집주인이 아닌 사람이 대신 계약하나요/).selectOption("no");
-  await page.getByRole("button", { name: "다음: 준비한 문서 확인" }).click();
+  await page.getByRole("radio", { name: "전세" }).check();
+  await page.getByLabel("집주인이 직접 계약해요").check();
+  await page.getByRole("button", { name: "다음: 문서 준비하기" }).click();
+  await expect(page).toHaveURL(/\/upload$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
-  await page.getByLabel("계약서", { exact: true }).setInputFiles({
-    name: "contract.txt",
-    mimeType: "text/plain",
-    buffer: Buffer.from(isRealApi ? [
-      "[합성·비식별 E2E 계약서]",
-      "소재지: 서울특별시 가온구 나래로 12, 305동 1201호",
-      "보증금 금 삼억원정 (₩300,000,000)",
-      "임대차 기간은 2026년 8월 1일부터 2028년 7월 31일까지로 한다.",
-      "특약사항",
-      "- 신규 임차인이 입주한 후 보증금을 반환한다.",
-      "임대인: 이정훈",
-      "임차인: 강해린",
-    ].join("\n") : "synthetic lease contract"),
-  });
-  await expect(page.getByText("contract.txt")).toBeVisible();
+  expect(syntheticLeasePdfFixture.mimeType).toBe("application/pdf");
+  expect(syntheticLeasePdfFixture.buffer.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+  const syntheticPdfAscii = syntheticLeasePdfFixture.buffer.toString("ascii");
+  const startXref = /startxref\n(\d+)\n%%EOF\n$/.exec(syntheticPdfAscii);
+  expect(startXref).not.toBeNull();
+  expect(syntheticPdfAscii.slice(Number(startXref?.[1]), Number(startXref?.[1]) + 4))
+    .toBe("xref");
+  await page.getByLabel("계약서 사진 또는 파일 올리기")
+    .setInputFiles(syntheticLeasePdfFixture);
+  await expect(page.getByText(syntheticLeasePdfFixture.name)).toBeVisible();
   await page.getByRole("button", { name: "업로드하고 다음 단계로" }).click();
 
   await expect(page.getByRole("heading", { name: "문서에서 읽은 내용 확인" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "읽힌 값 모두 확인" })).toBeVisible({ timeout: 60_000 });
-  if (isRealApi) {
-    await expect.poll(() => page.locator(".field-card").count()).toBeGreaterThan(0);
-  } else {
-    await page.getByText("문서에서 읽힌 값").click();
-    await expect(page.getByLabel("보증금 반환 조항 원문 값")).toBeVisible();
-    await expect(page.getByLabel("수리·원상복구 조항 원문 값")).toBeVisible();
-    await expect(page.getByLabel("보증금 반환 조건 값")).toHaveCount(0);
-    await expect(page.getByLabel("수리·원상복구 책임 값")).toHaveCount(0);
-  }
-  await page.getByRole("button", { name: "읽힌 값 모두 확인" }).click();
-  const specialClauseConfirm = page.getByRole("button", { name: "특약사항 이 값 확인" });
-  if (await specialClauseConfirm.count()) await specialClauseConfirm.click();
-  const accountHolder = page.getByLabel("입금 계좌 예금주 값");
-  if (await accountHolder.count() && await accountHolder.isVisible() && !(await accountHolder.inputValue())) {
-    await accountHolder.fill("이정훈");
-    await page.getByRole("button", { name: "입금 계좌 예금주 이 값 확인" }).click();
-  }
-  const unavailableConfirm = page.locator(
-    'button[aria-label$="확인할 수 없음으로 저장"]:not(:disabled)',
-  );
-  while (await unavailableConfirm.count()) await unavailableConfirm.first().click();
-  const directConfirm = page.locator(
-    'button[aria-label$="직접 확인"]:not(:disabled)',
-  );
-  while (await directConfirm.count()) await directConfirm.first().click();
-  await page.getByRole("button", { name: "확인 완료하고 결과 준비하기" }).click();
+  await expect(page.getByRole("button", { name: "네, 맞아요" })).toBeVisible();
+  await confirmGuidedReview(page);
+  expect(analysisPostCount).toBe(0);
 
-  await expect(page.getByRole("heading", { name: "확인 결과 준비 완료" })).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }).click();
+  await expect(page).toHaveURL(/\/analyzing\?analysisRunId=[^&]+$/);
+  await expect.poll(() => analysisPostCount).toBe(1);
+
+  await expect(page.getByRole("heading", {
+    level: 1,
+    name: "확인 결과 준비 완료",
+  })).toBeVisible();
   await page.getByRole("button", { name: "확인 결과 보기" }).click();
-  await expect(page.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeVisible();
+  const firstActionHeading = page.getByRole("heading", { name: "먼저 할 일" });
+  const questionsHeading = page.getByRole("heading", { name: "상대방에게 물어볼 말" });
+  const reasonsHeading = page.getByRole("heading", { name: "왜 확인해야 하나요?" });
+  const referencesHeading = page.getByRole("heading", { name: "비슷한 상황에서 확인할 점" });
+  for (const heading of [
+    firstActionHeading,
+    questionsHeading,
+    reasonsHeading,
+    referencesHeading,
+  ]) {
+    await expect(heading).toBeVisible();
+  }
+  const headingDomPositions = await page.evaluate(
+    (ids) => ids.map((id) => {
+      const element = document.getElementById(id);
+      if (!element) throw new Error(`결과 섹션 제목을 찾지 못했습니다: ${id}`);
+      return [...document.querySelectorAll("body *")].indexOf(element);
+    }),
+    ["action-first-title", "action-hub-title", "all-results-title", "damage-reference-title"],
+  );
+  expect(headingDomPositions).toEqual([...headingDomPositions].sort((left, right) => left - right));
+
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width <= 360) {
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    for (const { label, locator } of [
+      { label: "결과 hero 제목", locator: page.locator(".report-hero h2") },
+      {
+        label: "첫 행동 제목",
+        locator: page.locator("#first-action-item .action-first__title"),
+      },
+      {
+        label: "물어볼 말 진입 링크",
+        locator: page.getByRole("link", { name: "물어볼 말 바로 보기" }),
+      },
+    ]) {
+      const box = await locator.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box?.y ?? -1, `${label}의 y 좌표`).toBeGreaterThanOrEqual(0);
+      const visibleHeight = Math.min(
+        box?.height ?? 0,
+        viewport.height - (box?.y ?? viewport.height),
+      );
+      expect(visibleHeight, `${label}의 첫 viewport 노출 높이`)
+        .toBeGreaterThanOrEqual(Math.min(box?.height ?? 0, 32));
+    }
+    expect(await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    )).toBeTruthy();
+  }
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--report/);
-    const resultsBox = await page.locator(".report-results-column").boundingBox();
-    const guidanceBox = await page.locator(".report-guidance-column").boundingBox();
-    expect(resultsBox).not.toBeNull();
-    expect(guidanceBox).not.toBeNull();
-    expect((guidanceBox?.x ?? 0) > (resultsBox?.x ?? 0)).toBeTruthy();
+    await expect(page.locator(".report-results-column")).toBeVisible();
   }
   const allResults = page.locator('section[aria-labelledby="all-results-title"]');
+  const firstTechnicalDetails = allResults.locator(".result-technical-details").first();
+  const firstInternalId = firstTechnicalDetails.locator(".result-meta strong");
+  await expect(firstInternalId).toBeHidden();
+  await firstTechnicalDetails.getByText("세부 판정 정보").click();
+  await expect(firstInternalId).toBeVisible();
+  await expect(firstInternalId).toHaveText(/^[RJ]\d{2}$/);
   await expandAllResultGroups(page);
   for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
     await expect(allResults).toContainText(judgmentId);
@@ -116,15 +168,23 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(refundPattern.getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeVisible();
     await expect(refundPattern.getByRole("link", { name: "계약기간 종료 후 보증금 미반환 유형" })).toBeVisible();
   }
-  for (const title of ["먼저 물어볼 질문", "수정·추가 요청 문구", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
+  for (const title of [
+    "중개사에게 물어볼 말",
+    "임대인에게 물어볼 말",
+    "내가 문서에서 다시 볼 것",
+    "계약 전",
+    "계약 중",
+    "잔금·입주 당일",
+    "계약 후",
+    "보관할 자료",
+  ]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
-  await expect(page.getByRole("heading", { name: "주요 금전피해 유형 비교" })).toBeVisible();
   await expect(page.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "가장 먼저 확인할 항목으로 이동" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "첫 확인 행동으로 이동" })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "지금 할 일과 물어볼 말" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeVisible();
   await expandAllResultGroups(page);
   await expect(allResults).toContainText("J01");
   await expect(allResults).toContainText("J12");
@@ -137,7 +197,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(page.getByRole("status")).toContainText("의견이 저장되었습니다.");
   }
 
-  await page.getByRole("button", { name: "저장된 체크리스트로 이동" }).click();
+  expect(analysisPostCount).toBe(1);
+  await page.getByRole("button", { name: "이제 할 일 확인하기" }).click();
   const checklistSection = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "서명 전 체크리스트" }),
   });
@@ -153,10 +214,26 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     has: page.getByRole("heading", { name: "확인 결과 이력" }),
   });
   await expect(analysisHistory).toContainText("확인 결과 보기");
+  expect(analysisPostCount).toBe(1);
 
   if (isRealApi) {
     await page.reload();
     await expect(completedAction).toHaveAttribute("aria-label", /확인 취소$/);
     await expect(analysisHistory).toContainText("확인 결과 보기");
   }
+
+  await page.getByRole("link", { name: "대시보드로 돌아가기" }).click();
+  const contractCard = page.locator("article.contract-card").filter({ hasText: "E2E 전세 계약" });
+  const management = contractCard.locator("details");
+  await expect(management).not.toHaveAttribute("open", "");
+  await contractCard.getByText("계약 관리").click();
+  await expect(management).toHaveAttribute("open", "");
+  const deleteResponse = page.waitForResponse((response) =>
+    response.request().method() === "DELETE" && /\/api\/contracts\/\d+$/.test(response.url()),
+  );
+  page.once("dialog", (dialog) => dialog.accept());
+  await contractCard.getByRole("button", { name: "계약 삭제" }).click();
+  expect((await deleteResponse).status()).toBe(204);
+  if (isRealApi) await expect(contractCard).toHaveCount(0);
+  else await expect(contractCard).toHaveCount(1);
 });

@@ -34,7 +34,7 @@
 - 조건부 보증금 반환, 제3자 계좌 송금, 대리인 권한 미확인 3개 합성 시나리오
 - Gemini 또는 Fake provider 기반 사용자 답변 의미 평가
 - 실제 계약과 분리된 세션·턴·최종 행동·복기 저장
-- 텍스트 입력만 지원. 미디어·음성은 후속 범위
+- 사용자 입력은 텍스트만 지원. 선택적 로컬 Supertonic 3 → MuseTalk 1.5 답변 미디어는 비동기 생성·재생하며 실패 시 텍스트로 복구
 - 상세: [`practice-simulation-work-guide.md`](practice-simulation-work-guide.md)
 
 ## 제외 범위

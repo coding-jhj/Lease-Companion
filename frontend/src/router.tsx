@@ -3,6 +3,7 @@ import { AnalysisProgressPage } from "./pages/analysis-progress/AnalysisProgress
 import { AuthPage } from "./pages/auth/AuthPage";
 import { ContractCreatePage } from "./pages/contract-create/ContractCreatePage";
 import { ContractSituationPage } from "./pages/contract-create/ContractSituationPage";
+import { ContractPreparationPage } from "./pages/contract-preparation/ContractPreparationPage";
 import { ContractDetailPage } from "./pages/contract-detail/ContractDetailPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { DocumentUploadPage } from "./pages/document-upload/DocumentUploadPage";
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       { path: "/choose-mode", element: <ModeSelectPage /> },
+      { path: "/prepare", element: <ContractPreparationPage /> },
       { path: "/contracts", element: <DashboardPage /> },
       { path: "/contracts/new", element: <ContractCreatePage /> },
       { path: "/contracts/:contractId/situation", element: <ContractSituationPage /> },

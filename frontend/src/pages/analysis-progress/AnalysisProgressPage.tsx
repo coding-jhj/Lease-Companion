@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { AnalysisTimeline, type AnalysisStage } from "../../features/analysis-progress/AnalysisTimeline";
@@ -11,10 +11,14 @@ import { PollTimeoutError, pollUntilTerminal } from "../../utils/pollUntilTermin
 type PageStatus = AsyncRunStatus | "timeout";
 type RetryMode = "new" | "resume";
 
+const analysisFailureMessage = "확인 결과를 준비하지 못했습니다. 입력한 계약 정보는 그대로 저장되어 있습니다. 다시 시도해 주세요.";
+
 export function AnalysisProgressPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const suppliedAnalysisRunId = searchParams.get("analysisRunId")?.trim() ?? "";
   const [status, setStatus] = useState<PageStatus>("pending");
   const [activeStage, setActiveStage] = useState<AnalysisStage>("request");
   const [analysisRunId, setAnalysisRunId] = useState("");
@@ -52,7 +56,7 @@ export function AnalysisProgressPage() {
       retryMode.current = "new";
       setStatus("failed");
       setActiveStage("analysis");
-      setError(run.error ?? "확인 결과를 준비하지 못했습니다.");
+      setError(analysisFailureMessage);
       return;
     }
     retryMode.current = "resume";
@@ -91,12 +95,12 @@ export function AnalysisProgressPage() {
       startPromise.current = null;
       setStatus("failed");
       setActiveStage("request");
-      setError(caught instanceof Error ? caught.message : "확인 결과를 준비하지 못했습니다.");
+      setError(analysisFailureMessage);
     }
   }
 
-  async function resumeAnalysis() {
-    if (!analysisRunId) {
+  async function resumeAnalysis(runId = analysisRunId) {
+    if (!runId) {
       await startNewAnalysis();
       return;
     }
@@ -109,13 +113,15 @@ export function AnalysisProgressPage() {
     setStatus("pending");
 
     try {
-      const run = await mvpService.getAnalysisRun(contractId, analysisRunId, controller.signal);
+      const run = await mvpService.getAnalysisRun(contractId, runId, controller.signal);
       if (controller.signal.aborted) return;
       await pollRun(run, controller);
     } catch (caught) {
       if (controller.signal.aborted || (caught instanceof DOMException && caught.name === "AbortError")) return;
       setStatus(caught instanceof PollTimeoutError ? "timeout" : "failed");
-      setError(caught instanceof Error ? caught.message : "결과 준비 상태를 다시 확인하지 못했습니다.");
+      setError(caught instanceof PollTimeoutError
+        ? "결과 준비 상태를 다시 확인하지 못했습니다. 입력한 계약 정보는 그대로 저장되어 있습니다. 다시 시도해 주세요."
+        : analysisFailureMessage);
     }
   }
 
@@ -124,14 +130,20 @@ export function AnalysisProgressPage() {
   }
 
   useEffect(() => {
-    void startNewAnalysis();
+    if (suppliedAnalysisRunId) {
+      setAnalysisRunId(suppliedAnalysisRunId);
+      retryMode.current = "resume";
+      void resumeAnalysis(suppliedAnalysisRunId);
+    } else {
+      void startNewAnalysis();
+    }
     return () => activePoll.current?.abort();
-  }, [contractId]);
+  }, [contractId, suppliedAnalysisRunId]);
 
   const title = status === "completed"
     ? "확인 결과 준비 완료"
     : status === "running"
-      ? "계약 확인 결과를 준비하고 있어요"
+      ? "확인 결과를 준비하고 있습니다"
       : status === "timeout"
         ? "결과 준비 상태 확인이 지연되고 있어요"
         : "결과 준비를 기다리고 있어요";
@@ -145,7 +157,7 @@ export function AnalysisProgressPage() {
           delayed={status === "timeout"}
         />
         {status === "pending" && <LoadingState title="결과 준비 대기 중" description="서버에서 결과 준비를 시작하고 있습니다." />}
-        {status === "running" && <LoadingState title="확인 결과 준비 중" description="완료될 때까지 실제 준비 상태를 확인하고 있습니다." />}
+        {status === "running" && <LoadingState title="확인 결과를 준비하고 있습니다" description="완료될 때까지 현재 준비 상태를 확인하고 있습니다." />}
         {status === "failed" && <ErrorState title="확인 결과를 준비하지 못했습니다" description={error} onRetry={() => void retry()} />}
         {status === "timeout" && <ErrorState title="결과 준비 상태 확인이 지연되고 있습니다" description={error} onRetry={() => void retry()} />}
         <button type="button" disabled={status !== "completed"} onClick={() => navigate(`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(analysisRunId)}`)}>{status === "completed" ? "확인 결과 보기" : "결과 준비 중…"}</button>

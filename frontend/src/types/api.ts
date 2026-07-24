@@ -487,7 +487,44 @@ export interface PracticeTurnResponseDto {
   attempt_no: number;
   evaluation: PracticeTurnEvaluationDto | null;
   dialogue_response: string | null;
+  media?: PracticeMediaJobDto | null;
   session: PracticeSessionDto;
+}
+
+export type PracticeMediaStatus =
+  | "queued"
+  | "generating_audio"
+  | "generating_video"
+  | "completed"
+  | "failed";
+
+export interface PracticeMediaJobDto {
+  media_job_id: string;
+  practice_turn_id: string;
+  status: PracticeMediaStatus;
+  provider: string;
+  speech_text: string;
+  audio_url: string | null;
+  video_url: string | null;
+  error_code: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface PracticeConversationTurnDto {
+  practice_turn_id: string;
+  turn_id: string;
+  prompt: string;
+  user_answer: string | null;
+  timed_out: boolean;
+  dialogue_response: string | null;
+  created_at: string;
+}
+
+export interface PracticeConversationPageDto {
+  items: PracticeConversationTurnDto[];
+  next_cursor: string | null;
+  has_more: boolean;
 }
 
 export interface PracticeResultDto {

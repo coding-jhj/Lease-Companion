@@ -8,7 +8,8 @@
 - 실제 계약 분석과 별도 `practice_session_id`·`practice_turn_id`를 사용한다.
 - Gemini key가 있으면 Gemini practice provider, key 없이 `PRACTICE_OFFLINE_MODE=true`이면 승인 answer key 기반 Fake provider를 사용한다.
 - 실제 Gemini 네트워크 응답 품질·비용은 미검증이다.
-- 아바타·영상·TTS·STT는 구현 범위 밖이다.
+- 선택적 로컬 미디어 파이프라인은 Supertonic 3 TTS → MuseTalk 1.5 립싱크 → 인증된 영상 조회·재생으로 구현됐다. `PRACTICE_MEDIA_ENABLED=false`가 기본이며 실패해도 텍스트 답변과 판정은 유지한다.
+- STT·실시간 음성 입력은 구현 범위 밖이다.
 
 제품 경계는 [`../decisions/2026-07-20-practice-simulation-boundary.md`](../decisions/2026-07-20-practice-simulation-boundary.md), 사용자 규칙은 [`practice-simulation-product-rules.md`](practice-simulation-product-rules.md)를 따른다.
 
@@ -197,8 +198,8 @@ npm run test:e2e:practice:real
 
 - 실제 Gemini 네트워크 응답 품질·지연·token·비용 미측정
 - provider 공통 rate limiter·중앙 재시도 정책 미구현
-- 텍스트 입력만 지원
-- 미디어·음성·실시간 아바타 미구현
+- 사용자 입력은 텍스트만 지원
+- 미디어 생성은 로컬 비동기 MVP로 구현됐지만 영속 worker·사전 처리 avatar cache가 없어 실시간 응답 속도는 미달
 - 시나리오 카탈로그는 현재 3개 사용자 노출 범위
 - 운영 배포·모니터링 정책 미정
 

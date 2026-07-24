@@ -5,9 +5,21 @@ import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
 import type { ContractSummaryDto } from "../../types/api";
 
+function primaryActionFor(contract: ContractSummaryDto) {
+  switch (contract.action_status ?? "none") {
+    case "in_progress":
+      return { label: "이어서 확인하기", to: `/contracts/${contract.id}` };
+    case "done":
+      return { label: "확인 결과 보기", to: `/contracts/${contract.id}/report` };
+    default:
+      return { label: "점검 시작하기", to: `/contracts/${contract.id}/situation` };
+  }
+}
+
 function ContractCard({ contract, onDeleted }: { contract: ContractSummaryDto; onDeleted: () => void }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const primaryAction = primaryActionFor(contract);
 
   // 8번(계약 상세)의 삭제와 동일한 확인·서비스 호출. 목록 화면이므로 성공 시 목록을 재조회한다.
   async function deleteContract() {
@@ -17,8 +29,8 @@ function ContractCard({ contract, onDeleted }: { contract: ContractSummaryDto; o
     try {
       await mvpService.deleteContract(contract.id);
       onDeleted();
-    } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : "계약을 삭제하지 못했습니다.");
+    } catch {
+      setDeleteError("계약을 삭제하지 못했습니다. 저장된 계약 정보는 그대로 있습니다. 다시 시도해 주세요.");
       setDeleting(false);
     }
   }
@@ -28,11 +40,17 @@ function ContractCard({ contract, onDeleted }: { contract: ContractSummaryDto; o
       <strong>{contract.title}</strong>
       <span>{contract.contract_stage ?? "상황 입력 전"} · {new Date(contract.created_at).toLocaleDateString("ko-KR")}</span>
       <div className="card-actions">
-        <Link className="text-link" to={"/contracts/" + contract.id}>계약 상세 보기</Link>
-        <Link className="text-link text-link--report" to={"/contracts/" + contract.id + "/report"}>기존 리포트 다시 보기</Link>
-        <button className="text-link text-link--danger" type="button" disabled={deleting} onClick={() => void deleteContract()}>
-          {deleting ? "삭제 중" : "계약 삭제"}
-        </button>
+        <Link className="button-link" to={primaryAction.to}>{primaryAction.label}</Link>
+        <details className="contract-card__management">
+          <summary>계약 관리</summary>
+          <div className="contract-card__management-actions">
+            <Link className="text-link" to={"/contracts/" + contract.id}>계약 상세 보기</Link>
+            {(contract.action_status ?? "none") === "done" && <Link className="text-link text-link--report" to={"/contracts/" + contract.id + "/report"}>확인 결과 다시 보기</Link>}
+            <button className="text-link text-link--danger" type="button" disabled={deleting} onClick={() => void deleteContract()}>
+              {deleting ? "삭제 중" : "계약 삭제"}
+            </button>
+          </div>
+        </details>
       </div>
       {deleteError && <p className="error" role="alert">{deleteError}</p>}
     </article>
@@ -61,8 +79,8 @@ export function DashboardPage() {
     try {
       setContracts(await mvpService.getContracts());
       setStatus("success");
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "계약 목록을 불러오지 못했습니다.");
+    } catch {
+      setErrorMessage("계약 목록을 불러오지 못했습니다. 저장된 계약 정보는 변경되지 않았습니다. 다시 시도해 주세요.");
       setStatus("error");
     }
   }

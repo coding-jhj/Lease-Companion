@@ -1,5 +1,7 @@
 type PracticeAvatarMode = "idle" | "speaking" | "listening" | "pressure";
-type PracticeMediaSet = Record<PracticeAvatarMode, string>;
+export type PracticeMediaSet = Record<PracticeAvatarMode, string>;
+
+export const sharedPoster = "/practice/avatar/poster.jpg";
 
 const sharedMedia: PracticeMediaSet = {
   idle: "/practice/avatar/idle.mp4",
@@ -8,7 +10,7 @@ const sharedMedia: PracticeMediaSet = {
   pressure: "/practice/avatar/pressure.mp4",
 };
 
-// 시나리오별 파일이 제작되면 경로만 교체한다. 현재 데모는 검수된 공통 상태 영상을 사용한다.
+// 화면 상태 루프는 기존 검수 영상을 유지한다. musetalk-source.mp4는 Backend 생성 입력 전용이다.
 const scenarioMedia: Record<string, PracticeMediaSet> = {
   "PRACTICE-DEFERRED-REFUND-001": sharedMedia,
   "PRACTICE-THIRD-PARTY-PAYMENT-001": sharedMedia,

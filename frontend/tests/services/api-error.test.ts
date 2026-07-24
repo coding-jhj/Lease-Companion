@@ -53,4 +53,24 @@ describe("apiClient authentication", () => {
     expect(getAccessToken()).toBeNull();
     expect(unauthorized).toHaveBeenCalledOnce();
   });
+
+  it("turns an empty proxy 500 into a useful backend availability error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 500 }));
+
+    await expect(apiClient("/api/practice-scenarios")).rejects.toMatchObject({
+      code: "server_unavailable",
+      status: 500,
+      message: expect.stringContaining("Backend 실행 상태"),
+    });
+  });
+
+  it("turns a fetch failure into a network error", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await expect(apiClient("/api/practice-scenarios")).rejects.toMatchObject({
+      code: "network_error",
+      status: 0,
+      message: expect.stringContaining("서버에 연결할 수 없습니다"),
+    });
+  });
 });

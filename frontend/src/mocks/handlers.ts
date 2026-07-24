@@ -37,6 +37,19 @@ const mockContract: ContractSummaryDto = {
   registry_case_id: "CASE-001",
   created_at: now,
 };
+let dashboardContract = mockContract;
+const dashboardContractTitleStorageKey = "lease-companion.mock.dashboard-contract-title";
+
+function getDashboardContract() {
+  const savedTitle = globalThis.sessionStorage?.getItem(dashboardContractTitleStorageKey);
+  return savedTitle ? { ...mockContract, title: savedTitle } : dashboardContract;
+}
+
+function saveDashboardContract(title: string) {
+  dashboardContract = { ...mockContract, title };
+  globalThis.sessionStorage?.setItem(dashboardContractTitleStorageKey, title);
+  return dashboardContract;
+}
 
 export const case001Fixtures = {
   contract_extraction: contractExtractionFixture as DocumentExtractionDto,
@@ -94,7 +107,7 @@ export const handlers = [
       ? HttpResponse.json({ id: 1, username: body.username, email: body.email }, { status: 201 })
       : HttpResponse.json({ access_token: "mock-access-token", token_type: "bearer" });
   }),
-  http.get("/api/contracts", () => HttpResponse.json([mockContract])),
+  http.get("/api/contracts", () => HttpResponse.json([getDashboardContract()])),
   http.post("/api/contracts", async ({ request }) => {
     const body = (await request.json()) as { title?: string };
     if (!body.title) {
@@ -103,7 +116,7 @@ export const handlers = [
         { status: 422 },
       );
     }
-    return HttpResponse.json({ ...mockContract, title: body.title }, { status: 201 });
+    return HttpResponse.json(saveDashboardContract(body.title), { status: 201 });
   }),
   http.delete("/api/contracts/:contractId", () => new HttpResponse(null, { status: 204 })),
   http.put("/api/contracts/:contractId/situation", async ({ request }) =>
