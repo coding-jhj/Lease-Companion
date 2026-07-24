@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -173,6 +174,20 @@ def test_gemini_classification_routes_transport_through_gateway() -> None:
 
     assert len(gateway.calls) == 1
     assert gateway.calls[0]["task"] == "clause_classification"
+
+
+def test_gemini_classification_sends_cleaned_response_schema() -> None:
+    """Pydantic 클래스를 그대로 넘기면 Gemini가 400으로 거부한다(2026-07-23 실측)."""
+    models = FakeGeminiModels({"candidates": []})
+    provider = GeminiClassificationProvider(client=SimpleNamespace(models=models))
+
+    provider.classify(_input())
+
+    schema = models.calls[0]["config"].response_schema
+    assert isinstance(schema, dict), "Pydantic 클래스가 아니라 정리된 JSON Schema여야 합니다."
+    serialized = json.dumps(schema)
+    assert "additionalProperties" not in serialized
+    assert "title" not in serialized
 
 
 def test_gemini_provider_rejects_rule_fields_in_response() -> None:
