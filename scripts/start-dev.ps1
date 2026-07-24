@@ -157,6 +157,19 @@ $fe = Start-Process -FilePath 'npm.cmd' `
     -PassThru -NoNewWindow
 Ok "백엔드 PID $($be.Id) / 프론트 PID $($fe.Id)"
 
+# MuseTalk 아바타 미디어 상태 확인 (데몬 아님 — backend가 .env 설정으로 턴마다 subprocess 자동 실행).
+$mediaOn = Select-String -Path $envFile -Pattern '^PRACTICE_MEDIA_ENABLED=true' -Quiet
+$museTalkPy = Join-Path $root 'tmp\musetalk-venv\Scripts\python.exe'
+if ($mediaOn -and (Test-Path $museTalkPy)) {
+    Ok 'MuseTalk 아바타 활성 — 연습 대화 턴마다 음성·립싱크 영상 자동 생성'
+}
+elseif ($mediaOn) {
+    Write-Host '! PRACTICE_MEDIA_ENABLED=true 이나 tmp\musetalk-venv 없음 → 영상 생성 실패, 텍스트로 폴백' -ForegroundColor Yellow
+}
+else {
+    Write-Host '· MuseTalk 미디어 비활성(텍스트 전용). 켜려면 backend/.env 에 PRACTICE_MEDIA_ENABLED=true' -ForegroundColor DarkGray
+}
+
 if ($PracticeValidation -or $RealContractValidation) {
     Write-Host '[대기] 검증 화면 준비 중' -ForegroundColor Cyan
     $deadline = (Get-Date).AddSeconds(60)
