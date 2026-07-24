@@ -49,7 +49,7 @@ def client():
 def _headers(client: TestClient) -> dict[str, str]:
     user_no = next(_users)
     username = f"practice_{user_no}"
-    password = "password1!"
+    password = "Password1!"
     signup = client.post(
         "/api/auth/signup",
         json={
@@ -179,7 +179,8 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
-    assert media["speech_text"] == response.json()["dialogue_response"]
+    # 아바타 음성은 화면의 큰 대사(다음 TURN prompt)와 같은 문장을 읽는다
+    assert media["speech_text"] == response.json()["session"]["current_turn"]["prompt"]
     assert media["audio_url"] is None
     assert media["video_url"] is None
     assert launched_job_ids == [media["media_job_id"]]

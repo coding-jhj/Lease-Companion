@@ -35,9 +35,9 @@ def client():
 def owner(client):
     client.post(
         "/api/auth/signup",
-        json={"username": "docuser", "email": "doc@test.com", "password": "password1!"},
+        json={"username": "docuser", "email": "doc@test.com", "password": "Password1!"},
     )
-    res = client.post("/api/auth/login", json={"username": "docuser", "password": "password1!"})
+    res = client.post("/api/auth/login", json={"username": "docuser", "password": "Password1!"})
     return {"Authorization": f"Bearer {res.json()['access_token']}"}
 
 
@@ -129,9 +129,9 @@ def test_registry_link_unknown_case(client, owner, contract_id):
 def test_other_user_cannot_upload_or_list(client, contract_id):
     client.post(
         "/api/auth/signup",
-        json={"username": "intruder", "email": "int@test.com", "password": "password1!"},
+        json={"username": "intruder", "email": "int@test.com", "password": "Password1!"},
     )
-    res = client.post("/api/auth/login", json={"username": "intruder", "password": "password1!"})
+    res = client.post("/api/auth/login", json={"username": "intruder", "password": "Password1!"})
     other = {"Authorization": f"Bearer {res.json()['access_token']}"}
     assert client.get(f"/api/contracts/{contract_id}/documents", headers=other).status_code == 404
     res = client.post(

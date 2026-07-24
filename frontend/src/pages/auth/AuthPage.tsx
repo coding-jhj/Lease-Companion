@@ -61,7 +61,8 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
       <form className="stack" onSubmit={submit}>
         <label>아이디<input autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} /></label>
         {!isLogin && <label>이메일<input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>}
-        <label>비밀번호<input type="password" autoComplete={isLogin ? "current-password" : "new-password"} required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+        <label>비밀번호<input type="password" autoComplete={isLogin ? "current-password" : "new-password"} required minLength={8} maxLength={isLogin ? undefined : 16} aria-describedby={isLogin ? undefined : "password-rule"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+        {!isLogin && <p className="field-hint" id="password-rule">8~16자 영문 대소문자, 숫자, 특수문자를 조합하여 입력해 주세요.</p>}
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={submitting}>{submitting ? "처리 중…" : isLogin ? "로그인하고 시작" : "회원가입"}</button>
       </form>

@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from app.core import security
 from app.main import app
 
-SIGNUP = {"username": "user_a", "email": "a@test.com", "password": "password1!"}
+SIGNUP = {"username": "user_a", "email": "a@test.com", "password": "Password1!"}
 
 
 @pytest.fixture(scope="module")
@@ -50,12 +50,10 @@ def test_signup_short_password(client):
     assert "xk29!q" not in res.text
 
 
-def test_signup_rejects_password_over_72_bytes(client):
-    password = "가" * 23 + "a1!abc"
-    assert len(password) <= 72 and len(password.encode("utf-8")) > 72
+def test_signup_rejects_password_over_16_chars(client):
     res = client.post(
         "/api/auth/signup",
-        json={**SIGNUP, "username": "user_bytes", "email": "bytes@test.com", "password": password},
+        json={**SIGNUP, "username": "user_long", "email": "long@test.com", "password": "Abcdefg1!Abcdefg1!"},
     )
     assert res.status_code == 422
     assert res.json()["error"]["code"] == "validation_error"
@@ -64,9 +62,11 @@ def test_signup_rejects_password_over_72_bytes(client):
 @pytest.mark.parametrize(
     "password",
     [
-        "abcdefg!",   # 숫자 없음
-        "abcd1234",   # 특수문자 없음
+        "Abcdefg!",   # 숫자 없음
+        "Abcd1234",   # 특수문자 없음
         "1234!@#$",   # 영문 없음
+        "abcdefg1!",  # 대문자 없음
+        "ABCDEFG1!",  # 소문자 없음
     ],
 )
 def test_signup_password_composition(client, password):
@@ -88,13 +88,13 @@ def test_login_wrong_password(client):
 
 
 def test_login_unknown_username_same_error(client):
-    res = client.post("/api/auth/login", json={"username": "nobody", "password": "password1!"})
+    res = client.post("/api/auth/login", json={"username": "nobody", "password": "Password1!"})
     assert res.status_code == 401
     assert res.json()["error"]["code"] == "invalid_credentials"
 
 
 def test_login_and_me(client):
-    res = client.post("/api/auth/login", json={"username": "user_a", "password": "password1!"})
+    res = client.post("/api/auth/login", json={"username": "user_a", "password": "Password1!"})
     assert res.status_code == 200
     token = res.json()["access_token"]
 
