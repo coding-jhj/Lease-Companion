@@ -30,7 +30,7 @@ from lease_companion_ai.schemas.unified import (
     RuleStatus,
     Urgency,
 )
-from lease_companion_ai.special_clauses import match_special_clauses
+from lease_companion_ai.special_clauses import load_special_clause_catalog, match_special_clauses
 
 
 def _repo_root() -> Path:
@@ -429,17 +429,29 @@ def _j12(data: JudgmentInput) -> RuleStatus:
 _J13_JUDGMENT_ID = "J13"
 
 
+def _j13_linked_catalog_ids() -> frozenset[str]:
+    return frozenset(
+        entry.catalog_id
+        for entry in load_special_clause_catalog()
+        if _J13_JUDGMENT_ID in entry.related_judgment_ids
+    )
+
+
 def _j13_matched_catalog_ids(clauses: list[str]) -> tuple[str, ...]:
     """J13에 연결된 카탈로그 항목만 세어 반환한다.
 
+    한 문장이 J13 항목과 J10 등 다른 항목을 동시에 매칭하는 경우
+    (candidate.catalog_ids)에는 J13에 연결되지 않은 catalog_id도 섞여 있을 수 있으므로,
+    후보의 related_judgment_ids가 아니라 catalog_id 단위로 J13 연결 여부를 다시 확인한다.
     기존 독소조항 6종(SC-DEFERRED-REFUND 등)이 매칭돼도 J13에는 영향을 주지 않는다.
     그쪽은 각자 연결된 R08·R09·R10·R18·J09~J12가 담당한다.
     """
+    j13_ids = _j13_linked_catalog_ids()
     return tuple(
         catalog_id
         for candidate in match_special_clauses(clauses)
-        if _J13_JUDGMENT_ID in candidate.related_judgment_ids
         for catalog_id in candidate.catalog_ids
+        if catalog_id in j13_ids
     )
 
 

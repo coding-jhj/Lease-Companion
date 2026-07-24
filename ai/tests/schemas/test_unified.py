@@ -1146,7 +1146,8 @@ def test_analysis_run_result_rejects_non_historical_length_prefix():
 
 
 def test_analysis_run_result_rejects_same_length_wrong_content_sequence():
-    """길이는 historical length(13)와 같지만 순서가 canonical과 다르면 거부돼야 한다."""
+    """길이는 현재 길이(13, HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS에는 없는 현재값)와
+    같지만 순서가 canonical과 다르면 거부돼야 한다."""
     from lease_companion_ai.schemas.unified import (
         JUDGMENT_IDS,
         AnalysisRunResult,

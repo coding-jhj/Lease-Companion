@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from lease_companion_ai.rules.judgments import _j13
+from lease_companion_ai.rules.judgments import _j13, _j13_matched_catalog_ids
 from lease_companion_ai.schemas.unified import RuleStatus
 
 
@@ -172,3 +172,60 @@ def test_j13_flags_protection_restriction_clauses(clause):
 )
 def test_j13_does_not_flag_standard_protection_clauses(clause):
     assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.NOT_APPLICABLE
+
+
+# --- 최종 코드 리뷰 Finding 1: 임차인 보호 특약이 오탐되면 안 된다 -------------------
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "임대인은 임차인이 전입신고를 마칠 때까지 담보권을 설정하지 아니한다.",
+        "임차인의 전입신고 다음 날까지 임대인은 매도하지 아니한다.",
+        "임대인은 임차인의 주민등록 전입 이전에는 담보권을 설정하지 아니한다.",
+    ],
+)
+def test_j13_does_not_flag_movein_protective_clauses(clause):
+    """국토부/HUG 권장 보호 특약은 확인 필요로 뜨면 안 된다 (오탐 금지 원칙)."""
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.NOT_APPLICABLE
+
+
+# --- Finding 2: 제외 패턴이 서로 다른 대상을 지닌 정당한 탐지까지 삼키면 안 된다 ------
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "매도 시 새 소유자는 본 계약을 승계하지 아니한다. 다만 임차인이 원하는 경우 승계한다.",
+        "임차인은 계약갱신요구권을 포기하며 갱신 여부는 임대인과 협의한다.",
+    ],
+)
+def test_j13_flags_mixed_clauses_despite_trailing_benign_phrase(clause):
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.CHECK_NEEDED
+
+
+# --- Finding 3: "~하지 않기로 한다" 종결형도 나머지 4종 전부 동일하게 지원해야 한다 ---
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "임대인은 보증보험 가입에 협조하지 않기로 한다.",
+        "임차인은 계약갱신요구권을 행사하지 않기로 한다.",
+    ],
+)
+def test_j13_flags_hagi_anki_ro_handa_ending_consistently(clause):
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.CHECK_NEEDED
+
+
+# --- Finding 4: J13에 연결된 catalog_id만 반환해야 한다 --------------------------
+
+
+def test_j13_matched_catalog_ids_excludes_non_j13_linked_ids():
+    clause = (
+        "새로운 임차인의 입주가 완료된 이후 보증금을 반환하며, "
+        "임차인은 전입신고를 하지 않기로 한다."
+    )
+    matched = _j13_matched_catalog_ids([clause])
+    assert matched == ("SC-MOVEIN-REPORT-BAN",)
+    assert "SC-DEFERRED-REFUND" not in matched

@@ -414,6 +414,7 @@ def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
         "J10": "명확",
         "J11": "명확",
         "J12": "확인 필요",
-        # J13은 연결된 카탈로그 항목이 아직 없어(Task 1 범위) 항상 적용 제외/확인 불가만 낸다.
+        # J13 연결 카탈로그 5종(SC-MOVEIN-REPORT-BAN 등)은 있으나, 이 픽스처의 특약 원문은
+        # 그중 어느 것도 매칭하지 않으므로 적용 제외다.
         "J13": "적용 제외",
     }
