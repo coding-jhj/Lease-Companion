@@ -19,9 +19,9 @@ from app.main import app
 def _token(client, username):
     client.post(
         "/api/auth/signup",
-        json={"username": username, "email": f"{username}@test.com", "password": "password1!"},
+        json={"username": username, "email": f"{username}@test.com", "password": "Password1!"},
     )
-    res = client.post("/api/auth/login", json={"username": username, "password": "password1!"})
+    res = client.post("/api/auth/login", json={"username": username, "password": "Password1!"})
     return {"Authorization": f"Bearer {res.json()['access_token']}"}
 
 

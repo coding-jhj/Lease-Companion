@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CONTRACT_TXT = ROOT / "data" / "sample" / "contracts" / "contract_001.txt"
 CORRECTION_FIXTURE = ROOT / "data" / "sample" / "fixtures" / "case-001" / "correction_request.json"
 
-USERNAME, PASSWORD = "case001_user", "password1!"
+USERNAME, PASSWORD = "case001_user", "Password1!"
 
 
 def _login(client):

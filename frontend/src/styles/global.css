@@ -100,6 +100,7 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .ghost-button:hover:not(:disabled) { border-color: #b9c2b8; background: #f1f2ee; }
 .switch-link { margin: 20px 0 0; text-align: center; }
 .error { margin: 0; color: #a02222; }
+.field-hint { margin: -8px 0 0; color: #5a655c; font-size: 13px; }
 .contract-card, .field-card, .result-card, .check-item { display: grid; gap: 6px; padding: 16px; border: 1px solid #dce5dd; border-radius: 14px; text-decoration: none; }
 .contract-grid, .checklist-grid, .history-grid, .extraction-workspace-grid, .report-grid, .page-actions { display: grid; gap: 16px; }
 .contract-grid { grid-template-columns: 1fr; }
