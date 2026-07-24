@@ -137,9 +137,11 @@ export function PracticeChatPanel({
           {!hasMore && items.length > 0 && <span>대화의 시작입니다</span>}
         </div>
         <ol className="practice-chat__messages">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li className="practice-chat__turn" key={item.practice_turn_id}>
-              <MessageBubble sender="counterparty" label="공인중개사" content={item.prompt} />
+              {index === 0 && (
+                <MessageBubble sender="counterparty" label="공인중개사" content={item.prompt} />
+              )}
               <MessageBubble
                 sender="user"
                 label="나"
@@ -150,7 +152,7 @@ export function PracticeChatPanel({
               )}
             </li>
           ))}
-          {currentTurn && (
+          {currentTurn && items.length === 0 && (
             <li className="practice-chat__turn practice-chat__turn--current" key={`current-${currentTurn.turn_id}`}>
               <MessageBubble sender="counterparty" label="공인중개사" content={currentTurn.prompt} current />
             </li>

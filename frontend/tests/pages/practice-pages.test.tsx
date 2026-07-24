@@ -332,6 +332,45 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByText("대화의 시작입니다")).toBeInTheDocument();
   });
 
+  it("shows the opening prompt once before completed attempts", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
+    vi.mocked(practiceService.getMessages).mockResolvedValue({
+      items: [
+        {
+          practice_turn_id: "turn-001-attempt-1",
+          turn_id: "TURN-01",
+          prompt: "계약을 바로 진행하시겠습니까?",
+          user_answer: "조건이 마음에 들지 않습니다.",
+          timed_out: false,
+          dialogue_response: "어떤 계약 내용을 물으시는지 말씀해 주세요.",
+          created_at: "2026-07-23T00:00:01Z",
+        },
+        {
+          practice_turn_id: "turn-001-attempt-2",
+          turn_id: "TURN-01",
+          prompt: "계약을 바로 진행하시겠습니까?",
+          user_answer: "보증금 반환 시점을 묻는 겁니다.",
+          timed_out: false,
+          dialogue_response: "다음 세입자가 들어오면 반환한다고 들었습니다.",
+          created_at: "2026-07-23T00:00:02Z",
+        },
+      ],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderSession();
+    fireEvent.click(await screen.findByText("이전 대화 보기"));
+    const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
+
+    const openingPrompt = within(conversation).getByText("계약을 바로 진행하시겠습니까?");
+    const firstAnswer = within(conversation).getByText("조건이 마음에 들지 않습니다.");
+    expect(openingPrompt.compareDocumentPosition(firstAnswer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(1);
+    expect(within(conversation).getByText("어떤 계약 내용을 물으시는지 말씀해 주세요.")).toBeInTheDocument();
+    expect(within(conversation).getByText("다음 세입자가 들어오면 반환한다고 들었습니다.")).toBeInTheDocument();
+  });
+
   it("restores the current turn, submits an answer, and renders the next turn", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     const next = session({ current_state: "TURN-02", current_turn: dialogueTurn("TURN-02", "권한 자료도 필요할까요?"), confirmed_action_ids: ["PA01"] });
@@ -352,7 +391,7 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByText("확인 행동 1 / 3")).toBeInTheDocument();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     expect(await screen.findByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
-    expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(2);
+    expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(1);
     expect(within(screen.getByRole("tabpanel", { name: "지금까지의 대화" })).getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
@@ -422,7 +461,10 @@ describe("PracticeSessionPage", () => {
         name: "답변이 없으면 기존 특약 문구를 유지하겠습니다.",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("이어서 확인할 내용")).not.toBeInTheDocument();
+    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" }),
+    ).toBeInTheDocument();
   });
 
   it("explains a provider review fallback and allows the same turn to be retried", async () => {
@@ -434,10 +476,10 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
 
     expect(await screen.findByRole("heading", { name: "답변을 다시 말씀해 주세요." })).toBeInTheDocument();
-    expect(screen.queryByText("이어서 확인할 내용")).not.toBeInTheDocument();
+    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
-    expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
+    expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(1);
     expect(within(conversation).getByText("답변을 다시 말씀해 주세요.")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "답변을 확인하지 못했습니다. 입력한 내용은 잘못된 답변으로 처리하지 않았습니다. 연습은 계속할 수 있습니다.",
