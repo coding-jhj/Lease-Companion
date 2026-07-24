@@ -105,7 +105,7 @@ export function DocumentUploadPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="4 / 8" title="가지고 있는 문서 올리기" description="계약서는 필요하며, 다른 문서는 가지고 있는 것만 추가하면 됩니다.">
+    <PageShell layout="narrow" step="4 / 8" title="가지고 있는 문서 올리기" description="계약서는 필요하며, 다른 문서는 가지고 있는 것만 추가하면 됩니다.">
       <form className="stack" onSubmit={submit}>
         <div className="helper-banner">
           <strong>먼저 계약서 초안을 준비해 주세요.</strong>
@@ -116,14 +116,17 @@ export function DocumentUploadPage() {
           <ul>
             <li><strong>계약서</strong><span>금액·기간·특약이 적힌 계약서 초안 또는 작성 중인 계약서</span></li>
             <li><strong>등기사항증명서</strong><span>서명 전에 중개사에게 받아볼 수 있습니다.</span></li>
-            <li><strong>중개대상물 확인설명서</strong><span>중개사가 집의 상태와 권리관계를 설명하며 제공하는 문서</span></li>
           </ul>
         </section>
-        <p className="privacy-notice">
-          <strong>현재 시연용 서비스입니다.</strong>
-          실제 주민등록번호·연락처·계좌번호가 포함된 문서는 올리지 마세요.
-          비식별 처리된 문서만 사용해 주세요.
-        </p>
+        <div className="privacy-notice">
+          <span className="privacy-notice__icon" aria-hidden="true">⚠️</span>
+          <p>
+            <strong>현재 시연용 서비스입니다.</strong>{" "}
+            실제 주민등록번호·연락처·계좌번호가 포함된 문서는 올리지 마세요.
+            비식별 처리된 문서만 사용해 주세요.
+          </p>
+        </div>
+        <div className="upload-section">
         <p className="file-help" id="upload-file-help">PDF·JPG·JPEG·PNG 파일을 20MB 이하로 올려주세요.</p>
         <div className="upload-card-grid">
           <DocumentUploadCard
@@ -149,17 +152,7 @@ export function DocumentUploadPage() {
             onSelect={(file) => selectFile("등기사항증명서", file)}
             onRetry={() => void uploadOne("등기사항증명서")}
           />
-          <DocumentUploadCard
-            docType="중개대상물 확인설명서"
-            title="중개대상물 확인설명서"
-            description="중개사가 설명한 내용을 확인합니다. 지금 없어도 진행할 수 있습니다."
-            file={files["중개대상물 확인설명서"]}
-            status={statuses["중개대상물 확인설명서"]}
-            error={uploadErrors["중개대상물 확인설명서"]}
-            disabled={submitting}
-            onSelect={(file) => selectFile("중개대상물 확인설명서", file)}
-            onRetry={() => void uploadOne("중개대상물 확인설명서")}
-          />
+        </div>
         </div>
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={submitting}>{submitting ? "문서를 준비하는 중…" : "업로드하고 다음 단계로"}</button>

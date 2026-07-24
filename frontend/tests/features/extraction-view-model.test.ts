@@ -3,6 +3,7 @@ import {
   correctionValue,
   fieldViewModels,
   formatFieldValue,
+  splitClauseText,
 } from "../../src/features/extraction-review/viewModel";
 import type {
   DocumentExtractionDto,
@@ -218,5 +219,16 @@ describe("J structured field values", () => {
     expect(fee.field.issue_code).toBe("not_stated");
     expect(fee.field.confidence).toBe("불확실");
     expect(fee.field.failure_reason).toContain("고정 관리비 금액이 없습니다");
+  });
+
+  it("splits joined clauses and ① sub-items without dropping content", () => {
+    const text = "제9조(계약의 종료) 임차인은 반환한다., 제3조(수리) 합의한다. ① 임차인은 못한다. ② 임대인은 유지한다.";
+    const lines = splitClauseText(text);
+    expect(lines).toEqual([
+      "제9조(계약의 종료) 임차인은 반환한다.",
+      "제3조(수리) 합의한다.",
+      "① 임차인은 못한다.",
+      "② 임대인은 유지한다.",
+    ]);
   });
 });

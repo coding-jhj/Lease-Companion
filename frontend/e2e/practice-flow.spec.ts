@@ -114,20 +114,16 @@ async function expectMobilePracticeLayout(page: Page) {
   if ((page.viewportSize()?.width ?? 0) > 360) return;
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
-  const targets = page.locator(".text-link:visible, .app-header a:visible, .app-header button:visible, .practice-avatar-stage__retry:visible, .practice-contract-reference > summary:visible");
+  const targets = page.locator(".text-link:visible, .app-header a:visible, .app-header button:visible, .practice-avatar-stage__retry:visible");
   await expect(targets).not.toHaveCount(0);
   for (let index = 0; index < await targets.count(); index += 1) {
     const box = await targets.nth(index).boundingBox();
     expect(box?.height ?? 0, `모바일 상호작용 대상 ${index + 1}의 높이`).toBeGreaterThanOrEqual(44);
   }
-  for (const target of [
-    page.getByRole("button", { name: "장면 다시 보기" }),
-    page.locator("summary").filter({ hasText: "계약 내용 참고하기" }),
-  ]) {
-    await expect(target).toBeVisible();
-    const box = await target.boundingBox();
-    expect(box?.height ?? 0, "모바일 연습 핵심 대상의 높이").toBeGreaterThanOrEqual(44);
-  }
+  const replayButton = page.getByRole("button", { name: "장면 다시 보기" });
+  await expect(replayButton).toBeVisible();
+  const replayBox = await replayButton.boundingBox();
+  expect(replayBox?.height ?? 0, "모바일 연습 핵심 대상의 높이").toBeGreaterThanOrEqual(44);
 }
 
 test.describe("세 가지 계약 대화 연습", () => {

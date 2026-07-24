@@ -85,7 +85,15 @@ export function PageShell({
   return (
     <main className={`app-shell app-shell--${layout}`}>
       <header className="app-header">
-        <Link className="brand" to="/contracts">슬기로운 계약생활</Link>
+        <Link className="brand" to="/contracts">
+          <span className="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
+          </span>
+          <span className="brand__name">슬기로운 계약생활</span>
+        </Link>
         <div className="header-actions">
           <span className="step-badge">{step}</span>
           {showModeSelect && <Link className="mode-switch-link" to="/choose-mode">처음으로</Link>}

@@ -253,10 +253,10 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByText("확인 행동 1 / 3")).toBeInTheDocument();
     expect(screen.queryByText("TURN-01")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar", { name: "미션 진행률" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
-    const reference = screen.getByText("계약 내용 참고하기").closest("details")!;
-    expect(reference).not.toHaveAttribute("open");
-    expect(screen.getByText("서울특별시 가온구 연습로 1").closest("section")).toHaveAttribute("hidden");
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["계약서", "대화 내용"]);
+    expect(screen.queryByText("서울특별시 가온구 연습로 1")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "계약서" }));
+    expect(screen.getByText("서울특별시 가온구 연습로 1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "이렇게 말할게요" })).toHaveClass("primary");
     expect(document.querySelectorAll("button.primary")).toHaveLength(1);
   });

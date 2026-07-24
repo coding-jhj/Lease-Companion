@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -11,6 +11,7 @@ import {
   clauseValues,
   correctionValue,
   fieldViewModels,
+  splitClauseText,
 } from "../../features/extraction-review/viewModel";
 import { mvpService } from "../../services/mvpService";
 import type {
@@ -43,6 +44,39 @@ function displayValue(item: ReviewQueueItem, drafts: Record<string, DraftValue>)
   return displayViewValue(item.view, drafts);
 }
 
+// 전체 내용 보기: 긴 조항 원문은 아코디언으로 분리, 나머지는 도메인별 카드로 묶는다.
+const CLAUSE_FIELDS = new Set([
+  "deposit_return_clause", "repair_responsibility_clause", "main_clauses", "special_clauses",
+]);
+
+const REVIEW_DOMAINS: Array<{ key: string; title: string }> = [
+  { key: "parties", title: "계약 당사자·목적물" },
+  { key: "money", title: "금액" },
+  { key: "schedule", title: "기간·일정" },
+  { key: "rights", title: "권리·등기" },
+  { key: "terms", title: "책임·특약" },
+  { key: "etc", title: "기타" },
+];
+
+const REVIEW_DOMAIN_BY_FIELD: Record<string, string> = {
+  landlord_name: "parties", tenant_name: "parties", agent_name: "parties",
+  agent_relationship: "parties", proxy_authority_documents: "parties", property_address: "parties",
+  owner_names: "parties", owner_shares: "parties", is_joint_ownership: "parties",
+  building_use: "parties", lessor_sublease_authority_confirmed: "parties",
+  deposit: "money", deposit_korean_amount: "money", contract_payment: "money",
+  contract_payment_korean_amount: "money", balance_payment: "money",
+  balance_payment_korean_amount: "money", monthly_rent: "money", monthly_rent_korean_amount: "money",
+  management_fee: "money", management_fee_items: "money", management_fee_present: "money",
+  account_holder: "money", account_number: "money", bank_name: "money",
+  start_date: "schedule", end_date: "schedule", move_in_date: "schedule",
+  contract_payment_date: "schedule", balance_payment_date: "schedule", issue_date: "schedule",
+  mortgage_present: "rights", seizure_present: "rights", provisional_seizure_present: "rights",
+  trust_present: "rights", ground_right_present: "rights", senior_claim_amount: "rights",
+  rights_change_clause_present: "rights", violation_building: "rights",
+  estimated_housing_value: "rights", guarantee_eligibility_confirmed: "rights",
+  deposit_return_condition: "terms", repair_responsibility: "terms", special_clauses_present: "terms",
+};
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -74,15 +108,6 @@ export function ExtractionReviewPage() {
   const completedCount = queue.filter((item) => reviewedKeys.includes(item.key)).length;
   const reviewedItems = queue.filter((item) => reviewedKeys.includes(item.key));
   const unresolvedItems = queue.filter((item) => unresolvedReasonByKey[item.key] !== undefined);
-  const rawReviewedFields = fields.filter((view) => reviewedKeys.includes(view.key));
-  const rawUnreadFields = fields.filter((view) => (
-    !reviewedKeys.includes(view.key)
-    && view.field.confidence === "실패"
-  ));
-  const rawUnreviewedFields = fields.filter((view) => (
-    !reviewedKeys.includes(view.key)
-    && view.field.confidence !== "실패"
-  ));
   const pendingCorrectionKeys = Object.keys(drafts).filter(
     (key) => !savedDraftKeys.includes(key),
   );
@@ -259,23 +284,68 @@ export function ExtractionReviewPage() {
     advanceToNextUnreviewed();
   }
 
-  function renderSummaryGroup(title: string, items: FieldViewModel[]) {
+  function fieldTitle(view: FieldViewModel) {
+    return queue.find((item) => item.key === view.key)?.title ?? view.label;
+  }
+
+  function fieldStatusMeta(view: FieldViewModel): { label: string; tone: string } {
+    if (reviewedKeys.includes(view.key)) return { label: "확인함", tone: "reviewed" };
+    if (view.field.confidence === "실패") return { label: "못 읽음", tone: "unread" };
+    return { label: "미확인", tone: "unreviewed" };
+  }
+
+  function renderSourceDetails() {
+    const shortByDomain = new Map<string, FieldViewModel[]>();
+    const clauseFields: FieldViewModel[] = [];
+    for (const view of fields) {
+      if (CLAUSE_FIELDS.has(view.field.field_name)) {
+        clauseFields.push(view);
+        continue;
+      }
+      const domain = REVIEW_DOMAIN_BY_FIELD[view.field.field_name] ?? "etc";
+      const bucket = shortByDomain.get(domain) ?? [];
+      bucket.push(view);
+      shortByDomain.set(domain, bucket);
+    }
     return (
-      <section className="review-source-group">
-        <h3>{title}</h3>
-        {items.length === 0 ? (
-          <p>해당 내용이 없습니다.</p>
-        ) : (
-          <ul>
-            {items.map((view) => (
-              <li key={view.key}>
-                <strong>{queue.find((item) => item.key === view.key)?.title ?? view.label}</strong>
-                <span>{displayViewValue(view, drafts)}</span>
-              </li>
-            ))}
-          </ul>
+      <>
+        <div className="review-domain-flow">
+          {REVIEW_DOMAINS.filter((domain) => shortByDomain.has(domain.key)).map((domain) => (
+            <Fragment key={domain.key}>
+              <h3 className="review-domain-heading">{domain.title}</h3>
+              {shortByDomain.get(domain.key)!.map((view) => {
+                const meta = fieldStatusMeta(view);
+                return (
+                  <div className="review-field" key={view.key}>
+                    <div className="review-field__head">
+                      <strong>{fieldTitle(view)}</strong>
+                      <span className={`review-status-chip review-status-chip--${meta.tone}`}>{meta.label}</span>
+                    </div>
+                    <span className="review-field__value">{displayViewValue(view, drafts)}</span>
+                  </div>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+        {clauseFields.length > 0 && (
+          <section className="review-clause-section">
+            <h3>조항 원문</h3>
+            {clauseFields.map((view) => {
+              const items = clauseValues(view.field);
+              const lines = items.length ? items : splitClauseText(displayViewValue(view, drafts));
+              return (
+                <details className="review-clause" key={view.key}>
+                  <summary>{fieldTitle(view)}</summary>
+                  <ul className="review-clause__list">
+                    {lines.map((line, index) => <li key={index}>{line}</li>)}
+                  </ul>
+                </details>
+              );
+            })}
+          </section>
         )}
-      </section>
+      </>
     );
   }
 
@@ -412,20 +482,15 @@ export function ExtractionReviewPage() {
         )}
         {status === "success" && fields.length > 0 && (
           <>
-            <p className="guided-review-progress" role="status">
-              중요한 내용 {queue.length}개 중 {completedCount}개를 확인했습니다.
-            </p>
+            <div className="guided-review-progress" role="status">
+              <span>중요한 내용 {queue.length}개 중 {completedCount}개를 확인했습니다.</span>
+              <div className="guided-review-progress__bar">
+                <span style={{ width: `${queue.length ? (completedCount / queue.length) * 100 : 0}%` }} />
+              </div>
+            </div>
 
             {!reviewFinished && currentItem && (
               <section className="guided-review-step" aria-label="현재 확인할 내용">
-                <GuidedReviewCard
-                  item={currentItem}
-                  draftValue={drafts[currentItem.key]}
-                  busy={submitting}
-                  onConfirm={() => markReviewed(currentItem)}
-                  onChange={(value) => changeCurrent(currentItem, value)}
-                  onCannotVerify={(reason) => markCannotVerify(currentItem, reason)}
-                />
                 {currentIndex > 0 && (
                   <button
                     className="secondary guided-review-previous"
@@ -436,6 +501,14 @@ export function ExtractionReviewPage() {
                     이전 내용 보기
                   </button>
                 )}
+                <GuidedReviewCard
+                  item={currentItem}
+                  draftValue={drafts[currentItem.key]}
+                  busy={submitting}
+                  onConfirm={() => markReviewed(currentItem)}
+                  onChange={(value) => changeCurrent(currentItem, value)}
+                  onCannotVerify={(reason) => markCannotVerify(currentItem, reason)}
+                />
               </section>
             )}
 
@@ -479,9 +552,7 @@ export function ExtractionReviewPage() {
             <details className="review-source-details">
               <summary>문서에서 읽은 전체 내용 보기</summary>
               <div className="review-source-details__body">
-                {renderSummaryGroup("확인한 내용", rawReviewedFields)}
-                {renderSummaryGroup("아직 확인하지 않은 내용", rawUnreviewedFields)}
-                {renderSummaryGroup("문서에서 읽지 못한 내용", rawUnreadFields)}
+                {renderSourceDetails()}
               </div>
             </details>
           </>
