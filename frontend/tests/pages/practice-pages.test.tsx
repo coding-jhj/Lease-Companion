@@ -112,7 +112,12 @@ function turnResponse(nextSession: PracticeSessionDto, category: "appropriate_ch
       evidence_text: category === "appropriate_check" ? "자료를 확인하겠습니다." : null,
       verbal_reliance: "not_observed",
     },
-    dialogue_response: category === "needs_review" ? "답변을 다시 말씀해 주세요." : "확인 요청을 반영했습니다.",
+    dialogue_response:
+      category === "needs_review"
+        ? "답변을 다시 말씀해 주세요."
+        : category === "no_response"
+          ? "답변이 없으면 기존 특약 문구를 유지하겠습니다."
+          : "확인 요청을 반영했습니다.",
     session: nextSession,
   };
 }
@@ -341,13 +346,14 @@ describe("PracticeSessionPage", () => {
       user_answer: "자료를 확인하고 보류하겠습니다.",
       timed_out: false,
     })));
-    expect(await screen.findByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
+    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
     expect(screen.getByText("확인 행동 1 / 3")).toBeInTheDocument();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     expect(await screen.findByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
     expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(2);
-    // 응답 대사는 아바타 화면이 이미 말한다. 대화 기록에 또 넣으면 두 번 말한 것처럼 읽힌다.
-    expect(within(screen.getByRole("tabpanel", { name: "지금까지의 대화" })).queryByText("확인 요청을 반영했습니다.")).toBeNull();
+    expect(within(screen.getByRole("tabpanel", { name: "지금까지의 대화" })).getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
 
@@ -411,7 +417,12 @@ describe("PracticeSessionPage", () => {
       user_answer: null,
       timed_out: true,
     })));
-    expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "답변이 없으면 기존 특약 문구를 유지하겠습니다.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("이어서 확인할 내용")).not.toBeInTheDocument();
   });
 
   it("explains a provider review fallback and allows the same turn to be retried", async () => {
@@ -422,11 +433,12 @@ describe("PracticeSessionPage", () => {
     fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
     fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
 
-    expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "답변을 다시 말씀해 주세요." })).toBeInTheDocument();
+    expect(screen.queryByText("이어서 확인할 내용")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
     expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(2);
-    expect(within(conversation).queryByText("답변을 다시 말씀해 주세요.")).toBeNull();
+    expect(within(conversation).getByText("답변을 다시 말씀해 주세요.")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "답변을 확인하지 못했습니다. 입력한 내용은 잘못된 답변으로 처리하지 않았습니다. 연습은 계속할 수 있습니다.",
     );

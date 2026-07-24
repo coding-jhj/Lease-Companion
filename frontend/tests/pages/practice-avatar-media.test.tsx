@@ -19,12 +19,12 @@ describe("PracticeAvatarStage generated media", () => {
   it("plays a completed authenticated media blob with audio controls", () => {
     const view = render(
       <PracticeAvatarStage
-        prompt="다음 확인 질문입니다."
+        prompt="확인 요청을 반영했습니다."
+        nextPrompt="다음 확인 질문입니다."
         pressureDelaySeconds={null}
         hasUserInput={false}
         submitting={false}
         generatedVideoUrl="blob:practice-media"
-        generatedSpeechText="확인 요청을 반영했습니다."
         mediaStatus="completed"
       />,
     );
@@ -35,6 +35,8 @@ describe("PracticeAvatarStage generated media", () => {
     expect(video).not.toHaveAttribute("muted");
     expect(screen.queryByRole("button", { name: "립싱크 영상 보기" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
+    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "다음 확인 질문입니다." })).toBeInTheDocument();
   });
 
   it("announces generation without replacing the text fallback", () => {
@@ -56,13 +58,12 @@ describe("PracticeAvatarStage generated media", () => {
     const onEnded = vi.fn();
     render(
       <PracticeAvatarStage
-        prompt="다음 확인 질문입니다."
+        prompt="계약 조건을 다시 확인해 주세요."
         pressureDelaySeconds={null}
         hasUserInput={false}
         submitting={false}
         generatedAudioUrl="blob:supertonic-audio"
         onGeneratedAudioEnded={onEnded}
-        generatedSpeechText="계약 조건을 다시 확인해 주세요."
         mediaStatus="generating_video"
       />,
     );
