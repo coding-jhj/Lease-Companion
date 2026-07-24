@@ -18,7 +18,7 @@
   "locally_available_expected_source_hit_count": 194,
   "locally_available_expected_source_recall": 1.0,
   "locally_unavailable_expected_source_ids": [],
-  "measured_at": "2026-07-21",
+  "measured_at": "2026-07-23",
   "provider_fallback_count": 124,
   "query_count": 124,
   "source_retrieval_frequency": {
