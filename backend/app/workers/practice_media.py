@@ -142,6 +142,17 @@ def _required_path(name: str) -> Path:
 
 def _generate_video(audio_path: Path, job_dir: Path) -> Path:
     musetalk_root = _required_path("MUSETALK_ROOT")
+    inference_script = musetalk_root / "scripts" / "inference.py"
+    if not inference_script.is_file():
+        raise PracticeMediaGenerationError(
+            "musetalk_source_not_found",
+            "MuseTalk scripts/inference.py was not found in MUSETALK_ROOT.",
+        )
+    asset_root = (
+        _required_path("MUSETALK_ASSET_ROOT")
+        if os.getenv("MUSETALK_ASSET_ROOT")
+        else musetalk_root
+    )
     source_avatar = Path(
         os.getenv(
             "MUSETALK_SOURCE_AVATAR",
@@ -170,13 +181,13 @@ def _generate_video(audio_path: Path, job_dir: Path) -> Path:
     unet_model_path = Path(
         os.getenv(
             "MUSETALK_UNET_MODEL_PATH",
-            str(musetalk_root / "models" / "musetalkV15" / "unet.pth"),
+            str(asset_root / "models" / "musetalkV15" / "unet.pth"),
         )
     ).expanduser().resolve()
     unet_config = Path(
         os.getenv(
             "MUSETALK_UNET_CONFIG",
-            str(musetalk_root / "models" / "musetalkV15" / "musetalk.json"),
+            str(asset_root / "models" / "musetalkV15" / "musetalk.json"),
         )
     ).expanduser().resolve()
     if not unet_model_path.is_file() or not unet_config.is_file():
@@ -187,8 +198,7 @@ def _generate_video(audio_path: Path, job_dir: Path) -> Path:
 
     command = [
         python_executable,
-        "-m",
-        "scripts.inference",
+        str(inference_script),
         "--inference_config",
         str(config_path),
         "--result_dir",
@@ -213,9 +223,15 @@ def _generate_video(audio_path: Path, job_dir: Path) -> Path:
         process_env = os.environ.copy()
         process_env["TEMP"] = str(job_dir)
         process_env["TMP"] = str(job_dir)
+        existing_pythonpath = process_env.get("PYTHONPATH")
+        process_env["PYTHONPATH"] = (
+            str(musetalk_root)
+            if not existing_pythonpath
+            else str(musetalk_root) + os.pathsep + existing_pythonpath
+        )
         completed = subprocess.run(
             command,
-            cwd=musetalk_root,
+            cwd=asset_root,
             env=process_env,
             capture_output=True,
             text=True,

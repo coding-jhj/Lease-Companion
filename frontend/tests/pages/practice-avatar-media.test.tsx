@@ -1,14 +1,19 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PracticeAvatarStage } from "../../src/pages/practice/PracticeAvatarStage";
 
 
 describe("PracticeAvatarStage generated media", () => {
   beforeEach(() => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
   });
 
   it("plays a completed authenticated media blob with audio controls", () => {
@@ -28,6 +33,7 @@ describe("PracticeAvatarStage generated media", () => {
     expect(video).toHaveAttribute("src", "blob:practice-media");
     expect(video).toHaveAttribute("controls");
     expect(video).not.toHaveAttribute("muted");
+    expect(screen.queryByRole("button", { name: "립싱크 영상 보기" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
   });
 
@@ -42,7 +48,7 @@ describe("PracticeAvatarStage generated media", () => {
       />,
     );
 
-    expect(screen.getByText("입 모양을 음성에 맞추고 있습니다.")).toBeInTheDocument();
+    expect(screen.getByText("립싱크 영상을 백그라운드에서 준비하고 있습니다.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약 조건을 확인하시겠습니까?" })).toBeInTheDocument();
   });
 
@@ -67,5 +73,20 @@ describe("PracticeAvatarStage generated media", () => {
     expect(audio).toHaveAttribute("controls");
     audio.dispatchEvent(new Event("ended", { bubbles: true }));
     expect(onEnded).toHaveBeenCalledOnce();
+  });
+
+  it("describes MuseTalk as a background task after audio is ready", () => {
+    render(
+      <PracticeAvatarStage
+        prompt="다음 확인 질문입니다."
+        pressureDelaySeconds={null}
+        hasUserInput={false}
+        submitting={false}
+        generatedAudioUrl="blob:supertonic-audio"
+        mediaStatus="generating_video"
+      />,
+    );
+
+    expect(screen.getByText("음성으로 먼저 안내합니다. 립싱크 영상은 백그라운드에서 준비합니다.")).toBeInTheDocument();
   });
 });

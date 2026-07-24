@@ -4,3 +4,57 @@
 PyMuPDF>=1.24,<2
 uvicorn>=0.30,<1
 google-genai>=2,<3   # 스캔 PDF·이미지 OCR (Gemini VLM). 키는 .env GEMINI_API_KEY
+
+# Optional MuseTalk 1.5 experiment
+# --------------------------------
+# MuseTalk는 Minimum MVP Backend와 Python/Torch 버전이 다르므로 이 파일의
+# 기본 환경에 직접 설치하지 않는다. Windows에서는 아래 스크립트가
+# tmp/musetalk-venv(Python 3.10)를 만들고 공식 소스·가중치까지 준비한다.
+#
+# 전체 설치:
+#   & .\scripts\avatar\setup-musetalk-windows.ps1
+#
+# 이미 Python 패키지와 모델 가중치가 준비된 경우:
+#   & .\scripts\avatar\setup-musetalk-windows.ps1 -SkipDependencies -SkipWeights
+#
+# 설치 확인:
+#   & .\scripts\avatar\verify-musetalk.ps1
+#
+# 검증된 MuseTalk 전용 환경 (CUDA 11.8 / NVIDIA GPU):
+#   Python==3.10
+#   torch==2.0.1+cu118
+#   torchvision==0.15.2+cu118
+#   torchaudio==2.0.2+cu118
+#   diffusers==0.30.2
+#   accelerate==0.28.0
+#   transformers==4.39.2
+#   numpy==1.23.5
+#   tensorflow==2.12.0
+#   tensorboard==2.12.0
+#   opencv-python==4.9.0.80
+#   soundfile==0.12.1
+#   librosa==0.11.0
+#   einops==0.8.1
+#   huggingface-hub==0.30.2
+#   gradio==5.24.0
+#   gdown
+#   requests
+#   imageio[ffmpeg]
+#   omegaconf
+#   ffmpeg-python
+#   moviepy
+#   openmim
+#   mmengine
+#   mmcv==2.0.1
+#   mmdet==3.1.0
+#   mmpose==1.1.0
+#   yapf==0.40.1
+#
+# Python 패키지 외 필수 항목:
+#   - NVIDIA GPU와 CUDA 11.8 호환 드라이버
+#   - ffmpeg 실행 파일(PATH 등록)
+#   - MuseTalk 1.5 공식 모델 가중치
+#   - 립싱크에 사용할 source avatar 영상
+#
+# 음성 합성 Supertonic은 `-e ./backend` 설치 시 Backend 환경에
+# supertonic>=1.3.1,<2 범위로 설치된다.
