@@ -15,7 +15,7 @@ canonical v1.9부터 J10~J12는 확인 완료 조항 원문과 별도 classifica
 
 ## 판정 범위
 
-4영역 12항목(J01–J12). 판정 항목과 판정별 적용 가능 상태는 [`../data/judgment-spec.md`](../data/judgment-spec.md)를 기준으로 하며, 여기서 중복 정의하지 않는다.
+4영역 13항목(J01–J13). 판정 항목과 판정별 적용 가능 상태는 [`../data/judgment-spec.md`](../data/judgment-spec.md)를 기준으로 하며, 여기서 중복 정의하지 않는다.
 
 ## 결과 상태 (공통 9개)
 
@@ -37,8 +37,8 @@ canonical v1.9부터 J10~J12는 확인 완료 조항 원문과 별도 classifica
 ## 구현 상태
 
 - R01~R10은 `data/rules/rule_spec.csv`와 `rules/minimum_mvp.py`에서 실행한다.
-- J01~J12는 `data/rules/judgment_spec.csv`와 `rules/judgments.py`에서 실행하며 goldset 47건으로 검증한다.
-- `schemas/adapters.py::analyze_snapshot()`이 R01~R10과 J01~J12를 한 번의 canonical 분석 결과로 구성한다.
+- J01~J13은 `data/rules/judgment_spec.csv`와 `rules/judgments.py`에서 실행하며 goldset 51건으로 검증한다.
+- `schemas/adapters.py::analyze_snapshot()`이 R01~R10과 J01~J13을 한 번의 canonical 분석 결과로 구성한다.
 - `rag/service.py`가 `data/rules/judgment_spec.csv`의 판정별 공식자료 allowlist를 읽어, 행동이 필요한 J 결과에만 공식 근거를 검색·연결한다. 허용된 로컬 원문이 없으면 `evidence_sources=[]`를 유지한다.
 - RAG와 후속 생성은 규칙 엔진이 정한 상태·시급도·판정 이유를 변경하지 않는다.
 

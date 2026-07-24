@@ -6,7 +6,7 @@
 
 ## 현재 구현
 
-- Canonical 실행 경로인 `schemas/adapters.py::analyze_snapshot()`이 확인 완료 `InputSnapshot`으로 R01~R10과 J01~J12를 판정하고, R·J 결과에 허용된 공식 근거를 보강한다.
+- Canonical 실행 경로인 `schemas/adapters.py::analyze_snapshot()`이 확인 완료 `InputSnapshot`으로 R01~R10과 J01~J13을 판정하고, R·J 결과에 허용된 공식 근거를 보강한다.
 - `classified_analysis.py::analyze_with_classification()`은 `ClassificationService`를 실행한 뒤 검증된 provider 결과 또는 safe fallback을 같은 snapshot의 규칙 분석에 전달한다. 저장·상태 전이·재시도는 포함하지 않는다.
 - `classified_analysis.py::analyze_special_clause_flow()`는 확인 snapshot에서 classification → Python R/J → 특약 카드 → 공식 근거 RAG → 생성·Guardrail을 순서대로 실행하고 canonical `ClassificationResult`·`AnalysisRunResult`·`GenerationResult`를 반환한다.
 - 특약 RAG provider 실패는 빈 근거로 흡수한다. RAG가 기존 R/J나 특약 판정 필드를 바꾸면 중단한다. 생성 provider 실패는 `GenerationService`의 검증된 fallback으로 처리한다.

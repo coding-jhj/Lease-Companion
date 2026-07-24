@@ -6,7 +6,7 @@
 
 - 계약서·등기사항증명서·중개대상물 확인설명서·건축물대장의 추출 필드 스키마.
 - 추출·정규화 산출물 스키마(`processed/`와 정합).
-- 판정 결과 리포트 스키마(공통 9개 상태·5개 시급도·J01–J12와 정합, [`../../docs/data/judgment-spec.md`](../../docs/data/judgment-spec.md)).
+- 판정 결과 리포트 스키마(공통 9개 상태·5개 시급도·J01–J13과 정합, [`../../docs/data/judgment-spec.md`](../../docs/data/judgment-spec.md)).
 
 ## 형식
 

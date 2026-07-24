@@ -1,7 +1,7 @@
 # 문서 필드 정의
 
 > 문서별 주요 추출 필드 정의. 확정 JSON 스키마는 [`data/schemas/`](../../data/schemas/)에 별도로 둔다.
-> 이 문서의 필드는 판정 명세([`judgment-spec.md`](judgment-spec.md)) J01–J12의 입력이 된다. 필드를 바꾸면 판정 명세도 함께 확인한다.
+> 이 문서의 필드는 판정 명세([`judgment-spec.md`](judgment-spec.md)) J01–J13의 입력이 된다. 필드를 바꾸면 판정 명세도 함께 확인한다.
 
 ## 필드 구분 원칙
 

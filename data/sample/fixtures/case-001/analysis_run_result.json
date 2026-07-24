@@ -7,6 +7,7 @@
       "limitations": "제출된 계약서와 등기사항증명서의 이름 비교 결과이며 신분증 진위는 판단하지 않습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -16,6 +17,7 @@
           "title": "안심 전세계약 체크리스트"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -66,6 +68,7 @@
       "limitations": "공식 실거래가·전세가 외부 데이터가 연결되기 전에는 이른바 깡통전세 여부를 자동 판정하지 않습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -100,6 +103,7 @@
       "limitations": "근저당의 존재나 채권최고액만으로 보증금 회수 가능성 또는 계약 위험을 확정하지 않습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -143,6 +147,7 @@
       "limitations": "신탁 기재가 없다는 사실만으로 계약 권한이나 향후 권리변동을 보장하지 않습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -167,6 +172,7 @@
       "limitations": "현재 업로드 문서만으로 동일 건물의 전체 선순위 임차보증금을 자동 확인할 수 없습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -176,6 +182,7 @@
           "title": "주택임대차 표준계약서(2023.10.6. 개정·원본게시용)"
         },
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -209,6 +216,7 @@
       "limitations": "계약 이후 발생할 수 있는 근저당 설정·압류·소유권 변경을 현재 문서로 미리 판단하지 않습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -218,6 +226,7 @@
           "title": "안심 전세계약 체크리스트"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -252,6 +261,7 @@
       "limitations": "계약서 문구의 명확성을 확인하며 실제 반환 이행 여부를 예측하지 않습니다.",
       "official_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -261,6 +271,7 @@
           "title": "주택임대차 표준계약서(2023.10.6. 개정·원본게시용)"
         },
         {
+          "article_or_section": null,
           "institution": "국가법령정보센터·법무부·국토교통부",
           "retrieval_method": "bm25",
           "source_id": "SRC-HTA-LAW",
@@ -288,6 +299,7 @@
     {
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -350,6 +362,7 @@
     {
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -359,6 +372,7 @@
           "title": "안심 전세계약 체크리스트"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -383,6 +397,7 @@
     {
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -407,6 +422,7 @@
     {
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -431,6 +447,7 @@
     {
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -455,6 +472,7 @@
     {
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -511,6 +529,18 @@
       "status": "명확",
       "triggers_actions": false,
       "urgency": "참고"
+    },
+    {
+      "evidence_sources": [],
+      "judgment_id": "J13",
+      "judgment_name": "임차권 보호 제한 특약",
+      "limitations": "문구 패턴 탐지이며 법적 효력이나 무효 여부를 확정하지 않습니다.",
+      "question": null,
+      "reason": "임차인의 법정 보호 장치를 제한하는 특약이 있는지 확인합니다. 결과: 적용 제외.",
+      "recommended_actions": [],
+      "status": "적용 제외",
+      "triggers_actions": false,
+      "urgency": "참고"
     }
   ],
   "results": [
@@ -518,6 +548,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -527,6 +558,7 @@
           "title": "안심 전세계약 체크리스트"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -569,6 +601,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -641,6 +674,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -668,6 +702,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -677,6 +712,7 @@
           "title": "주택임대차 표준계약서(2023.10.6. 개정·원본게시용)"
         },
         {
+          "article_or_section": null,
           "institution": "국가법령정보센터·법무부·국토교통부",
           "retrieval_method": "bm25",
           "source_id": "SRC-HTA-LAW",
@@ -704,6 +740,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -713,6 +750,7 @@
           "title": "주택임대차 표준계약서(2023.10.6. 개정·원본게시용)"
         },
         {
+          "article_or_section": null,
           "institution": "국가법령정보센터·법무부·국토교통부",
           "retrieval_method": "bm25",
           "source_id": "SRC-HTA-LAW",
@@ -755,6 +793,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -782,6 +821,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -824,6 +864,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -868,6 +909,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -895,6 +937,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -922,6 +965,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국가법령정보센터·국토교통부",
           "retrieval_method": "bm25",
           "source_id": "SRC-CONFIRM-FORM",
@@ -931,6 +975,7 @@
           "title": "중개대상물 확인·설명서[Ⅰ](주거용 건축물)"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -958,6 +1003,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -967,6 +1013,7 @@
           "title": "안심 전세계약 체크리스트"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -994,6 +1041,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -1038,6 +1086,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -1047,6 +1096,7 @@
           "title": "안심 전세계약 체크리스트"
         },
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -1074,6 +1124,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "법무부",
           "retrieval_method": "bm25",
           "source_id": "SRC-STD-LEASE",
@@ -1083,6 +1134,7 @@
           "title": "주택임대차 표준계약서(2023.10.6. 개정·원본게시용)"
         },
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",
@@ -1110,6 +1162,7 @@
       "completed": false,
       "evidence_sources": [
         {
+          "article_or_section": null,
           "institution": "국토교통부·법무부·대법원·경찰청·HUG",
           "retrieval_method": "bm25",
           "source_id": "SRC-MOLIT-CHECKLIST",

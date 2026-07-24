@@ -11,10 +11,10 @@
     "case_count": 10,
     "completed_case_count": 10,
     "completion_rate": 1.0,
-    "elapsed_seconds": 0.105287,
+    "elapsed_seconds": 0.095408,
     "external_provider_call_count": 0,
     "external_provider_cost_krw": 0,
-    "mean_seconds_per_case": 0.010529
+    "mean_seconds_per_case": 0.009541
   },
   "extraction": {
     "accuracy": 1.0,
@@ -181,16 +181,16 @@
     "rule_case_count": 3
   },
   "judgment_retrieval": {
-    "expected_source_count": 41,
-    "expected_source_recall": 0.8048780487804879,
-    "locally_available_expected_source_count": 33,
-    "query_count": 32,
-    "retrieved_expected_source_count": 33,
+    "expected_source_count": 43,
+    "expected_source_recall": 0.813953488372093,
+    "locally_available_expected_source_count": 35,
+    "query_count": 34,
+    "retrieved_expected_source_count": 35,
     "unofficial_source_exposure_count": 0
   },
   "judgments": {
-    "case_count": 47,
-    "judgment_count": 12,
+    "case_count": 51,
+    "judgment_count": 13,
     "per_judgment": {
       "J01": {
         "accuracy": 1.0,
@@ -251,6 +251,11 @@
         "accuracy": 1.0,
         "item_count": 4,
         "matched_count": 4
+      },
+      "J13": {
+        "accuracy": 1.0,
+        "item_count": 4,
+        "matched_count": 4
       }
     },
     "status": {
@@ -275,17 +280,17 @@
           "일치": 5
         },
         "적용 제외": {
-          "적용 제외": 5
+          "적용 제외": 7
         },
         "확인 불가": {
-          "확인 불가": 6
+          "확인 불가": 7
         },
         "확인 필요": {
-          "확인 필요": 12
+          "확인 필요": 13
         }
       },
-      "item_count": 47,
-      "matched_count": 47
+      "item_count": 51,
+      "matched_count": 51
     },
     "urgency": {
       "accuracy": 1.0,
@@ -294,17 +299,17 @@
           "계약 전 확인": 13
         },
         "분석 불가": {
-          "분석 불가": 6
+          "분석 불가": 7
         },
         "즉시 확인": {
-          "즉시 확인": 7
+          "즉시 확인": 8
         },
         "참고": {
-          "참고": 21
+          "참고": 23
         }
       },
-      "item_count": 47,
-      "matched_count": 47
+      "item_count": 51,
+      "matched_count": 51
     }
   },
   "limitations": [
@@ -314,7 +319,7 @@
     "쉬운 설명의 주관 품질은 사람 또는 독립 judge 라벨이 없어 측정하지 않았습니다.",
     "실제 provider latency와 비용은 외부 호출 승인이 없어 측정하지 않았습니다."
   ],
-  "measured_at": "2026-07-22",
+  "measured_at": "2026-07-24",
   "pii": {
     "case_count": 5,
     "restoration_pass_rate": 1.0,
@@ -342,7 +347,7 @@
     "locally_available_expected_source_hit_count": 39,
     "locally_available_expected_source_recall": 1.0,
     "locally_unavailable_expected_source_ids": [],
-    "measured_at": "2026-07-22",
+    "measured_at": "2026-07-24",
     "provider_fallback_count": 27,
     "query_count": 27,
     "source_retrieval_frequency": {

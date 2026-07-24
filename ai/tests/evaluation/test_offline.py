@@ -22,8 +22,8 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
     assert report.extraction.unreadable_representation_valid_rate == 1.0
     assert report.corrections.pass_rate == 1.0
     assert report.rules.rule_count == 100
-    assert report.judgments.case_count == 47
-    assert report.judgments.judgment_count == 12
+    assert report.judgments.case_count == 51
+    assert report.judgments.judgment_count == 13
     assert report.judgments.status.accuracy == 1.0
     assert report.judgments.urgency.accuracy == 1.0
     assert report.retrieval.case_count == 10
@@ -42,9 +42,9 @@ def test_offline_pipeline_measures_all_a_dimensions_without_provider_calls():
         - report.retrieval.expected_source_hit_count
     )
     assert report.judgment_retrieval.query_count > 0
-    assert report.judgment_retrieval.locally_available_expected_source_count == 33
-    assert report.judgment_retrieval.retrieved_expected_source_count == 33
-    assert report.judgment_retrieval.expected_source_recall == 33 / 41
+    assert report.judgment_retrieval.locally_available_expected_source_count == 35
+    assert report.judgment_retrieval.retrieved_expected_source_count == 35
+    assert report.judgment_retrieval.expected_source_recall == 35 / 43
     assert report.judgment_retrieval.unofficial_source_exposure_count == 0
     assert report.generation.case_count == 10
     assert report.generation.schema_valid_rate == 1.0

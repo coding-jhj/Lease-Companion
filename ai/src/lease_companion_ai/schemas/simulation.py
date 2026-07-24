@@ -19,7 +19,13 @@ from pydantic import (
     model_validator,
 )
 
-from .unified import SCHEMA_VERSION, ClauseCandidate, ContractType, SchemaVersion
+from .unified import (
+    JUDGMENT_IDS,
+    SCHEMA_VERSION,
+    ClauseCandidate,
+    ContractType,
+    SchemaVersion,
+)
 
 
 ScenarioId = Annotated[str, Field(pattern=r"^PRACTICE-[A-Z0-9-]+-\d{3}$")]
@@ -166,9 +172,10 @@ class ConfirmationSignal(BaseModel):
     @field_validator("linked_judgment_ids")
     @classmethod
     def _check_judgment_ids(cls, values: list[str]) -> list[str]:
-        allowed = {f"J{index:02d}" for index in range(1, 13)}
+        # 판정 축이 늘어날 때 이 목록이 뒤처지지 않도록 canonical 상수에서 파생한다.
+        allowed = set(JUDGMENT_IDS)
         if any(value not in allowed for value in values):
-            raise ValueError("linked_judgment_ids는 J01~J12여야 합니다.")
+            raise ValueError(f"linked_judgment_ids는 {JUDGMENT_IDS[0]}~{JUDGMENT_IDS[-1]}여야 합니다.")
         return _unique(values, label="linked_judgment_ids")
 
     @field_validator("official_source_ids")

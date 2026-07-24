@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from lease_companion_ai.rules.judgments import _j13
 from lease_companion_ai.schemas.unified import RuleStatus
 
@@ -143,3 +145,30 @@ def test_j13_cannot_check_when_clause_list_has_only_whitespace_but_present_is_tr
 def test_j13_not_applicable_when_clause_list_is_empty_and_present_is_false():
     result = _j13(_judgment_input_bypassing_field_validation(present=False, special=[]))
     assert result is RuleStatus.NOT_APPLICABLE
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "임차인은 전입신고를 하지 않기로 한다.",
+        "임차인은 계약갱신요구권을 행사하지 아니한다.",
+        "임대인이 주택을 매도하는 경우 새 소유자는 본 계약을 승계하지 아니한다.",
+        "임차인은 전세권 설정을 요구하지 아니한다.",
+        "임대인은 전세보증금반환보증 가입에 협조하지 아니한다.",
+    ],
+)
+def test_j13_flags_protection_restriction_clauses(clause):
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.CHECK_NEEDED
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        "주택을 인도받은 임차인은 전입신고와 확정일자를 받기로 한다.",
+        "임대차계약과 관련하여 분쟁이 있는 경우 주택임대차분쟁조정위원회에 조정을 신청할 수 있다.",
+        "주택의 철거 또는 재건축 계획이 있는 경우 임대인은 이를 임차인에게 고지한다.",
+        "상세주소가 없는 경우 임차인의 상세주소 부여 신청에 임대인은 협조한다.",
+    ],
+)
+def test_j13_does_not_flag_standard_protection_clauses(clause):
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.NOT_APPLICABLE

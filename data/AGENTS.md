@@ -30,6 +30,6 @@
 
 ## 규칙·라벨·판정 데이터
 
-- 규칙마다 **규칙 ID·연결 판정(J01–J12)·적용 단계·입력 필드·조건·결과 상태·시급도·근거·버전**을 기록한다. (기준: [`../docs/data/rule-definition.md`](../docs/data/rule-definition.md), 판정: [`../docs/data/judgment-spec.md`](../docs/data/judgment-spec.md))
+- 규칙마다 **규칙 ID·연결 판정(J01–J13)·적용 단계·입력 필드·조건·결과 상태·시급도·근거·버전**을 기록한다. (기준: [`../docs/data/rule-definition.md`](../docs/data/rule-definition.md), 판정: [`../docs/data/judgment-spec.md`](../docs/data/judgment-spec.md))
 - 결과 상태는 공통 9개(`일치·불일치·명확·불명확·미기재·상충 가능·확인 필요·확인 불가·적용 제외`)만 사용한다. 판정별 허용 집합은 판정 명세를 따른다.
 - 라벨 5종(`clause_type·clarity·responsible_party·condition·review_required`)의 정의·경계 사례를 `labels/`에 문서화한다.
