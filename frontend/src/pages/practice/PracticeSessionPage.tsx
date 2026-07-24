@@ -82,7 +82,6 @@ export function PracticeSessionPage() {
   const [avatarAudioUrl, setAvatarAudioUrl] = useState<string | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
   const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
-  const [avatarSpeechTurnId, setAvatarSpeechTurnId] = useState<string | null>(null);
   const [playedAudioJobId, setPlayedAudioJobId] = useState<string | null>(null);
 
   async function loadSession() {
@@ -102,12 +101,10 @@ export function PracticeSessionPage() {
         const latestMedia = await practiceService.getLatestMedia(sessionId);
         setAvatarMedia(latestMedia);
         setAvatarSpeechText(latestMedia?.speech_text ?? null);
-        setAvatarSpeechTurnId(null);
         setPlayedAudioJobId(null);
       } catch {
         setAvatarMedia(null);
         setAvatarSpeechText(null);
-        setAvatarSpeechTurnId(null);
       }
       try {
         setScenario(await practiceService.getScenario(loaded.scenario_id));
@@ -226,7 +223,6 @@ export function PracticeSessionPage() {
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
       setAvatarSpeechText(response.dialogue_response);
-      setAvatarSpeechTurnId(answeredTurn.turn_id);
       setPlayedAudioJobId(null);
       setAvatarAudioUrl((current) => {
         if (current) URL.revokeObjectURL(current);
@@ -323,12 +319,7 @@ export function PracticeSessionPage() {
     ? `확인 행동 ${confirmedCount}개`
     : `확인 행동 ${confirmedCount} / ${mission.targetCount}`;
   const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
-  const nextPrompt = (
-    avatarSpeechText
-    && avatarSpeechTurnId
-    && session?.current_turn
-    && avatarSpeechTurnId !== session.current_turn.turn_id
-  )
+  const nextPrompt = avatarSpeechText && session?.current_turn
     ? session.current_turn.prompt
     : null;
 
