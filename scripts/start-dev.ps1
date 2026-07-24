@@ -12,7 +12,7 @@
     "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --url http://localhost:5173
 
 .PARAMETER Force
-  8000/5173을 점유 중인 프로세스를 강제 종료하고 진행 (스테일 서버 정리).
+  8301/5173을 점유 중인 프로세스를 강제 종료하고 진행 (스테일 서버 정리).
 
 .PARAMETER SkipMigrate
   alembic upgrade head 를 건너뛴다.
@@ -83,8 +83,8 @@ if (-not (Test-Path $envFile)) { Fail 'backend/.env 없음. backend/.env.example
 if (-not (Select-String -Path $envFile -Pattern '^DATABASE_URL=' -Quiet)) { Fail 'backend/.env에 DATABASE_URL 이 없음.' }
 Ok 'backend/.env · DATABASE_URL 확인'
 
-# 3) 포트 8000·5173
-foreach ($p in 8000, 5173) {
+# 3) 포트 8301·5173
+foreach ($p in 8301, 5173) {
     if ($PracticeValidation) {
         $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
         if ($listeners.Port -contains $p) { Fail "포트 $p 사용 중. 기존 서버를 직접 종료한 뒤 다시 실행하세요." }
@@ -101,7 +101,7 @@ foreach ($p in 8000, 5173) {
         }
     }
 }
-Ok '포트 8000·5173 비어있음'
+Ok '포트 8301·5173 비어있음'
 
 # 4) migration
 if (-not $SkipMigrate) {
@@ -113,7 +113,7 @@ if (-not $SkipMigrate) {
 
 Write-Host '[기동] 백엔드·프론트 시작' -ForegroundColor Cyan
 $be = Start-Process -FilePath 'python' `
-    -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000' `
+    -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8301' `
     -WorkingDirectory $backend `
     -RedirectStandardOutput $logs['BE-out'] -RedirectStandardError $logs['BE-err'] `
     -PassThru -NoNewWindow
@@ -129,7 +129,7 @@ if ($PracticeValidation) {
     $deadline = (Get-Date).AddSeconds(60)
     do {
         try {
-            $backendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:8000/health' -TimeoutSec 2).StatusCode -eq 200
+            $backendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:8301/health' -TimeoutSec 2).StatusCode -eq 200
             $frontendReady = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:5173/signup' -TimeoutSec 2).StatusCode -eq 200
         }
         catch {
