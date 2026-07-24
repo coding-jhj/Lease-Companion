@@ -15,6 +15,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.core.db import SessionLocal
+from app.models.practice import PracticeTurn
 from app.services.practice import (
     APPROVED_SCENARIO_IDS,
     load_approved_practice_assets,
@@ -377,6 +379,39 @@ def test_offline_practice_accepts_natural_turn_answer(
     assert payload["evaluation"]["answer_category"] == "appropriate_check"
     assert payload["evaluation"]["fallback_reason"] is None
     assert payload["session"]["current_turn"]["turn_id"] == "TURN-02"
+
+
+def test_deferred_refund_persists_grounded_dialogue_metadata_without_api_leak(
+    client: TestClient,
+):
+    headers = _headers(client)
+    session = _create_session(
+        client, headers, "PRACTICE-DEFERRED-REFUND-001"
+    )
+    response = client.post(
+        f"/api/practice-sessions/{session['practice_session_id']}/turns",
+        headers=headers,
+        json={
+            "request_id": "grounded-metadata",
+            "turn_id": "TURN-01",
+            "user_answer": "새 세입자가 안 들어오면 보증금은 언제 반환되나요?",
+            "response_time_seconds": 2,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert "dialogue_generation" not in response.json()
+    with SessionLocal() as db:
+        turn = db.query(PracticeTurn).filter_by(
+            practice_turn_id=response.json()["practice_turn_id"]
+        ).one()
+        metadata = turn.dialogue_generation_payload
+    assert metadata["prompt_version"] == "practice-dialogue-v1"
+    assert metadata["question_intent"] == "no_successor_case"
+    assert metadata["speech_act"] == "state_missing_fact"
+    assert metadata["allowed_fact_ids"] == ["F02"]
+    assert metadata["fallback_used"] is True
+    assert "user_answer" not in metadata
 
 
 def test_conversation_history_is_owned_paginated_and_hides_future_turns(client: TestClient):

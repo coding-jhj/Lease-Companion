@@ -135,19 +135,19 @@ def test_provider_categories_follow_the_approved_turn_contract(
     [
         (
             "후임 임차인이 안 구해지면 어떻게 되나요?",
-            "지금까지는 대부분 금방 구해졌습니다. 다음 임차인이 들어오면 받은 보증금으로 바로 돌려드릴 생각입니다.",
+            "그 경우의 반환 시점은 현재 특약에 따로 적혀 있지 않습니다.",
         ),
         (
             "계약 종료일에 바로 돌려받을 수 있나요?",
-            "날짜를 확정해서 넣는 것은 조금 어렵습니다. 다음 임차인이 언제 들어올지 모르니까요.",
+            "현재 특약은 새 임차인의 입주와 보증금 수령 후 반환하는 내용입니다.",
         ),
         (
             "특약 3번은 무슨 뜻인가요?",
-            "보증금을 돌려드리지 않는다는 뜻은 아니고요. 보통 다음 임차인이 들어오는 일정에 맞춰서 반환한다는 의미입니다.",
+            "현재 특약은 새 임차인의 입주와 보증금 수령 후 반환하는 내용입니다.",
         ),
         (
             "이 특약 조건을 삭제해 주세요.",
-            "임대인분이 이 조건을 원하고 계십니다. 다른 분도 계약을 고민하고 있어서 오래 기다려드리기는 어렵습니다.",
+            "특약 수정 요청은 임대인분께 전달해 보겠습니다.",
         ),
     ],
 )
@@ -397,3 +397,23 @@ def test_safe_debrief_contains_actions_missed_signals_and_approved_evidence():
     assert result.missed_action_ids == ["PA02", "PA03", "PA04"]
     assert result.missed_signals
     assert result.official_source_ids == ["SRC-STD-LEASE"]
+
+
+def test_practice_judgment_state_accepts_every_canonical_judgment_id():
+    """연습 평가 요청의 judgment_id는 canonical 판정 축 전체를 받아야 한다.
+
+    정규식을 J01~J12로 하드코딩해 두면 J13이 연결된 시나리오가 생기는 순간
+    ValidationError로 평가 자체가 막힌다. 판정 축이 늘어날 때마다 이 파일을
+    고쳐야 하는 구조를 막기 위해 canonical 상수에서 전부 확인한다.
+    """
+    from lease_companion_ai.schemas.unified import JUDGMENT_IDS, Urgency
+
+    from lease_companion_ai.simulation.provider import PracticeJudgmentState
+
+    for judgment_id in JUDGMENT_IDS:
+        state = PracticeJudgmentState(
+            judgment_id=judgment_id,
+            status=RuleStatus.CHECK_NEEDED,
+            urgency=Urgency.IMMEDIATE,
+        )
+        assert state.judgment_id == judgment_id

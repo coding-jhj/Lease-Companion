@@ -25,6 +25,18 @@ from lease_companion_ai.schemas.unified import (
     Urgency,
 )
 from lease_companion_ai.simulation.debrief import build_practice_result
+from lease_companion_ai.simulation.dialogue_guardrail import (
+    DialogueGuardrailViolation,
+    validate_grounded_dialogue,
+)
+from lease_companion_ai.simulation.dialogue_planner import (
+    plan_grounded_dialogue,
+)
+from lease_companion_ai.simulation.dialogue_provider import (
+    DialogueGenerationMetadata,
+    DialogueGenerationRequest,
+    PracticeDialogueProvider,
+)
 from lease_companion_ai.simulation.models import PracticeAnswerKey
 from lease_companion_ai.simulation.provider import (
     PRACTICE_PROMPT_VERSION,
@@ -51,6 +63,7 @@ class PracticeStep:
     session: PracticeSessionState
     evaluation: PracticeTurnEvaluation | None = None
     dialogue_response: str | None = None
+    dialogue_generation: DialogueGenerationMetadata | None = None
     result: PracticeResult | None = None
 
 
@@ -210,9 +223,12 @@ class PracticeSimulationService:
         scenario: ScenarioDefinition,
         answer_key: PracticeAnswerKey,
         provider: PracticeAnswerProvider | None = None,
+        *,
+        dialogue_provider: PracticeDialogueProvider | None = None,
     ) -> None:
         self._scenario = scenario
         self._answer_key = answer_key
+        self._dialogue_provider = dialogue_provider
         self.evaluation = PracticeEvaluationService(
             scenario, answer_key, provider
         )
@@ -257,17 +273,123 @@ class PracticeSimulationService:
             for item in self._scenario.dialogue_turns
             if item.turn_id == turn_input.turn_id
         )
-        response = select_dialogue_response(
-            self._answer_key,
-            turn.turn_id,
-            turn_input.user_answer,
-            getattr(turn.responses, evaluation.answer_category),
-        )
+        dialogue_generation = None
+        if (
+            self._scenario.grounded_roleplay is not None
+            and turn_input.user_answer is not None
+        ):
+            response, dialogue_generation = self._generate_grounded_dialogue(
+                session,
+                turn,
+                turn_input,
+                evaluation,
+            )
+        else:
+            response = select_dialogue_response(
+                self._answer_key,
+                turn.turn_id,
+                turn_input.user_answer,
+                getattr(turn.responses, evaluation.answer_category),
+            )
         return PracticeStep(
             session=advanced,
             evaluation=evaluation,
             dialogue_response=response,
+            dialogue_generation=dialogue_generation,
         )
+
+    def _generate_grounded_dialogue(
+        self,
+        session: PracticeSessionState,
+        turn,
+        turn_input: PracticeTurnInput,
+        evaluation: PracticeTurnEvaluation,
+    ) -> tuple[str, DialogueGenerationMetadata]:
+        config = self._scenario.grounded_roleplay
+        assert config is not None
+        assert turn_input.user_answer is not None
+        plan = plan_grounded_dialogue(
+            self._scenario, turn, turn_input.user_answer, evaluation
+        )
+        assert plan is not None
+        facts_by_id = {fact.fact_id: fact for fact in config.approved_facts}
+        approved_facts = tuple(
+            facts_by_id[fact_id] for fact_id in plan.allowed_fact_ids
+        )
+        allowed_entities = tuple(
+            value
+            for value in (
+                self._scenario.synthetic_contract.landlord_name,
+                self._scenario.synthetic_contract.broker_name,
+                *self._scenario.synthetic_contract.owner_names,
+                "신규 임차인",
+                "새 임차인",
+                "후임 임차인",
+                "보증금",
+                "특약",
+            )
+            if value
+        )
+        failures: list[str] = []
+        used_fact_ids: tuple[str, ...] = ()
+        attempts = 0
+        response: str | None = None
+        fallback_used = False
+        if self._dialogue_provider is not None:
+            for _ in range(2):
+                request = DialogueGenerationRequest(
+                    prompt_version=config.prompt_version,
+                    scenario_id=self._scenario.scenario_id,
+                    scenario_version=self._scenario.scenario_version,
+                    turn_id=turn.turn_id,
+                    user_answer=turn_input.user_answer,
+                    evaluation_category=evaluation.answer_category,
+                    role="공인중개사",
+                    approved_facts=approved_facts,
+                    plan=plan,
+                    allowed_entities=allowed_entities,
+                    correction_codes=tuple(failures[-1:]),
+                )
+                attempts += 1
+                try:
+                    generated = self._dialogue_provider.generate(request)
+                    validated = validate_grounded_dialogue(request, generated)
+                    response = validated.response_text
+                    used_fact_ids = validated.used_fact_ids
+                    break
+                except DialogueGuardrailViolation as exc:
+                    failures.append(exc.code)
+                except ProviderResponseValidationError:
+                    failures.append("response_validation_failed")
+                except (TimeoutError, ProviderError):
+                    failures.append("provider_unavailable")
+                    break
+                except Exception:
+                    failures.append("provider_error")
+                    break
+        if response is None:
+            fallback_used = True
+            fallback_options = config.fallbacks[plan.speech_act]
+            prior_attempts = sum(
+                item.turn_id == turn.turn_id for item in session.evaluations
+            )
+            response = fallback_options[prior_attempts % len(fallback_options)]
+        metadata = DialogueGenerationMetadata(
+            prompt_version=config.prompt_version,
+            question_intent=plan.question_intent,
+            speech_act=plan.speech_act,
+            allowed_fact_ids=plan.allowed_fact_ids,
+            used_fact_ids=used_fact_ids,
+            validation_failure_codes=tuple(failures),
+            generation_attempts=attempts,
+            fallback_used=fallback_used,
+            provider_model=(
+                self._dialogue_provider.model_name
+                if self._dialogue_provider is not None
+                else None
+            ),
+        )
+        return response, metadata
 
 
 def select_dialogue_response(

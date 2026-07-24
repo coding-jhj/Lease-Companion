@@ -10,7 +10,8 @@ export default defineConfig({
     allowedHosts: [".trycloudflare.com"],
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8301",
+        // 기본 8301. 로컬에서 포트 충돌 시 VITE_BACKEND_TARGET로 덮어쓴다.
+        target: process.env.VITE_BACKEND_TARGET ?? "http://127.0.0.1:8301",
         changeOrigin: true,
       },
     },

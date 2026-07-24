@@ -236,6 +236,87 @@ class ActionSelection(BaseModel):
         return _unique(values, label="allowed_actions")
 
 
+DialogueIntent = Literal[
+    "clause_meaning",
+    "return_timing",
+    "no_successor_case",
+    "verbal_promise",
+    "contract_fact",
+    "clause_change_request",
+    "contract_hold",
+    "unrelated",
+    "unknown",
+]
+SpeechAct = Literal[
+    "answer_fact",
+    "state_missing_fact",
+    "relay_landlord_claim",
+    "acknowledge_request",
+    "maintain_position",
+    "respond_to_hold",
+    "clarify_user_intent",
+    "decline_unrelated",
+]
+ClaimKind = Literal[
+    "documented_fact",
+    "missing_information",
+    "reported_statement",
+]
+DisclosurePolicy = Literal["on_request", "restricted", "unknown"]
+
+
+class ApprovedDialogueFact(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    fact_id: str = Field(pattern=r"^F\d{2}$")
+    canonical_text: str = Field(min_length=1)
+    allowed_intents: list[DialogueIntent] = Field(min_length=1)
+    claim_kind: ClaimKind
+    disclosure: DisclosurePolicy
+
+    @field_validator("allowed_intents")
+    @classmethod
+    def _check_allowed_intents(
+        cls, values: list[DialogueIntent]
+    ) -> list[DialogueIntent]:
+        return _unique(values, label="allowed_intents")
+
+
+class GroundedRoleplayConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    prompt_version: Literal["practice-dialogue-v1"]
+    approved_facts: list[ApprovedDialogueFact] = Field(min_length=1)
+    intent_keywords: dict[DialogueIntent, list[str]]
+    fallbacks: dict[SpeechAct, list[str]]
+
+    @model_validator(mode="after")
+    def _check_config(self) -> "GroundedRoleplayConfig":
+        fact_ids = [fact.fact_id for fact in self.approved_facts]
+        _unique(fact_ids, label="fact_id")
+        if any(not keywords or any(not keyword.strip() for keyword in keywords)
+               for keywords in self.intent_keywords.values()):
+            raise ValueError("intent_keywords에는 빈 목록·키워드를 넣을 수 없습니다.")
+        expected_speech_acts = {
+            "answer_fact",
+            "state_missing_fact",
+            "relay_landlord_claim",
+            "acknowledge_request",
+            "maintain_position",
+            "respond_to_hold",
+            "clarify_user_intent",
+            "decline_unrelated",
+        }
+        if set(self.fallbacks) != expected_speech_acts:
+            raise ValueError("fallbacks는 모든 speech_act를 포함해야 합니다.")
+        if any(
+            len(lines) < 2 or any(not line.strip() for line in lines)
+            for lines in self.fallbacks.values()
+        ):
+            raise ValueError("각 speech_act fallback은 검수 문장 두 개 이상이어야 합니다.")
+        return self
+
+
 class ScenarioDefinition(BaseModel):
     """버전 고정된 승인 합성 시나리오."""
 
@@ -256,6 +337,7 @@ class ScenarioDefinition(BaseModel):
     classification_candidates: list[ClauseCandidate] = Field(default_factory=list)
     target_actions: list[TargetAction] = Field(min_length=1)
     hidden_confirmation_signals: list[ConfirmationSignal] = Field(min_length=1)
+    grounded_roleplay: GroundedRoleplayConfig | None = None
     dialogue_turns: list[DialogueTurn] = Field(min_length=1)
     action_selection: ActionSelection
     terminal_state_id: str = Field(min_length=1)

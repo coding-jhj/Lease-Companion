@@ -82,6 +82,7 @@ export function PracticeSessionPage() {
   const [avatarAudioUrl, setAvatarAudioUrl] = useState<string | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
   const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
+  const [avatarSpeechTurnId, setAvatarSpeechTurnId] = useState<string | null>(null);
   const [playedAudioJobId, setPlayedAudioJobId] = useState<string | null>(null);
 
   async function loadSession() {
@@ -101,10 +102,12 @@ export function PracticeSessionPage() {
         const latestMedia = await practiceService.getLatestMedia(sessionId);
         setAvatarMedia(latestMedia);
         setAvatarSpeechText(latestMedia?.speech_text ?? null);
+        setAvatarSpeechTurnId(null);
         setPlayedAudioJobId(null);
       } catch {
         setAvatarMedia(null);
         setAvatarSpeechText(null);
+        setAvatarSpeechTurnId(null);
       }
       try {
         setScenario(await practiceService.getScenario(loaded.scenario_id));
@@ -223,6 +226,7 @@ export function PracticeSessionPage() {
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
       setAvatarSpeechText(response.dialogue_response);
+      setAvatarSpeechTurnId(answeredTurn.turn_id);
       setPlayedAudioJobId(null);
       setAvatarAudioUrl((current) => {
         if (current) URL.revokeObjectURL(current);
@@ -318,6 +322,15 @@ export function PracticeSessionPage() {
   const progressText = mission.targetCount === null
     ? `확인 행동 ${confirmedCount}개`
     : `확인 행동 ${confirmedCount} / ${mission.targetCount}`;
+  const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
+  const nextPrompt = (
+    avatarSpeechText
+    && avatarSpeechTurnId
+    && session?.current_turn
+    && avatarSpeechTurnId !== session.current_turn.turn_id
+  )
+    ? session.current_turn.prompt
+    : null;
 
   return (
     <PageShell layout="workspace" step="계약 연습" title="상대방에게 직접 말해 보세요" description="정답 문구를 외우기보다, 확인할 내용과 진행 보류 의사를 자신의 말로 표현하는 연습입니다." showJourney={false}>
@@ -372,14 +385,14 @@ export function PracticeSessionPage() {
                   <div className="practice-session-stage__main">
                     <PracticeAvatarStage
                       scenarioId={scenario?.scenario_id ?? session.scenario_id}
-                      prompt={session.current_turn.prompt}
+                      prompt={brokerSpeech}
+                      nextPrompt={nextPrompt}
                       pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                       hasUserInput={Boolean(answer.trim())}
                       submitting={submitting}
                       generatedVideoUrl={avatarVideoUrl}
                       generatedAudioUrl={avatarAudioUrl}
                       onGeneratedAudioEnded={handleAvatarAudioEnded}
-                      generatedSpeechText={avatarSpeechText}
                       mediaStatus={avatarMedia?.status ?? null}
                       onToggleConversation={() => setConversationOpen((open) => !open)}
                       conversationOpen={conversationOpen}

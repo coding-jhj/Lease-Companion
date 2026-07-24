@@ -18,6 +18,7 @@ interface PageShellProps {
   showJourney?: boolean;
   layout?: "auth" | "default" | "narrow" | "workspace" | "report";
   eyebrow?: string;
+  hero?: ReactNode;
 }
 
 const journeySteps = ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
@@ -32,6 +33,7 @@ export function PageShell({
   showJourney = true,
   layout = "default",
   eyebrow = "첫 계약 확인 도우미",
+  hero,
 }: PageShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,12 +121,24 @@ export function PageShell({
         </div>
       )}
       {showJourney && !journey && journeyMap}
-      <section className="page-card">
-        <p className="eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p className="description">{description}</p>
-        {children}
-      </section>
+      {hero ? (
+        <section className="page-card page-card--split">
+          <div className="auth-hero">{hero}</div>
+          <div className="auth-form-panel">
+            <p className="eyebrow">{eyebrow}</p>
+            <h1>{title}</h1>
+            <p className="description">{description}</p>
+            {children}
+          </div>
+        </section>
+      ) : (
+        <section className="page-card">
+          <p className="eyebrow">{eyebrow}</p>
+          <h1>{title}</h1>
+          <p className="description">{description}</p>
+          {children}
+        </section>
+      )}
     </main>
   );
 }

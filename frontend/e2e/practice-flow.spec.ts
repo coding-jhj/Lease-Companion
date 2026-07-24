@@ -77,8 +77,7 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   const card = catalog.locator("article").filter({ has: page.getByRole("heading", { name: scenario.title }) });
   await card.getByRole("link", { name: "상황 확인하기" }).click();
   await expect(page).toHaveURL(new RegExp(`/practice/scenarios/${scenario.id}$`));
-  await expect(page.getByRole("heading", { name: "이런 상황입니다" })).toBeVisible();
-  await expect(page.getByText(scenario.title, { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: scenario.title, exact: true })).toBeVisible();
   const contractDetails = page.getByText("참고할 계약 내용 보기").locator("..");
   await expect(contractDetails).not.toHaveAttribute("open", "");
   await contractDetails.click();

@@ -14,6 +14,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from lease_companion_ai.providers.gemini_practice import build_practice_provider
+from lease_companion_ai.providers.gemini_practice_dialogue import (
+    build_practice_dialogue_provider,
+)
 from lease_companion_ai.rag.service import get_default_evidence_service
 from lease_companion_ai.schemas.simulation import (
     DialogueTurn,
@@ -324,7 +327,15 @@ def _submit(
     scenario, answer_key = load_approved_practice_assets(session_row.scenario_id)
     offline_mode = os.getenv("PRACTICE_OFFLINE_MODE", "true").lower() == "true"
     provider = build_practice_provider(scenario, answer_key, offline_mode=offline_mode)
-    service = PracticeSimulationService(scenario, answer_key, provider)
+    dialogue_provider = build_practice_dialogue_provider(
+        scenario, offline_mode=offline_mode
+    )
+    service = PracticeSimulationService(
+        scenario,
+        answer_key,
+        provider,
+        dialogue_provider=dialogue_provider,
+    )
     state = PracticeSessionState.model_validate(session_row.state_payload)
     evidence_by_action = _retrieve_evidence_by_action(scenario, service) if include_result else None
     try:
@@ -356,6 +367,11 @@ def _submit(
         request_id=request_id,
         input_payload=turn_input.model_dump(mode="json"),
         evaluation_payload=(step.evaluation.model_dump(mode="json") if step.evaluation is not None else None),
+        dialogue_generation_payload=(
+            step.dialogue_generation.model_dump(mode="json")
+            if step.dialogue_generation is not None
+            else None
+        ),
         dialogue_response=step.dialogue_response,
     )
     _apply_state(session_row, step.session, step.result)
