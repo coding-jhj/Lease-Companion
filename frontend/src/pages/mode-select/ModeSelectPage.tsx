@@ -25,11 +25,11 @@ export function ModeSelectPage() {
     <PageShell
       layout="narrow"
       step="시작"
-      title="어떻게 시작할까요?"
+      title="슬기로운 계약생활 시작"
       description="실제 계약을 점검하거나, 계약 상황을 미리 연습할 수 있어요."
       showJourney={false}
       showLogout={false}
-      eyebrow="슬기로운 계약생활 시작"
+      eyebrow=""
     >
       <section className="mode-select-grid" aria-label="모드 선택">
         {modeOptions.map((option) => (

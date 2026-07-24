@@ -34,8 +34,29 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
     }
   }
 
+  const hero = (
+    <>
+      <div className="auth-hero__brandline">
+        <span className="auth-hero__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+            <path d="M9 12l2 2 4-4" />
+          </svg>
+        </span>
+        <p className="auth-hero__brand">슬기로운 계약생활</p>
+      </div>
+      <h2 className="auth-hero__tagline">첫 전월세 계약,<br />혼자 확인하지 마세요</h2>
+      <ul className="auth-hero__points">
+        <li>계약서·등기 올리면 확인할 항목을 자동 정리</li>
+        <li>어려운 특약, 쉬운 말로 설명</li>
+        <li>서명 전 체크리스트·물어볼 질문 안내</li>
+      </ul>
+      <p className="auth-hero__note">비식별·데모 자료만 사용합니다. 안전·사기 여부를 단정하지 않고, 확인할 점을 알려드려요.</p>
+    </>
+  );
+
   return (
-    <PageShell layout="auth" step="1 / 8" title={isLogin ? "로그인" : "회원가입"} description="계약 건별로 확인 결과와 체크리스트를 저장합니다." showLogout={false}>
+    <PageShell layout="auth" step="시작" title={isLogin ? "로그인" : "회원가입"} description="계약 건별로 확인 결과와 체크리스트를 저장합니다." showLogout={false} showJourney={false} hero={hero}>
       <form className="stack" onSubmit={submit}>
         <label>아이디<input autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} /></label>
         {!isLogin && <label>이메일<input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>}

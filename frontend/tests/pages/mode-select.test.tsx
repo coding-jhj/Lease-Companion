@@ -32,7 +32,7 @@ describe("login mode selection", () => {
     fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: "password1!" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인하고 시작" }));
 
-    expect(await screen.findByRole("heading", { name: "어떻게 시작할까요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "슬기로운 계약생활 시작" })).toBeInTheDocument();
   });
 
   it("routes the mode cards to real check and practice", () => {

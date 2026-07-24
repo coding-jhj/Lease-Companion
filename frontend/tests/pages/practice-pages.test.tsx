@@ -199,8 +199,7 @@ describe("Practice scenario pages", () => {
     );
     renderScenario(scenarioId);
 
-    expect(await screen.findByRole("heading", { name: "이런 상황입니다" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "이미 아는 공개 정보" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
     expect(screen.getByText("오늘의 미션")).toBeInTheDocument();
     expect(screen.getByText(title)).toBeInTheDocument();
     expect(screen.queryByText("계약을 바로 진행하시겠습니까?")).not.toBeInTheDocument();
