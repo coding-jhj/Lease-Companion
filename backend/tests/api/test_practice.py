@@ -21,6 +21,7 @@ from app.services.practice import (
     APPROVED_SCENARIO_IDS,
     load_approved_practice_assets,
 )
+from app.services.practice_media import avatar_speech_text
 
 _users = count(1)
 
@@ -179,8 +180,9 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
-    # 아바타 음성은 화면의 큰 대사(다음 TURN prompt)와 같은 문장을 읽는다
-    assert media["speech_text"] == response.json()["session"]["current_turn"]["prompt"]
+    # 화면 대사는 다음 TURN prompt 전체를 유지하되, 아바타 음성은 같은 문장을 짧게 잘라 읽는다(결합)
+    _prompt = response.json()["session"]["current_turn"]["prompt"]
+    assert media["speech_text"] == avatar_speech_text(_prompt)
     assert media["audio_url"] is None
     assert media["video_url"] is None
     assert launched_job_ids == [media["media_job_id"]]

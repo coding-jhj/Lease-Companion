@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import uuid
 
 from sqlalchemy import select
@@ -56,6 +57,32 @@ def _speech_text(session_row: PracticeSession, turn: PracticeTurn) -> str:
     return (prompt or turn.dialogue_response or "").strip()
 
 
+def avatar_speech_text(dialogue_response: str) -> str:
+    """Keep generated video short while the UI retains the full dialogue text."""
+
+    text = " ".join(dialogue_response.split())
+    max_sentences = max(
+        1,
+        int(os.getenv("PRACTICE_MEDIA_MAX_SPEECH_SENTENCES", "1")),
+    )
+    max_chars = max(
+        20,
+        int(os.getenv("PRACTICE_MEDIA_MAX_SPEECH_CHARS", "48")),
+    )
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?。！？])\s+", text)
+        if sentence.strip()
+    ]
+    selected = " ".join(sentences[:max_sentences]) if sentences else text
+    if len(selected) <= max_chars:
+        return selected
+    clipped = selected[: max_chars + 1].rsplit(" ", 1)[0].strip()
+    if len(clipped) < max_chars // 2:
+        clipped = selected[:max_chars].strip()
+    return clipped.rstrip(" ,;:") + "."
+
+
 def queue_practice_media_job(
     db: Session,
     session_row: PracticeSession,
@@ -70,12 +97,14 @@ def queue_practice_media_job(
     if existing is not None:
         return existing
 
+    full_dialogue = turn.dialogue_response.strip()
+    speech_text = avatar_speech_text(_speech_text(session_row, turn))
     job = PracticeMediaJob(
         media_job_id=uuid.uuid4().hex,
         practice_session_fk=session_row.id,
         practice_turn_fk=turn.id,
         status="queued",
-        speech_text=_speech_text(session_row, turn),
+        speech_text=speech_text,
         provider="supertonic-3+musetalk-1.5",
         settings_payload={
             "tts_voice": os.getenv("SUPERTONIC_VOICE", "F1"),
@@ -83,6 +112,16 @@ def queue_practice_media_job(
             "tts_steps": int(os.getenv("SUPERTONIC_TOTAL_STEPS", "8")),
             "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.0")),
             "musetalk_version": os.getenv("MUSETALK_VERSION", "v15"),
+            "musetalk_batch_size": int(os.getenv("MUSETALK_BATCH_SIZE", "12")),
+            "speech_truncated": speech_text != full_dialogue,
+            "source_character_count": len(full_dialogue),
+            "speech_character_count": len(speech_text),
+            "max_audio_seconds": float(
+                os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "5.5")
+            ),
+            "target_total_seconds": float(
+                os.getenv("PRACTICE_MEDIA_TARGET_SECONDS", "15")
+            ),
         },
     )
     db.add(job)

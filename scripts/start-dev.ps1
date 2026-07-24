@@ -5,14 +5,15 @@
   한 터미널에서 백엔드[BE]·프론트[FE] 로그를 실시간 병합 출력하고, Ctrl+C로 전부 종료한다.
 
 .DESCRIPTION
-  lease 콘다 환경(또는 .venv)을 활성화한 상태에서 저장소 루트 기준으로 실행할 것.
+  저장소 .venv를 우선 사용하며, 없으면 현재 활성화된 Python 환경을 사용한다.
+  저장소 루트 기준으로 실행할 것.
   구형 데모(scripts/run-minimum-mvp.ps1의 app.mvp_app)가 아니라 정식 app.main:app을 띄운다.
 
   터널은 이 스크립트가 아니라 별도 터미널에서 실행한다 (URL이 로그에 묻히지 않도록):
     "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --url http://localhost:5173
 
 .PARAMETER Force
-  8301/5173을 점유 중인 프로세스를 강제 종료하고 진행 (스테일 서버 정리).
+  백엔드 지정 포트/5173을 점유 중인 프로세스를 강제 종료하고 진행 (스테일 서버 정리).
 
 .PARAMETER SkipMigrate
   alembic upgrade head 를 건너뛴다.
@@ -116,7 +117,7 @@ Ok 'backend/.env · DATABASE_URL 확인'
 
 # 3) 포트 $BackendPort·5173
 foreach ($p in $BackendPort, 5173) {
-    if ($PracticeValidation) {
+    if ($PracticeValidation -or $RealContractValidation) {
         $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
         if ($listeners.Port -contains $p) { Fail "포트 $p 사용 중. 기존 서버를 직접 종료한 뒤 다시 실행하세요." }
         continue

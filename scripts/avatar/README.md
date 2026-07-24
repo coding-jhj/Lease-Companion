@@ -12,7 +12,7 @@
 
 Supertonic은 Backend 가상환경에 설치하고 최초 실행에서 모델을 로컬 cache에 내려받는다. MuseTalk는 공식 저장소의 설치·가중치 안내를 따라 별도 디렉터리에 준비한 뒤 [`../../backend/.env.example`](../../backend/.env.example)의 경로를 맞춘다.
 
-준비가 끝난 뒤에만 `PRACTICE_MEDIA_ENABLED=true`로 바꾼다. 현재 일반 MuseTalk inference는 모델 로드와 avatar 전처리를 매 작업 반복하므로 비동기 기능 검증용이며, 실시간 서비스에는 영속 GPU worker와 사전 처리 cache가 추가로 필요하다.
+준비가 끝난 뒤에만 `PRACTICE_MEDIA_ENABLED=true`로 바꾼다. Backend는 MuseTalk 전용 Python 프로세스를 상주시켜 모델을 한 번만 올리고, 25fps·4초 입력으로 만든 avatar 좌표·latent·mask cache를 재사용한다. 시작 시 Supertonic과 MuseTalk 전체 경로를 background warm-up하므로 API 준비 직후에는 미디어 상태가 잠시 `queued`로 유지될 수 있다.
 
 `MUSETALK_SOURCE_AVATAR`는 정면·중립 입 모양의 무음 영상으로 지정한다. 현재 검수된 프로젝트 소스는 `frontend/public/practice/avatar/musetalk-source.mp4`이며 Backend 생성 입력 전용이다. Frontend 상태별 루프는 기존 `idle.mp4`·`speaking.mp4`·`listening.mp4`·`pressure.mp4`를 유지한다.
 
@@ -33,3 +33,12 @@ Supertonic은 Backend 가상환경에 설치하고 최초 실행에서 모델을
 ```
 
 설치 스크립트가 완료되면 FastAPI만 재시작한다. `.env.example`의 MuseTalk 경로는 저장소 기준 상대경로이므로 특정 사용자 홈이나 드라이브 문자에 의존하지 않는다.
+
+## 15초 생성 목표
+
+- RTX 3070 8GB 검증 기본값은 FP16, batch 12, 25fps, NVENC 우선이다. NVENC를 사용할 수 없으면 `libx264 ultrafast`로 자동 복구한다.
+- 화면의 전체 답변은 유지하되 아바타 발화는 첫 문장·48자 이내로 제한한다. WAV가 5.5초보다 길면 문장을 자르지 않고 `atempo`로 5.5초 예산에 맞춘다.
+- 같은 avatar cache와 상주 모델을 사용하는 warm 경로만 15초 목표의 대상이다. 최초 모델 적재·avatar cache 생성은 준비 시간으로 분리한다.
+- 생성 시간은 `PracticeMediaJob.settings_payload.timings_ms`와 `target_met`에 저장한다.
+
+관련 설정은 `PRACTICE_MEDIA_WARM_ON_STARTUP`, `PRACTICE_MEDIA_MAX_SPEECH_CHARS`, `PRACTICE_MEDIA_MAX_AUDIO_SECONDS`, `MUSETALK_BATCH_SIZE`, `MUSETALK_FPS`, `MUSETALK_AVATAR_SECONDS`, `MUSETALK_VIDEO_ENCODER`다.
