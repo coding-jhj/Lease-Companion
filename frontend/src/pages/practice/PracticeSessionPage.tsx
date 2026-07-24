@@ -35,27 +35,29 @@ function practiceEvaluationNotice(response: PracticeTurnResponseDto | null) {
     : null;
 }
 
-function ContractReference({ scenario, open, onToggle }: {
+function ContractReference({ scenario }: {
   scenario: PracticeScenarioDetailDto;
-  open: boolean;
-  onToggle: (open: boolean) => void;
 }) {
   const contract = scenario.synthetic_contract;
   return (
-    <details className="practice-contract-reference" onToggle={(event) => onToggle(event.currentTarget.open)}>
-      <summary>계약 내용 참고하기</summary>
-      <section className="practice-contract-card" aria-labelledby="practice-contract-reference-title" hidden={!open}>
+      <section className="practice-contract-card practice-drawer-contract" role="tabpanel" aria-labelledby="drawer-tab-contract">
         <h2 id="practice-contract-reference-title">계약 내용</h2>
-        <dl className="practice-facts">
+        <dl className="practice-drawer-facts">
           <div><dt>계약 유형</dt><dd>{contract.contract_type}</dd></div>
-          <div><dt>보증금</dt><dd>{money.format(contract.deposit)}원</dd></div>
+          <div><dt>주택 주소</dt><dd>{contract.property_address}</dd></div>
+        </dl>
+        <dl className="practice-drawer-amounts" aria-label="계약 금액">
+          <div className="practice-drawer-amount--primary"><dt>보증금</dt><dd>{money.format(contract.deposit)}원</dd></div>
           <div><dt>계약금</dt><dd>{money.format(contract.contract_payment)}원</dd></div>
           <div><dt>잔금</dt><dd>{money.format(contract.balance_payment)}원</dd></div>
-          <div className="practice-facts__wide practice-facts__wide--aligned"><dt>주택 주소</dt><dd>{contract.property_address}</dd></div>
-          <div className="practice-facts__wide practice-facts__wide--aligned"><dt>특약</dt><dd>{contract.special_clauses.join(" ")}</dd></div>
         </dl>
+        {contract.special_clauses.length > 0 && (
+          <div className="practice-drawer-clauses">
+            <h3>특약</h3>
+            <ol>{contract.special_clauses.map((clause) => <li key={clause}>{clause}</li>)}</ol>
+          </div>
+        )}
       </section>
-    </details>
   );
 }
 
@@ -73,7 +75,7 @@ export function PracticeSessionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [hintOpen, setHintOpen] = useState(false);
-  const [contractOpen, setContractOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<"contract" | "conversation">("conversation");
   const [selectedAction, setSelectedAction] = useState<PracticeSelectedAction | null>(null);
   const [conversationOpen, setConversationOpen] = useState(isWideViewport);
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
@@ -85,7 +87,7 @@ export function PracticeSessionPage() {
   async function loadSession() {
     setStatus("loading");
     setHintOpen(false);
-    setContractOpen(false);
+    setDrawerTab("conversation");
     setConversationOpen(isWideViewport());
     setSelectedAction(null);
     try {
@@ -325,24 +327,47 @@ export function PracticeSessionPage() {
         {status === "success" && session && (
           <>
             <div className="practice-progress" role="status" aria-live="polite">
-              <span>미션 진행</span>
-              <strong>{progressText}</strong>
+              <div className="practice-progress__head">
+                <span>미션 진행</span>
+                <strong>{progressText}</strong>
+              </div>
+              {mission.targetCount !== null && (
+                <div
+                  className="practice-progress__bar"
+                  role="progressbar"
+                  aria-label="확인 행동 진행"
+                  aria-valuemin={0}
+                  aria-valuemax={mission.targetCount}
+                  aria-valuenow={Math.min(mission.targetCount, confirmedCount)}
+                >
+                  <span style={{ width: `${Math.min(100, (confirmedCount / mission.targetCount) * 100)}%` }} />
+                </div>
+              )}
             </div>
             <div className="practice-session-mission">
               <PracticeMissionCard scenarioId={session.scenario_id} confirmedCount={confirmedCount} showProgress={false} />
             </div>
             {!isActionSelection && session.current_turn && (
               <>
-                {scenario && <ContractReference scenario={scenario} open={contractOpen} onToggle={setContractOpen} />}
                 <div className={`practice-session-stage${conversationOpen ? " practice-session-stage--open" : ""}`}>
-                  <aside className="practice-conversation-drawer" aria-label="이전 대화">
-                    <PracticeChatPanel
-                      sessionId={session.practice_session_id}
-                      currentTurn={session.current_turn}
-                      latestTurn={latestConversationTurn}
-                      refreshToken={conversationRefreshToken}
-                      onClose={() => setConversationOpen(false)}
-                    />
+                  <aside className="practice-conversation-drawer" aria-label="계약서와 대화 내용">
+                    <div className="practice-drawer-tabs" role="tablist" aria-label="계약서와 대화 내용">
+                      <button type="button" role="tab" id="drawer-tab-contract" aria-selected={drawerTab === "contract"} className={drawerTab === "contract" ? "is-active" : ""} onClick={() => setDrawerTab("contract")}>계약서</button>
+                      <button type="button" role="tab" id="drawer-tab-conversation" aria-selected={drawerTab === "conversation"} className={drawerTab === "conversation" ? "is-active" : ""} onClick={() => setDrawerTab("conversation")}>대화 내용</button>
+                      <button type="button" className="secondary practice-drawer-close" onClick={() => setConversationOpen(false)} aria-label="이전 대화 닫기">닫기</button>
+                    </div>
+                    <div className="practice-drawer-panel">
+                      {drawerTab === "contract"
+                        ? (scenario
+                            ? <ContractReference scenario={scenario} />
+                            : <p className="practice-chat__empty" role="tabpanel" aria-labelledby="drawer-tab-contract">계약 내용을 불러오지 못했습니다.</p>)
+                        : <PracticeChatPanel
+                            sessionId={session.practice_session_id}
+                            currentTurn={session.current_turn}
+                            latestTurn={latestConversationTurn}
+                            refreshToken={conversationRefreshToken}
+                          />}
+                    </div>
                   </aside>
                   <div className="practice-session-stage__main">
                     <PracticeAvatarStage

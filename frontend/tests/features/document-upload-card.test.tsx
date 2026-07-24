@@ -21,7 +21,7 @@ describe("DocumentUploadCard", () => {
 
     expect(screen.getByText("필수 문서")).toBeInTheDocument();
     expect(screen.getByText("임대차계약서.pdf")).toBeInTheDocument();
-    expect(screen.getByText("PDF · 2.0킬로바이트")).toBeInTheDocument();
+    expect(screen.getByText("PDF · 2.0KB")).toBeInTheDocument();
     expect(screen.getByText("업로드 대기")).toBeInTheDocument();
     expect(screen.getByLabelText("계약서 사진 또는 파일 올리기")).toHaveAttribute("accept", "application/pdf,image/jpeg,image/png");
   });

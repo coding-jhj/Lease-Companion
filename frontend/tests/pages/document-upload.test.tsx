@@ -43,7 +43,7 @@ describe("DocumentUploadPage", () => {
     expect(screen.queryByText(/TXT/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("계약서 사진 또는 파일 올리기")).toHaveAttribute("accept", "application/pdf,image/jpeg,image/png");
     expect(screen.getByLabelText("등기사항증명서 사진 또는 파일 올리기")).toBeInTheDocument();
-    expect(screen.getByLabelText("중개대상물 확인설명서 사진 또는 파일 올리기")).toBeInTheDocument();
+    expect(screen.queryByLabelText("중개대상물 확인설명서 사진 또는 파일 올리기")).not.toBeInTheDocument();
   });
 
   it("rejects a TXT file without offering retry, then clears validation when a new file is selected", () => {

@@ -208,6 +208,16 @@ export function fieldViewModels(documents: DocumentExtractionDto[]): FieldViewMo
   );
 }
 
+// 긴 조항 원문을 조·항 경계로 분리한다. 원문을 삭제하지 않고 구분자에서만 자른다.
+// "., "(조항 join)와 ①~⑨(항 번호) 앞에서 나눈다.
+export function splitClauseText(text: string): string[] {
+  return text
+    .split(/(?<=\.)\s*,\s+/)
+    .flatMap((part) => part.split(/\s*(?=[①②③④⑤⑥⑦⑧⑨])/))
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 export function clauseValues(field: ExtractedFieldDto): string[] {
   const value = effectiveValue(field);
   return Array.isArray(value) ? value : [];

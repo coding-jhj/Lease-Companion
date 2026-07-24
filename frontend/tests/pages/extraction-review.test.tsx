@@ -202,9 +202,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText("임대인 이름 · 확인할 위치를 찾기 어려움")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("문서에서 읽은 전체 내용 보기"));
-    expect(screen.getByRole("heading", { name: "확인한 내용" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "아직 확인하지 않은 내용" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "문서에서 읽지 못한 내용" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "계약 당사자·목적물" })).toBeInTheDocument();
   });
 
   it("sends only changed fields, then confirms, starts analysis, and navigates with the run id", async () => {
