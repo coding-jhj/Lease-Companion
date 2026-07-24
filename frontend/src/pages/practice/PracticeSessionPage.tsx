@@ -173,7 +173,6 @@ export function PracticeSessionPage() {
       avatarMedia?.status !== "completed"
       || !avatarMedia.video_url
       || avatarVideoUrl
-      || avatarAudioUrl
     ) return;
     let cancelled = false;
 
@@ -195,12 +194,15 @@ export function PracticeSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [avatarMedia?.status, avatarMedia?.video_url, avatarAudioUrl, avatarVideoUrl]);
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl]);
 
   useEffect(() => () => {
     if (avatarAudioUrl) URL.revokeObjectURL(avatarAudioUrl);
+  }, [avatarAudioUrl]);
+
+  useEffect(() => () => {
     if (avatarVideoUrl) URL.revokeObjectURL(avatarVideoUrl);
-  }, [avatarAudioUrl, avatarVideoUrl]);
+  }, [avatarVideoUrl]);
 
   async function sendTurn(timedOut: boolean) {
     if (!session?.current_turn || (!timedOut && !answer.trim())) return;

@@ -183,7 +183,11 @@ export function PracticeAvatarStage({
             <span className="practice-avatar-stage__media-state" role="status">
               {mediaStatus === "queued" && "아바타 응답을 준비하고 있습니다."}
               {mediaStatus === "generating_audio" && "응답 음성을 만들고 있습니다."}
-              {mediaStatus === "generating_video" && "입 모양을 음성에 맞추고 있습니다."}
+              {mediaStatus === "generating_video" && (
+                generatedAudioUrl
+                  ? "음성으로 먼저 안내합니다. 립싱크 영상은 백그라운드에서 준비합니다."
+                  : "립싱크 영상을 백그라운드에서 준비하고 있습니다."
+              )}
             </span>
           )}
           {mediaStatus === "failed" && (
