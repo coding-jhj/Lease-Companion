@@ -270,6 +270,40 @@ def test_j13_flags_restriction_even_when_protective_phrase_precedes(clause):
     assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.CHECK_NEEDED
 
 
+# --- 공식 문서 원문 기반 오탐 회귀 ------------------------------------------------
+#
+# 위 케이스들은 작성자가 지어낸 문장이라 "패턴을 쓸 때 떠올린 문장"만 검증한다는
+# 한계가 있다. 아래는 저장소의 공식 RAG 원문에서 그대로 가져온 특약 문구다.
+#   - data/rag/sources/SRC-STD-LEASE.txt  [특약사항] (주택임대차 표준계약서, 법무부)
+#   - data/rag/sources/SRC-MOLIT-CHECKLIST.txt (국토부 안심 전세계약 체크리스트)
+# 전부 임차인을 보호하는 권장 문구이므로 J13에 걸리면 안 된다. 특히 첫 두 건은
+# 2026-07-24 실측에서 실제로 오탐됐던 형태다.
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        # 표준계약서 [특약사항] — 원문
+        "주택을 인도받은 임차인은 약정일까지 주민등록(전입신고)과 주택임대차계약서상 "
+        "확정일자를 받기로 하고, 임대인은 위 약정일자의 다음날까지 임차주택에 저당권 등 "
+        "담보권을 설정할 수 없다.",
+        "임대인이 위 특약에 위반하여 임차주택에 저당권 등 담보권을 설정한 경우에는 "
+        "임차인은 임대차계약을 해제 또는 해지할 수 있다.",
+        "임대차계약을 체결한 임차인은 임대인이 사전에 고지하지 않은 선순위 임대차 정보가 "
+        "있는 것을 확인한 경우, 계약금 등의 명목으로 교부한 금전을 포기하지 않고 "
+        "임대차계약을 해제할 수 있다.",
+        "주택임대차계약과 관련하여 분쟁이 있는 경우 임대인 또는 임차인은 법원에 소를 "
+        "제기하기 전에 먼저 주택임대차분쟁조정위원회에 조정을 신청한다.",
+        # 국토부 체크리스트가 권장하는 보호 특약
+        "확정일자 및 전입신고 다음날까지 담보권 등 설정 금지, 위반 시 즉시 계약해지 및 "
+        "손해배상 특약",
+    ],
+)
+def test_j13_does_not_flag_official_recommended_clauses(clause):
+    """공식 문서가 권장하는 보호 특약을 위험으로 표시하면 안 된다."""
+    assert _j13(_judgment_input(present=True, special=[clause])) is RuleStatus.NOT_APPLICABLE
+
+
 @pytest.mark.parametrize(
     "clause",
     [
