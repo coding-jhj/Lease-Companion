@@ -48,6 +48,34 @@ def test_gemini_adapter_does_not_require_key_until_real_call(monkeypatch):
         GeminiEmbeddingProvider().embed_query("비식별 질의")
 
 
+def test_gemini_adapter_splits_documents_into_request_batches():
+    """코퍼스 39건을 한 요청에 보내면 무료 티어에서 429가 난다(2026-07-23 실측)."""
+    models = FakeGeminiModels()
+    provider = GeminiEmbeddingProvider(
+        client=SimpleNamespace(models=models), batch_size=3
+    )
+
+    embeddings = provider.embed_documents([f"문서 {index}" for index in range(7)])
+
+    assert len(embeddings) == 7
+    assert [len(call["contents"]) for call in models.calls] == [3, 3, 1]
+
+
+def test_gemini_embedding_batch_size_can_be_configured(monkeypatch):
+    monkeypatch.setenv("GEMINI_EMBEDDING_BATCH_SIZE", "2")
+    models = FakeGeminiModels()
+    provider = GeminiEmbeddingProvider(client=SimpleNamespace(models=models))
+
+    provider.embed_documents([f"문서 {index}" for index in range(5)])
+
+    assert [len(call["contents"]) for call in models.calls] == [2, 2, 1]
+
+
+def test_gemini_embedding_rejects_non_positive_batch_size():
+    with pytest.raises(ValueError, match="batch_size"):
+        GeminiEmbeddingProvider(batch_size=-1)
+
+
 def test_gemini_embedding_rejects_non_positive_timeout():
     with pytest.raises(ValueError, match="timeout_seconds"):
         GeminiEmbeddingProvider(timeout_seconds=0)
