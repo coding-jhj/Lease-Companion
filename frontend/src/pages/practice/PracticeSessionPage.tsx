@@ -318,10 +318,9 @@ export function PracticeSessionPage() {
   const progressText = mission.targetCount === null
     ? `확인 행동 ${confirmedCount}개`
     : `확인 행동 ${confirmedCount} / ${mission.targetCount}`;
-  const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
-  const nextPrompt = avatarSpeechText && session?.current_turn
-    ? session.current_turn.prompt
-    : null;
+  // 큰 대사는 지금 답해야 할 중개사 대사(current_turn.prompt), 보조는 직전 답변에 대한 응답(dialogue_response).
+  const brokerSpeech = session?.current_turn?.prompt ?? "";
+  const nextPrompt = avatarSpeechText && avatarSpeechText !== brokerSpeech ? avatarSpeechText : null;
 
   return (
     <PageShell layout="workspace" step="계약 연습" title="상대방에게 직접 말해 보세요" description="정답 문구를 외우기보다, 확인할 내용과 진행 보류 의사를 자신의 말로 표현하는 연습입니다." showJourney={false}>
