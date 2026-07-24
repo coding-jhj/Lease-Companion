@@ -501,7 +501,7 @@ describe("ExtractionReviewPage", () => {
     renderPage();
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
-    fireEvent.change(screen.getByRole("textbox", { name: /주소 수정 내용/ }), {
+    fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
       target: { value: "첫 수정 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
@@ -512,7 +512,7 @@ describe("ExtractionReviewPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
-    fireEvent.change(screen.getByRole("textbox", { name: /주소 수정 내용/ }), {
+    fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
       target: { value: "기존 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));

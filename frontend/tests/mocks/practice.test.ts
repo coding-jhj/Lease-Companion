@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { practiceHandlers } from "../../src/mocks/practice";
+import { ApiError } from "../../src/services/apiClient";
 import { practiceService } from "../../src/services/practiceService";
 
 const server = setupServer(...practiceHandlers);
@@ -137,6 +138,12 @@ describe("Practice MSW handlers", () => {
 
   it("surfaces a network failure through the shared API client", async () => {
     server.use(http.get("/api/practice-scenarios", () => HttpResponse.error()));
-    await expect(practiceService.listScenarios()).rejects.toBeInstanceOf(TypeError);
+    const failure = practiceService.listScenarios();
+    await expect(failure).rejects.toBeInstanceOf(ApiError);
+    await expect(failure).rejects.toMatchObject({
+      name: "ApiError",
+      code: "network_error",
+      status: 0,
+    });
   });
 });

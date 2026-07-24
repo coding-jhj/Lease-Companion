@@ -80,6 +80,8 @@ describe("situation selection", () => {
 
     fireEvent.click(screen.getByRole("link", { name: /아직 계약서를 받지 않았어요/ }));
 
-    expect(await screen.findByRole("heading", { name: "계약 전에 세 가지만 준비해 보세요" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", {
+      name: "계약 전, 금전 피해와 분쟁을 줄이는 준비",
+    })).toBeInTheDocument();
   });
 });

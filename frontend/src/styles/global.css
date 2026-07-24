@@ -770,9 +770,31 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .preparation-card h2, .preparation-card p, .preparation-card ul { margin: 0; }
 .preparation-card ul { display: grid; gap: 8px; padding-left: 20px; color: #3f4e44; }
 .preparation-script { padding: 14px; border-radius: 12px; background: #f1f8f3; color: #30523a; line-height: 1.6; }
+.preparation-warning { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid #edcb7e; border-left: 4px solid #dda21f; border-radius: 12px; background: #fff7e2; color: #624a18; }
+.preparation-warning h3, .preparation-warning ul { margin: 0; }
+.preparation-warning h3 { font-size: 15px; color: #573a08; }
+.preparation-warning ul { line-height: 1.6; }
 .preparation-card button { justify-self: start; }
-.preparation-actions { display: grid; justify-items: start; gap: 12px; margin-top: 20px; }
-.preparation-actions p { margin: 0; color: #526057; font-size: 14px; }
+.preparation-actions { display: grid; gap: 16px; margin-top: 24px; }
+.preparation-actions__heading { display: grid; gap: 6px; }
+.preparation-actions__heading h2, .preparation-actions__heading p { margin: 0; }
+.preparation-actions__heading p { color: #526057; line-height: 1.55; }
+.preparation-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.preparation-action-card { display: grid; align-content: start; gap: 10px; min-width: 0; padding: 20px; border: 1px solid #cbd9ce; border-radius: 16px; background: #f5faf6; }
+.preparation-action-card--practice { border-color: #ddd4c3; background: #fffcf5; }
+.preparation-action-card__label { width: fit-content; padding: 5px 9px; border-radius: 999px; background: #dfeee3; color: #245236; font-size: 12px; font-weight: 800; }
+.preparation-action-card--practice .preparation-action-card__label { background: #f1e8d5; color: #6b5422; }
+.preparation-action-card h3, .preparation-action-card p { margin: 0; }
+.preparation-action-card h3 { font-size: 18px; }
+.preparation-action-card p { min-height: 48px; color: #526057; font-size: 14px; line-height: 1.55; }
+.preparation-action-card .button-link { align-self: end; margin-top: 4px; }
+.preparation-action-card__practice-link { border: 1px solid #8eaa96; background: #fff; color: #245236; }
+.preparation-actions .preparation-actions__notice { margin: 0; color: #667269; font-size: 13px; }
+
+@media (max-width: 640px) {
+  .preparation-action-grid { grid-template-columns: 1fr; }
+  .preparation-action-card p { min-height: 0; }
+}
 
 .report-hero { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; border-radius: 20px; background: linear-gradient(135deg, #173f29, #2d6541); color: #fff; }
 .report-hero p, .report-hero h2, .report-hero span { margin: 0; }

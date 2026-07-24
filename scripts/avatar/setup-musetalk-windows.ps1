@@ -20,7 +20,13 @@ function Set-DotEnvValue {
         [string]$Value
     )
 
-    $lines = if (Test-Path -LiteralPath $Path) { @(Get-Content -LiteralPath $Path) } else { @() }
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    $lines = if (Test-Path -LiteralPath $Path) {
+        @([System.IO.File]::ReadAllLines($Path, $utf8))
+    }
+    else {
+        @()
+    }
     $pattern = '^\s*' + [regex]::Escape($Name) + '='
     $found = $false
     $updated = @(
@@ -37,7 +43,7 @@ function Set-DotEnvValue {
     if (-not $found) {
         $updated += "$Name=$Value"
     }
-    Set-Content -LiteralPath $Path -Value $updated -Encoding UTF8
+    [System.IO.File]::WriteAllLines($Path, [string[]]$updated, $utf8)
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $museTalkRoot 'scripts\inference.py'))) {
