@@ -145,9 +145,8 @@ export function PracticeChatPanel({
                 label="나"
                 content={item.timed_out ? "답변하지 못했어요." : item.user_answer ?? "답변을 건너뛰었어요."}
               />
-              {item.dialogue_response && (
-                <MessageBubble sender="counterparty" label="공인중개사" content={item.dialogue_response} />
-              )}
+              {/* dialogue_response는 아바타 화면이 "이어서 확인할 내용"으로 이미 보여준다.
+                  대화 기록에 또 넣으면 공인중개사가 두 번 말한 것처럼 읽혀서 여기서는 뺀다. */}
             </li>
           ))}
           {currentTurn && (
