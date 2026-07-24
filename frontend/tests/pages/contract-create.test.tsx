@@ -50,7 +50,7 @@ describe("ContractCreatePage", () => {
     const createContract = vi.spyOn(mvpService, "createContract");
     renderContractCreate();
 
-    expect(screen.getByText("집 등록")).toBeInTheDocument();
+    expect(screen.getByText("집 등록", { selector: ".journey-progress__title" })).toBeInTheDocument();
     expect(screen.getByText(/여러 계약을 구분하기 위한 이름/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음: 내 상황 알려주기" }));
 
@@ -63,7 +63,7 @@ describe("ContractCreatePage", () => {
   it("shows the second step and example placeholder", () => {
     renderContractCreate();
 
-    expect(screen.getByText("2 / 8")).toBeInTheDocument();
+    expect(screen.getByText("2 / 8", { selector: ".step-badge" })).toBeInTheDocument();
     expect(screen.getByLabelText(/계약 이름/)).toHaveAttribute("placeholder", "예: 신림동 원룸 전세");
   });
 

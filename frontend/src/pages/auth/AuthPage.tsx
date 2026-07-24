@@ -38,9 +38,10 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
     <>
       <div className="auth-hero__brandline">
         <span className="auth-hero__mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
-            <path d="M9 12l2 2 4-4" />
+          {/* Phosphor Icons (MIT) — house-duotone */}
+          <svg viewBox="0 0 256 256" width="27" height="27" fill="currentColor">
+            <path d="M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z" opacity="0.2" />
+            <path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z" />
           </svg>
         </span>
         <p className="auth-hero__brand">슬기로운 계약생활</p>

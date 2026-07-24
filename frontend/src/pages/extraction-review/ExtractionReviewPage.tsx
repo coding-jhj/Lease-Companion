@@ -11,7 +11,8 @@ import {
   clauseValues,
   correctionValue,
   fieldViewModels,
-  splitClauseText,
+  formatClauseText,
+  splitClausesForDisplay,
 } from "../../features/extraction-review/viewModel";
 import { mvpService } from "../../services/mvpService";
 import type {
@@ -333,12 +334,13 @@ export function ExtractionReviewPage() {
             <h3>조항 원문</h3>
             {clauseFields.map((view) => {
               const items = clauseValues(view.field);
-              const lines = items.length ? items : splitClauseText(displayViewValue(view, drafts));
+              const raw = items.length ? items.join("\n") : displayViewValue(view, drafts);
+              const lines = splitClausesForDisplay(raw);
               return (
                 <details className="review-clause" key={view.key}>
                   <summary>{fieldTitle(view)}</summary>
                   <ul className="review-clause__list">
-                    {lines.map((line, index) => <li key={index}>{line}</li>)}
+                    {lines.map((line, index) => <li key={index}>{formatClauseText(line)}</li>)}
                   </ul>
                 </details>
               );
@@ -482,9 +484,21 @@ export function ExtractionReviewPage() {
         )}
         {status === "success" && fields.length > 0 && (
           <>
-            <div className="guided-review-progress" role="status">
-              <span>중요한 내용 {queue.length}개 중 {completedCount}개를 확인했습니다.</span>
-              <div className="guided-review-progress__bar">
+            <div className="guided-review-progress">
+              <div className="guided-review-progress__head">
+                <span className="guided-review-progress__label">확인한 내용</span>
+                <span className="guided-review-progress__count" role="status">
+                  {completedCount}<em>{` / ${queue.length}`}</em>
+                </span>
+              </div>
+              <div
+                className="guided-review-progress__bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={queue.length}
+                aria-valuenow={completedCount}
+                aria-label={`중요한 내용 ${queue.length}개 중 ${completedCount}개 확인`}
+              >
                 <span style={{ width: `${queue.length ? (completedCount / queue.length) * 100 : 0}%` }} />
               </div>
             </div>

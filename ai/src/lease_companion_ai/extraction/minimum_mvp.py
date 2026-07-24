@@ -73,6 +73,50 @@ def _line_containing(text: str, *keywords: str) -> str | None:
     return None
 
 
+# PDF 페이지 머리말·꼬리말·워터마크(쪽번호, 교육·실습용 샘플 표시)는 조항 본문이 아니므로
+# 조항을 묶기 전에 걸러 조항 텍스트에 섞이지 않게 한다.
+_CLAUSE_FURNITURE = re.compile(
+    r"교육·실습용|법적 효력 없음|실제 계약에 사용 금지|^\s*\d+\s*/\s*\d+\s*$"
+)
+
+
+def _join_clause_lines(lines: list[str]) -> str:
+    """조항을 이루는 여러 줄을 공백으로 잇는다. 좁은 칸 PDF는 단어 중간에서 줄바꿈될
+    때도 있어 "직 계존속" 같은 여분 공백이 남을 수 있으나, 진짜 띄어쓰기 자리까지 붙여
+    "해지할수"·"지불한다차임"처럼 단어를 오인시키는 것보다 안전하다(한글 인접만으로는
+    단어 중간 줄바꿈과 실제 띄어쓰기를 구분할 수 없다).
+    ponytail: 완벽한 재결합은 글자 좌표 기반 공백 판정이 필요하다 — 필요 시 ingestion에서."""
+    return " ".join(part for part in lines if part)
+
+
+def _group_clauses(text: str) -> list[str]:
+    """조항 헤더(줄 시작의 "제N조" 또는 "[가]"/"[제N항]")에서 조항을 시작하고, 이어지는
+    줄은 해당 조항에 붙여 온전한 조항 문자열 목록을 만든다. PDF 줄바꿈으로 조항이 여러
+    줄에 나뉘어도 잘리지 않는다. 헤더 판정을 줄 시작으로 한정해 본문 속 교차참조가
+    조항을 쪼개지 않게 한다. 원문을 요약·생성하지 않는다."""
+    clauses: list[str] = []
+    current: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or _CLAUSE_FURNITURE.search(stripped):
+            continue
+        is_header = bool(
+            re.match(r"제\s*\d+\s*조", stripped)
+            or re.match(r"\[(?:가|제\s*\d+\s*항)\]", stripped)
+            or re.match(r"[-–•‣●▪]\s", stripped)  # compact 포맷 글머리표 항목
+            or re.match(r"\d+\.\s", stripped)  # "3. 특약사항" 같은 번호 항목
+        )
+        if is_header:
+            if current:
+                clauses.append(_join_clause_lines(current))
+            current = [stripped]
+        elif current:
+            current.append(stripped)
+    if current:
+        clauses.append(_join_clause_lines(current))
+    return clauses
+
+
 def _normalize_extraction_text(text: str) -> str:
     """PDF 글꼴·공백 변형을 통일하되 표의 줄 경계는 유지한다."""
     normalized = unicodedata.normalize("NFKC", text).replace("\u00a0", " ")
@@ -543,16 +587,8 @@ def _clause_sections(
         None,
     )
     boundary = special_index if special_index is not None else len(lines)
-    main = [
-        line.strip()
-        for line in lines[:boundary]
-        if line.strip()
-        and (
-            re.search(r"제\s*\d+\s*조", line)
-            or re.search(r"\[(?:가|제\s*\d+\s*항)\]", line)
-            or "임대차기간" in line
-        )
-    ]
+    # 조항을 온전한 단위로 묶는다(_group_clauses). PDF 줄바꿈으로 조항이 잘리지 않는다.
+    main = _group_clauses("\n".join(lines[:boundary]))
     if special_index is None:
         return main or None, False, None, []
     header = lines[special_index]
@@ -922,22 +958,27 @@ def parse_contract(text: str) -> DocumentExtraction:
                 period_parts.append(stripped)
     period_dates = _dates(" ".join(period_parts))
     management_present, management_fee, management_items = _management_fields(text)
-    return_line = _line_containing(text, "보증금", "반환")
+    # 조항 단위로 찾아 PDF 줄바꿈에 잘리지 않게 한다.
+    grouped_clauses = _group_clauses(text)
+    return_line = next(
+        (clause for clause in grouped_clauses if "보증금" in clause and "반환" in clause),
+        None,
+    ) or _line_containing(text, "보증금", "반환")
     repair_line = next(
         (
-            line.strip()
-            for line in text.splitlines()
-            if any(word in line for word in ("수리", "수선", "원상복구"))
-            and any(subject in line for subject in ("임대인", "임차인"))
+            clause
+            for clause in grouped_clauses
+            if any(word in clause for word in ("수리", "수선", "원상복구"))
+            and any(subject in clause for subject in ("임대인", "임차인"))
         ),
         None,
     )
     rights_line = next(
         (
-            line.strip()
-            for line in text.splitlines()
-            if any(word in line for word in ("권리변동", "담보권", "근저당"))
-            and any(word in line for word in ("설정하지", "제한", "금지", "동의"))
+            clause
+            for clause in grouped_clauses
+            if any(word in clause for word in ("권리변동", "담보권", "근저당"))
+            and any(word in clause for word in ("설정하지", "제한", "금지", "동의"))
         ),
         None,
     )

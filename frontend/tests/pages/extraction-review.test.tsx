@@ -128,7 +128,7 @@ describe("ExtractionReviewPage", () => {
 
     const view = renderPage();
 
-    expect(await screen.findByText(/중요한 내용 .*개 중 .*개를 확인했습니다/))
+    expect(await screen.findByRole("progressbar", { name: /중요한 내용 .*개 중 .*개 확인/ }))
       .toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /주소/ })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);
@@ -652,7 +652,7 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("중요한 내용 2개 중 1개를 확인했습니다."))
+    expect(await screen.findByRole("progressbar", { name: "중요한 내용 2개 중 1개 확인" }))
       .toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
   });

@@ -67,12 +67,21 @@ describe("PageShell logout", () => {
     expect(screen.getByRole("main")).toHaveClass("app-shell", "app-shell--workspace");
   });
 
-  it("describes progress with user actions instead of system processing terms", () => {
+  it("derives the current step label and next action from the step number", () => {
     render(
       <MemoryRouter>
         <PageShell step="4 / 8" title="문서 올리기" description="문서 준비"><p>본문</p></PageShell>
       </MemoryRouter>,
     );
+
+    expect(screen.getByText("4/8단계")).toBeInTheDocument();
+    expect(screen.getByText("문서 준비", { selector: ".journey-progress__title" })).toBeInTheDocument();
+    expect(screen.getByText("다음: 내용 확인")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: /4 \/ 8단계/ })).toHaveAttribute("aria-valuenow", "4");
+    // full 8-step map is disclosed only after expanding
+    expect(screen.queryByRole("navigation", { name: "계약 확인 진행 단계" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
 
     const journey = screen.getByRole("navigation", { name: "계약 확인 진행 단계" });
     for (const label of ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"]) {
@@ -94,12 +103,12 @@ describe("PageShell logout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("현재: 문서 내용 확인")).toBeInTheDocument();
+    expect(screen.getByText("문서 내용 확인", { selector: ".journey-progress__title" })).toBeInTheDocument();
     expect(screen.getByText("다음: 확인 결과 준비")).toBeInTheDocument();
     expect(screen.queryByText("시작 방법")).not.toBeInTheDocument();
     expect(screen.queryByText("집 등록")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("전체 과정 보기"));
+    fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
 
     expect(screen.getByText("시작 방법")).toBeInTheDocument();
     expect(screen.getByText("집 등록")).toBeInTheDocument();
@@ -123,7 +132,7 @@ describe("PageShell logout", () => {
 
     expect(screen.queryByText("현재: 문서 내용 확인")).not.toBeInTheDocument();
     expect(screen.queryByText("다음: 확인 결과 준비")).not.toBeInTheDocument();
-    expect(screen.queryByText("전체 과정 보기")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "전체 과정 보기" })).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "계약 확인 진행 단계" })).not.toBeInTheDocument();
   });
 });

@@ -89,6 +89,23 @@ def _repair_contract_provider_fields(
         repaired["special_clauses_present"] = True
         special_replaced = True
 
+    # 조항 원문(verbatim)은 PDF 텍스트 레이어(결정론 파서)가 정본이다. Gemini가 조항을
+    # 제목만 반환하거나 문장 끝을 잘랐으면 더 완전한 결정론 값으로 교체한다. 텍스트 레이어가
+    # 없는 스캔본이면 결정론 값이 비어 Gemini 값을 그대로 둔다.
+    def _content_len(value: Any) -> int:
+        if isinstance(value, list):
+            return sum(len(str(item)) for item in value)
+        if isinstance(value, str):
+            return len(value)
+        return 0
+
+    for verbatim_name in ("main_clauses", "deposit_return_clause", "repair_responsibility_clause"):
+        local_verbatim = local.fields.get(verbatim_name)
+        if _content_len(local_verbatim) > _content_len(repaired.get(verbatim_name)):
+            repaired[verbatim_name] = local_verbatim
+            if verbatim_name not in repaired_names:
+                repaired_names.append(verbatim_name)
+
     for name in _CONTRACT_PROVIDER_REPAIR_FIELDS:
         if name == "special_clauses" and special_replaced:
             continue

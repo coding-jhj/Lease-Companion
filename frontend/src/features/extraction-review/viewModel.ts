@@ -218,6 +218,30 @@ export function splitClauseText(text: string): string[] {
     .filter(Boolean);
 }
 
+// 빈 체크박스(□)·선택 표시(☑)는 폼 선택 여부라 유지한다. 공백만 정리.
+export function cleanClauseLine(text: string): string {
+  return text.replace(/\s{2,}/g, " ").trim();
+}
+
+// 한 조항 안의 하위항목(1·2·3…)을 줄바꿈으로 분리해 긴 조항을 읽기 쉽게 만든다.
+// 문장 끝(다.)이나 조 제목 괄호 뒤에 오는 "1 " 형태만 나눠, 본문 속 교차참조(제6조의3 제1항)나
+// 금액 숫자는 건드리지 않는다. CSS `white-space: pre-line`과 함께 쓴다.
+export function formatClauseText(text: string): string {
+  return text.replace(/(?<=[다.)])\s+(?=[1-9]\s+[가-힣])/g, "\n");
+}
+
+// PDF 줄바꿈(\n)으로 잘게 끊긴 조항을 하나로 이어붙인 뒤, 조 번호(제N조)·항 번호(①)·특약 불릿(•)
+// 기준으로만 다시 나눈다. 문장·단어 중간에서 끊기던 문제를 없앤다. 원래 조 단위면 그대로 복원된다.
+export function splitClausesForDisplay(text: string): string[] {
+  const joined = text.replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+  return joined
+    .split(/\s*[•‣●▪]\s*/)
+    .flatMap((segment) => segment.split(/\s*(?=제\s*\d+\s*조(?:의\s*\d+)?\s*[（(])/))
+    .flatMap((segment) => segment.split(/\s*(?=[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬])/))
+    .map((part) => cleanClauseLine(part))
+    .filter(Boolean);
+}
+
 export function clauseValues(field: ExtractedFieldDto): string[] {
   const value = effectiveValue(field);
   return Array.isArray(value) ? value : [];

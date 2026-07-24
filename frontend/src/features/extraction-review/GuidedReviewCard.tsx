@@ -1,12 +1,25 @@
 import { useEffect, useId, useState } from "react";
 
 import type { ReviewQueueItem } from "./reviewQueue";
-import { splitClauseText } from "./viewModel";
+import { formatClauseText, splitClausesForDisplay } from "./viewModel";
 
 type CannotVerifyReason = "not_stated" | "unreadable" | "unknown_location";
 
-// 자주 나오는 특약 유형의 쉬운 뜻(참고용). 매칭 안 되면 표시하지 않는다(임의 생성 금지).
+// 조항 쉬운 뜻(참고용). 표준임대차계약서 본문 조와 자주 나오는 특약을 다룬다.
+// 사실 기반 요약이며, 매칭 안 되면 표시하지 않는다(임의 생성 금지). 구체 패턴을 먼저 둔다.
 const CLAUSE_PLAIN_HINTS: Array<{ match: RegExp; text: string }> = [
+  // 표준계약서 본문 조 (구체 → 일반 순서)
+  { match: /비용의 정산|장기수선충당금|공과금과 관리비를 정산/, text: "계약이 끝날 때 공과금·관리비를 정산하고, 임차인이 미리 낸 장기수선충당금을 임대인에게 돌려받는 것에 대한 조항입니다." },
+  { match: /갱신요구와 거절|계약갱신을 요구|갱신을 요구할 수 있다|계약갱신.{0,6}거절|갱신의 요구를 거절|실거주 등.*사유/, text: "계약이 끝나기 6개월~2개월 전에 임차인이 계약 연장을 요구할 수 있고, 임대인은 실거주 등 정해진 사유가 있을 때만 거절할 수 있다는 조항입니다." },
+  { match: /2기의 차임액|차임액에 달하도록|계약의 해지/, text: "집이 크게 망가져 살 수 없거나 월세를 2번분 밀리는 등의 경우, 계약을 중간에 끝낼 수 있다는 조항입니다." },
+  { match: /채무불이행|손해배상/, text: "한쪽이 약속을 지키지 않으면 상대가 기간을 정해 이행을 요구하고, 그래도 안 되면 계약을 해제하고 손해배상을 청구할 수 있다는 조항입니다." },
+  { match: /계약의 해제|중도금.{0,6}지급하기 전|계약금의 배액/, text: "잔금(또는 중도금)을 내기 전에 계약을 무를 때 계약금을 어떻게 처리하는지 정한 조항입니다. 보통 받은 쪽은 배액 반환, 낸 쪽은 포기합니다." },
+  { match: /입주 전 수리|수리가 필요한 시설물|비용부담에 관하여/, text: "입주 전에 고쳐야 할 곳과 그 비용을 누가 낼지 미리 정하는 조항입니다." },
+  { match: /임대차기간|사용·수익할 수 있는 상태|목적대로 사용/, text: "집을 언제부터 쓸 수 있는지(인도일)와 계약이 얼마 동안 유지되는지를 정하는 조항입니다." },
+  { match: /보증금과 차임|차임 및 관리비|보증금.{0,4}차임.{0,4}관리비/, text: "보증금·월세·관리비를 각각 얼마씩, 언제 낼지 정하는 기본 조항입니다." },
+  { match: /중개보수/, text: "중개사에게 낼 수수료(중개보수)의 금액과 부담 방법을 정한 조항입니다." },
+  { match: /중개대상물.{0,6}확인|중개대상물 확인·설명서|업무보증관계증서/, text: "중개사가 집 상태와 권리관계를 확인해 확인·설명서로 교부해야 한다는 조항입니다." },
+  // 자주 나오는 특약
   { match: /전입신고|확정일자/, text: "전입신고와 확정일자로 보증금 우선순위(대항력·우선변제)를 확보하려는 조건입니다." },
   { match: /저당권|담보권|근저당/, text: "잔금 다음 날까지 집에 새 빚(저당 등)을 걸지 못하게 해 보증금을 지키려는 조항입니다." },
   { match: /선순위|국세|지방세|체납|미납/, text: "숨은 앞순위 세입자나 체납 세금이 크면 계약을 해지할 수 있다는 뜻입니다." },
@@ -20,6 +33,7 @@ const CLAUSE_PLAIN_HINTS: Array<{ match: RegExp; text: string }> = [
 function clausePlainHint(text: string): string | null {
   return CLAUSE_PLAIN_HINTS.find((hint) => hint.match.test(text))?.text ?? null;
 }
+
 
 export interface GuidedReviewCardProps {
   item: ReviewQueueItem;
@@ -111,11 +125,11 @@ export function GuidedReviewCard({
         {isClauseField && originalValue
           ? (
             <ol className="guided-clause-list">
-              {originalValue.split("\n").flatMap(splitClauseText).map((line, index) => {
+              {splitClausesForDisplay(originalValue).map((line, index) => {
                 const hint = clausePlainHint(line);
                 return (
                   <li key={index}>
-                    <span className="guided-clause-list__text">{line}</span>
+                    <span className="guided-clause-list__text">{formatClauseText(line)}</span>
                     {hint && (
                       <details className="guided-clause-hint">
                         <summary>💡 쉬운 설명 보기</summary>
