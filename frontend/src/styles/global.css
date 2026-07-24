@@ -12,6 +12,7 @@ button, input, select { font: inherit; }
 
 .app-shell { width: min(100%, 520px); min-height: 100vh; margin: 0 auto; padding: 20px 16px 48px; }
 .app-shell--auth, .app-shell--default { width: min(100%, 520px); }
+.app-shell--narrow { width: min(100%, 880px); }
 .app-shell--workspace { width: min(100%, 1200px); }
 .app-shell--report { width: min(100%, 1320px); }
 .app-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
@@ -39,6 +40,30 @@ h2 { margin: 8px 0; font-size: 18px; }
 .journey-overview__full { min-width: 0; }
 .journey-overview .journey-map { margin: 2px 0 0; }
 .stack { display: grid; gap: 14px; }
+.situation-columns { display: grid; gap: 18px; }
+/* ponytail: 넓은 화면에서 3섹션을 3열로 나란히. 좁으면 단일 컬럼 */
+@media (min-width: 860px) {
+  .situation-columns { grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
+}
+/* 섹션을 카드로 묶어 그룹을 뚜렷하게 */
+.situation-columns > section { gap: 14px; padding: 20px 18px 22px; border: 1px solid #dbe3dc; border-radius: 16px; background: #fff; }
+.situation-columns > section > h2 { margin: 0; font-size: 18px; font-weight: 800; color: #1f4a30; }
+/* fieldset 테두리 제거 + 서브그룹 사이 얇은 구분선 */
+.situation-columns fieldset { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
+.situation-columns fieldset + fieldset { margin-top: 4px; padding-top: 14px; border-top: 1px solid #eef1ec; }
+/* 서브 라벨: 굵고 진하게. 설명(small)은 확실히 작은 회색 */
+.situation-columns legend { padding: 0; margin-bottom: 6px; font-size: 15px; font-weight: 800; color: #2b3a30; }
+.situation-columns .field-label small { font-size: 13px; color: #6b7671; }
+/* 옵션: 전부 균일한 테두리 박스. 선택 시 녹색 강조 */
+.situation-columns .check-item { gap: 12px; padding: 12px 14px; border: 1px solid #d7dfd8; border-radius: 10px; background: #fff; font-size: 16px; font-weight: 700; color: #24302a; transition: background .12s ease, border-color .12s ease; }
+.situation-columns .check-item input { width: 22px; height: 22px; accent-color: #245c38; }
+.situation-columns .check-item:hover { border-color: #bcd6c4; background: #f4f8f4; }
+.situation-columns .check-item:has(input:checked) { border-color: #7fb491; background: #e9f3ec; }
+.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* 날짜 토글: 채운 버튼 → 옅은 점선 고스트 */
+.situation-date-toggle { border: 1px dashed #b7c7bc; background: #fff; color: #2f5a3d; font-weight: 700; }
+.situation-date-toggle::before { content: "＋ "; }
+.situation-date-toggle:hover { background: #f4f8f4; }
 label { display: grid; gap: 8px; font-weight: 700; }
 .field-label { display: grid; gap: 4px; }
 .field-label small { color: #667269; font-size: 14px; font-weight: 500; line-height: 1.45; }
@@ -476,10 +501,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-avatar-stage__status--pressure { background: rgb(113 63 0 / 90%); }
 .practice-avatar-stage__video-wrap--fallback { display: grid; place-items: center; }
 .practice-avatar-stage__video-fallback { position: absolute; inset: auto 14px 14px; margin: 0; padding: 10px 12px; border-radius: 10px; background: rgb(16 48 29 / 88%); color: #fff; font-size: 13px; font-weight: 700; line-height: 1.5; text-align: center; }
-.practice-avatar-stage__caption { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 16px 18px 18px; }
+.practice-avatar-stage__caption { display: grid; gap: 14px; padding: 16px 18px 18px; }
 .practice-avatar-stage__caption div { flex: 1 1 auto; min-width: 0; }
 .practice-avatar-stage__caption p { margin: 0 0 5px; color: #42634c; font-size: 12px; font-weight: 900; }
 .practice-avatar-stage__caption h2 { margin: 0; font-size: 18px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word; }
+.practice-avatar-stage__next-prompt { margin-top: 14px; }
+.practice-avatar-stage__next-prompt h3 { margin: 0; font-size: 18px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word; }
 .practice-avatar-stage__media-state { display: block; margin-top: 8px; color: #42634c; font-size: 12px; font-weight: 700; }
 .practice-avatar-stage__audio { display: block; width: min(100%, 420px); height: 36px; margin-top: 10px; }
 .practice-avatar-stage__caption button { flex: 0 0 auto; width: auto; min-height: 42px; padding: 9px 13px; white-space: nowrap; }
@@ -490,6 +517,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-answer-shortcut { display: none; margin: -6px 0 0; color: #677169; font-size: 12px; text-align: right; }
 .practice-answer-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .practice-dialogue--composer { padding: 14px 16px; }
+/* 연습 스테이지: 기본 아바타만, 대화 열면 데스크탑 2단 / 모바일 전체화면 오버레이 */
+.practice-session-stage { display: grid; gap: 14px; min-width: 0; }
+.practice-session-stage__main { display: grid; gap: 14px; min-width: 0; }
+.practice-conversation-drawer { display: grid; min-width: 0; }
+.practice-conversation-drawer .practice-chat { margin: 0; }
+.practice-chat__header-actions { display: flex; align-items: center; gap: 10px; }
+.practice-chat__close { width: auto; min-height: 34px; padding: 6px 12px; font-size: 13px; }
+@media (min-width: 900px) {
+  /* 데스크탑: 열림이면 왼쪽 2단 + 높이 매칭(오른쪽 열 기준). 닫히면 아바타 전체폭 + 열기 버튼 노출 */
+  .practice-session-stage--open { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); align-items: stretch; }
+  .practice-session-stage:not(.practice-session-stage--open) .practice-conversation-drawer { display: none; }
+  .practice-session-stage--open .practice-avatar-stage__conversation-toggle { display: none; }
+  /* 채팅을 왼쪽 열 높이에 꽉 채우되, 채팅 내용이 열 높이를 늘리지 않도록 absolute로 분리 */
+  .practice-conversation-drawer { position: relative; min-height: 0; }
+  .practice-conversation-drawer .practice-chat { position: absolute; inset: 0; }
+  .practice-conversation-drawer .practice-chat__viewport { max-height: none; }
+}
+@media (max-width: 899px) {
+  /* 모바일: 기본 숨김, 토글 시 전체화면 오버레이 */
+  .practice-conversation-drawer { position: fixed; inset: 0; z-index: 60; padding: 12px; background: #f4f1e9; overflow-y: auto; display: none; }
+  .practice-session-stage--open .practice-conversation-drawer { display: grid; }
+}
 .practice-answer-composer { display: grid; gap: 9px; }
 .practice-answer-composer__row { display: grid; grid-template-columns: auto minmax(0, 1fr) 96px; gap: 10px; align-items: stretch; }
 .practice-answer-composer__row label { min-width: 72px; place-items: center; padding: 10px 12px; border-radius: 12px; background: #e5eee7; color: #245236; }
@@ -565,16 +614,22 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .danger-button { border: 1px solid #9f2d2d; background: #fff; color: #8a2020; }
 .danger-button:hover { background: #fff0ef; }
 
-.mode-select-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.mode-select-card { display: grid; align-content: start; gap: 16px; padding: 24px; border: 1px solid #d5ddd6; border-radius: 20px; background: #fff; color: inherit; text-decoration: none; }
+.mode-select-back { display: inline-block; justify-self: start; margin-bottom: 10px; }
+.mode-select-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 8px; }
+.mode-select-card { display: grid; align-content: start; gap: 14px; padding: 26px 24px; border: 1px solid #d5ddd6; border-radius: 20px; background: #fff; color: inherit; text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.mode-select-card:hover { transform: translateY(-2px); border-color: #a9c3af; box-shadow: 0 12px 30px rgba(36, 92, 56, .12); }
 .mode-select-card:focus-visible { outline: 3px solid #42644b; outline-offset: 3px; }
 .mode-select-card--practice { border-color: #a9c3af; background: #f1f8f3; }
-.mode-select-card__heading { display: grid; gap: 5px; }
-.mode-select-card__heading span { color: #42644b; font-size: 12px; font-weight: 900; }
-.mode-select-card__heading h2, .mode-select-card > p { margin: 0; }
-.mode-select-card > p { color: #526057; line-height: 1.65; }
-.mode-select-card ul { display: grid; gap: 8px; margin: 0; padding-left: 20px; color: #3f4e44; line-height: 1.5; }
-.mode-select-card .button-link { align-self: end; margin-top: 4px; }
+.mode-select-card__icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: #eef3ef; color: #245c38; }
+.mode-select-card--practice .mode-select-card__icon { background: #dcecdf; }
+.mode-select-card__heading { display: grid; gap: 6px; }
+.mode-select-card__heading h2 { margin: 0; font-size: 19px; }
+.mode-select-card__desc { margin: 0; color: #526057; line-height: 1.6; }
+.mode-select-card__points { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mode-select-card__points li { position: relative; padding-left: 22px; color: #3f4e44; font-size: 14px; line-height: 1.5; }
+.mode-select-card__points li::before { content: "✓"; position: absolute; left: 0; top: 0; color: #2f7d4c; font-weight: 900; }
+.mode-select-card__cta { margin-top: 4px; color: #245c38; font-weight: 800; }
+.mode-select-card:hover .mode-select-card__cta { text-decoration: underline; }
 .mode-select-help { margin: 18px 0 0; color: #667269; font-size: 13px; text-align: center; }
 
 .preparation-grid { display: grid; gap: 16px; }

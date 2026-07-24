@@ -22,6 +22,8 @@ interface PracticeAvatarStageProps {
   onGeneratedAudioEnded?: () => void;
   generatedSpeechText?: string | null;
   mediaStatus?: PracticeMediaStatus | null;
+  onToggleConversation?: () => void;
+  conversationOpen?: boolean;
 }
 
 export function PracticeAvatarStage({
@@ -35,6 +37,8 @@ export function PracticeAvatarStage({
   onGeneratedAudioEnded,
   generatedSpeechText = null,
   mediaStatus = null,
+  onToggleConversation,
+  conversationOpen = false,
 }: PracticeAvatarStageProps) {
   const avatarVideos = practiceMediaForScenario(scenarioId);
   const [mode, setMode] = useState<AvatarMode>("idle");
@@ -46,7 +50,6 @@ export function PracticeAvatarStage({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isGeneratedSpeech = mode === "speaking" && Boolean(generatedVideoUrl);
   const videoSource = isGeneratedSpeech ? generatedVideoUrl! : avatarVideos[mode];
-  const caption = generatedSpeechText || prompt;
   const hasVideo = Boolean(videoSource);
 
   function requestPlayback() {
@@ -159,11 +162,11 @@ export function PracticeAvatarStage({
       <div className="practice-avatar-stage__caption">
         <div>
           <p>공인중개사</p>
-          <h2 id="practice-avatar-title">{caption}</h2>
+          <h2 id="practice-avatar-title">{prompt}</h2>
           {generatedSpeechText && generatedSpeechText !== prompt && (
             <div className="practice-avatar-stage__next-prompt">
               <p>이어서 확인할 내용</p>
-              <h3>{prompt}</h3>
+              <h3>{generatedSpeechText}</h3>
             </div>
           )}
           {generatedAudioUrl && !generatedVideoUrl && (
@@ -188,6 +191,11 @@ export function PracticeAvatarStage({
           )}
         </div>
         <div className="practice-avatar-stage__controls">
+          {onToggleConversation && (
+            <button type="button" className="secondary practice-avatar-stage__conversation-toggle" onClick={onToggleConversation} aria-pressed={conversationOpen}>
+              {conversationOpen ? "대화 닫기" : "이전 대화 보기"}
+            </button>
+          )}
           <button type="button" className="secondary" onClick={togglePlayback} disabled={submitting || !hasVideo}>
             {playbackPaused ? "계속 재생" : "일시정지"}
           </button>

@@ -13,16 +13,12 @@ test("situation entry and critical report actions work with the keyboard", async
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("비밀번호").fill("password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
+  await page.getByRole("link", { name: /실전 계약 점검/ }).click();
   const noDraftCard = page.getByRole("link", { name: /아직 계약서를 받지 않았어요/ });
   const draftCard = page.getByRole("link", { name: /계약서 초안을 받았어요/ });
-  const signedCard = page.getByRole("link", { name: /이미 계약했어요/ });
   await noDraftCard.focus();
   await expect(noDraftCard).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(draftCard).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(signedCard).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
   await expect(draftCard).toBeFocused();
   await page.keyboard.press("Enter");
 

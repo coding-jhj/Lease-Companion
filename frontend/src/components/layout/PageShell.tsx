@@ -16,7 +16,7 @@ interface PageShellProps {
   children: ReactNode;
   showLogout?: boolean;
   showJourney?: boolean;
-  layout?: "auth" | "default" | "workspace" | "report";
+  layout?: "auth" | "default" | "narrow" | "workspace" | "report";
   eyebrow?: string;
 }
 

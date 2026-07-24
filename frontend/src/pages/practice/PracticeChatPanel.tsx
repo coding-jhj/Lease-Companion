@@ -7,6 +7,7 @@ interface PracticeChatPanelProps {
   currentTurn: { turn_id: string; prompt: string } | null;
   latestTurn: PracticeConversationTurnDto | null;
   refreshToken: number;
+  onClose?: () => void;
 }
 
 export function PracticeChatPanel({
@@ -14,6 +15,7 @@ export function PracticeChatPanel({
   currentTurn,
   latestTurn,
   refreshToken,
+  onClose,
 }: PracticeChatPanelProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const stayAtBottomRef = useRef(true);
@@ -112,7 +114,12 @@ export function PracticeChatPanel({
           <p>계약 대화</p>
           <h2>지금까지의 대화</h2>
         </div>
-        <span>{items.length}개 답변</span>
+        <div className="practice-chat__header-actions">
+          <span>{items.length}개 답변</span>
+          {onClose && (
+            <button type="button" className="secondary practice-chat__close" onClick={onClose} aria-label="이전 대화 닫기">닫기</button>
+          )}
+        </div>
       </header>
       <div
         className="practice-chat__viewport"

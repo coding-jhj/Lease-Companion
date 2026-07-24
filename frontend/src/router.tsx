@@ -10,6 +10,7 @@ import { DocumentUploadPage } from "./pages/document-upload/DocumentUploadPage";
 import { ExtractionReviewPage } from "./pages/extraction-review/ExtractionReviewPage";
 import { ResultReportPage } from "./pages/result-report/ResultReportPage";
 import { ModeSelectPage } from "./pages/mode-select/ModeSelectPage";
+import { SituationSelectPage } from "./pages/mode-select/SituationSelectPage";
 import { PracticeHomePage } from "./pages/practice/PracticeHomePage";
 import { PracticeResultPage } from "./pages/practice/PracticeResultPage";
 import { PracticeScenarioPage } from "./pages/practice/PracticeScenarioPage";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       { path: "/choose-mode", element: <ModeSelectPage /> },
+      { path: "/start", element: <SituationSelectPage /> },
       { path: "/prepare", element: <ContractPreparationPage /> },
       { path: "/contracts", element: <DashboardPage /> },
       { path: "/contracts/new", element: <ContractCreatePage /> },

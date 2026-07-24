@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthPage } from "../../src/pages/auth/AuthPage";
 import { ContractPreparationPage } from "../../src/pages/contract-preparation/ContractPreparationPage";
 import { ModeSelectPage } from "../../src/pages/mode-select/ModeSelectPage";
+import { SituationSelectPage } from "../../src/pages/mode-select/SituationSelectPage";
 import { mvpService } from "../../src/services/mvpService";
 
 afterEach(() => {
@@ -31,23 +32,47 @@ describe("login mode selection", () => {
     fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: "password1!" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인하고 시작" }));
 
-    expect(await screen.findByRole("heading", { name: "지금 어떤 상황인가요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "어떻게 시작할까요?" })).toBeInTheDocument();
   });
 
-  it("routes by the renter's current situation", () => {
+  it("routes the mode cards to real check and practice", () => {
     render(<MemoryRouter><ModeSelectPage /></MemoryRouter>);
 
-    expect(screen.getByRole("link", { name: /아직 계약서를 받지 않았어요/ })).toHaveAttribute("href", "/prepare");
-    expect(screen.getByRole("link", { name: /계약서 초안을 받았어요/ })).toHaveAttribute("href", "/contracts/new");
-    expect(screen.getByRole("link", { name: /이미 계약했어요/ })).toHaveAttribute("href", "/contracts");
-    expect(screen.queryByText("모드 선택")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /실전 계약 점검/ })).toHaveAttribute("href", "/start");
+    expect(screen.getByRole("link", { name: /계약 연습 시뮬레이션/ })).toHaveAttribute("href", "/practice");
   });
 
-  it("opens the preparation page from the first situation card", async () => {
+  it("opens the situation screen from the real-check mode card", async () => {
     render(
       <MemoryRouter initialEntries={["/choose-mode"]}>
         <Routes>
           <Route path="/choose-mode" element={<ModeSelectPage />} />
+          <Route path="/start" element={<SituationSelectPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: /실전 계약 점검/ }));
+
+    expect(await screen.findByRole("heading", { name: "지금 어떤 상황인가요?" })).toBeInTheDocument();
+  });
+});
+
+describe("situation selection", () => {
+  it("routes by the renter's current situation", () => {
+    render(<MemoryRouter><SituationSelectPage /></MemoryRouter>);
+
+    expect(screen.getByRole("link", { name: /아직 계약서를 받지 않았어요/ })).toHaveAttribute("href", "/prepare");
+    expect(screen.getByRole("link", { name: /계약서 초안을 받았어요/ })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.queryByRole("link", { name: /이미 계약했어요/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /모드 다시 선택/ })).toHaveAttribute("href", "/choose-mode");
+  });
+
+  it("opens the preparation page from the first situation card", async () => {
+    render(
+      <MemoryRouter initialEntries={["/start"]}>
+        <Routes>
+          <Route path="/start" element={<SituationSelectPage />} />
           <Route path="/prepare" element={<ContractPreparationPage />} />
         </Routes>
       </MemoryRouter>,

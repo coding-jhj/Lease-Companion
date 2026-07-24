@@ -59,10 +59,9 @@ export function ContractSituationPage() {
   }
 
   return (
-    <PageShell step="3 / 8" title="지금 계약 상황 알려주기" description="현재 알고 있는 내용만 골라 주세요. 모르는 내용은 나중에 확인해도 됩니다.">
+    <PageShell layout="workspace" step="3 / 8" title="지금 계약 상황 알려주기" description="현재 알고 있는 내용만 골라 주세요. 모르는 내용은 나중에 확인해도 됩니다.">
       <form className="stack" onSubmit={submit}>
-        <div className="beginner-guide"><strong>모두 알고 있어야 하는 것은 아니에요.</strong><p>현재 알고 있는 내용만 입력하면, 확인하지 못한 부분은 결과에서 따로 알려드립니다.</p></div>
-
+        <div className="situation-columns">
         <section className="stack" aria-labelledby="contract-type-question">
           <h2 id="contract-type-question">어떤 계약을 준비하고 있나요?</h2>
           <fieldset>
@@ -83,13 +82,17 @@ export function ContractSituationPage() {
           </fieldset>
           <fieldset>
             <legend className="field-label">계약금을 이미 지급했습니다</legend>
-            <label className="check-item"><input type="radio" name="deposit-paid" checked={depositPaid} onChange={() => setDepositPaid(true)} aria-label="계약금을 이미 지급했습니다 예" />예</label>
-            <label className="check-item"><input type="radio" name="deposit-paid" checked={!depositPaid} onChange={() => setDepositPaid(false)} aria-label="계약금을 이미 지급했습니다 아니요" />아니요</label>
+            <div className="choice-row">
+              <label className="check-item"><input type="radio" name="deposit-paid" checked={depositPaid} onChange={() => setDepositPaid(true)} aria-label="계약금을 이미 지급했습니다 예" />예</label>
+              <label className="check-item"><input type="radio" name="deposit-paid" checked={!depositPaid} onChange={() => setDepositPaid(false)} aria-label="계약금을 이미 지급했습니다 아니요" />아니요</label>
+            </div>
           </fieldset>
           <fieldset>
             <legend className="field-label">계약서에 이미 서명했습니다</legend>
-            <label className="check-item"><input type="radio" name="signed" checked={signed} onChange={() => setSigned(true)} aria-label="계약서에 이미 서명했습니다 예" />예</label>
-            <label className="check-item"><input type="radio" name="signed" checked={!signed} onChange={() => setSigned(false)} aria-label="계약서에 이미 서명했습니다 아니요" />아니요</label>
+            <div className="choice-row">
+              <label className="check-item"><input type="radio" name="signed" checked={signed} onChange={() => setSigned(true)} aria-label="계약서에 이미 서명했습니다 예" />예</label>
+              <label className="check-item"><input type="radio" name="signed" checked={!signed} onChange={() => setSigned(false)} aria-label="계약서에 이미 서명했습니다 아니요" />아니요</label>
+            </div>
           </fieldset>
         </section>
 
@@ -103,7 +106,7 @@ export function ContractSituationPage() {
               <button className="secondary" type="button" onClick={clearDates}>아직 몰라요</button>
             </fieldset>
           ) : (
-            <button className="secondary" type="button" onClick={() => setShowDateInputs(true)}>날짜를 입력할게요</button>
+            <button className="secondary situation-date-toggle" type="button" onClick={() => setShowDateInputs(true)}>날짜를 입력할게요</button>
           )}
           <fieldset>
             <legend className="field-label">계약하는 사람<small>집주인 본인이 아닌 사람이 진행하는 경우를 말합니다.</small></legend>
@@ -113,6 +116,7 @@ export function ContractSituationPage() {
           </fieldset>
           {proxyStatus === "yes" && <div className="beginner-guide"><strong>계약 전에 확인해 주세요.</strong><ul><li>위임장</li><li>인감증명서</li></ul></div>}
         </section>
+        </div>
 
         {error && <p role="alert">{error}</p>}
         <button className="primary" type="submit">다음: 문서 준비하기</button>

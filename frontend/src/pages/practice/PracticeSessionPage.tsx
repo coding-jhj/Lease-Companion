@@ -19,6 +19,11 @@ import type {
 
 const money = new Intl.NumberFormat("ko-KR");
 
+// 데스크탑(2단)에서는 이전 대화를 기본으로 펼쳐 두고, 모바일(오버레이)에서는 접어 둔다.
+function isWideViewport() {
+  return typeof window !== "undefined" && Boolean(window.matchMedia?.("(min-width: 900px)").matches);
+}
+
 function elapsedSeconds(startedAt: number) {
   return Math.min(3600, Math.max(0, (Date.now() - startedAt) / 1000));
 }
@@ -46,8 +51,8 @@ function ContractReference({ scenario, open, onToggle }: {
           <div><dt>보증금</dt><dd>{money.format(contract.deposit)}원</dd></div>
           <div><dt>계약금</dt><dd>{money.format(contract.contract_payment)}원</dd></div>
           <div><dt>잔금</dt><dd>{money.format(contract.balance_payment)}원</dd></div>
-          <div className="practice-facts__wide"><dt>주택 주소</dt><dd>{contract.property_address}</dd></div>
-          <div className="practice-facts__wide"><dt>특약</dt><dd>{contract.special_clauses.join(" ")}</dd></div>
+          <div className="practice-facts__wide practice-facts__wide--aligned"><dt>주택 주소</dt><dd>{contract.property_address}</dd></div>
+          <div className="practice-facts__wide practice-facts__wide--aligned"><dt>특약</dt><dd>{contract.special_clauses.join(" ")}</dd></div>
         </dl>
       </section>
     </details>
@@ -70,7 +75,7 @@ export function PracticeSessionPage() {
   const [hintOpen, setHintOpen] = useState(false);
   const [contractOpen, setContractOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<PracticeSelectedAction | null>(null);
-  const [conversationOpen, setConversationOpen] = useState(false);
+  const [conversationOpen, setConversationOpen] = useState(isWideViewport);
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
   const [avatarAudioUrl, setAvatarAudioUrl] = useState<string | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
@@ -81,7 +86,7 @@ export function PracticeSessionPage() {
     setStatus("loading");
     setHintOpen(false);
     setContractOpen(false);
-    setConversationOpen(false);
+    setConversationOpen(isWideViewport());
     setSelectedAction(null);
     try {
       const loaded = await practiceService.getSession(sessionId);
@@ -327,51 +332,55 @@ export function PracticeSessionPage() {
             {!isActionSelection && session.current_turn && (
               <>
                 {scenario && <ContractReference scenario={scenario} open={contractOpen} onToggle={setContractOpen} />}
-                <PracticeAvatarStage
-                  scenarioId={scenario?.scenario_id ?? session.scenario_id}
-                  prompt={session.current_turn.prompt}
-                  pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
-                  hasUserInput={Boolean(answer.trim())}
-                  submitting={submitting}
-                  generatedVideoUrl={avatarVideoUrl}
-                  generatedAudioUrl={avatarAudioUrl}
-                  onGeneratedAudioEnded={handleAvatarAudioEnded}
-                  generatedSpeechText={avatarSpeechText}
-                  mediaStatus={avatarMedia?.status ?? null}
-                />
-                <section className="practice-dialogue practice-dialogue--composer" aria-label="현재 답변">
-                  <form className="practice-answer-composer" onSubmit={submitAnswer}>
-                    <div className="practice-answer-composer__row">
-                      <label htmlFor="practice-answer">말하기</label>
-                      <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="궁금한 내용이나 확인할 조건을 입력하세요…" disabled={submitting} />
-                      <button type="submit" className="primary" disabled={submitting || !answer.trim()}>{submitting ? "확인 중…" : "이렇게 말할게요"}</button>
-                    </div>
-                    <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
-                    <button type="button" className="secondary practice-answer-composer__skip" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
-                  </form>
-                  {!hintOpen && <button type="button" className="secondary" disabled={submitting} onClick={() => setHintOpen(true)}>말할 내용 힌트 보기</button>}
-                  {hintOpen && <PracticeHintPanel guide={mission.guide} prompt={session.current_turn.prompt} />}
-                  {evaluationNotice && (
-                    <>
-                      <p className="notice" role="alert">{evaluationNotice}</p>
-                      <div className="practice-dialogue-actions" aria-label="연습 계속하기">
-                        <button type="button" className="secondary" disabled={submitting} onClick={() => setLastResponse(null)}>다시 확인하기</button>
-                        <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue()}>다음 상황으로</button>
-                      </div>
-                    </>
-                  )}
-                </section>
-                <details className="practice-conversation-reference" onToggle={(event) => setConversationOpen(event.currentTarget.open)}>
-                  <summary>이전 대화 보기</summary>
-                  {conversationOpen && (
+                <div className={`practice-session-stage${conversationOpen ? " practice-session-stage--open" : ""}`}>
+                  <aside className="practice-conversation-drawer" aria-label="이전 대화">
                     <PracticeChatPanel
                       sessionId={session.practice_session_id}
                       currentTurn={session.current_turn}
                       latestTurn={latestConversationTurn}
                       refreshToken={conversationRefreshToken}
+                      onClose={() => setConversationOpen(false)}
                     />
-                  )}
-                </details>
+                  </aside>
+                  <div className="practice-session-stage__main">
+                    <PracticeAvatarStage
+                      scenarioId={scenario?.scenario_id ?? session.scenario_id}
+                      prompt={session.current_turn.prompt}
+                      pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
+                      hasUserInput={Boolean(answer.trim())}
+                      submitting={submitting}
+                      generatedVideoUrl={avatarVideoUrl}
+                      generatedAudioUrl={avatarAudioUrl}
+                      onGeneratedAudioEnded={handleAvatarAudioEnded}
+                      generatedSpeechText={avatarSpeechText}
+                      mediaStatus={avatarMedia?.status ?? null}
+                      onToggleConversation={() => setConversationOpen((open) => !open)}
+                      conversationOpen={conversationOpen}
+                    />
+                    <section className="practice-dialogue practice-dialogue--composer" aria-label="현재 답변">
+                      <form className="practice-answer-composer" onSubmit={submitAnswer}>
+                        <div className="practice-answer-composer__row">
+                          <label htmlFor="practice-answer">말하기</label>
+                          <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="궁금한 내용이나 확인할 조건을 입력하세요…" disabled={submitting} />
+                          <button type="submit" className="primary" disabled={submitting || !answer.trim()}>{submitting ? "확인 중…" : "이렇게 말할게요"}</button>
+                        </div>
+                        <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
+                        <button type="button" className="secondary practice-answer-composer__skip" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
+                      </form>
+                      {!hintOpen && <button type="button" className="secondary" disabled={submitting} onClick={() => setHintOpen(true)}>말할 내용 힌트 보기</button>}
+                      {hintOpen && <PracticeHintPanel guide={mission.guide} prompt={session.current_turn.prompt} />}
+                      {evaluationNotice && (
+                        <>
+                          <p className="notice" role="alert">{evaluationNotice}</p>
+                          <div className="practice-dialogue-actions" aria-label="연습 계속하기">
+                            <button type="button" className="secondary" disabled={submitting} onClick={() => setLastResponse(null)}>다시 확인하기</button>
+                            <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue()}>다음 상황으로</button>
+                          </div>
+                        </>
+                      )}
+                    </section>
+                  </div>
+                </div>
               </>
             )}
             {isActionSelection && (
