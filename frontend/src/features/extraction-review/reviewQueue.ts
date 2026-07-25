@@ -160,11 +160,6 @@ function hasValue(value: FieldValue): boolean {
   return true;
 }
 
-function hasSourceEvidence(view: FieldViewModel): boolean {
-  return view.field.source_evidence.page !== null
-    && Boolean(view.field.source_evidence.text?.trim());
-}
-
 function impactsFor(fieldName: string): ReviewImpact[] {
   const impacts: ReviewImpact[] = [];
   if (moneyFields.has(fieldName)) impacts.push("money");
@@ -202,9 +197,6 @@ function fieldReasons(view: FieldViewModel): string[] {
   }
   if (view.field.verification_status === "unresolved") {
     reasons.push("아직 확인하지 못한 내용이에요.");
-  }
-  if (hasValue(effectiveValue(view)) && !hasSourceEvidence(view)) {
-    reasons.push("계약서에서 직접 찾아 비교해 주세요.");
   }
   return reasons;
 }
