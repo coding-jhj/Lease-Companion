@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildReviewQueue } from "../../src/features/extraction-review/reviewQueue";
-import type { FieldViewModel } from "../../src/types/api";
+import {
+  buildReviewPlan,
+  buildReviewQueue,
+} from "../../src/features/extraction-review/reviewQueue";
+import type {
+  ExtractedFieldDto,
+  FieldValue,
+  FieldViewModel,
+} from "../../src/types/api";
 
 function field(
   fieldName: string,
@@ -23,6 +30,43 @@ function field(
       confidence: "실패",
       source_evidence: { page: null, text: null },
       issue_code: "unreadable",
+      failure_reason: null,
+    },
+  };
+}
+
+function reviewField(
+  fieldName: string,
+  options: {
+    value?: FieldValue;
+    documentType?: "contract" | "registry";
+    issueCode?: ExtractedFieldDto["issue_code"];
+    confidence?: ExtractedFieldDto["confidence"];
+    verificationStatus?: ExtractedFieldDto["verification_status"];
+    correctedValue?: FieldValue;
+    hasEvidence?: boolean;
+  } = {},
+): FieldViewModel {
+  const value = Object.hasOwn(options, "value") ? options.value! : "확인 값";
+  const documentType = options.documentType ?? "contract";
+  return {
+    key: `${documentType}:${fieldName}`,
+    document_type: documentType,
+    label: `${fieldName} 라벨`,
+    formattedValue: value === null ? "" : String(value),
+    editor: "scalar",
+    guidance: null,
+    field: {
+      field_name: fieldName,
+      extracted_value: value,
+      normalized_value: value,
+      user_corrected_value: options.correctedValue ?? null,
+      verification_status: options.verificationStatus ?? "unverified",
+      confidence: options.confidence ?? (value === null ? "실패" : "추출됨"),
+      source_evidence: options.hasEvidence === false
+        ? { page: null, text: null }
+        : { page: 1, text: "문서 원문" },
+      issue_code: options.issueCode ?? null,
       failure_reason: null,
     },
   };
@@ -90,5 +134,126 @@ describe("buildReviewQueue", () => {
         prompt: "추가 항목 내용이 계약서와 같나요?",
       },
     ]);
+  });
+});
+
+describe("buildReviewPlan", () => {
+  it("places fields into five sections and excludes not-applicable fields", () => {
+    const plan = buildReviewPlan([
+      reviewField("issue_date"),
+      reviewField("future_field", {
+        confidence: "불확실",
+        issueCode: "ambiguous",
+      }),
+      reviewField("repair_responsibility"),
+      reviewField("deposit"),
+      reviewField("owner_shares", {
+        value: null,
+        issueCode: "unreadable",
+      }),
+      reviewField("violation_building", {
+        value: null,
+        issueCode: "not_stated",
+      }),
+      reviewField("agent_name", {
+        value: null,
+        issueCode: "not_applicable",
+      }),
+    ]);
+
+    expect(plan.map((item) => [item.fieldName, item.section])).toEqual([
+      ["deposit", "money_direct"],
+      ["repair_responsibility", "dispute_direct"],
+      ["future_field", "suspected_issue"],
+      ["owner_shares", "manual_or_unreadable"],
+      ["violation_building", "manual_or_unreadable"],
+      ["issue_date", "grouped"],
+    ]);
+    expect(plan.find((item) => item.fieldName === "deposit")?.impacts).toEqual(["money"]);
+    expect(plan.find((item) => item.fieldName === "repair_responsibility")?.impacts).toEqual(["dispute"]);
+    expect(plan.find((item) => item.fieldName === "violation_building")?.reasons)
+      .toContain("다른 자료에서 직접 확인해야 합니다.");
+    expect(plan.some((item) => item.fieldName === "agent_name")).toBe(false);
+  });
+
+  it("keeps comparison signals as reasons without duplicating fields across sections", () => {
+    const plan = buildReviewPlan([
+      reviewField("property_address", { value: "서울시 101호" }),
+      reviewField("property_address", {
+        value: "서울시 102호",
+        documentType: "registry",
+      }),
+      reviewField("landlord_name", { value: "김임대" }),
+      reviewField("owner_names", {
+        value: ["박소유"],
+        documentType: "registry",
+      }),
+      reviewField("deposit", { value: 100_000_000 }),
+      reviewField("deposit_korean_amount", { value: 110_000_000 }),
+      reviewField("start_date", { value: "2027-12-31" }),
+      reviewField("end_date", { value: "2027-01-01" }),
+    ]);
+
+    expect(plan).toHaveLength(8);
+    expect(new Set(plan.map((item) => item.key)).size).toBe(8);
+    expect(plan.filter((item) => item.fieldName === "property_address"))
+      .toHaveLength(2);
+    expect(plan.filter((item) => item.fieldName === "property_address")
+      .every((item) => (
+        item.section === "dispute_direct"
+        && item.reasons.some((reason) => reason.includes("주소가 다르게"))
+      ))).toBe(true);
+    expect(plan.find((item) => item.fieldName === "landlord_name")).toMatchObject({
+      section: "money_direct",
+      impacts: ["money", "dispute"],
+    });
+    expect(plan.find((item) => item.fieldName === "landlord_name")?.reasons
+      .some((reason) => reason.includes("이름이 다르게"))).toBe(true);
+    expect(plan.find((item) => item.fieldName === "deposit")?.reasons)
+      .toContain("숫자 금액과 한글 금액이 다르게 읽혔습니다.");
+    expect(plan.find((item) => item.fieldName === "start_date")?.reasons)
+      .toContain("계약 시작일이 종료일보다 늦게 읽혔습니다.");
+  });
+
+  it("allows bulk confirmation only for normal evidenced unreviewed fields", () => {
+    const exactDuplicate = reviewField("issue_date");
+    const plan = buildReviewPlan([
+      exactDuplicate,
+      exactDuplicate,
+      reviewField("future_without_evidence", { hasEvidence: false }),
+      reviewField("future_failed", {
+        value: null,
+        confidence: "실패",
+        hasEvidence: false,
+      }),
+      reviewField("future_corrected", {
+        correctedValue: "사용자 수정",
+        verificationStatus: "corrected",
+      }),
+      reviewField("future_unresolved", {
+        issueCode: "not_stated",
+        verificationStatus: "unresolved",
+      }),
+    ]);
+
+    expect(plan.filter((item) => item.key === "contract:issue_date")).toHaveLength(1);
+    expect(plan.find((item) => item.fieldName === "issue_date")).toMatchObject({
+      section: "grouped",
+      bulkConfirmAllowed: true,
+    });
+    expect(plan.find((item) => item.fieldName === "future_without_evidence")).toMatchObject({
+      section: "suspected_issue",
+      bulkConfirmAllowed: false,
+    });
+    expect(plan.find((item) => item.fieldName === "future_failed")).toMatchObject({
+      section: "suspected_issue",
+      bulkConfirmAllowed: false,
+    });
+    expect(plan.find((item) => item.fieldName === "future_corrected")).toMatchObject({
+      section: "suspected_issue",
+      bulkConfirmAllowed: false,
+    });
+    expect(plan.find((item) => item.fieldName === "future_unresolved")?.bulkConfirmAllowed)
+      .toBe(false);
   });
 });

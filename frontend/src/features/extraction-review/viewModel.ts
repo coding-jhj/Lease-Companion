@@ -81,6 +81,11 @@ const externalConfirmationFields = new Set([
   "violation_building",
 ]);
 
+export function requiresExternalConfirmation(view: FieldViewModel): boolean {
+  return externalConfirmationFields.has(view.field.field_name)
+    && effectiveValue(view.field) === null;
+}
+
 const numericFields = new Set([
   "balance_payment", "contract_payment", "deposit", "estimated_housing_value",
   "management_fee", "monthly_rent", "senior_claim_amount",
@@ -140,10 +145,7 @@ export function extractionStatusMeta(view: FieldViewModel): ExtractionStatusMeta
   if (view.field.issue_code === "ambiguous") {
     return { label: "내용이 불확실함", tone: "unreviewed" };
   }
-  if (
-    externalConfirmationFields.has(view.field.field_name)
-    && effectiveValue(view.field) === null
-  ) {
+  if (requiresExternalConfirmation(view)) {
     return { label: "다른 자료에서 확인 필요", tone: "unreviewed" };
   }
 
@@ -174,7 +176,7 @@ export function reviewStatusMeta(
   const extractionStatus = extractionStatusMeta(view);
   if (
     view.field.issue_code !== null
-    || externalConfirmationFields.has(view.field.field_name)
+    || requiresExternalConfirmation(view)
     || view.field.confidence === "실패"
   ) {
     return extractionStatus;
