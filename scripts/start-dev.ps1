@@ -10,7 +10,7 @@
   구형 데모(scripts/run-minimum-mvp.ps1의 app.mvp_app)가 아니라 정식 app.main:app을 띄운다.
 
   터널은 이 스크립트가 아니라 별도 터미널에서 실행한다 (URL이 로그에 묻히지 않도록):
-    "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --url http://localhost:5173
+    cloudflared tunnel --url http://127.0.0.1:5173
 
 .PARAMETER Force
   백엔드 지정 포트/5173을 점유 중인 프로세스를 강제 종료하고 진행 (스테일 서버 정리).
