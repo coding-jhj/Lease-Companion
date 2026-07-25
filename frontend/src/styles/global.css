@@ -885,7 +885,8 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .result-card__question span { font-size: 15px; line-height: 1.6; }
 .action-hub__section-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: -15px -15px 0; padding: 10px 15px; border: 0; border-bottom: 1px solid #dbe6dd; border-radius: 14px 14px 0 0; background: #eef5f0; color: #1f4a30; text-align: left; }
 .action-hub__section-toggle:hover { background: #e3efe7; }
-.action-hub__group--foldable:not(.action-hub__group--open) .action-hub__section-toggle { border-bottom: 0; border-radius: 14px; margin-bottom: -15px; }
+.action-hub__group--foldable:not(.action-hub__group--open) { background: #eef5f0; }
+.action-hub__group--foldable:not(.action-hub__group--open) .action-hub__section-toggle { margin-bottom: -15px; border-bottom: 0; border-radius: 14px; background: transparent; }
 .action-hub__section-toggle h3 { flex: 1; margin: 0; font-size: 17px; }
 .action-hub__count { padding: 4px 10px; border-radius: 999px; background: #fff; color: #1f5b35; font-size: 13px; font-weight: 800; }
 .damage-table-fold > summary, .feedback-fold > summary { padding: 13px 14px; border: 1px solid #dce5dd; border-radius: 12px; background: #fff; color: #245c38; font-weight: 800; cursor: pointer; }
@@ -895,13 +896,13 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .section-heading p { margin-top: 8px !important; color: var(--ink); font-size: 15px; font-weight: 500; line-height: 1.6; }
 .section-heading h2 { margin-top: 4px; font-size: 22px; }
 .action-hub { display: grid; gap: 14px; }
-.action-hub__header { max-width: 860px; padding: 18px 20px; border: 1px solid #cfe0d4; border-left: 6px solid #2f7549; border-radius: 16px; background: #f4faf5; color: #1d3326; }
+.action-hub__header { max-width: 860px; margin-inline: auto; padding: 18px 20px; border: 1px solid #cfe0d4; border-left: 6px solid #2f7549; border-radius: 16px; background: #f4faf5; color: #1d3326; }
 .action-hub__header p, .action-hub__header h2, .action-hub__header span { margin: 0; }
 .action-hub__header p { color: #2f6743; font-size: 14px; font-weight: 800; }
 .action-hub__header h2 { margin: 0; color: #143b23; font-size: 22px; }
 .action-hub__header span { display: block; margin-top: 8px; color: var(--ink); font-size: 15px; line-height: 1.6; }
 .action-hub__grid { display: grid; gap: 12px; }
-.action-hub__group { max-width: 860px; padding: 15px; border: 1px solid #ded7ca; border-radius: 14px; background: #fffdf8; overflow: hidden; }
+.action-hub__group { max-width: 860px; margin-inline: auto; padding: 15px; border: 1px solid #ded7ca; border-radius: 14px; background: #fffdf8; overflow: hidden; }
 .action-hub__group--open { border-color: #8fbf9c; }
 .action-hub__group h3, .action-hub__group p { margin: 0; }
 .action-hub__group__head { display: flex; align-items: center; gap: 8px; }
