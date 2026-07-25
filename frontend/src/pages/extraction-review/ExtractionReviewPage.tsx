@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -12,9 +12,7 @@ import {
   clauseValues,
   correctionValue,
   fieldViewModels,
-  formatClauseText,
   reviewStatusMeta,
-  splitClausesForDisplay,
 } from "../../features/extraction-review/viewModel";
 import { mvpService } from "../../services/mvpService";
 import type {
@@ -88,39 +86,6 @@ function displayViewValue(view: FieldViewModel, drafts: Record<string, DraftValu
 function displayValue(item: ReviewQueueItem, drafts: Record<string, DraftValue>): string {
   return displayViewValue(item.view, drafts);
 }
-
-// 전체 내용 보기: 긴 조항 원문은 아코디언으로 분리, 나머지는 도메인별 카드로 묶는다.
-const CLAUSE_FIELDS = new Set([
-  "deposit_return_clause", "repair_responsibility_clause", "main_clauses", "special_clauses",
-]);
-
-const REVIEW_DOMAINS: Array<{ key: string; title: string }> = [
-  { key: "parties", title: "계약 당사자·목적물" },
-  { key: "money", title: "금액" },
-  { key: "schedule", title: "기간·일정" },
-  { key: "rights", title: "권리·등기" },
-  { key: "terms", title: "책임·특약" },
-  { key: "etc", title: "기타" },
-];
-
-const REVIEW_DOMAIN_BY_FIELD: Record<string, string> = {
-  landlord_name: "parties", tenant_name: "parties", agent_name: "parties",
-  agent_relationship: "parties", proxy_authority_documents: "parties", property_address: "parties",
-  owner_names: "parties", owner_shares: "parties", is_joint_ownership: "parties",
-  building_use: "parties", lessor_sublease_authority_confirmed: "parties",
-  deposit: "money", deposit_korean_amount: "money", contract_payment: "money",
-  contract_payment_korean_amount: "money", balance_payment: "money",
-  balance_payment_korean_amount: "money", monthly_rent: "money", monthly_rent_korean_amount: "money",
-  management_fee: "money", management_fee_items: "money", management_fee_present: "money",
-  account_holder: "money", account_number: "money", bank_name: "money",
-  start_date: "schedule", end_date: "schedule", move_in_date: "schedule",
-  contract_payment_date: "schedule", balance_payment_date: "schedule", issue_date: "schedule",
-  mortgage_present: "rights", seizure_present: "rights", provisional_seizure_present: "rights",
-  trust_present: "rights", ground_right_present: "rights", senior_claim_amount: "rights",
-  rights_change_clause_present: "rights", violation_building: "rights",
-  estimated_housing_value: "rights", guarantee_eligibility_confirmed: "rights",
-  deposit_return_condition: "terms", repair_responsibility: "terms", special_clauses_present: "terms",
-};
 
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
@@ -411,71 +376,11 @@ export function ExtractionReviewPage() {
     if (firstIndex !== -1) setCurrentIndex(firstIndex);
   }
 
-  function fieldTitle(view: FieldViewModel) {
-    return queue.find((item) => item.key === view.key)?.title ?? view.label;
-  }
-
   function fieldStatusMeta(view: FieldViewModel): { label: string; tone: string } {
     return reviewStatusMeta(view, {
       reviewed: reviewedKeys.includes(view.key),
       unresolved: unresolvedReasonByKey[view.key] !== undefined,
     });
-  }
-
-  function renderSourceDetails() {
-    const shortByDomain = new Map<string, FieldViewModel[]>();
-    const clauseFields: FieldViewModel[] = [];
-    for (const view of fields) {
-      if (CLAUSE_FIELDS.has(view.field.field_name)) {
-        clauseFields.push(view);
-        continue;
-      }
-      const domain = REVIEW_DOMAIN_BY_FIELD[view.field.field_name] ?? "etc";
-      const bucket = shortByDomain.get(domain) ?? [];
-      bucket.push(view);
-      shortByDomain.set(domain, bucket);
-    }
-    return (
-      <>
-        <div className="review-domain-flow">
-          {REVIEW_DOMAINS.filter((domain) => shortByDomain.has(domain.key)).map((domain) => (
-            <Fragment key={domain.key}>
-              <h3 className="review-domain-heading">{domain.title}</h3>
-              {shortByDomain.get(domain.key)!.map((view) => {
-                const meta = fieldStatusMeta(view);
-                return (
-                  <div className="review-field" key={view.key}>
-                    <div className="review-field__head">
-                      <strong>{fieldTitle(view)}</strong>
-                      <span className={`review-status-chip review-status-chip--${meta.tone}`}>{meta.label}</span>
-                    </div>
-                    <span className="review-field__value">{displayViewValue(view, drafts)}</span>
-                  </div>
-                );
-              })}
-            </Fragment>
-          ))}
-        </div>
-        {clauseFields.length > 0 && (
-          <section className="review-clause-section">
-            <h3>조항 원문</h3>
-            {clauseFields.map((view) => {
-              const items = clauseValues(view.field);
-              const raw = items.length ? items.join("\n") : displayViewValue(view, drafts);
-              const lines = splitClausesForDisplay(raw);
-              return (
-                <details className="review-clause" key={view.key}>
-                  <summary>{fieldTitle(view)}</summary>
-                  <ul className="review-clause__list">
-                    {lines.map((line, index) => <li key={index}>{formatClauseText(line)}</li>)}
-                  </ul>
-                </details>
-              );
-            })}
-          </section>
-        )}
-      </>
-    );
   }
 
   async function confirm() {
@@ -826,12 +731,6 @@ export function ExtractionReviewPage() {
               </section>
             )}
 
-            <details className="review-source-details">
-              <summary>문서에서 읽은 전체 내용 보기</summary>
-              <div className="review-source-details__body">
-                {renderSourceDetails()}
-              </div>
-            </details>
           </>
         )}
       </div>

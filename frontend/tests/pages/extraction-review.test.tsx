@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import contractExtractionFixture from "../../../data/sample/fixtures/case-001/contract_extraction.json";
@@ -271,40 +271,8 @@ describe("ExtractionReviewPage", () => {
 
     await screen.findByRole("heading", { name: "계약서 계약하려는 집 주소" });
     expect(screen.getAllByRole("article")).toHaveLength(1);
-    const disclosure = screen.getByText("문서에서 읽은 전체 내용 보기").closest("details");
-    expect(disclosure).not.toBeNull();
-    expect(within(disclosure!).getByText("계약서 주소")).toBeInTheDocument();
-    expect(within(disclosure!).getByText("등기 주소")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
     expect(await screen.findByRole("heading", { name: "등기사항증명서 계약하려는 집 주소" })).toBeInTheDocument();
-  });
-
-  it("labels unreadable, missing, not-applicable, and external-confirmation fields separately", async () => {
-    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
-      owner_shares: extractedField("owner_shares", null, { issue_code: "unreadable" }),
-      deposit: extractedField("deposit", null, { issue_code: "parse_failed" }),
-      account_holder: extractedField("account_holder", null, { issue_code: "not_stated" }),
-      agent_name: extractedField("agent_name", null, { issue_code: "not_applicable" }),
-      violation_building: extractedField("violation_building", null, { issue_code: "not_stated" }),
-      building_use: extractedField("building_use", null, {
-        confidence: "불확실",
-        issue_code: "ambiguous",
-      }),
-    }));
-
-    renderPage();
-
-    await screen.findByRole("progressbar");
-    fireEvent.click(screen.getByText("문서에서 읽은 전체 내용 보기"));
-    const disclosure = screen.getByText("문서에서 읽은 전체 내용 보기").closest("details");
-    expect(disclosure).not.toBeNull();
-    expect(within(disclosure!).getByText("글자를 읽지 못함")).toBeInTheDocument();
-    expect(within(disclosure!).getByText("내용 형식을 해석하지 못함")).toBeInTheDocument();
-    expect(within(disclosure!).getByText("문서에 적혀 있지 않음")).toBeInTheDocument();
-    expect(within(disclosure!).getByText("현재 계약에 해당하지 않음")).toBeInTheDocument();
-    expect(within(disclosure!).getByText("다른 자료에서 확인 필요")).toBeInTheDocument();
-    expect(within(disclosure!).getByText("내용이 불확실함")).toBeInTheDocument();
-    expect(within(disclosure!).queryByText("못 읽음")).not.toBeInTheDocument();
   });
 
   it("keeps edits and unresolved reasons when moving backward and shows the completion summary", async () => {
@@ -345,9 +313,6 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText(/확인하지 못한 내용도 결과에서 물어볼 항목으로 안내합니다/))
       .toBeInTheDocument();
     expect(screen.getByText("임대인 이름 · 확인할 위치를 찾기 어려움")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("문서에서 읽은 전체 내용 보기"));
-    expect(screen.getByRole("heading", { name: "계약 당사자·목적물" })).toBeInTheDocument();
   });
 
   it("sends only changed fields, then confirms, starts analysis, and navigates with the run id", async () => {
