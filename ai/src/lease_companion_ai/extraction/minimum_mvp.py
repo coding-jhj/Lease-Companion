@@ -22,7 +22,10 @@ _UNREADABLE = ("판독", "불가")
 _OWNER_NAME = r"[가-힣A-Za-z0-9㈜()]+"
 _PERSON_NAME = r"[가-힣A-Za-z㈜()]{2,30}"
 _ADDRESS_MARKERS = ("시", "도", "구", "군", "읍", "면", "동", "리", "로", "길")
-_NON_NAME_VALUES = {"주소", "주민등록번호", "전화", "성명", "서명", "날인"}
+_NON_NAME_VALUES = {
+    "주소", "주민등록번호", "전화", "성명", "서명", "날인",
+    "부담", "전입신고", "소유자", "본인", "쌍방", "해당없음",
+}
 _ADDRESS_TRAILING_FIELD = re.compile(
     r"\s+(?=(?:건물\s*내역|등기원인(?:\s*및)?\s*기타사항|기타\s*사항|"
     r"구조[·ㆍ]?용도|면적\s*[:：]?|철근콘크리트|벽돌조|블록조|목조|"
@@ -205,6 +208,15 @@ def _standalone_name_near_signature(block: str) -> str | None:
 
 def _extract_party_name(text: str, role: str, block_end: str) -> str | None:
     spaced_role = r"\s*".join(role)
+    # 최우선: "임대인( 황안심 )과 임차인( 김고운 )"처럼 역할 바로 뒤 괄호 안 이름.
+    # 표준계약서 서두 선언·서명란·영수자에 반복 등장하며 절 본문("임대인부담")보다 앞선다.
+    paren_name = _first(
+        (rf"{spaced_role}\s*\(\s*([가-힣]{{2,4}})\s*\)",),
+        text,
+        re.MULTILINE,
+    )
+    if paren_name and paren_name not in _NON_NAME_VALUES:
+        return paren_name
     direct = _first(
         (
             rf"{spaced_role}(?:\s*\([^\n)]*\))?\s*[:：]?\s*"
@@ -439,10 +451,13 @@ def _building_use(text: str) -> str | None:
         "오피스텔",
         "아파트",
     )
-    for line in text.splitlines():
-        if not re.search(r"구조\s*[·ㆍ/]?\s*용도|건축물\s*용도", line):
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if not re.search(r"구조\s*[·ㆍ‧/]?\s*용도|건축물\s*용도", line):
             continue
-        compact = re.sub(r"\s+", "", line)
+        # PyMuPDF가 '철근콘크리트구'+'조 공동주택'처럼 용도 값을 다음 줄로 흘려보내므로
+        # 구조·용도 행과 이어지는 두 줄까지 합쳐서 본다.
+        compact = re.sub(r"\s+", "", " ".join(lines[index : index + 3]))
         for usage in known_uses:
             if re.sub(r"\s+", "", usage) in compact:
                 return usage
