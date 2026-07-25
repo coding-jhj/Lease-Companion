@@ -1,4 +1,4 @@
-import { clauseValues } from "./viewModel";
+import { clauseValues, extractionStatusMeta } from "./viewModel";
 import type { FieldViewModel, VerificationStatus } from "../../types/api";
 
 type DraftValue = string | string[];
@@ -8,16 +8,6 @@ const verificationLabels: Record<VerificationStatus, string> = {
   confirmed: "확인됨",
   corrected: "수정됨",
   unresolved: "확인하지 못함",
-};
-
-// issue_code가 있으면 칩 문구를 정확한 상태로 교체한다(요소 추가 없이 confidence 칩 텍스트만 바꿈).
-// 색은 confidence 클래스로 유지 — 미기재/판독 실패를 같은 "실패"로 뭉뚱그리지 않는다.
-const issueStateLabels: Record<string, string> = {
-  not_stated: "미기재",
-  unreadable: "판독 실패",
-  ambiguous: "모호",
-  parse_failed: "형식 오류",
-  not_applicable: "적용 제외",
 };
 
 const troubleshootingLocations: Record<string, string> = {
@@ -149,9 +139,7 @@ export function ExtractionFieldCard({
       <div className="field-card__meta">
         <strong>{view.label}</strong>
         <span className={`confidence confidence--${view.field.confidence}`}>
-          {["guarantee_eligibility_confirmed", "lessor_sublease_authority_confirmed"].includes(view.field.field_name)
-            ? "직접 확인"
-            : view.field.issue_code ? issueStateLabels[view.field.issue_code] ?? view.field.confidence : view.field.confidence}
+          {extractionStatusMeta(view).label}
         </span>
         <span className={`verification verification--${verification}`}>{verificationLabels[verification]}</span>
       </div>

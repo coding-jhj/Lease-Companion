@@ -73,6 +73,14 @@ const reviewGuidance: Record<string, string> = {
   violation_building: "최신 건축물대장의 위반건축물 표시를 직접 확인하는 항목입니다.",
 };
 
+const externalConfirmationFields = new Set([
+  "estimated_housing_value",
+  "guarantee_eligibility_confirmed",
+  "lessor_sublease_authority_confirmed",
+  "senior_claim_amount",
+  "violation_building",
+]);
+
 const numericFields = new Set([
   "balance_payment", "contract_payment", "deposit", "estimated_housing_value",
   "management_fee", "monthly_rent", "senior_claim_amount",
@@ -112,6 +120,66 @@ const proxyFields = new Set(["agent_name", "agent_relationship", "proxy_authorit
 
 function effectiveValue(field: ExtractedFieldDto): FieldValue {
   return field.user_corrected_value ?? field.normalized_value ?? field.extracted_value;
+}
+
+export interface ExtractionStatusMeta {
+  label: string;
+  tone: "reviewed" | "unreviewed" | "unread";
+}
+
+export function extractionStatusMeta(view: FieldViewModel): ExtractionStatusMeta {
+  if (view.field.issue_code === "unreadable") {
+    return { label: "글자를 읽지 못함", tone: "unread" };
+  }
+  if (view.field.issue_code === "parse_failed") {
+    return { label: "내용 형식을 해석하지 못함", tone: "unread" };
+  }
+  if (view.field.issue_code === "not_applicable") {
+    return { label: "현재 계약에 해당하지 않음", tone: "unreviewed" };
+  }
+  if (view.field.issue_code === "ambiguous") {
+    return { label: "내용이 불확실함", tone: "unreviewed" };
+  }
+  if (
+    externalConfirmationFields.has(view.field.field_name)
+    && effectiveValue(view.field) === null
+  ) {
+    return { label: "다른 자료에서 확인 필요", tone: "unreviewed" };
+  }
+
+  switch (view.field.issue_code) {
+    case "not_stated":
+      return { label: "문서에 적혀 있지 않음", tone: "unreviewed" };
+    default:
+      return view.field.confidence === "실패"
+        ? { label: "확인 필요", tone: "unread" }
+        : { label: view.field.confidence, tone: "unreviewed" };
+  }
+}
+
+export function reviewStatusMeta(
+  view: FieldViewModel,
+  state: { reviewed: boolean; unresolved: boolean },
+): ExtractionStatusMeta {
+  if (state.unresolved || view.field.verification_status === "unresolved") {
+    return { label: "확인하지 못함", tone: "unread" };
+  }
+  if (view.field.verification_status === "corrected") {
+    return { label: "수정함", tone: "reviewed" };
+  }
+  if (state.reviewed || view.field.verification_status === "confirmed") {
+    return { label: "확인함", tone: "reviewed" };
+  }
+
+  const extractionStatus = extractionStatusMeta(view);
+  if (
+    view.field.issue_code !== null
+    || externalConfirmationFields.has(view.field.field_name)
+    || view.field.confidence === "실패"
+  ) {
+    return extractionStatus;
+  }
+  return { label: "미확인", tone: "unreviewed" };
 }
 
 function hasDisplayValue(field: ExtractedFieldDto | undefined): boolean {

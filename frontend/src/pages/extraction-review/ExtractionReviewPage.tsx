@@ -12,6 +12,7 @@ import {
   correctionValue,
   fieldViewModels,
   formatClauseText,
+  reviewStatusMeta,
   splitClausesForDisplay,
 } from "../../features/extraction-review/viewModel";
 import { mvpService } from "../../services/mvpService";
@@ -300,9 +301,10 @@ export function ExtractionReviewPage() {
   }
 
   function fieldStatusMeta(view: FieldViewModel): { label: string; tone: string } {
-    if (reviewedKeys.includes(view.key)) return { label: "확인함", tone: "reviewed" };
-    if (view.field.confidence === "실패") return { label: "못 읽음", tone: "unread" };
-    return { label: "미확인", tone: "unreviewed" };
+    return reviewStatusMeta(view, {
+      reviewed: reviewedKeys.includes(view.key),
+      unresolved: unresolvedReasonByKey[view.key] !== undefined,
+    });
   }
 
   function renderSourceDetails() {

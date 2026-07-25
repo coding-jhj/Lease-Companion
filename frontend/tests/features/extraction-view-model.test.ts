@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   correctionValue,
+  extractionStatusMeta,
   fieldViewModels,
   formatFieldValue,
+  reviewStatusMeta,
   splitClauseText,
 } from "../../src/features/extraction-review/viewModel";
 import type {
@@ -38,6 +40,79 @@ const ownerSharesField: ExtractedFieldDto = {
 };
 
 describe("J structured field values", () => {
+  it("distinguishes extraction issues instead of labeling every failed-confidence field unreadable", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-STATUS",
+      document_type: "contract",
+      warnings: [],
+      fields: {
+        unreadable: {
+          ...extractedField("owner_shares", null),
+          issue_code: "unreadable",
+        },
+        parse_failed: {
+          ...extractedField("deposit", null),
+          issue_code: "parse_failed",
+        },
+        not_stated: {
+          ...extractedField("account_holder", null),
+          issue_code: "not_stated",
+        },
+        not_applicable: {
+          ...extractedField("agent_name", null),
+          issue_code: "not_applicable",
+        },
+        external_confirmation: {
+          ...extractedField("violation_building", null),
+          issue_code: "not_stated",
+        },
+        ambiguous: {
+          ...extractedField("building_use", null),
+          confidence: "불확실",
+          issue_code: "ambiguous",
+        },
+      },
+    };
+
+    const statusByField = Object.fromEntries(
+      fieldViewModels([document]).map((view) => [
+        view.field.field_name,
+        extractionStatusMeta(view).label,
+      ]),
+    );
+
+    expect(statusByField).toMatchObject({
+      owner_shares: "글자를 읽지 못함",
+      deposit: "내용 형식을 해석하지 못함",
+      account_holder: "문서에 적혀 있지 않음",
+      agent_name: "현재 계약에 해당하지 않음",
+      violation_building: "다른 자료에서 확인 필요",
+      building_use: "내용이 불확실함",
+    });
+  });
+
+  it("shows user review state before extraction state", () => {
+    const document: DocumentExtractionDto = {
+      schema_version: "1.9.0",
+      document_id: "DOC-REVIEW-STATUS",
+      document_type: "registry",
+      warnings: [],
+      fields: {
+        owner_shares: {
+          ...extractedField("owner_shares", null),
+          verification_status: "unresolved",
+        },
+      },
+    };
+    const view = fieldViewModels([document])[0];
+
+    expect(reviewStatusMeta(view, { reviewed: true, unresolved: false }).label)
+      .toBe("확인하지 못함");
+    expect(reviewStatusMeta(view, { reviewed: false, unresolved: true }).label)
+      .toBe("확인하지 못함");
+  });
+
   it("uses Korean display labels without exposing canonical English field names", () => {
     const document: DocumentExtractionDto = {
       schema_version: "1.9.0",
