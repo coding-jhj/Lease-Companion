@@ -113,11 +113,21 @@ def queue_practice_media_job(
             "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.0")),
             "musetalk_version": os.getenv("MUSETALK_VERSION", "v15"),
             "musetalk_batch_size": int(os.getenv("MUSETALK_BATCH_SIZE", "12")),
+            "musetalk_extra_margin": int(
+                os.getenv("MUSETALK_EXTRA_MARGIN", "8")
+            ),
+            "musetalk_parsing_mode": os.getenv("MUSETALK_PARSING_MODE", "jaw"),
+            "musetalk_left_cheek_width": int(
+                os.getenv("MUSETALK_LEFT_CHEEK_WIDTH", "80")
+            ),
+            "musetalk_right_cheek_width": int(
+                os.getenv("MUSETALK_RIGHT_CHEEK_WIDTH", "80")
+            ),
             "speech_truncated": speech_text != full_dialogue,
             "source_character_count": len(full_dialogue),
             "speech_character_count": len(speech_text),
             "max_audio_seconds": float(
-                os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "5.5")
+                os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "9")
             ),
             "target_total_seconds": float(
                 os.getenv("PRACTICE_MEDIA_TARGET_SECONDS", "15")

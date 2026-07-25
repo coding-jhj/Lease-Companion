@@ -28,6 +28,10 @@ def test_generate_video_supports_separate_source_and_asset_roots(
     monkeypatch.setenv("MUSETALK_UNET_MODEL_PATH", str(unet_model))
     monkeypatch.setenv("MUSETALK_UNET_CONFIG", str(unet_config))
     monkeypatch.setenv("MUSETALK_PYTHON", "musetalk-python")
+    monkeypatch.setenv("MUSETALK_EXTRA_MARGIN", "8")
+    monkeypatch.setenv("MUSETALK_PARSING_MODE", "jaw")
+    monkeypatch.setenv("MUSETALK_LEFT_CHEEK_WIDTH", "80")
+    monkeypatch.setenv("MUSETALK_RIGHT_CHEEK_WIDTH", "80")
     monkeypatch.delenv("PYTHONPATH", raising=False)
 
     captured: dict[str, Path] = {}
@@ -62,6 +66,10 @@ def test_generate_video_supports_separate_source_and_asset_roots(
     ]
     assert command[command.index("--musetalk-root") + 1] == str(source_root)
     assert command[command.index("--asset-root") + 1] == str(asset_root)
+    assert command[command.index("--extra-margin") + 1] == "8"
+    assert command[command.index("--parsing-mode") + 1] == "jaw"
+    assert command[command.index("--left-cheek-width") + 1] == "80"
+    assert command[command.index("--right-cheek-width") + 1] == "80"
 
 
 def test_avatar_speech_text_keeps_full_first_sentence(monkeypatch) -> None:

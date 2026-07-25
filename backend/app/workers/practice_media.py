@@ -205,13 +205,13 @@ class _PersistentMuseTalkClient:
             "--bbox-shift",
             os.getenv("MUSETALK_BBOX_SHIFT", "0"),
             "--extra-margin",
-            os.getenv("MUSETALK_EXTRA_MARGIN", "10"),
+            os.getenv("MUSETALK_EXTRA_MARGIN", "8"),
             "--parsing-mode",
             os.getenv("MUSETALK_PARSING_MODE", "jaw"),
             "--left-cheek-width",
-            os.getenv("MUSETALK_LEFT_CHEEK_WIDTH", "90"),
+            os.getenv("MUSETALK_LEFT_CHEEK_WIDTH", "80"),
             "--right-cheek-width",
-            os.getenv("MUSETALK_RIGHT_CHEEK_WIDTH", "90"),
+            os.getenv("MUSETALK_RIGHT_CHEEK_WIDTH", "80"),
             "--video-encoder",
             os.getenv("MUSETALK_VIDEO_ENCODER", "h264_nvenc"),
             "--ready-path",
@@ -438,7 +438,7 @@ def _generate_audio(speech_text: str, settings: dict, output_path: Path) -> None
 
 
 def _cap_audio_duration(output_path: Path) -> None:
-    max_seconds = float(os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "5.5"))
+    max_seconds = float(os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "9"))
     with wave.open(str(output_path), "rb") as audio:
         duration = audio.getnframes() / audio.getframerate()
     if duration <= max_seconds:
