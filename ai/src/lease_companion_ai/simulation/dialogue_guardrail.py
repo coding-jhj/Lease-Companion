@@ -50,7 +50,7 @@ def validate_grounded_dialogue(
         _fail("unapproved_fact")
 
     text = result.response_text.strip()
-    if len(text) > 100:
+    if len(text) > 60:
         _fail("too_long")
     if len(_SENTENCE_END.findall(text)) > 2:
         _fail("too_many_sentences")

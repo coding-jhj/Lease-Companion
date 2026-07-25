@@ -191,9 +191,9 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
-    # 화면 대사는 다음 TURN prompt 전체를 유지하되, 아바타 음성은 같은 문장을 짧게 잘라 읽는다(결합)
-    _prompt = response.json()["session"]["current_turn"]["prompt"]
-    assert media["speech_text"] == avatar_speech_text(_prompt)
+    # 화면 큰 대사는 직전 답변에 대한 응답(dialogue_response) 전체를 유지하되, 아바타 음성은 같은 문장을 짧게 잘라 읽는다
+    _dialogue = response.json()["dialogue_response"]
+    assert media["speech_text"] == avatar_speech_text(_dialogue.strip())
     assert media["audio_url"] is None
     assert media["video_url"] is None
     assert launched_job_ids == [

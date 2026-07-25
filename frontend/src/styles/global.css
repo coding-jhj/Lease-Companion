@@ -644,8 +644,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-avatar-stage__caption div { flex: 1 1 auto; min-width: 0; }
 .practice-avatar-stage__caption p { margin: 0 0 5px; color: #42634c; font-size: 12px; font-weight: 900; }
 .practice-avatar-stage__caption h2 { margin: 0; font-size: 18px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word; }
-.practice-avatar-stage__next-prompt { margin-top: 14px; }
-.practice-avatar-stage__next-prompt h3 { margin: 0; font-size: 18px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word; }
 .practice-avatar-stage__media-state { display: block; margin-top: 8px; color: #42634c; font-size: 12px; font-weight: 700; }
 .practice-avatar-stage__caption button { flex: 0 0 auto; width: auto; min-height: 42px; padding: 9px 13px; white-space: nowrap; }
 .practice-avatar-stage__caption .practice-avatar-stage__controls { display: flex; flex: 0 0 auto; gap: 8px; min-width: auto; }
@@ -657,7 +655,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-dialogue--composer { display: grid; gap: 12px; padding: 14px 16px; }
 /* 연습 스테이지: 기본 아바타만, 대화 열면 데스크탑 2단 / 모바일 전체화면 오버레이 */
 .practice-session-stage { display: grid; gap: 14px; min-width: 0; }
-.practice-session-stage__main { display: grid; gap: 14px; min-width: 0; }
+.practice-session-stage__main { display: grid; gap: 14px; min-width: 0; align-content: start; }
 .practice-conversation-drawer { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; overflow: hidden; border: 1px solid #d7e0d8; border-radius: 14px; background: #fff; }
 .practice-conversation-drawer .practice-chat { margin: 0; border: 0; border-radius: 0; background: transparent; }
 .practice-drawer-tabs { display: flex; align-items: center; gap: 4px; padding: 8px; border-bottom: 1px solid #e1e8e2; }

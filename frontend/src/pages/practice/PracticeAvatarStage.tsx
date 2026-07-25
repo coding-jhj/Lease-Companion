@@ -18,7 +18,6 @@ interface PracticeAvatarStageProps {
   hasUserInput: boolean;
   submitting: boolean;
   generatedVideoUrl?: string | null;
-  nextPrompt?: string | null;
   mediaStatus?: PracticeMediaStatus | null;
   onToggleConversation?: () => void;
   conversationOpen?: boolean;
@@ -31,7 +30,6 @@ export function PracticeAvatarStage({
   hasUserInput,
   submitting,
   generatedVideoUrl = null,
-  nextPrompt = null,
   mediaStatus = null,
   onToggleConversation,
   conversationOpen = false,
@@ -159,12 +157,6 @@ export function PracticeAvatarStage({
         <div>
           <p>공인중개사</p>
           <h2 id="practice-avatar-title">{prompt}</h2>
-          {nextPrompt && nextPrompt !== prompt && (
-            <div className="practice-avatar-stage__next-prompt">
-              <p>이어서 확인할 내용</p>
-              <h3>{nextPrompt}</h3>
-            </div>
-          )}
           {(mediaStatus === "queued" || mediaStatus === "generating_audio" || mediaStatus === "generating_video") && (
             <span className="practice-avatar-stage__media-state" role="status">
               {mediaStatus === "queued" && "아바타 응답을 준비하고 있습니다."}

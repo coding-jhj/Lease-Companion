@@ -340,7 +340,7 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByText("대화의 시작입니다")).toBeInTheDocument();
   });
 
-  it("logs the avatar headline prompt once per turn with the user answers", async () => {
+  it("logs each turn prompt once with the user answers and broker reactions", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     vi.mocked(practiceService.getMessages).mockResolvedValue({
       items: [
@@ -371,14 +371,15 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(await screen.findByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
 
-    // 중개사 말풍선은 아바타 큰 대사(prompt)와 같은 문장이며, 같은 TURN 재시도에서는 한 번만 남는다
+    // 이어서 답할 질문(prompt)은 같은 TURN 재시도에서 한 번만 남는다
     const openingPrompt = within(conversation).getByText("계약을 바로 진행하시겠습니까?");
     const firstAnswer = within(conversation).getByText("조건이 마음에 들지 않습니다.");
     expect(openingPrompt.compareDocumentPosition(firstAnswer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(1);
     expect(within(conversation).getByText("보증금 반환 시점을 묻는 겁니다.")).toBeInTheDocument();
-    // 중개사 반응(dialogue_response)은 아바타 화면 보조 슬롯에만 둔다
-    expect(within(conversation).queryByText("어떤 계약 내용을 물으시는지 말씀해 주세요.")).toBeNull();
+    // 답변마다 중개사 반응(dialogue_response)이 대화 기록에 남는다
+    expect(within(conversation).getByText("어떤 계약 내용을 물으시는지 말씀해 주세요.")).toBeInTheDocument();
+    expect(within(conversation).getByText("다음 세입자가 들어오면 반환한다고 들었습니다.")).toBeInTheDocument();
   });
 
   it("restores the current turn, submits an answer, and renders the next turn", async () => {
@@ -396,16 +397,14 @@ describe("PracticeSessionPage", () => {
       timed_out: false,
     })));
     expect(await screen.findByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
-    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "권한 자료도 필요할까요?" })).toBeInTheDocument();
+    expect(screen.queryByText("이어서 확인할 내용")).toBeNull();
     expect(screen.getByText("확인 행동 1 / 3")).toBeInTheDocument();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     expect(await screen.findByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
-    expect(screen.getAllByText("권한 자료도 필요할까요?")).toHaveLength(1);
-    // 대화 기록에는 답변한 TURN의 큰 대사가 남고, 중개사 반응은 아바타 화면에만 있다
+    // 대화 기록에는 답변한 TURN의 질문(prompt)과 중개사 반응(dialogue_response)이 함께 남는다
     const log = screen.getByRole("tabpanel", { name: "지금까지의 대화" });
     expect(within(log).getByText("계약을 바로 진행하시겠습니까?")).toBeInTheDocument();
-    expect(within(log).queryByText("확인 요청을 반영했습니다.")).toBeNull();
+    expect(within(log).getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
 
@@ -474,10 +473,7 @@ describe("PracticeSessionPage", () => {
         name: "답변이 없으면 기존 특약 문구를 유지하겠습니다.",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" }),
-    ).toBeInTheDocument();
+    expect(screen.queryByText("이어서 확인할 내용")).toBeNull();
   });
 
   it("explains a provider review fallback and allows the same turn to be retried", async () => {
@@ -488,14 +484,13 @@ describe("PracticeSessionPage", () => {
     fireEvent.change(await screen.findByLabelText("내 답변"), { target: { value: "자료를 확인하겠습니다." } });
     fireEvent.click(screen.getByRole("button", { name: "이렇게 말할게요" }));
 
-    // 큰 대사는 지금 답해야 할 중개사 대사, 보조 슬롯이 직전 답변에 대한 응답
-    expect(await screen.findByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "답변을 다시 말씀해 주세요." })).toBeInTheDocument();
-    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
+    // 큰 대사는 직전 답변에 대한 응답(dialogue_response). 보조 슬롯("이어서 확인할 내용")은 제거됨
+    expect(await screen.findByRole("heading", { name: "답변을 다시 말씀해 주세요." })).toBeInTheDocument();
+    expect(screen.queryByText("이어서 확인할 내용")).toBeNull();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
     expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(1);
-    expect(within(conversation).queryByText("답변을 다시 말씀해 주세요.")).toBeNull();
+    expect(within(conversation).getByText("답변을 다시 말씀해 주세요.")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "답변을 확인하지 못했습니다. 입력한 내용은 잘못된 답변으로 처리하지 않았습니다. 연습은 계속할 수 있습니다.",
     );
