@@ -38,6 +38,16 @@ function resultScope(item: ReportResultDto) {
   return "조항 분류 판정";
 }
 
+// 상태 칩 색. 결과 상태 9개를 화면 톤 3개로만 나눈다(판정 자체는 바꾸지 않는다).
+const WARN_STATUSES = new Set(["불일치", "불명확", "미기재", "상충 가능"]);
+const OK_STATUSES = new Set(["일치", "명확"]);
+
+function statusTone(status: string): "warn" | "ok" | "neutral" {
+  if (WARN_STATUSES.has(status)) return "warn";
+  if (OK_STATUSES.has(status)) return "ok";
+  return "neutral";
+}
+
 export function cannotJudgeNow(item: ReportResultDto) {
   return item.status === "확인 불가"
     || item.status === "적용 제외"
@@ -56,7 +66,7 @@ function ResultCard({ item, idPrefix, action, anchorId }: {
     <article className="result-card" id={anchorId}>
       <div className="result-card__meta">
         {action && <span>{action.timing}</span>}
-        <span className="result-card__status">{item.status}</span>
+        <span className="result-card__status" data-tone={statusTone(item.status)}>{item.status}</span>
       </div>
       <h3>{resultName(item)}</h3>
       <p>{action?.reason ?? item.reason}</p>

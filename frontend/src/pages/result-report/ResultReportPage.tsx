@@ -203,7 +203,6 @@ export function ResultReportPage() {
               <section className="damage-reference-section stack" aria-labelledby="damage-reference-title">
                 <div className="section-heading">
                   <h2 id="damage-reference-title">비슷한 상황에서 확인할 점</h2>
-                  <p>공식 근거와 검증된 참고 사례는 서로 구분해 확인하세요</p>
                 </div>
                 <DetectedSignalSection patterns={damagePatterns} guidance={allGuidance} />
                 <details className="damage-table-fold">

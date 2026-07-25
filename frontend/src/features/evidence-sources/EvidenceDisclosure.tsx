@@ -4,15 +4,42 @@ const SECTION_HEADING_PATTERN = /^\[[^\]]+\]$/;
 const ARTICLE_PATTERN = /^(제\d+조(?:의\d+)?(?:\([^)]*\))?)\s*(.*)$/;
 const BULLET_PATTERN = /^[·•]\s*(.*)$/;
 
+const PREVIEW_LINE_COUNT = 3;
+
 function EvidenceSummary({ summary }: { summary: string }) {
-  const lines = summary
+  const allLines = summary
     .replace(/\r\n?/g, "\n")
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+  // "# 기관:", "# 출처:" 같은 자료 표기는 조문과 분리해 접는다.
+  const metaLines = allLines.filter((line) => line.startsWith("#"));
+  const bodyLines = allLines.filter((line) => !line.startsWith("#"));
+  const previewLines = bodyLines.slice(0, PREVIEW_LINE_COUNT);
+  const restLines = bodyLines.slice(PREVIEW_LINE_COUNT);
 
   return (
-    <div className="evidence-summary__content">
+    <>
+      {renderLines(previewLines, "evidence-summary__content")}
+      {restLines.length > 0 && (
+        <details className="evidence-summary__more">
+          <summary>원문 더 보기 ({restLines.length}줄)</summary>
+          {renderLines(restLines, "evidence-summary__content evidence-summary__rest")}
+        </details>
+      )}
+      {metaLines.length > 0 && (
+        <details className="evidence-summary__meta">
+          <summary>자료 정보 ({metaLines.length}줄)</summary>
+          {renderLines(metaLines, "evidence-summary__content evidence-summary__rest")}
+        </details>
+      )}
+    </>
+  );
+}
+
+function renderLines(lines: string[], className: string) {
+  return (
+    <div className={className}>
       {lines.map((line, index) => {
         if (SECTION_HEADING_PATTERN.test(line)) {
           return <h5 key={`${index}-${line}`}>{line}</h5>;

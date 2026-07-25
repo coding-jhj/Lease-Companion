@@ -18,56 +18,73 @@ const statusClass: Record<DamagePatternStatus, string> = {
   "예방 확인 필요": "preventive",
 };
 
+function PatternRow({ item }: { item: DamagePatternComparisonDto }) {
+  const guide = guideForPattern(item);
+  return (
+    <div className="damage-patterns__row" role="row">
+      <strong role="cell">{item.pattern_name}</strong>
+      <span role="cell" className={`damage-patterns__status damage-patterns__status--${statusClass[item.status]}`}>{item.status}</span>
+      <div role="cell">
+        <p>{item.reason}</p>
+        <details><summary>근거와 분석 한계</summary>
+          <EvidenceDisclosure
+            sources={item.official_sources}
+            limitations={item.limitations}
+            explanation={guide.explanation}
+            financialImpact={guide.financialImpact}
+            idPrefix={`damage-pattern-${item.pattern_id}`}
+          />
+          {item.reference_cases.length > 0
+            ? (
+              <section aria-label={`${item.pattern_name} 검증된 유사 참고 사례`}>
+                <h3>검증된 유사 참고 사례</h3>
+                <ul className="reference-case-list">
+                  {item.reference_cases.map((reference) => (
+                    <li key={reference.reference_case_id}>
+                      <a href={reference.source_url} target="_blank" rel="noreferrer">{reference.title}</a>
+                      <p>{reference.summary}</p>
+                      <small>{reference.publisher} · {reference.verification_scope}</small>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+            : <p className="empty-note">현재 비교 상태에 연결된 검증 사례가 없습니다.</p>}
+        </details>
+      </div>
+    </div>
+  );
+}
+
 export function DamagePatternTable({ items }: { items: DamagePatternComparisonDto[] }) {
   if (items.length === 0) return null;
+  // 지금 확인할 게 있는 줄만 먼저 보여준다. 자료가 없어 판단 못 한 줄은 접는다.
+  const unresolvedStatuses = new Set<DamagePatternStatus>([
+    "자료 부족으로 확인 불가",
+    "제출 자료에서 관련 신호 미확인",
+  ]);
+  const actionable = items.filter((item) => !unresolvedStatuses.has(item.status));
+  const rest = items.filter((item) => unresolvedStatuses.has(item.status));
   return (
     <section className="damage-patterns" aria-labelledby="damage-pattern-title">
       <div className="section-heading">
-        <p>현재 제출된 계약서와 등기사항증명서 범위에서 비교합니다</p>
         <h2 id="damage-pattern-title">주요 금전피해 유형 비교</h2>
+        <p>현재 제출된 계약서와 등기사항증명서 범위에서 비교합니다</p>
       </div>
       <div className="damage-patterns__table" role="table" aria-label="주요 금전피해 유형 비교">
         <div className="damage-patterns__row damage-patterns__head" role="row">
           <span role="columnheader">피해 유형</span><span role="columnheader">분석 결과</span><span role="columnheader">판단 근거</span>
         </div>
-        {items.map((item) => {
-          const guide = guideForPattern(item);
-          return (
-          <div className="damage-patterns__row" role="row" key={item.pattern_id}>
-            <strong role="cell">{item.pattern_name}</strong>
-            <span role="cell" className={`damage-patterns__status damage-patterns__status--${statusClass[item.status]}`}>{item.status}</span>
-            <div role="cell">
-              <p>{item.reason}</p>
-              <details><summary>근거와 분석 한계</summary>
-                <EvidenceDisclosure
-                  sources={item.official_sources}
-                  limitations={item.limitations}
-                  explanation={guide.explanation}
-                  financialImpact={guide.financialImpact}
-                  idPrefix={`damage-pattern-${item.pattern_id}`}
-                />
-                {item.reference_cases.length > 0
-                  ? (
-                    <section aria-label={`${item.pattern_name} 검증된 유사 참고 사례`}>
-                      <h3>검증된 유사 참고 사례</h3>
-                      <ul className="reference-case-list">
-                        {item.reference_cases.map((reference) => (
-                          <li key={reference.reference_case_id}>
-                            <a href={reference.source_url} target="_blank" rel="noreferrer">{reference.title}</a>
-                            <p>{reference.summary}</p>
-                            <small>{reference.publisher} · {reference.verification_scope}</small>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )
-                  : <p className="empty-note">현재 비교 상태에 연결된 검증 사례가 없습니다.</p>}
-              </details>
-            </div>
-          </div>
-          );
-        })}
+        {actionable.map((item) => <PatternRow item={item} key={item.pattern_id} />)}
       </div>
+      {rest.length > 0 && (
+        <details className="damage-patterns__rest">
+          <summary>지금 자료로 판단할 수 없는 유형 {rest.length}개</summary>
+          <div className="damage-patterns__table" role="table" aria-label="지금 자료로 판단할 수 없는 피해 유형">
+            {rest.map((item) => <PatternRow item={item} key={item.pattern_id} />)}
+          </div>
+        </details>
+      )}
     </section>
   );
 }
