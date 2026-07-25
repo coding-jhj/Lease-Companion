@@ -235,6 +235,14 @@ describe("StageActions", () => {
 
     render(<StageActions results={[]} guidance={[]} stageGuidance={stageGuidance} />);
 
+    // 5개 블록이 모두 같은 펼침·접기 버튼을 갖는다(열림 여부만 다르다).
+    for (const title of ["계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
+      expect(screen.getByRole("button", { name: new RegExp(`^${title}`) })).toBeInTheDocument();
+    }
+    expect(screen.getByRole("button", { name: /^계약 후/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /^계약 전/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("지금 단계를 먼저 펼쳐 두었습니다. 다른 단계는 눌러서 확인하세요.")).not.toBeInTheDocument();
+
     const postGroup = screen.getByRole("heading", { name: "계약 후" }).closest("section")!;
     expect(within(postGroup).getAllByRole("listitem")).toHaveLength(2);
     expect(within(postGroup).getByText(/계약 체결일부터 30일 이내/)).toBeInTheDocument();

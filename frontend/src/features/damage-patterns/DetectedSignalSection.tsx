@@ -27,9 +27,9 @@ export function DetectedSignalSection({ patterns, guidance }: { patterns: Damage
         </div>}
         {foldedCount > 0 && <details>
           <summary>질문·행동 {foldedCount}개 더 보기</summary>
-          {restQuestions.length > 0 && <div><strong>다른 질문</strong><ul>{restQuestions.map((text) => <li key={text}>{text}</li>)}</ul></div>}
-          {requests.length > 0 && <div><strong>수정 요청 문구</strong><ul>{requests.map((text) => <li key={text}>{text}</li>)}</ul></div>}
-          {actions.length > 0 && <div><strong>확인 행동</strong><ul>{actions.map((text) => <li key={text}>{text}</li>)}</ul></div>}
+          {restQuestions.length > 0 && <div className="detected-signal-card__group"><strong>다른 질문</strong><ul>{restQuestions.map((text) => <li key={text}>{text}</li>)}</ul></div>}
+          {requests.length > 0 && <div className="detected-signal-card__group"><strong>수정 요청 문구</strong><ul>{requests.map((text) => <li key={text}>{text}</li>)}</ul></div>}
+          {actions.length > 0 && <div className="detected-signal-card__group"><strong>확인 행동</strong><ul>{actions.map((text) => <li key={text}>{text}</li>)}</ul></div>}
         </details>}
       </article>;
     })}</div>

@@ -123,7 +123,7 @@ function ActionList({
 
   if (foldable) {
     return (
-      <section className="action-hub__group action-hub__group--foldable">
+      <section className={`action-hub__group action-hub__group--foldable${open ? " action-hub__group--open" : ""}`}>
         <button
           className="action-hub__section-toggle"
           type="button"
@@ -291,7 +291,6 @@ export function StageActions({
     <section className="stage-guidance" aria-labelledby="stage-guidance-title">
       <div className="section-heading">
         <h2 id="stage-guidance-title">계약 단계별 행동</h2>
-        <p>지금 단계를 먼저 펼쳐 두었습니다. 다른 단계는 눌러서 확인하세요.</p>
       </div>
       <div className="stage-guidance__grid">
         <ActionList collapsible foldable defaultOpen={openBlock === "계약 전"} title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
