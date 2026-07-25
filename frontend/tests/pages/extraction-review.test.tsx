@@ -8,6 +8,7 @@ import contractExtractionFixture from "../../../data/sample/fixtures/case-001/co
 import registryExtractionFixture from "../../../data/sample/fixtures/case-001/registry_extraction.json";
 import { ExtractionReviewPage } from "../../src/pages/extraction-review/ExtractionReviewPage";
 import { mvpService } from "../../src/services/mvpService";
+import { LOCAL_MVP_POLL_TIMEOUT_MS } from "../../src/utils/pollUntilTerminal";
 import type {
   AnalysisRunDetailDto,
   DocumentExtractionDto,
@@ -743,7 +744,7 @@ describe("ExtractionReviewPage", () => {
     });
     expect(screen.getByText("문서 읽기 대기 중")).toBeInTheDocument();
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.advanceTimersByTimeAsync(LOCAL_MVP_POLL_TIMEOUT_MS);
     });
     expect(screen.getByRole("alert")).toHaveTextContent(
       "처리가 예상보다 오래 걸리고 있습니다.",

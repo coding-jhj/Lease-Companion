@@ -123,7 +123,10 @@ describe("AnalysisProgressPage", () => {
       await vi.advanceTimersByTimeAsync(LOCAL_MVP_POLL_TIMEOUT_MS);
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent("처리가 예상보다 오래 걸리고 있습니다.");
+    // 서버가 계속 결과를 만들 수 있으므로 실패(alert)가 아니라 안내(status)로 보여준다.
+    expect(screen.getByRole("status")).toHaveTextContent("서버가 아직 결과를 만들고 있을 수 있습니다.");
+    expect(screen.getByRole("heading", { name: "조금 더 걸리고 있어요", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "계속 기다리기" })).toBeInTheDocument();
     const callsAtTimeout = getRun.mock.calls.length;
 
     await act(async () => {
@@ -131,7 +134,7 @@ describe("AnalysisProgressPage", () => {
     });
     expect(getRun).toHaveBeenCalledTimes(callsAtTimeout);
 
-    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    fireEvent.click(screen.getByRole("button", { name: "다시 확인" }));
     await flushPromises();
 
     expect(start).toHaveBeenCalledTimes(1);

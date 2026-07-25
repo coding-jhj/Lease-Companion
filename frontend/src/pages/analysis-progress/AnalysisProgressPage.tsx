@@ -89,7 +89,7 @@ export function AnalysisProgressPage() {
       if (caught instanceof PollTimeoutError) {
         retryMode.current = "resume";
         setStatus("timeout");
-        setError(caught.message);
+        setError("서버가 아직 결과를 만들고 있을 수 있습니다. 입력한 계약 정보는 그대로 저장되어 있습니다.");
         return;
       }
       startPromise.current = null;
@@ -120,7 +120,7 @@ export function AnalysisProgressPage() {
       if (controller.signal.aborted || (caught instanceof DOMException && caught.name === "AbortError")) return;
       setStatus(caught instanceof PollTimeoutError ? "timeout" : "failed");
       setError(caught instanceof PollTimeoutError
-        ? "결과 준비 상태를 다시 확인하지 못했습니다. 입력한 계약 정보는 그대로 저장되어 있습니다. 다시 시도해 주세요."
+        ? "서버가 아직 결과를 만들고 있을 수 있습니다. 입력한 계약 정보는 그대로 저장되어 있습니다."
         : analysisFailureMessage);
     }
   }
@@ -145,7 +145,7 @@ export function AnalysisProgressPage() {
     : status === "running"
       ? "확인 결과를 준비하고 있습니다"
       : status === "timeout"
-        ? "결과 준비 상태 확인이 지연되고 있어요"
+        ? "조금 더 걸리고 있어요"
         : "결과 준비를 기다리고 있어요";
 
   return (
@@ -159,7 +159,16 @@ export function AnalysisProgressPage() {
         {status === "pending" && <LoadingState title="결과 준비 대기 중" description="서버에서 결과 준비를 시작하고 있습니다." />}
         {status === "running" && <LoadingState title="확인 결과를 준비하고 있습니다" description="완료될 때까지 현재 준비 상태를 확인하고 있습니다." />}
         {status === "failed" && <ErrorState title="확인 결과를 준비하지 못했습니다" description={error} onRetry={() => void retry()} />}
-        {status === "timeout" && <ErrorState title="결과 준비 상태 확인이 지연되고 있습니다" description={error} onRetry={() => void retry()} />}
+        {/* 서버는 계속 결과를 만들고 있을 수 있다. 실패가 아니라 안내로 보여주고 진행 표시를 유지한다. */}
+        {status === "timeout" && (
+          <section className="poll-delayed-notice" role="status" aria-label="결과 준비 지연 안내">
+            <p>{error}</p>
+            <div className="poll-delayed-notice__actions">
+              <button type="button" onClick={() => void retry()}>계속 기다리기</button>
+              <button className="secondary" type="button" onClick={() => void retry()}>다시 확인</button>
+            </div>
+          </section>
+        )}
         <button type="button" disabled={status !== "completed"} onClick={() => navigate(`/contracts/${contractId}/report?analysisRunId=${encodeURIComponent(analysisRunId)}`)}>{status === "completed" ? "확인 결과 보기" : "결과 준비 중…"}</button>
       </div>
     </PageShell>
