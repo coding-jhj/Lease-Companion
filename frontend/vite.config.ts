@@ -5,6 +5,8 @@ export default defineConfig({
   test: { exclude: ["e2e/**", "node_modules/**", "dist/**"] },
   plugins: [react()],
   server: {
+    // 기본값은 Windows에서 ::1(IPv6)에만 바인딩돼 127.0.0.1 접속·cloudflared 원본 연결이 거부된다.
+    host: "127.0.0.1",
     port: 5173,
     // Cloudflare Quick Tunnel 등으로 B PC 서버를 A·C가 원격 접속할 때 Host 헤더 허용
     allowedHosts: [".trycloudflare.com"],
