@@ -4,8 +4,9 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/
 import { PageShell } from "../../components/layout/PageShell";
 import { GuidedReviewCard } from "../../features/extraction-review/GuidedReviewCard";
 import {
-  buildReviewQueue,
+  buildReviewPlan,
   type ReviewQueueItem,
+  type ReviewSection,
 } from "../../features/extraction-review/reviewQueue";
 import {
   clauseValues,
@@ -44,6 +45,38 @@ const unresolvedIssueCodes: Record<
   unreadable: "unreadable",
   unknown_location: "ambiguous",
 };
+
+const REVIEW_SECTIONS: Array<{
+  key: ReviewSection;
+  title: string;
+  description: string;
+}> = [
+  {
+    key: "money_direct",
+    title: "금전 손실을 줄이기 위해 직접 확인",
+    description: "금액·입금·권리처럼 돈과 바로 연결되는 내용을 확인합니다.",
+  },
+  {
+    key: "dispute_direct",
+    title: "분쟁을 줄이기 위해 직접 확인",
+    description: "분쟁을 줄이기 위해 확인합니다.",
+  },
+  {
+    key: "suspected_issue",
+    title: "틀렸거나 불확실할 가능성이 있는 내용",
+    description: "문서끼리 다르거나 자동으로 확정하기 어려운 내용을 다시 봅니다.",
+  },
+  {
+    key: "manual_or_unreadable",
+    title: "읽지 못했거나 다른 자료에서 확인할 내용",
+    description: "글자를 읽지 못했거나 문서 밖 자료가 필요한 내용을 직접 확인합니다.",
+  },
+  {
+    key: "grouped",
+    title: "추가 확인 항목",
+    description: "앞선 구역에 해당하지 않는 기본 내용을 마지막으로 확인합니다.",
+  },
+];
 
 function displayViewValue(view: FieldViewModel, drafts: Record<string, DraftValue>): string {
   const draft = drafts[view.key];
@@ -115,8 +148,19 @@ export function ExtractionReviewPage() {
   const activePoll = useRef<AbortController | null>(null);
 
   const fields = fieldViewModels(documents);
-  const queue = buildReviewQueue(fields);
+  const queue = buildReviewPlan(fields);
   const currentItem = queue[currentIndex] ?? null;
+  const currentSection = currentItem
+    ? REVIEW_SECTIONS.find((section) => section.key === currentItem.section) ?? null
+    : null;
+  const sectionSummaries = REVIEW_SECTIONS.map((section) => {
+    const items = queue.filter((item) => item.section === section.key);
+    return {
+      ...section,
+      items,
+      completedCount: items.filter((item) => reviewedKeys.includes(item.key)).length,
+    };
+  });
   const completedCount = queue.filter((item) => reviewedKeys.includes(item.key)).length;
   const reviewedItems = queue.filter((item) => reviewedKeys.includes(item.key));
   const unresolvedItems = queue.filter((item) => unresolvedReasonByKey[item.key] !== undefined);
@@ -159,7 +203,7 @@ export function ExtractionReviewPage() {
       const loadedReviewedKeys = loadedFields
         .filter((view) => view.field.verification_status !== "unverified")
         .map((view) => view.key);
-      const loadedQueue = buildReviewQueue(loadedFields);
+      const loadedQueue = buildReviewPlan(loadedFields);
       const firstUnverifiedIndex = loadedQueue.findIndex(
         (item) => !loadedReviewedKeys.includes(item.key),
       );
@@ -246,12 +290,19 @@ export function ExtractionReviewPage() {
     setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
   }
 
-  function advanceToNextUnreviewed() {
+  function advanceToNextUnreviewed(handledKey: string) {
     setCurrentIndex((index) => {
+      const isPending = (item: ReviewQueueItem) => (
+        item.key !== handledKey
+        && !reviewedKeys.includes(item.key)
+        && unresolvedReasonByKey[item.key] === undefined
+      );
       const nextIndex = queue.findIndex((item, candidateIndex) => (
-        candidateIndex > index && !reviewedKeys.includes(item.key)
+        candidateIndex > index && isPending(item)
       ));
-      return nextIndex === -1 ? queue.length : nextIndex;
+      if (nextIndex !== -1) return nextIndex;
+      const wrappedIndex = queue.findIndex(isPending);
+      return wrappedIndex === -1 ? queue.length : wrappedIndex;
     });
   }
 
@@ -266,7 +317,7 @@ export function ExtractionReviewPage() {
       delete next[item.key];
       return next;
     });
-    advanceToNextUnreviewed();
+    advanceToNextUnreviewed(item.key);
   }
 
   function changeCurrent(item: ReviewQueueItem, value: string | string[]) {
@@ -287,13 +338,29 @@ export function ExtractionReviewPage() {
       delete next[item.key];
       return next;
     });
-    advanceToNextUnreviewed();
+    advanceToNextUnreviewed(item.key);
   }
 
   function markCannotVerify(item: ReviewQueueItem, reason: CannotVerifyReason) {
     setReviewedKeys((current) => current.filter((key) => key !== item.key));
     setUnresolvedReasonByKey((current) => ({ ...current, [item.key]: reason }));
-    advanceToNextUnreviewed();
+    advanceToNextUnreviewed(item.key);
+  }
+
+  function selectSection(section: ReviewSection) {
+    const firstUnreviewedIndex = queue.findIndex(
+      (item) => (
+        item.section === section
+        && !reviewedKeys.includes(item.key)
+        && unresolvedReasonByKey[item.key] === undefined
+      ),
+    );
+    if (firstUnreviewedIndex !== -1) {
+      setCurrentIndex(firstUnreviewedIndex);
+      return;
+    }
+    const firstIndex = queue.findIndex((item) => item.section === section);
+    if (firstIndex !== -1) setCurrentIndex(firstIndex);
   }
 
   function fieldTitle(view: FieldViewModel) {
@@ -476,7 +543,7 @@ export function ExtractionReviewPage() {
       title="문서에서 읽은 내용 확인"
       description="중요한 내용부터 하나씩 원문과 비교해 주세요."
     >
-      <div className="stack">
+      <div className="stack extraction-review-workspace">
         {status === "loading" && (
           <LoadingState
             title="문서 읽기 상태를 확인하는 중"
@@ -505,6 +572,27 @@ export function ExtractionReviewPage() {
         )}
         {status === "success" && fields.length > 0 && (
           <>
+            <nav className="review-section-nav" aria-label="확인 구역">
+              {sectionSummaries.map((section, index) => (
+                <button
+                  className={`review-section-nav__item${
+                    currentItem?.section === section.key ? " review-section-nav__item--active" : ""
+                  }`}
+                  type="button"
+                  key={section.key}
+                  disabled={section.items.length === 0}
+                  aria-current={currentItem?.section === section.key ? "step" : undefined}
+                  onClick={() => selectSection(section.key)}
+                >
+                  <span className="review-section-nav__number">{index + 1}</span>
+                  <strong>{section.title}</strong>
+                  <span>
+                    {section.completedCount} / {section.items.length}개 확인
+                  </span>
+                </button>
+              ))}
+            </nav>
+
             <div className="guided-review-progress">
               <div className="guided-review-progress__head">
                 <span className="guided-review-progress__label">확인한 내용</span>
@@ -526,6 +614,27 @@ export function ExtractionReviewPage() {
 
             {!reviewFinished && currentItem && (
               <section className="guided-review-step" aria-label="현재 확인할 내용">
+                {currentSection && (
+                  <header className="review-current-section">
+                    <div>
+                      <span>{REVIEW_SECTIONS.findIndex(
+                        (section) => section.key === currentSection.key,
+                      ) + 1}구역</span>
+                      <h2>{currentSection.title}</h2>
+                      <p>{currentSection.description}</p>
+                    </div>
+                    <span className="review-current-section__count">
+                      {sectionSummaries.find(
+                        (section) => section.key === currentSection.key,
+                      )?.items.length ?? 0}개
+                    </span>
+                  </header>
+                )}
+                {currentItem.reasons.length > 0 && (
+                  <ul className="review-item-reasons" aria-label="이 항목을 확인하는 이유">
+                    {currentItem.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                  </ul>
+                )}
                 {currentIndex > 0 && (
                   <button
                     className="secondary guided-review-previous"

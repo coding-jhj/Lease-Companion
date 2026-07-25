@@ -123,6 +123,45 @@ afterEach(() => {
 });
 
 describe("ExtractionReviewPage", () => {
+  it("shows all five review sections and moves to the selected section", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      deposit: extractedField("deposit", 100000000),
+      property_address: extractedField("property_address", "서울시 테스트구"),
+      issue_date: extractedField("issue_date", "2026-07-18", {
+        confidence: "불확실",
+        issue_code: "ambiguous",
+      }),
+      owner_shares: extractedField("owner_shares", null, {
+        issue_code: "unreadable",
+      }),
+      other_note: extractedField("other_note", "추가 메모"),
+    }));
+
+    const view = renderPage();
+
+    expect(await screen.findByRole("navigation", { name: "확인 구역" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1 금전 손실을 줄이기 위해 직접 확인/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /2 분쟁을 줄이기 위해 직접 확인/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /3 틀렸거나 불확실할 가능성이 있는 내용/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /4 읽지 못했거나 다른 자료에서 확인할 내용/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /5 추가 확인 항목/ }))
+      .toBeInTheDocument();
+    expect(view.container.querySelector(".extraction-review-workspace")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", {
+      name: /2 분쟁을 줄이기 위해 직접 확인/,
+    }));
+
+    expect(await screen.findByRole("heading", {
+      name: "분쟁을 줄이기 위해 직접 확인",
+    })).toBeInTheDocument();
+    expect(screen.getByText("분쟁을 줄이기 위해 확인합니다.")).toBeInTheDocument();
+  });
+
   it("guides the user through one important item at a time without technical labels", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
 
@@ -130,12 +169,16 @@ describe("ExtractionReviewPage", () => {
 
     expect(await screen.findByRole("progressbar", { name: /중요한 내용 .*개 중 .*개 확인/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /주소/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", {
+      name: "금전 손실을 줄이기 위해 직접 확인",
+    })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", {
+      name: /2 분쟁을 줄이기 위해 직접 확인/,
+    }));
+    expect(await screen.findByRole("heading", { name: /주소/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
     expect(await screen.findByRole("heading", { name: "등기사항증명서 계약하려는 집 주소" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
-    expect(await screen.findByRole("heading", { name: /임대인/ })).toBeInTheDocument();
     expect(view.container.textContent).not.toMatch(/추출값|필드|confidence|스냅샷/);
   });
 
@@ -204,6 +247,10 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
+    await screen.findByRole("navigation", { name: "확인 구역" });
+    fireEvent.click(screen.getByRole("button", {
+      name: /2 분쟁을 줄이기 위해 직접 확인/,
+    }));
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
@@ -212,7 +259,9 @@ describe("ExtractionReviewPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
     expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", {
+      name: /2 분쟁을 줄이기 위해 직접 확인/,
+    }));
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     expect(screen.getByRole("textbox", { name: /주소 수정 내용/ })).toHaveValue("수정 주소");
     fireEvent.click(screen.getByRole("button", { name: "수정 취소" }));
@@ -254,6 +303,10 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
+    await screen.findByRole("navigation", { name: "확인 구역" });
+    fireEvent.click(screen.getByRole("button", {
+      name: /2 분쟁을 줄이기 위해 직접 확인/,
+    }));
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
@@ -711,9 +764,9 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    await screen.findByRole("heading", { name: "보증금" });
     fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
-    expect(screen.getByRole("heading", { name: "보증금" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "계약하려는 집 주소" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "임대인 이름" })).not.toBeInTheDocument();
   });
 });
