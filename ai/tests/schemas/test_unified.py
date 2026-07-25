@@ -14,6 +14,7 @@ from lease_companion_ai.schemas.unified import (
     DocumentType,
     ExtractedField,
     FieldCorrection,
+    FieldIssueCode,
     GenerationMethod,
     GenerationResult,
     InputSnapshot,
@@ -132,6 +133,19 @@ def test_extracted_confidence_requires_value():
 def test_corrected_status_requires_corrected_value():
     with pytest.raises(ValidationError):
         _field(verification_status=VerificationStatus.CORRECTED)
+
+
+def test_unresolved_status_requires_issue_code_and_masks_effective_value():
+    with pytest.raises(ValidationError, match="issue_code"):
+        _field(verification_status="unresolved")
+
+    unresolved = _field(
+        verification_status="unresolved",
+        issue_code=FieldIssueCode.AMBIGUOUS,
+    )
+
+    assert unresolved.extracted_value == "이정훈"
+    assert unresolved.effective_value is None
 
 
 def test_rejects_empty_owner_names_list():

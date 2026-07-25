@@ -676,6 +676,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ExtractionConfirmationRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -2372,6 +2389,46 @@
         ],
         "title": "DocumentResponse"
       },
+      "DocumentType": {
+        "type": "string",
+        "enum": [
+          "contract",
+          "registry"
+        ],
+        "title": "DocumentType"
+      },
+      "ExtractionConfirmationRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.8.0",
+              "1.9.0"
+            ],
+            "title": "Schema Version",
+            "default": "1.9.0"
+          },
+          "contract_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Contract Id"
+          },
+          "unresolved_fields": {
+            "items": {
+              "$ref": "#/components/schemas/UnresolvedFieldReview"
+            },
+            "type": "array",
+            "title": "Unresolved Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contract_id"
+        ],
+        "title": "ExtractionConfirmationRequest",
+        "description": "추출값 확인 완료 요청. 확인하지 못한 필드를 명시해 자동 승인하지 않는다."
+      },
       "ExtractionState": {
         "properties": {
           "id": {
@@ -2501,6 +2558,18 @@
           "created_at"
         ],
         "title": "FeedbackResponse"
+      },
+      "FieldIssueCode": {
+        "type": "string",
+        "enum": [
+          "not_stated",
+          "unreadable",
+          "ambiguous",
+          "parse_failed",
+          "not_applicable"
+        ],
+        "title": "FieldIssueCode",
+        "description": "J 판정에서 null·모호 값의 의미를 자유문 대신 구조화한다."
       },
       "GenerationMethod": {
         "type": "string",
@@ -4039,7 +4108,7 @@
           },
           "password": {
             "type": "string",
-            "maxLength": 72,
+            "maxLength": 16,
             "minLength": 8,
             "title": "Password"
           }
@@ -4610,6 +4679,30 @@
           "access_token"
         ],
         "title": "TokenResponse"
+      },
+      "UnresolvedFieldReview": {
+        "properties": {
+          "document_type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Field Name"
+          },
+          "issue_code": {
+            "$ref": "#/components/schemas/FieldIssueCode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_type",
+          "field_name",
+          "issue_code"
+        ],
+        "title": "UnresolvedFieldReview",
+        "description": "사용자가 값을 확인하지 못한 필드와 구조화 사유."
       },
       "Urgency": {
         "type": "string",

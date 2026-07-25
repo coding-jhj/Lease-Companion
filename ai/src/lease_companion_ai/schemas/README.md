@@ -8,7 +8,7 @@ AI 입출력의 정형 구조를 정의한다. 문서별 필드, 판정 결과, 
 
 - Backend는 이 공통 타입을 import해 재사용하고 같은 도메인 타입을 중복 정의하지 않는다.
 - 필드 규약: 사용자 수정값 `user_corrected_value`, 확인 상태 `verification_status`, confidence 3등급(`추출됨`/`불확실`/`실패`), 원문 증거 `page`/`text`(nullable).
-- 배포용 JSON Schema는 손으로 쓰지 않고 Pydantic에서 생성한다. 기존 수동 Schema는 `data/schemas/legacy/`, 현재 canonical v1.9.0 생성본 10개는 `data/schemas/generated/`에 둔다. 전환 기간에는 v1.8.0 payload 읽기도 허용한다.
+- 배포용 JSON Schema는 손으로 쓰지 않고 Pydantic에서 생성한다. 기존 수동 Schema는 `data/schemas/legacy/`, 현재 canonical v1.9.0 생성본 17개는 `data/schemas/generated/`에 둔다. 전환 기간에는 v1.8.0 payload 읽기도 허용한다.
 
 ## 하위 구조
 

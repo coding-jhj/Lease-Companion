@@ -323,7 +323,8 @@
       "enum": [
         "unverified",
         "confirmed",
-        "corrected"
+        "corrected",
+        "unresolved"
       ],
       "title": "VerificationStatus",
       "type": "string"

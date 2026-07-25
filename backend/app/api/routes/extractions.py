@@ -13,11 +13,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from lease_companion_ai.schemas.adapters import (
+    apply_confirmation_request,
     apply_correction_request,
     build_snapshot,
-    confirm_document,
 )
-from lease_companion_ai.schemas.unified import CorrectionRequest, DocumentExtraction, DocumentType
+from lease_companion_ai.schemas.unified import (
+    CorrectionRequest,
+    DocumentExtraction,
+    DocumentType,
+    ExtractionConfirmationRequest,
+)
 
 from app.api.dependencies.auth import get_current_user
 from app.api.routes.contracts import _contract_context, _get_owned_contract, _registry_file
@@ -193,6 +198,7 @@ def apply_corrections(
 @router.post("/extractions/confirm", status_code=201, response_model=SnapshotResponse)
 def confirm_extraction(
     contract_id: int,
+    body: ExtractionConfirmationRequest | None = None,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SnapshotResponse:
@@ -204,13 +210,40 @@ def confirm_extraction(
     context = _contract_context(contract)  # 상황 미입력 시 422 missing_contract_context
     run = _completed_extraction(db, contract)
     documents = _replayed_documents(db, run)
+    request = body or ExtractionConfirmationRequest(
+        schema_version=documents[DocumentType.CONTRACT].schema_version,
+        contract_id=contract.id,
+    )
+    if request.contract_id != contract.id:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "contract_id_mismatch",
+                "message": "확인 요청의 contract_id가 경로의 계약 건과 다릅니다.",
+            },
+        )
+    if request.schema_version != documents[DocumentType.CONTRACT].schema_version:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "schema_version_mismatch",
+                "message": "확인 요청의 schema_version이 추출 결과와 다릅니다.",
+            },
+        )
+    try:
+        confirmed_documents = apply_confirmation_request(documents, request)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "unknown_confirmation_field", "message": str(exc.args[0])},
+        ) from exc
     snapshot = build_snapshot(
         input_snapshot_id=f"snap-{uuid.uuid4().hex}",
         contract_id=contract.id,
         contract_context=context,
         case_id=contract.registry_case_id,
-        contract_doc=confirm_document(documents[DocumentType.CONTRACT]),
-        registry_doc=confirm_document(documents[DocumentType.REGISTRY]),
+        contract_doc=confirmed_documents[DocumentType.CONTRACT],
+        registry_doc=confirmed_documents[DocumentType.REGISTRY],
         confirmed_at=datetime.now(timezone.utc),
     )
     record = InputSnapshotRecord(

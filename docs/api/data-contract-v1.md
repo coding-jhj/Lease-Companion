@@ -1,6 +1,6 @@
 # 데이터 계약 v1 인수인계 (A → B·C)
 
-> schema_version **1.8.0 읽기 호환 / 1.9.0 신규 출력** · 작성 2026-07-16 · 최근 갱신 2026-07-23 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md), [`../decisions/2026-07-18-classification-boundary.md`](../decisions/2026-07-18-classification-boundary.md), [`../decisions/2026-07-21-damage-pattern-reference-boundary.md`](../decisions/2026-07-21-damage-pattern-reference-boundary.md)
+> schema_version **1.8.0 읽기 호환 / 1.9.0 신규 출력** · 작성 2026-07-16 · 최근 갱신 2026-07-25 · 근거 ADR: [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md), [`../decisions/2026-07-18-classification-boundary.md`](../decisions/2026-07-18-classification-boundary.md), [`../decisions/2026-07-21-damage-pattern-reference-boundary.md`](../decisions/2026-07-21-damage-pattern-reference-boundary.md)
 
 ## 1. 목적과 현재 상태
 
@@ -8,7 +8,7 @@
 |---|---|
 | Pydantic 단일 원본 | `ai/src/lease_companion_ai/schemas/unified.py` |
 | R01–R10 연결 어댑터 | `ai/src/lease_companion_ai/schemas/adapters.py` |
-| 생성 JSON Schema 16개 | `data/schemas/generated/` (v1.9 classification·계약 연습 포함, 손으로 수정 금지) |
+| 생성 JSON Schema 17개 | `data/schemas/generated/` (v1.9 확인 요청·classification·계약 연습 포함, 손으로 수정 금지) |
 | CASE-001 fixture 9개 | `data/sample/fixtures/case-001/` |
 
 **현재 상태를 정확히 구분한다:**
@@ -59,6 +59,7 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_gemini_genera
 | `DocumentExtraction` | 문서 1건 추출 결과(수정 전 원본) | document_id·document_type·fields(dict[str, ExtractedField])·warnings | `contract_extraction.json` / `registry_extraction.json` |
 | `ExtractedField` | 필드 1개 | field_name·extracted_value·normalized_value·user_corrected_value·verification_status·confidence·source_evidence(page/text)·failure_reason | (위 파일 내부) |
 | `CorrectionRequest` | 사용자 수정 요청 | `contract_id` · `corrections[]` (`document_type` · `field_name` · `corrected_value`) | `correction_request.json` |
+| `ExtractionConfirmationRequest` | 사용자 확인 완료 요청 | `contract_id` · `unresolved_fields[]` (`document_type` · `field_name` · `issue_code`) | (독립 JSON Schema 제공) |
 | `InputSnapshot` | 확인 완료 입력의 **불변** 사본 | input_snapshot_id·contract_id·case_id·**contract_context**·confirmed_fields·confirmed_at | `input_snapshot.json` |
 | `JudgmentInput` | J 판정 실행 전용 불변 입력 | input_snapshot_id·contract_id·case_id·judgment_ids·contract_context·contract_fields·registry_fields | (독립 JSON Schema 제공) |
 | `ClassificationInput` | 확인 완료 조항 원문 분류 입력 | schema_version·input_snapshot_id·contract_id·clauses | `classification_input.json` |
@@ -71,7 +72,7 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_gemini_genera
 | `StageGuidance` | 계약 상황 기반 단계별 행동 | contract_context·before_deposit_questions·before_contract_actions·during_contract_actions·closing_day_actions·after_contract_actions·record_retention | (GenerationResult 내부) |
 | `GenerationResult` | guardrail 통과 생성 결과 | schema_version·analysis_run_id·prompt_version·items[RuleGuidance]·judgment_items[JudgmentGuidance]·special_clause_items[SpecialClauseGuidance]·stage_guidance·guardrail_passed | `generation_result.json` |
 
-**Enum 허용값**: `confidence` = `추출됨`·`불확실`·`실패`(숫자 거부) / `verification_status` = `unverified`·`confirmed`·`corrected` / `issue_code` = `not_stated`·`unreadable`·`ambiguous`·`parse_failed`·`not_applicable` / `result_type` = `judgment`·`fact_flag` / `status` 9개·`urgency` 5개 = 루트 `AGENTS.md` 기준 / `document_type` = `contract`·`registry`.
+**Enum 허용값**: `confidence` = `추출됨`·`불확실`·`실패`(숫자 거부) / `verification_status` = `unverified`·`confirmed`·`corrected`·`unresolved` / `issue_code` = `not_stated`·`unreadable`·`ambiguous`·`parse_failed`·`not_applicable` / `result_type` = `judgment`·`fact_flag` / `status` 9개·`urgency` 5개 = 루트 `AGENTS.md` 기준 / `document_type` = `contract`·`registry`.
 
 **공통 값 규약**: `contract_id` = Backend DB와 같은 **양의 정수**(fixture `1001`, 문자열·bool 거부) / `case_id` = 합성 평가 문자열(`CASE-001`) / `contract_type` = `전세`·`보증부 월세`·`일반 월세` / `contract_stage` = `계약금 입금 전`·`서명 전`·`계약 직후`.
 
@@ -92,7 +93,7 @@ CorrectionRequest.corrected_value
 
 원래 `extracted_value`는 **그대로 유지**된다. frozen `ExtractedField`와 `apply_correction()`의 새 객체 생성 방식이 최초값을 보존한다. 규칙 입력 우선순위: `user_corrected_value` → `normalized_value` → `extracted_value` (`ExtractedField.effective_value`).
 
-`build_snapshot()`은 `contract_context`를 필수로 받으며 `unverified` 필드를 자동 승인하지 않는다. 인증된 사용자 확인 동작 이후 `confirm_document()`를 호출해야 하며, 미확인 필드가 남으면 스냅샷 생성·분석을 거부한다.
+`build_snapshot()`은 `contract_context`를 필수로 받으며 `unverified` 필드를 자동 승인하지 않는다. 사용자 검토가 끝난 필드는 `confirmed`·`corrected`·`unresolved` 중 하나다. `unresolved`는 원본 추출값을 보존하지만 규칙 입력의 effective value는 null이며 `issue_code`가 필수다.
 
 ## 5. B 담당 (Backend·저장)
 
@@ -256,7 +257,7 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 
 - [x] fixture를 별도 변환 없이 로드
 - [x] `추출됨`·`불확실`·`실패` 3등급 구분 표시
-- [x] `unverified`·`confirmed`·`corrected` 상태 처리
+- [x] `unverified`·`confirmed`·`corrected`·`unresolved` 상태 처리
 - [x] `correction_request.json` 구조로 수정 요청 JSON 생성
 - [x] R01–R10 결과(`RuleResult` 13개 필드) 렌더링
 - [x] J01–J13 결과(`JudgmentResult` 10개 필드) 렌더링

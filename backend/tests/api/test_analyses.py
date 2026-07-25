@@ -504,6 +504,35 @@ def test_confirm_requires_contract_context(client, alice):
     assert res.json()["error"]["code"] == "missing_contract_context"
 
 
+def test_confirm_preserves_unresolved_field_in_snapshot(client, alice, contract_id):
+    res = client.post(
+        f"/api/contracts/{contract_id}/extractions/confirm",
+        headers=alice,
+        json={
+            "schema_version": SCHEMA_VERSION,
+            "contract_id": contract_id,
+            "unresolved_fields": [
+                {
+                    "document_type": "contract",
+                    "field_name": "property_address",
+                    "issue_code": "not_stated",
+                }
+            ],
+        },
+    )
+
+    assert res.status_code == 201
+    field = res.json()["snapshot"]["confirmed_fields"]["contract"]["property_address"]
+    assert field["verification_status"] == "unresolved"
+    assert field["issue_code"] == "not_stated"
+    assert field["extracted_value"] is not None
+
+    # 모듈 공용 계약 건의 최신 snapshot을 기존 전체 확인 상태로 복구한다.
+    assert client.post(
+        f"/api/contracts/{contract_id}/extractions/confirm", headers=alice
+    ).status_code == 201
+
+
 def test_context_change_blocks_analysis_until_reconfirm(client, alice, contract_id):
     """상황 변경 → 기존 스냅샷 불변 + 분석 차단 → 재확인(새 스냅샷) 후 분석 가능."""
     before = client.post(f"/api/contracts/{contract_id}/extractions/confirm", headers=alice).json()

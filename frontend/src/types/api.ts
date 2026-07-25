@@ -68,7 +68,7 @@ export interface DocumentDto {
 }
 
 export type FieldValue = string | number | boolean | string[] | Record<string, string> | null;
-export type VerificationStatus = "unverified" | "confirmed" | "corrected";
+export type VerificationStatus = "unverified" | "confirmed" | "corrected" | "unresolved";
 export type ExtractionConfidence = "추출됨" | "불확실" | "실패";
 export type FieldIssueCode = "not_stated" | "unreadable" | "ambiguous" | "parse_failed" | "not_applicable";
 export type DocumentType = "contract" | "registry";
@@ -110,6 +110,18 @@ export interface CorrectionRequestDto {
   schema_version: SchemaVersion;
   contract_id: number;
   corrections: FieldCorrectionDto[];
+}
+
+export interface UnresolvedFieldReviewDto {
+  document_type: DocumentType;
+  field_name: string;
+  issue_code: Extract<FieldIssueCode, "not_stated" | "unreadable" | "ambiguous">;
+}
+
+export interface ExtractionConfirmationRequestDto {
+  schema_version: SchemaVersion;
+  contract_id: number;
+  unresolved_fields: UnresolvedFieldReviewDto[];
 }
 
 export interface InputSnapshotDto {

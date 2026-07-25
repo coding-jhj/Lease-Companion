@@ -18,6 +18,7 @@ import { mvpService } from "../../services/mvpService";
 import type {
   CorrectionRequestDto,
   DocumentExtractionDto,
+  ExtractionConfirmationRequestDto,
   FieldViewModel,
   SchemaVersion,
   VerificationStatus,
@@ -32,6 +33,15 @@ const reasonLabels: Record<CannotVerifyReason, string> = {
   not_stated: "문서에 적혀 있지 않음",
   unreadable: "글자가 흐려 확인하기 어려움",
   unknown_location: "확인할 위치를 찾기 어려움",
+};
+
+const unresolvedIssueCodes: Record<
+  CannotVerifyReason,
+  "not_stated" | "unreadable" | "ambiguous"
+> = {
+  not_stated: "not_stated",
+  unreadable: "unreadable",
+  unknown_location: "ambiguous",
 };
 
 function displayViewValue(view: FieldViewModel, drafts: Record<string, DraftValue>): string {
@@ -385,8 +395,17 @@ export function ExtractionReviewPage() {
 
     let inputSnapshotId = confirmedInputSnapshotId;
     if (!extractionConfirmed) {
+      const confirmationRequest: ExtractionConfirmationRequestDto = {
+        schema_version: schemaVersion,
+        contract_id: contractId,
+        unresolved_fields: unresolvedItems.map((item) => ({
+          document_type: item.view.document_type,
+          field_name: item.fieldName,
+          issue_code: unresolvedIssueCodes[unresolvedReasonByKey[item.key]],
+        })),
+      };
       try {
-        const snapshot = await mvpService.confirmExtraction(contractId);
+        const snapshot = await mvpService.confirmExtraction(contractId, confirmationRequest);
         setExtractionConfirmed(true);
         setConfirmedInputSnapshotId(snapshot.input_snapshot_id);
         inputSnapshotId = snapshot.input_snapshot_id;

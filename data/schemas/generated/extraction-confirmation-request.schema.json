@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "DocumentType": {
+      "enum": [
+        "contract",
+        "registry"
+      ],
+      "title": "DocumentType",
+      "type": "string"
+    },
+    "FieldIssueCode": {
+      "description": "J 판정에서 null·모호 값의 의미를 자유문 대신 구조화한다.",
+      "enum": [
+        "not_stated",
+        "unreadable",
+        "ambiguous",
+        "parse_failed",
+        "not_applicable"
+      ],
+      "title": "FieldIssueCode",
+      "type": "string"
+    },
+    "UnresolvedFieldReview": {
+      "additionalProperties": false,
+      "description": "사용자가 값을 확인하지 못한 필드와 구조화 사유.",
+      "properties": {
+        "document_type": {
+          "$ref": "#/$defs/DocumentType"
+        },
+        "field_name": {
+          "minLength": 1,
+          "title": "Field Name",
+          "type": "string"
+        },
+        "issue_code": {
+          "$ref": "#/$defs/FieldIssueCode"
+        }
+      },
+      "required": [
+        "document_type",
+        "field_name",
+        "issue_code"
+      ],
+      "title": "UnresolvedFieldReview",
+      "type": "object"
+    }
+  },
+  "$id": "lease-companion/extraction-confirmation-request-v1.9.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "추출값 확인 완료 요청. 확인하지 못한 필드를 명시해 자동 승인하지 않는다.",
+  "properties": {
+    "contract_id": {
+      "exclusiveMinimum": 0,
+      "title": "Contract Id",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": "1.9.0",
+      "enum": [
+        "1.8.0",
+        "1.9.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "unresolved_fields": {
+      "items": {
+        "$ref": "#/$defs/UnresolvedFieldReview"
+      },
+      "title": "Unresolved Fields",
+      "type": "array"
+    }
+  },
+  "required": [
+    "contract_id"
+  ],
+  "title": "ExtractionConfirmationRequest",
+  "type": "object",
+  "x-schema-version": "1.9.0"
+}

@@ -8,6 +8,7 @@ import type {
   ContractSummaryDto,
   CorrectionRequestDto,
   DocumentDto,
+  ExtractionConfirmationRequestDto,
   ExtractionStateDto,
   FeedbackCreateRequestDto,
   FeedbackDto,
@@ -74,9 +75,11 @@ export const mvpService = {
       headers: jsonHeaders,
       body: JSON.stringify(request),
     }),
-  confirmExtraction: (contractId: number) =>
+  confirmExtraction: (contractId: number, request: ExtractionConfirmationRequestDto) =>
     apiClient<SnapshotResponseDto>(`/api/contracts/${contractId}/extractions/confirm`, {
       method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify(request),
     }),
   startAnalysis: (contractId: number) =>
     apiClient<AnalysisRunDetailDto>(`/api/contracts/${contractId}/analysis-runs`, {

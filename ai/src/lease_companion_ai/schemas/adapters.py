@@ -29,6 +29,7 @@ from lease_companion_ai.schemas.unified import (
     CorrectionRequest,
     DocumentExtraction,
     DocumentType,
+    ExtractionConfirmationRequest,
     ExtractedField,
     FieldValue,
     FieldIssueCode,
@@ -167,21 +168,69 @@ def apply_correction(
 
 def confirm_field(field: ExtractedField) -> ExtractedField:
     """수정 없이 값 확인 완료 표시. 이미 corrected인 필드는 그대로 둔다."""
-    if field.verification_status is VerificationStatus.CORRECTED:
+    if field.verification_status in {
+        VerificationStatus.CORRECTED,
+        VerificationStatus.UNRESOLVED,
+    }:
         return field
     return field.model_copy(
         update={"verification_status": VerificationStatus.CONFIRMED}
     )
 
 
-def confirm_document(document: DocumentExtraction) -> DocumentExtraction:
-    """사용자가 문서 전체를 대조·확인했다는 명시적 동작을 새 객체로 반영한다."""
+def mark_unresolved(field: ExtractedField, issue_code: FieldIssueCode) -> ExtractedField:
+    """원본 추출값은 보존하고 규칙 입력에서는 제외되는 사용자 미확인 상태."""
+    updated = field.model_copy(
+        update={
+            "verification_status": VerificationStatus.UNRESOLVED,
+            "issue_code": issue_code,
+        }
+    )
+    return ExtractedField.model_validate(updated.model_dump())
+
+
+def confirm_document(
+    document: DocumentExtraction,
+    unresolved_fields: dict[str, FieldIssueCode] | None = None,
+) -> DocumentExtraction:
+    """확인 결과를 반영한다. 명시된 미확인 필드는 자동 승인하지 않는다."""
+    unresolved_fields = unresolved_fields or {}
+    unknown = sorted(set(unresolved_fields) - document.fields.keys())
+    if unknown:
+        raise KeyError(
+            f"{document.document_type.value} 문서에 없는 미확인 필드입니다: {unknown}"
+        )
     payload = document.model_dump()
     payload["fields"] = {
-        name: confirm_field(field).model_dump()
+        name: (
+            mark_unresolved(field, unresolved_fields[name])
+            if name in unresolved_fields
+            else confirm_field(field)
+        ).model_dump()
         for name, field in document.fields.items()
     }
     return DocumentExtraction.model_validate(payload)
+
+
+def apply_confirmation_request(
+    documents: dict[DocumentType, DocumentExtraction],
+    request: ExtractionConfirmationRequest,
+) -> dict[DocumentType, DocumentExtraction]:
+    """문서별 사용자 미확인 사유를 적용한 확인 완료 사본을 반환한다."""
+    unresolved_by_type: dict[DocumentType, dict[str, FieldIssueCode]] = {
+        doc_type: {} for doc_type in documents
+    }
+    for item in request.unresolved_fields:
+        if item.document_type not in documents:
+            raise KeyError(f"확인 대상 문서가 없습니다: {item.document_type.value}")
+        unresolved_by_type[item.document_type][item.field_name] = item.issue_code
+    return {
+        doc_type: confirm_document(
+            document,
+            unresolved_by_type.get(doc_type),
+        )
+        for doc_type, document in documents.items()
+    }
 
 
 def document_to_legacy(document: DocumentExtraction) -> dict[str, Any]:

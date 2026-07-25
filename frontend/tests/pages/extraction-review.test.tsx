@@ -245,7 +245,11 @@ describe("ExtractionReviewPage", () => {
           corrected_value: "수정 주소",
         }],
       });
-      expect(confirm).toHaveBeenCalledWith(1001);
+      expect(confirm).toHaveBeenCalledWith(1001, {
+        schema_version: "1.9.0",
+        contract_id: 1001,
+        unresolved_fields: [],
+      });
       expect(start).toHaveBeenCalledWith(1001);
     });
     expect(callOrder).toEqual(["correction", "confirm", "analysis"]);
@@ -540,12 +544,12 @@ describe("ExtractionReviewPage", () => {
     ]);
   });
 
-  it("allows unresolved items to reach analysis without sending their reasons to the backend", async () => {
+  it("sends unresolved field reasons before starting analysis", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
       property_address: extractedField("property_address", "기존 주소"),
     }));
     const submit = vi.spyOn(mvpService, "submitCorrections");
-    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
+    const confirm = vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
       { input_snapshot_id: "SNAP-1001", created_at: "2026-07-16T00:00:00Z" },
     );
     const start = vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
@@ -558,6 +562,17 @@ describe("ExtractionReviewPage", () => {
 
     await waitFor(() => expect(start).toHaveBeenCalledWith(1001));
     expect(submit).not.toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalledWith(1001, {
+      schema_version: "1.9.0",
+      contract_id: 1001,
+      unresolved_fields: [
+        {
+          document_type: "contract",
+          field_name: "property_address",
+          issue_code: "not_stated",
+        },
+      ],
+    });
   });
 
   it("polls pending extraction to completion", async () => {

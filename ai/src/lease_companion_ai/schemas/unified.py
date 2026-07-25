@@ -67,6 +67,7 @@ class VerificationStatus(str, Enum):
     UNVERIFIED = "unverified"
     CONFIRMED = "confirmed"
     CORRECTED = "corrected"
+    UNRESOLVED = "unresolved"
 
 
 class FieldIssueCode(str, Enum):
@@ -698,11 +699,15 @@ class ExtractedField(BaseModel):
             raise ValueError("confidence=실패 인 필드는 failure_reason이 필요합니다.")
         if self.verification_status is VerificationStatus.CORRECTED and self.user_corrected_value is None:
             raise ValueError("verification_status=corrected 인 필드는 user_corrected_value가 필요합니다.")
+        if self.verification_status is VerificationStatus.UNRESOLVED and self.issue_code is None:
+            raise ValueError("verification_status=unresolved 인 필드는 issue_code가 필요합니다.")
         return self
 
     @property
     def effective_value(self) -> FieldValue:
         """규칙 엔진 입력값. 수정값 → 정규화값 → 최초 추출값 순."""
+        if self.verification_status is VerificationStatus.UNRESOLVED:
+            return None
         if self.user_corrected_value is not None:
             return self.user_corrected_value
         if self.normalized_value is not None:
@@ -803,7 +808,8 @@ class InputSnapshot(BaseModel):
             for item in doc_fields.values():
                 if item.verification_status is VerificationStatus.UNVERIFIED:
                     raise ValueError(
-                        f"스냅샷에는 확인 완료(confirmed/corrected) 필드만 담을 수 있습니다: {item.field_name}"
+                        "스냅샷에는 확인 완료 또는 미확인 사유가 기록된 "
+                        f"(confirmed/corrected/unresolved) 필드만 담을 수 있습니다: {item.field_name}"
                     )
         return self
 
@@ -1691,3 +1697,44 @@ class CorrectionRequest(BaseModel):
     schema_version: SchemaVersion = SCHEMA_VERSION
     contract_id: ContractId
     corrections: list[FieldCorrection] = Field(min_length=1)
+
+
+class UnresolvedFieldReview(BaseModel):
+    """사용자가 값을 확인하지 못한 필드와 구조화 사유."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    document_type: DocumentType
+    field_name: str = Field(min_length=1)
+    issue_code: FieldIssueCode
+
+    @field_validator("issue_code")
+    @classmethod
+    def _allow_user_unresolved_reasons(cls, value: FieldIssueCode) -> FieldIssueCode:
+        if value not in {
+            FieldIssueCode.NOT_STATED,
+            FieldIssueCode.UNREADABLE,
+            FieldIssueCode.AMBIGUOUS,
+        }:
+            raise ValueError("사용자 미확인 사유는 not_stated/unreadable/ambiguous만 허용합니다.")
+        return value
+
+
+class ExtractionConfirmationRequest(BaseModel):
+    """추출값 확인 완료 요청. 확인하지 못한 필드를 명시해 자동 승인하지 않는다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: SchemaVersion = SCHEMA_VERSION
+    contract_id: ContractId
+    unresolved_fields: list[UnresolvedFieldReview] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _reject_duplicate_fields(self) -> "ExtractionConfirmationRequest":
+        keys = [
+            (item.document_type, item.field_name)
+            for item in self.unresolved_fields
+        ]
+        if len(keys) != len(set(keys)):
+            raise ValueError("unresolved_fields에 중복 필드가 있습니다.")
+        return self

@@ -7,6 +7,7 @@ const verificationLabels: Record<VerificationStatus, string> = {
   unverified: "미확인",
   confirmed: "확인됨",
   corrected: "수정됨",
+  unresolved: "확인하지 못함",
 };
 
 // issue_code가 있으면 칩 문구를 정확한 상태로 교체한다(요소 추가 없이 confidence 칩 텍스트만 바꿈).
