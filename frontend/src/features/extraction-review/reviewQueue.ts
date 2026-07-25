@@ -123,12 +123,21 @@ const disputeFields = new Set([
   "violation_building",
 ]);
 
-const amountPairs = [
-  ["deposit", "deposit_korean_amount"],
-  ["monthly_rent", "monthly_rent_korean_amount"],
-  ["contract_payment", "contract_payment_korean_amount"],
-  ["balance_payment", "balance_payment_korean_amount"],
-] as const;
+// 값이 틀리면 뒤 판정이 전부 흔들리는 항목. 추출 품질과 무관하게 개별 확인을 받는다.
+const coreFields = new Set([
+  "account_holder",
+  "account_number",
+  "balance_payment",
+  "bank_name",
+  "contract_payment",
+  "deposit",
+  "end_date",
+  "landlord_name",
+  "monthly_rent",
+  "property_address",
+  "special_clauses",
+  "start_date",
+]);
 
 const sectionOrder: Record<ReviewSection, number> = {
   money_direct: 0,
@@ -151,140 +160,9 @@ function hasValue(value: FieldValue): boolean {
   return true;
 }
 
-function normalizedText(value: FieldValue): string {
-  if (Array.isArray(value)) return value.map((item) => normalizedText(item)).join("|");
-  if (value === null) return "";
-  return String(value).normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
-}
-
-function dateValue(value: FieldValue): number | null {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const parsed = Date.parse(`${value}T00:00:00Z`);
-  if (Number.isNaN(parsed)) return null;
-  return new Date(parsed).toISOString().slice(0, 10) === value ? parsed : null;
-}
-
 function hasSourceEvidence(view: FieldViewModel): boolean {
   return view.field.source_evidence.page !== null
     && Boolean(view.field.source_evidence.text?.trim());
-}
-
-function addReason(
-  reasonsByKey: Map<string, string[]>,
-  views: Array<FieldViewModel | undefined>,
-  reason: string,
-) {
-  for (const view of views) {
-    if (!view) continue;
-    const reasons = reasonsByKey.get(view.key) ?? [];
-    if (!reasons.includes(reason)) reasons.push(reason);
-    reasonsByKey.set(view.key, reasons);
-  }
-}
-
-function comparisonReasons(fields: FieldViewModel[]): Map<string, string[]> {
-  const reasonsByKey = new Map<string, string[]>();
-  const byKey = new Map(fields.map((view) => [view.key, view]));
-
-  const contractAddress = byKey.get("contract:property_address");
-  const registryAddress = byKey.get("registry:property_address");
-  if (
-    contractAddress
-    && registryAddress
-    && hasValue(effectiveValue(contractAddress))
-    && hasValue(effectiveValue(registryAddress))
-    && normalizedText(effectiveValue(contractAddress)) !== normalizedText(effectiveValue(registryAddress))
-  ) {
-    addReason(
-      reasonsByKey,
-      [contractAddress, registryAddress],
-      "계약서와 등기사항증명서의 주소가 다르게 읽혔습니다.",
-    );
-  }
-
-  const landlord = byKey.get("contract:landlord_name");
-  const owners = byKey.get("registry:owner_names");
-  if (landlord && owners && hasValue(effectiveValue(landlord)) && hasValue(effectiveValue(owners))) {
-    const landlordName = normalizedText(effectiveValue(landlord));
-    const ownerValue = effectiveValue(owners);
-    const ownerNames = Array.isArray(ownerValue)
-      ? ownerValue.map((name) => normalizedText(name))
-      : [normalizedText(ownerValue)];
-    if (!ownerNames.includes(landlordName)) {
-      addReason(
-        reasonsByKey,
-        [landlord, owners],
-        "계약서 임대인과 등기 소유자 이름이 다르게 읽혔습니다.",
-      );
-    }
-  }
-
-  for (const [numericName, koreanName] of amountPairs) {
-    const numeric = byKey.get(`contract:${numericName}`);
-    const korean = byKey.get(`contract:${koreanName}`);
-    const numericValue = numeric ? effectiveValue(numeric) : null;
-    const koreanValue = korean ? effectiveValue(korean) : null;
-    if (
-      numeric
-      && korean
-      && typeof numericValue === "number"
-      && typeof koreanValue === "number"
-      && numericValue !== koreanValue
-    ) {
-      addReason(
-        reasonsByKey,
-        [numeric, korean],
-        "숫자 금액과 한글 금액이 다르게 읽혔습니다.",
-      );
-    }
-  }
-
-  const startDate = byKey.get("contract:start_date");
-  const endDate = byKey.get("contract:end_date");
-  const start = startDate ? dateValue(effectiveValue(startDate)) : null;
-  const end = endDate ? dateValue(effectiveValue(endDate)) : null;
-  if (start !== null && end !== null && start > end) {
-    addReason(
-      reasonsByKey,
-      [startDate, endDate],
-      "계약 시작일이 종료일보다 늦게 읽혔습니다.",
-    );
-  }
-
-  const moveInDate = byKey.get("contract:move_in_date");
-  const moveIn = moveInDate ? dateValue(effectiveValue(moveInDate)) : null;
-  if (
-    moveIn !== null
-    && ((start !== null && moveIn < start) || (end !== null && moveIn > end))
-  ) {
-    addReason(
-      reasonsByKey,
-      [startDate, moveInDate, endDate],
-      "입주일이 계약기간 밖으로 읽혔습니다.",
-    );
-  }
-
-  const contractPaymentDate = byKey.get("contract:contract_payment_date");
-  const balancePaymentDate = byKey.get("contract:balance_payment_date");
-  const contractPayment = contractPaymentDate
-    ? dateValue(effectiveValue(contractPaymentDate))
-    : null;
-  const balancePayment = balancePaymentDate
-    ? dateValue(effectiveValue(balancePaymentDate))
-    : null;
-  if (
-    contractPayment !== null
-    && balancePayment !== null
-    && contractPayment > balancePayment
-  ) {
-    addReason(
-      reasonsByKey,
-      [contractPaymentDate, balancePaymentDate],
-      "계약금 지급일이 잔금 지급일보다 늦게 읽혔습니다.",
-    );
-  }
-
-  return reasonsByKey;
 }
 
 function impactsFor(fieldName: string): ReviewImpact[] {
@@ -298,44 +176,46 @@ function fieldReasons(view: FieldViewModel): string[] {
   const reasons: string[] = [];
   switch (view.field.issue_code) {
     case "unreadable":
-      reasons.push("글자를 읽지 못했습니다.");
+      reasons.push("글자를 읽지 못했어요.");
       break;
     case "parse_failed":
-      reasons.push("내용 형식을 해석하지 못했습니다.");
+      reasons.push("내용 형태를 알아보지 못했어요.");
       break;
     case "not_stated":
-      reasons.push("문서에 내용이 적혀 있지 않습니다.");
+      reasons.push("문서에 안 적혀 있어요.");
       break;
     case "ambiguous":
-      reasons.push("추출 내용이 불확실합니다.");
+      reasons.push("읽은 내용이 분명하지 않아요.");
       break;
   }
   if (view.field.issue_code === null && view.field.confidence !== "추출됨") {
-    reasons.push("자동 추출 신뢰도가 낮아 직접 확인해야 합니다.");
+    reasons.push("자동으로 읽은 값이라 한 번 봐 주세요.");
   }
   if (requiresExternalConfirmation(view)) {
-    reasons.push("다른 자료에서 직접 확인해야 합니다.");
+    reasons.push("다른 자료에서 직접 확인해 주세요.");
   }
   if (
     view.field.verification_status === "corrected"
     || view.field.user_corrected_value !== null
   ) {
-    reasons.push("사용자가 이전에 수정한 값입니다.");
+    reasons.push("전에 직접 고친 값이에요.");
   }
   if (view.field.verification_status === "unresolved") {
-    reasons.push("사용자가 아직 확인하지 못했습니다.");
+    reasons.push("아직 확인하지 못한 내용이에요.");
   }
   if (hasValue(effectiveValue(view)) && !hasSourceEvidence(view)) {
-    reasons.push("원문 위치 정보가 없어 문서에서 직접 대조해야 합니다.");
+    reasons.push("계약서에서 직접 찾아 비교해 주세요.");
   }
   return reasons;
 }
 
-function sectionFor(
-  view: FieldViewModel,
-  impacts: ReviewImpact[],
-  reasons: string[],
-): ReviewSection | null {
+function hasQualityIssue(view: FieldViewModel): boolean {
+  return view.field.issue_code !== null
+    || view.field.confidence !== "추출됨"
+    || !hasValue(effectiveValue(view));
+}
+
+function sectionFor(view: FieldViewModel, impacts: ReviewImpact[]): ReviewSection | null {
   if (view.field.issue_code === "not_applicable") return null;
   if (
     view.field.issue_code === "unreadable"
@@ -344,10 +224,15 @@ function sectionFor(
   ) {
     return "manual_or_unreadable";
   }
+  // 빠졌거나 뜻이 분명하지 않은 값은 돈·책임 분류보다 먼저 "다시 봐야 할 내용"으로 모은다.
+  if (view.field.issue_code === "not_stated" || view.field.issue_code === "ambiguous") {
+    return "suspected_issue";
+  }
+  // 잘 읽힌 일반 항목은 묶음 확인으로 보내고, 핵심 항목과 품질 이슈만 개별 카드로 남긴다.
+  if (!hasQualityIssue(view) && !coreFields.has(view.field.field_name)) return "grouped";
   if (impacts.includes("money")) return "money_direct";
   if (impacts.includes("dispute")) return "dispute_direct";
-  if (reasons.length > 0 || view.field.issue_code !== null) return "suspected_issue";
-  return "grouped";
+  return "suspected_issue";
 }
 
 export function buildReviewQueue(fields: FieldViewModel[]): ReviewQueueItem[] {
@@ -394,22 +279,12 @@ export function buildReviewQueue(fields: FieldViewModel[]): ReviewQueueItem[] {
 
 export function buildReviewPlan(fields: FieldViewModel[]): ReviewPlanItem[] {
   const queue = buildReviewQueue(fields);
-  const comparisonReasonByKey = comparisonReasons(queue.map((item) => item.view));
 
   return queue
     .map((item, index) => {
       const impacts = impactsFor(item.fieldName);
-      const reasons = [
-        ...fieldReasons(item.view),
-        ...(comparisonReasonByKey.get(item.key) ?? []),
-        ...(impacts.includes("money")
-          ? ["금액 지급이나 보증금 회수와 연결된 내용입니다."]
-          : []),
-        ...(impacts.includes("dispute")
-          ? ["계약 조건이나 책임 범위를 직접 확인할 내용입니다."]
-          : []),
-      ].filter((reason, reasonIndex, allReasons) => allReasons.indexOf(reason) === reasonIndex);
-      const section = sectionFor(item.view, impacts, reasons);
+      const reasons = fieldReasons(item.view);
+      const section = sectionFor(item.view, impacts);
       if (section === null) return null;
       return {
         ...item,

@@ -139,27 +139,27 @@ describe("ExtractionReviewPage", () => {
 
     const view = renderPage();
 
-    expect(await screen.findByRole("navigation", { name: "확인 구역" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /1 금전 손실을 줄이기 위해 직접 확인/ }))
+    expect(await screen.findByRole("navigation", { name: "확인 묶음" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1 돈에 관한 내용/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /2 분쟁을 줄이기 위해 직접 확인/ }))
+    expect(screen.getByRole("button", { name: /2 책임과 특약/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /3 틀렸거나 불확실할 가능성이 있는 내용/ }))
+    expect(screen.getByRole("button", { name: /3 다시 봐야 할 내용/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /4 읽지 못했거나 다른 자료에서 확인할 내용/ }))
+    expect(screen.getByRole("button", { name: /4 못 읽은 내용/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /5 추가 확인 항목/ }))
+    expect(screen.getByRole("button", { name: /5 나머지 내용/ }))
       .toBeInTheDocument();
     expect(view.container.querySelector(".extraction-review-workspace")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", {
-      name: /2 분쟁을 줄이기 위해 직접 확인/,
+      name: /2 책임과 특약/,
     }));
 
     expect(await screen.findByRole("heading", {
-      name: "분쟁을 줄이기 위해 직접 확인",
+      name: "책임과 특약",
     })).toBeInTheDocument();
-    expect(screen.getByText("분쟁을 줄이기 위해 확인합니다.")).toBeInTheDocument();
+    expect(screen.getByText("수리비·원상복구·관리비·계약 조건")).toBeInTheDocument();
   });
 
   it("shows grouped items together and bulk-confirms only safe pending items", async () => {
@@ -173,20 +173,20 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    await screen.findByRole("navigation", { name: "확인 구역" });
-    fireEvent.click(screen.getByRole("button", { name: /5 추가 확인 항목/ }));
+    await screen.findByRole("navigation", { name: "확인 묶음" });
+    fireEvent.click(screen.getByRole("button", { name: /5 나머지 내용/ }));
 
-    expect(screen.getByRole("heading", { name: "추가 확인 항목 모아보기" }))
+    expect(screen.getByRole("heading", { name: "나머지 내용 모아보기" }))
       .toBeInTheDocument();
     expect(screen.getByText(/전체 3개 · 확인 1개 · 남은 항목 2개/)).toBeInTheDocument();
     expect(screen.getByRole("button", {
-      name: "안전한 2개 모두 문서와 같음",
+      name: "2개 모두 문서와 같아요",
     })).toBeEnabled();
-    expect(screen.getByText("수정했거나 직접 확인이 필요한 항목은 묶음 확인에서 자동 제외됩니다."))
+    expect(screen.getByText("고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다."))
       .toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", {
-      name: "안전한 2개 모두 문서와 같음",
+      name: "2개 모두 문서와 같아요",
     }));
 
     expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
@@ -202,15 +202,15 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    await screen.findByRole("navigation", { name: "확인 구역" });
-    fireEvent.click(screen.getByRole("button", { name: /5 추가 확인 항목/ }));
+    await screen.findByRole("navigation", { name: "확인 묶음" });
+    fireEvent.click(screen.getByRole("button", { name: /5 나머지 내용/ }));
     expect(screen.getByRole("button", {
-      name: "안전한 2개 모두 문서와 같음",
+      name: "2개 모두 문서와 같아요",
     })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: /등기 발급일.*자세히 보기/ }));
     expect(screen.getByRole("button", {
-      name: "안전한 1개 모두 문서와 같음",
+      name: "1개 모두 문서와 같아요",
     })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     fireEvent.change(screen.getByRole("textbox", { name: "등기 발급일 수정 내용" }), {
@@ -219,10 +219,10 @@ describe("ExtractionReviewPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
 
     expect(screen.getByRole("button", {
-      name: "안전한 1개 모두 문서와 같음",
+      name: "1개 모두 문서와 같아요",
     })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", {
-      name: "안전한 1개 모두 문서와 같음",
+      name: "1개 모두 문서와 같아요",
     }));
 
     expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
@@ -238,11 +238,11 @@ describe("ExtractionReviewPage", () => {
     expect(await screen.findByRole("progressbar", { name: /중요한 내용 .*개 중 .*개 확인/ }))
       .toBeInTheDocument();
     expect(screen.getByRole("heading", {
-      name: "금전 손실을 줄이기 위해 직접 확인",
+      name: "돈에 관한 내용",
     })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", {
-      name: /2 분쟁을 줄이기 위해 직접 확인/,
+      name: /2 책임과 특약/,
     }));
     expect(await screen.findByRole("heading", { name: /주소/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
@@ -315,9 +315,9 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    await screen.findByRole("navigation", { name: "확인 구역" });
+    await screen.findByRole("navigation", { name: "확인 묶음" });
     fireEvent.click(screen.getByRole("button", {
-      name: /2 분쟁을 줄이기 위해 직접 확인/,
+      name: /2 책임과 특약/,
     }));
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
@@ -328,7 +328,7 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", {
-      name: /2 분쟁을 줄이기 위해 직접 확인/,
+      name: /2 책임과 특약/,
     }));
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     expect(screen.getByRole("textbox", { name: /주소 수정 내용/ })).toHaveValue("수정 주소");
@@ -371,9 +371,9 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    await screen.findByRole("navigation", { name: "확인 구역" });
+    await screen.findByRole("navigation", { name: "확인 묶음" });
     fireEvent.click(screen.getByRole("button", {
-      name: /2 분쟁을 줄이기 위해 직접 확인/,
+      name: /2 책임과 특약/,
     }));
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));

@@ -53,28 +53,28 @@ const REVIEW_SECTIONS: Array<{
 }> = [
   {
     key: "money_direct",
-    title: "금전 손실을 줄이기 위해 직접 확인",
-    description: "금액·입금·권리처럼 돈과 바로 연결되는 내용을 확인합니다.",
+    title: "돈에 관한 내용",
+    description: "보증금·월세·계좌·등기 권리",
   },
   {
     key: "dispute_direct",
-    title: "분쟁을 줄이기 위해 직접 확인",
-    description: "분쟁을 줄이기 위해 확인합니다.",
+    title: "책임과 특약",
+    description: "수리비·원상복구·관리비·계약 조건",
   },
   {
     key: "suspected_issue",
-    title: "틀렸거나 불확실할 가능성이 있는 내용",
-    description: "문서끼리 다르거나 자동으로 확정하기 어려운 내용을 다시 봅니다.",
+    title: "다시 봐야 할 내용",
+    description: "값이 빠졌거나 분명하지 않은 부분",
   },
   {
     key: "manual_or_unreadable",
-    title: "읽지 못했거나 다른 자료에서 확인할 내용",
-    description: "글자를 읽지 못했거나 문서 밖 자료가 필요한 내용을 직접 확인합니다.",
+    title: "못 읽은 내용",
+    description: "글자가 흐리거나 문서에 없는 부분",
   },
   {
     key: "grouped",
-    title: "추가 확인 항목",
-    description: "앞선 구역에 해당하지 않는 기본 내용을 마지막으로 확인합니다.",
+    title: "나머지 내용",
+    description: "위 네 가지에 없는 기본 정보",
   },
 ];
 
@@ -155,6 +155,12 @@ export function ExtractionReviewPage() {
   const currentSection = currentItem
     ? REVIEW_SECTIONS.find((section) => section.key === currentItem.section) ?? null
     : null;
+  const currentSectionItems = currentItem
+    ? queue.filter((item) => item.section === currentItem.section)
+    : [];
+  const currentSectionPosition = currentItem
+    ? currentSectionItems.findIndex((item) => item.key === currentItem.key) + 1
+    : 0;
   const sectionSummaries = REVIEW_SECTIONS.map((section) => {
     const items = queue.filter((item) => item.section === section.key);
     return {
@@ -582,8 +588,8 @@ export function ExtractionReviewPage() {
     <PageShell
       layout="workspace"
       step="5 / 8"
-      title="문서에서 읽은 내용 확인"
-      description="중요한 내용부터 하나씩 원문과 비교해 주세요."
+      title="읽은 내용 확인"
+      description="계약서와 같은지 확인해 주세요."
     >
       <div className="stack extraction-review-workspace">
         {status === "loading" && (
@@ -614,24 +620,25 @@ export function ExtractionReviewPage() {
         )}
         {status === "success" && fields.length > 0 && (
           <>
-            <nav className="review-section-nav" aria-label="확인 구역">
+            <nav className="review-section-nav" aria-label="확인 묶음">
               {sectionSummaries.map((section, index) => (
-                <button
-                  className={`review-section-nav__item${
-                    currentItem?.section === section.key ? " review-section-nav__item--active" : ""
-                  }`}
-                  type="button"
-                  key={section.key}
-                  disabled={section.items.length === 0}
-                  aria-current={currentItem?.section === section.key ? "step" : undefined}
-                  onClick={() => selectSection(section.key)}
-                >
-                  <span className="review-section-nav__number">{index + 1}</span>
-                  <strong>{section.title}</strong>
-                  <span>
-                    {section.completedCount} / {section.items.length}개 확인
-                  </span>
-                </button>
+                section.items.length === 0 ? null : (
+                  <button
+                    className={`review-section-nav__item${
+                      currentItem?.section === section.key ? " review-section-nav__item--active" : ""
+                    }`}
+                    type="button"
+                    key={section.key}
+                    aria-current={currentItem?.section === section.key ? "step" : undefined}
+                    onClick={() => selectSection(section.key)}
+                  >
+                    <span className="review-section-nav__number">{index + 1}</span>
+                    <strong>{section.title}</strong>
+                    <span>
+                      {section.completedCount} / {section.items.length}
+                    </span>
+                  </button>
+                )
               ))}
             </nav>
 
@@ -659,23 +666,32 @@ export function ExtractionReviewPage() {
                 {currentSection && (
                   <header className="review-current-section">
                     <div>
-                      <span>{REVIEW_SECTIONS.findIndex(
-                        (section) => section.key === currentSection.key,
-                      ) + 1}구역</span>
                       <h2>{currentSection.title}</h2>
                       <p>{currentSection.description}</p>
                     </div>
                     <span className="review-current-section__count">
-                      {sectionSummaries.find(
-                        (section) => section.key === currentSection.key,
-                      )?.items.length ?? 0}개
+                      {currentItem.section === "grouped"
+                        ? `${currentSectionItems.length}개`
+                        : `${currentSectionItems.length}개 중 ${currentSectionPosition}번째`}
                     </span>
                   </header>
                 )}
                 {currentItem.section !== "grouped" && currentItem.reasons.length > 0 && (
-                  <ul className="review-item-reasons" aria-label="이 항목을 확인하는 이유">
-                    {currentItem.reasons.map((reason) => <li key={reason}>{reason}</li>)}
-                  </ul>
+                  <div className="review-item-reasons">
+                    <ul aria-label="이 내용을 확인하는 이유">
+                      <li>{currentItem.reasons[0]}</li>
+                    </ul>
+                    {currentItem.reasons.length > 1 && (
+                      <details>
+                        <summary>{`이유 ${currentItem.reasons.length - 1}개 더 보기`}</summary>
+                        <ul>
+                          {currentItem.reasons.slice(1).map((reason) => (
+                            <li key={reason}>{reason}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
                 )}
                 {currentItem.section !== "grouped" && currentIndex > 0 && (
                   <button
@@ -691,7 +707,7 @@ export function ExtractionReviewPage() {
                   <section className="grouped-review-panel" aria-labelledby="grouped-review-title">
                     <header className="grouped-review-panel__head">
                       <div>
-                        <h3 id="grouped-review-title">추가 확인 항목 모아보기</h3>
+                        <h3 id="grouped-review-title">나머지 내용 모아보기</h3>
                         <p>
                           전체 {groupedItems.length}개 · 확인 {groupedHandledCount}개 · 남은 항목{" "}
                           {groupedItems.length - groupedHandledCount}개
@@ -702,11 +718,11 @@ export function ExtractionReviewPage() {
                         disabled={submitting || bulkConfirmItems.length === 0}
                         onClick={markGroupedItemsReviewed}
                       >
-                        안전한 {bulkConfirmItems.length}개 모두 문서와 같음
+                        {bulkConfirmItems.length}개 모두 문서와 같아요
                       </button>
                     </header>
                     <p className="grouped-review-panel__notice">
-                      수정했거나 직접 확인이 필요한 항목은 묶음 확인에서 자동 제외됩니다.
+                      고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다.
                     </p>
                     <ul className="grouped-review-list">
                       {groupedItems.map((item) => {

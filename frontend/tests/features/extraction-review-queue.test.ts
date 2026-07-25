@@ -145,7 +145,7 @@ describe("buildReviewPlan", () => {
         confidence: "불확실",
         issueCode: "ambiguous",
       }),
-      reviewField("repair_responsibility"),
+      reviewField("repair_responsibility", { confidence: "불확실" }),
       reviewField("deposit"),
       reviewField("owner_shares", {
         value: null,
@@ -172,11 +172,31 @@ describe("buildReviewPlan", () => {
     expect(plan.find((item) => item.fieldName === "deposit")?.impacts).toEqual(["money"]);
     expect(plan.find((item) => item.fieldName === "repair_responsibility")?.impacts).toEqual(["dispute"]);
     expect(plan.find((item) => item.fieldName === "violation_building")?.reasons)
-      .toContain("다른 자료에서 직접 확인해야 합니다.");
+      .toContain("다른 자료에서 직접 확인해 주세요.");
     expect(plan.some((item) => item.fieldName === "agent_name")).toBe(false);
   });
 
-  it("keeps comparison signals as reasons without duplicating fields across sections", () => {
+  it("keeps core money fields individual and out of bulk confirmation even when cleanly extracted", () => {
+    const plan = buildReviewPlan([
+      reviewField("deposit", { value: 300_000_000 }),
+      reviewField("account_number", { value: "123-456" }),
+      reviewField("special_clauses", { value: "특약 하나" }),
+      reviewField("management_fee_items", { value: "수도" }),
+    ]);
+
+    for (const fieldName of ["deposit", "account_number", "special_clauses"]) {
+      expect(plan.find((item) => item.fieldName === fieldName)?.section)
+        .not.toBe("grouped");
+      expect(plan.find((item) => item.fieldName === fieldName)?.bulkConfirmAllowed)
+        .toBe(false);
+    }
+    expect(plan.find((item) => item.fieldName === "management_fee_items")).toMatchObject({
+      section: "grouped",
+      bulkConfirmAllowed: true,
+    });
+  });
+
+  it("does not compare values across documents and keeps each document field separate", () => {
     const plan = buildReviewPlan([
       reviewField("property_address", { value: "서울시 101호" }),
       reviewField("property_address", {
@@ -199,23 +219,17 @@ describe("buildReviewPlan", () => {
     expect(plan.filter((item) => item.fieldName === "property_address"))
       .toHaveLength(2);
     expect(plan.filter((item) => item.fieldName === "property_address")
-      .every((item) => (
-        item.section === "dispute_direct"
-        && item.reasons.some((reason) => reason.includes("주소가 다르게"))
-      ))).toBe(true);
+      .every((item) => item.section === "dispute_direct")).toBe(true);
     expect(plan.find((item) => item.fieldName === "landlord_name")).toMatchObject({
       section: "money_direct",
       impacts: ["money", "dispute"],
     });
-    expect(plan.find((item) => item.fieldName === "landlord_name")?.reasons
-      .some((reason) => reason.includes("이름이 다르게"))).toBe(true);
-    expect(plan.find((item) => item.fieldName === "deposit")?.reasons)
-      .toContain("숫자 금액과 한글 금액이 다르게 읽혔습니다.");
-    expect(plan.find((item) => item.fieldName === "start_date")?.reasons)
-      .toContain("계약 시작일이 종료일보다 늦게 읽혔습니다.");
+    // 문서 간 값 비교는 6단계 규칙 엔진 전용이다. 5단계는 어떤 불일치도 주장하지 않는다.
+    expect(plan.flatMap((item) => item.reasons)
+      .some((reason) => reason.includes("다르"))).toBe(false);
   });
 
-  it("allows bulk confirmation only for normal evidenced unreviewed fields", () => {
+  it("allows bulk confirmation only for cleanly extracted unreviewed non-core fields", () => {
     const exactDuplicate = reviewField("issue_date");
     const plan = buildReviewPlan([
       exactDuplicate,
@@ -241,16 +255,17 @@ describe("buildReviewPlan", () => {
       section: "grouped",
       bulkConfirmAllowed: true,
     });
+    // 원문 위치(page·text)는 현재 추출기가 거의 채우지 않아 분류 신호로 쓰지 않는다.
     expect(plan.find((item) => item.fieldName === "future_without_evidence")).toMatchObject({
-      section: "suspected_issue",
-      bulkConfirmAllowed: false,
+      section: "grouped",
+      bulkConfirmAllowed: true,
     });
     expect(plan.find((item) => item.fieldName === "future_failed")).toMatchObject({
       section: "suspected_issue",
       bulkConfirmAllowed: false,
     });
     expect(plan.find((item) => item.fieldName === "future_corrected")).toMatchObject({
-      section: "suspected_issue",
+      section: "grouped",
       bulkConfirmAllowed: false,
     });
     expect(plan.find((item) => item.fieldName === "future_unresolved")?.bulkConfirmAllowed)
