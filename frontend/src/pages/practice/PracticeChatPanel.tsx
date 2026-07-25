@@ -139,7 +139,7 @@ export function PracticeChatPanel({
         <ol className="practice-chat__messages">
           {items.map((item, index) => (
             <li className="practice-chat__turn" key={item.practice_turn_id}>
-              {/* 아바타 화면의 큰 대사와 같은 문장. 같은 TURN을 여러 번 답한 경우 한 번만 남긴다. */}
+              {/* 이어서 답할 질문(prompt). 같은 TURN을 여러 번 답한 경우 한 번만 남긴다. */}
               {item.turn_id !== items[index - 1]?.turn_id && (
                 <MessageBubble sender="counterparty" label="공인중개사" content={item.prompt} />
               )}
@@ -148,6 +148,10 @@ export function PracticeChatPanel({
                 label="나"
                 content={item.timed_out ? "답변하지 못했어요." : item.user_answer ?? "답변을 건너뛰었어요."}
               />
+              {/* 직전 답변에 대한 사람다운 응답(dialogue_response). */}
+              {item.dialogue_response && (
+                <MessageBubble sender="counterparty" label="공인중개사" content={item.dialogue_response} />
+              )}
             </li>
           ))}
         </ol>

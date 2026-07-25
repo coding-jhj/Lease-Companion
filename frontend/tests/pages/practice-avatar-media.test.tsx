@@ -20,7 +20,6 @@ describe("PracticeAvatarStage generated media", () => {
     const view = render(
       <PracticeAvatarStage
         prompt="확인 요청을 반영했습니다."
-        nextPrompt="다음 확인 질문입니다."
         pressureDelaySeconds={null}
         hasUserInput={false}
         submitting={false}
@@ -35,8 +34,7 @@ describe("PracticeAvatarStage generated media", () => {
     expect(video).not.toHaveAttribute("muted");
     expect(screen.queryByRole("button", { name: "립싱크 영상 보기" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
-    expect(screen.getByText("이어서 확인할 내용")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "다음 확인 질문입니다." })).toBeInTheDocument();
+    expect(screen.queryByText("이어서 확인할 내용")).toBeNull();
   });
 
   it("announces generation without replacing the text fallback", () => {

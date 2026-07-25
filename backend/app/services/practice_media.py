@@ -17,10 +17,7 @@ from sqlalchemy.orm import Session
 from app.models.practice import PracticeMediaJob, PracticeSession, PracticeTurn
 from app.models.user import User
 from app.schemas.practice import PracticeMediaJobResponse
-from app.services.practice import (
-    PracticeServiceError,
-    load_approved_practice_assets,
-)
+from app.services.practice import PracticeServiceError
 
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -37,24 +34,6 @@ def practice_media_root() -> Path:
         if configured
         else (_BACKEND_ROOT / "var" / "practice-media").resolve()
     )
-
-
-def _speech_text(session_row: PracticeSession, turn: PracticeTurn) -> str:
-    """아바타가 읽는 문장은 화면의 큰 대사(다음 TURN prompt)와 일치시킨다.
-
-    ACTION-SELECTION 등 다음 대사가 없는 상태에서는 직전 응답을 그대로 읽는다.
-    """
-
-    scenario, _ = load_approved_practice_assets(session_row.scenario_id)
-    prompt = next(
-        (
-            item.prompt
-            for item in scenario.dialogue_turns
-            if item.turn_id == session_row.current_state
-        ),
-        None,
-    )
-    return (prompt or turn.dialogue_response or "").strip()
 
 
 def avatar_speech_text(dialogue_response: str) -> str:
@@ -98,7 +77,7 @@ def queue_practice_media_job(
         return existing
 
     full_dialogue = turn.dialogue_response.strip()
-    speech_text = avatar_speech_text(_speech_text(session_row, turn))
+    speech_text = avatar_speech_text(full_dialogue)
     job = PracticeMediaJob(
         media_job_id=uuid.uuid4().hex,
         practice_session_fk=session_row.id,

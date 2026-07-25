@@ -73,7 +73,7 @@ def test_guardrail_accepts_grounded_short_response():
         (_result("현재 특약에 적혀 있지 않습니다.", fact_id="F99"), "unapproved_fact"),
         (_result("현재 특약에 적혀 있지 않습니다.", speech_act="answer_fact"), "speech_act_mismatch"),
         (_result("첫 문장입니다. 둘째 문장입니다. 셋째 문장입니다."), "too_many_sentences"),
-        (_result("가" * 101), "too_long"),
+        (_result("가" * 61), "too_long"),
         (_result("30일 안에 보증금을 반환합니다."), "unapproved_number"),
         (_result("김철수 임대인이 보증금을 반환합니다."), "unapproved_entity"),
         (_result("이 계약은 법적으로 적법합니다."), "prohibited_claim"),

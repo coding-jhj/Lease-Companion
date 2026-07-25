@@ -20,7 +20,6 @@ interface PracticeAvatarStageProps {
   generatedVideoUrl?: string | null;
   generatedAudioUrl?: string | null;
   onGeneratedAudioEnded?: () => void;
-  nextPrompt?: string | null;
   mediaStatus?: PracticeMediaStatus | null;
   onToggleConversation?: () => void;
   conversationOpen?: boolean;
@@ -35,7 +34,6 @@ export function PracticeAvatarStage({
   generatedVideoUrl = null,
   generatedAudioUrl = null,
   onGeneratedAudioEnded,
-  nextPrompt = null,
   mediaStatus = null,
   onToggleConversation,
   conversationOpen = false,
@@ -163,12 +161,6 @@ export function PracticeAvatarStage({
         <div>
           <p>공인중개사</p>
           <h2 id="practice-avatar-title">{prompt}</h2>
-          {nextPrompt && nextPrompt !== prompt && (
-            <div className="practice-avatar-stage__next-prompt">
-              <p>이어서 확인할 내용</p>
-              <h3>{nextPrompt}</h3>
-            </div>
-          )}
           {generatedAudioUrl && !generatedVideoUrl && (
             <audio
               className="practice-avatar-stage__audio"

@@ -273,6 +273,8 @@ export function PracticeSessionPage() {
       });
       setSession(response.session);
       setLastResponse(null);
+      // 다음 상황으로 이동하면 직전 응답은 초기화해 새 상황 prompt가 큰 대사로 보이게 한다.
+      setAvatarSpeechText(null);
       setHintOpen(false);
       turnStartedAt.current = Date.now();
     } catch {
@@ -318,9 +320,8 @@ export function PracticeSessionPage() {
   const progressText = mission.targetCount === null
     ? `확인 행동 ${confirmedCount}개`
     : `확인 행동 ${confirmedCount} / ${mission.targetCount}`;
-  // 큰 대사는 지금 답해야 할 중개사 대사(current_turn.prompt), 보조는 직전 답변에 대한 응답(dialogue_response).
-  const brokerSpeech = session?.current_turn?.prompt ?? "";
-  const nextPrompt = avatarSpeechText && avatarSpeechText !== brokerSpeech ? avatarSpeechText : null;
+  // 큰 대사는 직전 답변에 대한 사람다운 응답(dialogue_response), 답 전에는 현재 TURN prompt.
+  const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
 
   return (
     <PageShell layout="workspace" step="계약 연습" title="상대방에게 직접 말해 보세요" description="정답 문구를 외우기보다, 확인할 내용과 진행 보류 의사를 자신의 말로 표현하는 연습입니다." showJourney={false}>
@@ -376,7 +377,6 @@ export function PracticeSessionPage() {
                     <PracticeAvatarStage
                       scenarioId={scenario?.scenario_id ?? session.scenario_id}
                       prompt={brokerSpeech}
-                      nextPrompt={nextPrompt}
                       pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                       hasUserInput={Boolean(answer.trim())}
                       submitting={submitting}
