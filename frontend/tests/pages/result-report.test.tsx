@@ -156,9 +156,12 @@ describe("ResultReportPage", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "물어볼 말" }));
     expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
-    for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것"]) {
+    for (const title of ["임대인에게 물어볼 말", "내가 문서에서 다시 볼 것"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
+    // 질문이 없는 대상은 빈 상자를 만들지 않는다.
+    expect(screen.queryByRole("heading", { name: "중개사에게 물어볼 말" })).not.toBeInTheDocument();
+    expect(screen.queryByText("현재 추가로 안내할 내용이 없습니다.")).not.toBeInTheDocument();
     const question = "등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?";
     expect(screen.getByRole("button", { name: `질문 복사: ${question}` })).toBeInTheDocument();
 

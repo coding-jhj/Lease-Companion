@@ -84,6 +84,8 @@ function ActionList({
   collapsible = false,
   copyable = false,
   defaultOpen = true,
+  hideWhenEmpty = false,
+  showCount = false,
 }: {
   title: string;
   description: string;
@@ -92,6 +94,8 @@ function ActionList({
   copyable?: boolean;
   /** false면 제목 줄만 먼저 보이고 눌러야 펼쳐진다. 지금 단계가 아닌 블록에 쓴다. */
   defaultOpen?: boolean;
+  hideWhenEmpty?: boolean;
+  showCount?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
@@ -110,6 +114,9 @@ function ActionList({
       setCopyError(true);
     }
   }
+
+  // 질문이 없는 대상은 빈 상자를 만들지 않는다(단계별 행동 블록은 개수 표시를 위해 유지).
+  if (hideWhenEmpty && items.length === 0) return null;
 
   if (!defaultOpen) {
     return (
@@ -140,7 +147,12 @@ function ActionList({
 
   return (
     <section className="action-hub__group">
-      <h3>{title}</h3>
+      <div className="action-hub__group__head">
+        <h3>{title}</h3>
+        {showCount && items.length > 0 && (
+          <span className="action-hub__group__count" aria-hidden="true">{items.length}</span>
+        )}
+      </div>
       <p>{description}</p>
       {items.length > 0
         ? <>
@@ -219,9 +231,9 @@ export function QuestionHub({
         <span>같은 문구는 한 번만 보여드립니다. 그대로 읽거나 복사해 물어보세요.</span>
       </header>
       <div className="action-hub__grid">
-        <ActionList copyable collapsible title="중개사에게 물어볼 말" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
-        <ActionList copyable collapsible title="임대인에게 물어볼 말" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
-        <ActionList copyable collapsible title="내가 문서에서 다시 볼 것" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
+        <ActionList copyable collapsible showCount hideWhenEmpty title="중개사에게 물어볼 말" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
+        <ActionList copyable collapsible showCount hideWhenEmpty title="임대인에게 물어볼 말" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
+        <ActionList copyable collapsible showCount hideWhenEmpty title="내가 문서에서 다시 볼 것" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
       </div>
     </section>
   );

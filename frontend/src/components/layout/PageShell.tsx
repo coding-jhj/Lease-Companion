@@ -22,6 +22,19 @@ interface PageShellProps {
 }
 
 const journeySteps = ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
+
+// 지나온 단계로 돌아갈 주소. 6단계(결과 준비)는 분석 실행 화면이라 되돌아가지 않는다.
+function stepPath(step: number, contractId: string | null): string | null {
+  if (step === 1) return "/choose-mode";
+  if (step === 2) return "/contracts";
+  if (!contractId) return null;
+  if (step === 3) return `/contracts/${contractId}/situation`;
+  if (step === 4) return `/contracts/${contractId}/upload`;
+  if (step === 5) return `/contracts/${contractId}/review`;
+  if (step === 7) return `/contracts/${contractId}/report`;
+  if (step === 8) return `/contracts/${contractId}`;
+  return null;
+}
 // 아이콘 path = Phosphor Icons (MIT License) — duotone.
 const journeyIconPaths: ReactNode[] = [
   <><path d="M128,32a96,96,0,1,0,96,96A96,96,0,0,0,128,32Zm16,112L80,176l32-64,64-32Z" opacity="0.2" /><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,32a8.05,8.05,0,0,0-3.58,3.58l-32,64A8,8,0,0,0,80,184a8.1,8.1,0,0,0,3.58-.84l64-32a8.05,8.05,0,0,0,3.58-3.58l32-64a8,8,0,0,0-10.74-10.74ZM138,138,97.89,158.11,118,118l40.15-20.07Z" /></>, // 시작 방법 — compass
@@ -61,6 +74,8 @@ export function PageShell({
   const currentLabel = journey?.currentLabel ?? journeySteps[currentStep - 1];
   const nextLabel = journey?.nextLabel ?? journeySteps[currentStep];
   const showModeSelect = showLogout && location.pathname !== "/choose-mode";
+  const contractId = location.pathname.match(/\/contracts\/(\d+)/)?.[1] ?? null;
+  const previousPath = validStep && currentStep > 1 ? stepPath(currentStep - 1, contractId) : null;
   const currentStepRef = useRef<HTMLDivElement | null>(null);
   const [showFullJourney, setShowFullJourney] = useState(false);
 
@@ -96,12 +111,25 @@ export function PageShell({
       {journeySteps.map((label, index) => {
         const number = index + 1;
         const state = number === currentStep ? "current" : number < currentStep ? "complete" : "upcoming";
-        return (
-          <div className={`journey-step journey-step--${state}`} ref={state === "current" ? currentStepRef : undefined} aria-current={state === "current" ? "step" : undefined} key={label}>
+        const className = `journey-step journey-step--${state}`;
+        const body = (
+          <>
             <span>{state === "complete" ? "✓" : number}</span>
             <JourneyIcon index={index} className="journey-step__icon" />
             <small>{label}</small>
             <em className="journey-step__status">{state === "complete" ? "완료" : state === "current" ? "진행 중" : "예정"}</em>
+          </>
+        );
+        // 지나온 단계만 돌아갈 수 있게 링크로 만든다. 현재·예정 단계는 그대로 둔다.
+        const path = state === "complete" ? stepPath(number, contractId) : null;
+        if (path) {
+          return (
+            <Link className={`${className} journey-step--link`} to={path} key={label}>{body}</Link>
+          );
+        }
+        return (
+          <div className={className} ref={state === "current" ? currentStepRef : undefined} aria-current={state === "current" ? "step" : undefined} key={label}>
+            {body}
           </div>
         );
       })}
@@ -140,6 +168,11 @@ export function PageShell({
             <div className="journey-progress__fill" style={{ width: `${(currentStep / journeySteps.length) * 100}%` }} />
           </div>
           <div className="journey-progress__row">
+            {previousPath && (
+              <Link className="journey-progress__back" to={previousPath}>
+                <span aria-hidden="true">←</span> 이전 단계
+              </Link>
+            )}
             <p className="journey-progress__head">
               <JourneyIcon index={currentStep - 1} className="journey-progress__icon" />
               <span className="journey-progress__kicker">{`${currentStep}/${journeySteps.length}단계`}</span>

@@ -115,6 +115,34 @@ describe("PageShell logout", () => {
     expect(screen.getByText("내용 확인").parentElement).toHaveAttribute("aria-current", "step");
   });
 
+  it("links back to the previous step and to completed steps only", () => {
+    render(
+      <MemoryRouter initialEntries={["/contracts/12/review"]}>
+        <PageShell step="5 / 8" title="문서에서 읽은 내용 확인" description="확인"><p>내용</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts/12/upload");
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
+
+    expect(screen.getByRole("link", { name: /집 등록/ })).toHaveAttribute("href", "/contracts");
+    expect(screen.getByRole("link", { name: /상황 입력/ })).toHaveAttribute("href", "/contracts/12/situation");
+    // 현재·예정 단계는 이동 링크를 만들지 않는다.
+    expect(screen.queryByRole("link", { name: /내용 확인/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /확인 결과/ })).not.toBeInTheDocument();
+  });
+
+  it("hides the previous-step link on the first step", () => {
+    render(
+      <MemoryRouter initialEntries={["/choose-mode"]}>
+        <PageShell step="1 / 8" title="시작 방법" description="선택"><p>내용</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("link", { name: /이전 단계/ })).not.toBeInTheDocument();
+  });
+
   it("keeps every journey display hidden when showJourney is false", () => {
     render(
       <MemoryRouter>
