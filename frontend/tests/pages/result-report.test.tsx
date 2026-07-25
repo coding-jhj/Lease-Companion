@@ -111,7 +111,7 @@ afterEach(() => {
 });
 
 describe("ResultReportPage", () => {
-  it("renders one prioritized result list and one deduplicated defense action hub", async () => {
+  it("shows one merged result list per tab without repeating the same item", async () => {
     vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue(detail());
 
     renderPage();
@@ -119,11 +119,10 @@ describe("ResultReportPage", () => {
     expect(screen.getByText("확인 결과를 불러오는 중")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "계약서 임대인=등기 소유자" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /계약금을 보내기 전에 \d+가지를 먼저 확인해 주세요/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "첫 확인 행동으로 이동" })).toHaveAttribute("href", "#first-action-item");
-    expect(screen.getByRole("heading", { name: "먼저 할 일" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "왜 확인해야 하나요?" })).toBeInTheDocument();
-    expect(screen.getByText("내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
+    // 같은 판정을 "먼저 할 일"과 "왜 확인해야 하나요?"로 두 번 보여주지 않는다.
+    expect(screen.queryByRole("heading", { name: "먼저 할 일" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "왜 확인해야 하나요?" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "계약서 임대인=등기 소유자" })).toHaveLength(1);
     expect(screen.getByLabelText("확인 우선순위 전체 개수")).toBeInTheDocument();
     // 상단 요약 개수는 하단 그룹 개수와 같아야 한다("지금 판단할 수 없는 항목"은 양쪽 모두 제외).
     for (const priority of ["반드시 확인", "확인 권장", "일반 확인"]) {
@@ -131,7 +130,16 @@ describe("ResultReportPage", () => {
       const bottom = document.querySelector(`.priority-group[data-priority="${priority}"] .priority-count`);
       expect(top?.textContent).toBe(`${bottom?.textContent}개`);
     }
-    expect(document.querySelectorAll(".result-card").length).toBeLessThan(36);
+
+    // 병합된 카드가 시점·상태·물어볼 말을 함께 보여준다.
+    const firstCard = document.querySelector("#first-action-item")!;
+    expect(firstCard).toHaveTextContent("서명·송금 전에 확인");
+    expect(firstCard).toHaveTextContent("불일치");
+    expect(firstCard).toHaveTextContent("임대인");
+    // 생성 문구의 제목 반복과 공통 꼬리말은 카드 본문에서 덜어낸다.
+    expect(firstCard.querySelector("p")?.textContent).not.toMatch(/^계약서 임대인=등기 소유자:/);
+    expect(firstCard.querySelector("p")?.textContent).not.toMatch(/공식 근거와 함께 확인해 주세요\.$/);
+
     expect(screen.getByRole("button", { name: /^확인 권장/ })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: /^일반 확인/ })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: /^지금 판단할 수 없는 항목/ })).toHaveAttribute("aria-expanded", "false");
@@ -140,9 +148,28 @@ describe("ResultReportPage", () => {
     for (const judgmentId of fixtureJudgmentIds) {
       expect(screen.getByText(judgmentId)).toBeInTheDocument();
     }
-    for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것", "계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
+
+    // 확인 항목 탭에서는 질문 목록·단계별 행동을 함께 쌓아 보여주지 않는다(다른 패널은 hidden).
+    expect(screen.queryByRole("heading", { name: "상대방에게 물어볼 말" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "계약 단계별 행동" })).not.toBeInTheDocument();
+    expect(document.querySelector("#report-panel-questions")).toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("tab", { name: "물어볼 말" }));
+    expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
+    for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
+    const question = "등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?";
+    expect(screen.getByRole("button", { name: `질문 복사: ${question}` })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "단계별 행동" }));
+    for (const title of ["계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+    }
+    // 지금 단계(계약금 입금 전)만 펼쳐 두고 나머지는 제목 줄만 보인다.
+    expect(screen.getByRole("button", { name: /^잔금·입주 당일/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: /^보관할 자료/ })).toHaveAttribute("aria-expanded", "false");
+
     expect(screen.getByRole("heading", { name: "비슷한 상황에서 확인할 점" })).toBeInTheDocument();
     const firstPatternDetails = document.querySelector(".damage-patterns details") as HTMLDetailsElement;
     fireEvent.click(within(firstPatternDetails).getByText("근거와 분석 한계"));
@@ -150,24 +177,25 @@ describe("ResultReportPage", () => {
     expect(within(referenceCases).getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeInTheDocument();
     expect(within(referenceCases).getByRole("link")).toHaveAttribute("href", expect.stringMatching(/^https:\/\//));
     expect(screen.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeInTheDocument();
-    expect(screen.getByLabelText("제출 자료 기준 피해 유형 비교 요약")).toBeInTheDocument();
-    const question = "등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?";
-    expect(screen.getByRole("button", { name: `질문 복사: ${question}` })).toBeInTheDocument();
+    // 전체 비교표는 접힌 상태로 시작한다(자료 부족 행이 화면을 차지하지 않게).
+    expect((document.querySelector(".damage-table-fold") as HTMLDetailsElement).open).toBe(false);
+    expect((document.querySelector(".feedback-fold") as HTMLDetailsElement).open).toBe(false);
 
-    const actionFirst = document.querySelector(".action-first")!;
-    const actionHub = document.querySelector(".action-hub")!;
-    const stageGuidance = document.querySelector(".stage-guidance")!;
-    const whyResults = document.querySelector(".report-results-column")!;
+    const hero = document.querySelector(".report-hero")!;
+    const tabs = document.querySelector(".report-tabs")!;
+    const panel = document.querySelector(".report-panel")!;
     const damageReference = document.querySelector(".damage-reference-section")!;
-    const feedback = document.querySelector(".feedback-card")!;
-    expect(actionFirst.compareDocumentPosition(actionHub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(actionHub.compareDocumentPosition(stageGuidance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(stageGuidance.compareDocumentPosition(whyResults) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(whyResults.compareDocumentPosition(damageReference) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const feedback = document.querySelector(".feedback-fold")!;
+    expect(hero.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tabs.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(panel.compareDocumentPosition(damageReference) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(damageReference.compareDocumentPosition(feedback) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     expect(screen.queryByText("R01")).not.toBeInTheDocument();
 
+    // 탭을 돌아와도 펼쳐 둔 그룹이 그대로 남는다(패널을 지우지 않고 감추기만 하므로).
+    fireEvent.click(screen.getByRole("tab", { name: "확인 항목" }));
+    expect(screen.getByRole("button", { name: /^확인 권장/ })).toHaveAttribute("aria-expanded", "true");
     const j01 = screen.getByText("J01").closest("article");
     expect(j01).toHaveTextContent("상태: 불일치");
     expect(j01).toHaveTextContent("시급도: 즉시 확인");
@@ -208,12 +236,13 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "왜 확인해야 하나요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "확인 항목" })).toBeInTheDocument();
     expandAllResultGroups();
     for (const judgmentId of ["J10", "J11", "J12"]) {
       const card = screen.getByText(judgmentId).closest("article");
       expect(card).toHaveTextContent("상태: 확인 필요");
     }
+    fireEvent.click(screen.getByRole("tab", { name: "물어볼 말" }));
     expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("provider_unavailable");
     expect(document.body).not.toHaveTextContent("classification provider");
@@ -253,7 +282,7 @@ describe("ResultReportPage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "왜 확인해야 하나요?" })).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "확인 항목" })).toBeInTheDocument();
     expect(screen.queryByText("이전 분석의 핵심 규칙 결과")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "이제 할 일 확인하기" })).toBeInTheDocument();
   });

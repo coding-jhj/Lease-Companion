@@ -134,26 +134,28 @@ test("situation entry and critical report actions work with the keyboard", async
   await expect(reportButton).toBeFocused();
   await page.keyboard.press("Enter");
 
-  const firstActionLink = page.getByRole("link", { name: "첫 확인 행동으로 이동" });
-  await firstActionLink.focus();
-  await expect(firstActionLink).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/#first-action-item$/);
+  // 탭은 화살표 키로 이동하고, 이동한 탭이 그대로 선택된다.
+  const itemsTab = page.getByRole("tab", { name: "확인 항목" });
+  await itemsTab.focus();
+  await expect(itemsTab).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  const questionsTab = page.getByRole("tab", { name: "물어볼 말" });
+  await expect(questionsTab).toBeFocused();
+  await expect(questionsTab).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(itemsTab).toBeFocused();
+  await expect(itemsTab).toHaveAttribute("aria-selected", "true");
 
-  const technicalSummary = page.getByText("세부 판정 정보").first();
-  const technicalId = technicalSummary.locator("..").locator(".result-meta strong");
+  // 접힘이 하나로 합쳐져 판정 id·근거를 같은 자리에서 연다.
+  const detailSummary = page.getByText("자세히 보기").first();
+  const technicalId = detailSummary.locator("..").locator(".result-meta strong");
   await expect(technicalId).toBeHidden();
-  await technicalSummary.focus();
-  await expect(technicalSummary).toBeFocused();
+  await detailSummary.focus();
+  await expect(detailSummary).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(technicalSummary.locator("..")).toHaveAttribute("open", "");
+  await expect(detailSummary.locator("..")).toHaveAttribute("open", "");
   await expect(technicalId).toBeVisible();
-
-  const evidenceSummary = page.getByText("근거와 판정 한계 확인").first();
-  await evidenceSummary.focus();
-  await expect(evidenceSummary).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(evidenceSummary.locator("..")).toHaveAttribute("open", "");
+  await expect(detailSummary.locator("..").getByText("확인 한계")).toBeVisible();
 
   const checklistButton = page.getByRole("button", { name: "이제 할 일 확인하기" });
   await checklistButton.focus();

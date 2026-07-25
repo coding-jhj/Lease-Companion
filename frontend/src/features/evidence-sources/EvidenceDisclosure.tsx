@@ -81,7 +81,7 @@ export function EvidenceDisclosure({
   limitations,
   explanation,
   financialImpact,
-  financialImpactLabel = "생길 수 있는 금전 문제",
+  financialImpactLabel = "돈에 미치는 영향",
   idPrefix,
   order = "explanation-first",
 }: {
@@ -99,15 +99,9 @@ export function EvidenceDisclosure({
 
   const sourceSection = (
     <details className="evidence-disclosure__sources" aria-labelledby={evidenceTitleId}>
+        {/* 펼치기 버튼이 하는 일을 문장으로 다시 쓰지 않는다. 제목 + 건수만 남긴다. */}
         <summary className="evidence-disclosure__intro">
-          <div>
-            <strong id={evidenceTitleId}>공식자료</strong>
-            <p>
-              {sources.length > 0
-                ? "이번 판정과 연결된 공식자료를 펼쳐서 확인할 수 있습니다."
-                : "현재 연결된 공식자료가 없습니다."}
-            </p>
-          </div>
+          <strong id={evidenceTitleId}>공식자료</strong>
           <span className="evidence-count" aria-label={`공식자료 ${sources.length}건`}>{sources.length}건</span>
           <span className="collapse-arrow" aria-hidden="true">▸</span>
         </summary>
@@ -124,11 +118,11 @@ export function EvidenceDisclosure({
         </div>
     </details>
   );
+  // 카드 본문과 같은 내용을 "조항을 쉽게 설명하면" 소제목으로 한 번 더 쓰지 않는다.
   const explanationSection = (
-    <section className="plain-evidence-card" aria-labelledby={explanationTitleId}>
+    <section className="plain-evidence-card" aria-label="쉬운 설명과 돈에 미치는 영향">
         <div className="plain-evidence-card__explanation">
-          <strong id={explanationTitleId}>조항을 쉽게 설명하면</strong>
-          <p>{explanation}</p>
+          <p id={explanationTitleId}>{explanation}</p>
         </div>
         <div className="financial-impact">
           <span className="financial-impact__icon" aria-hidden="true">!</span>
@@ -144,7 +138,7 @@ export function EvidenceDisclosure({
     <div className="evidence-disclosure">
       {order === "explanation-first" ? <>{explanationSection}{sourceSection}</> : <>{sourceSection}{explanationSection}</>}
       <aside className="limitation-card" aria-labelledby={limitationTitleId}>
-        <strong id={limitationTitleId}>이 판정에서 알아둘 점</strong>
+        <strong id={limitationTitleId}>확인 한계</strong>
         <p>{limitations}</p>
       </aside>
     </div>

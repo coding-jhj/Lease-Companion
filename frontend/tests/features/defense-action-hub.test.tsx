@@ -5,7 +5,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildQuestionGroups,
-  DefenseActionHub,
+  QuestionHub,
+  StageActions,
 } from "../../src/features/question-cards/DefenseActionHub";
 import type { RuleGuidanceDto, RuleResultDto, StageGuidanceDto, Urgency } from "../../src/types/api";
 
@@ -49,7 +50,7 @@ function guidance(rule_id: string, questions: string[] = []): RuleGuidanceDto {
 
 afterEach(cleanup);
 
-describe("DefenseActionHub", () => {
+describe("QuestionHub", () => {
   it("builds every prioritized question source into target groups", () => {
     const urgentGuidance = {
       ...guidance("R01", [
@@ -106,7 +107,7 @@ describe("DefenseActionHub", () => {
       ruleWithQuestion("R04", "즉시 확인", "긴급 질문"),
     ];
 
-    render(<DefenseActionHub results={results} guidance={[]} stageGuidance={null} />);
+    render(<QuestionHub results={results} guidance={[]} stageGuidance={null} />);
 
     const questionGroup = screen.getByRole("heading", { name: "내가 문서에서 다시 볼 것" }).closest("section")!;
     const visible = within(questionGroup).getAllByRole("listitem");
@@ -122,7 +123,7 @@ describe("DefenseActionHub", () => {
       ruleWithQuestion("R02", "참고", "정상 판정 질문", false),
     ];
 
-    render(<DefenseActionHub results={results} guidance={[guidance("R01", ["생성된 확인 질문"])]} stageGuidance={null} />);
+    render(<QuestionHub results={results} guidance={[guidance("R01", ["생성된 확인 질문"])]} stageGuidance={null} />);
 
     expect(screen.getByText("생성된 확인 질문")).toBeInTheDocument();
     expect(screen.queryByText("규칙 원문 질문")).not.toBeInTheDocument();
@@ -153,7 +154,7 @@ describe("DefenseActionHub", () => {
       record_retention: [],
     };
 
-    render(<DefenseActionHub results={results} guidance={[]} stageGuidance={stageGuidance} />);
+    render(<QuestionHub results={results} guidance={[]} stageGuidance={stageGuidance} />);
 
     const broker = screen.getByRole("heading", { name: "중개사에게 물어볼 말" }).closest("section")!;
     const landlord = screen.getByRole("heading", { name: "임대인에게 물어볼 말" }).closest("section")!;
@@ -169,7 +170,7 @@ describe("DefenseActionHub", () => {
       ruleWithQuestion("R02", "계약 전 확인", "계좌 명의를 확인하세요."),
     ];
 
-    render(<DefenseActionHub results={results} guidance={[]} stageGuidance={null} />);
+    render(<QuestionHub results={results} guidance={[]} stageGuidance={null} />);
 
     const landlord = screen.getByRole("heading", { name: "임대인에게 물어볼 말" }).closest("section")!;
     expect(within(landlord).getAllByRole("listitem")).toHaveLength(1);
@@ -184,7 +185,7 @@ describe("DefenseActionHub", () => {
     });
     const question = "임대인에게 입금 계좌 명의를 물어보세요.";
 
-    render(<DefenseActionHub results={[ruleWithQuestion("R01", "즉시 확인", question)]} guidance={[]} stageGuidance={null} />);
+    render(<QuestionHub results={[ruleWithQuestion("R01", "즉시 확인", question)]} guidance={[]} stageGuidance={null} />);
 
     fireEvent.click(screen.getByRole("button", { name: `질문 복사: ${question}` }));
 
@@ -199,7 +200,7 @@ describe("DefenseActionHub", () => {
     });
     const question = "계약서의 날짜를 다시 확인하세요.";
 
-    render(<DefenseActionHub results={[ruleWithQuestion("R01", "즉시 확인", question)]} guidance={[]} stageGuidance={null} />);
+    render(<QuestionHub results={[ruleWithQuestion("R01", "즉시 확인", question)]} guidance={[]} stageGuidance={null} />);
 
     fireEvent.click(screen.getByRole("button", { name: `질문 복사: ${question}` }));
 
@@ -208,6 +209,9 @@ describe("DefenseActionHub", () => {
     );
   });
 
+});
+
+describe("StageActions", () => {
   it("merges duplicate post-contract reporting and move-in protection actions", () => {
     const stageGuidance: StageGuidanceDto = {
       contract_context: {
@@ -229,7 +233,7 @@ describe("DefenseActionHub", () => {
       record_retention: [],
     };
 
-    render(<DefenseActionHub results={[]} guidance={[]} stageGuidance={stageGuidance} />);
+    render(<StageActions results={[]} guidance={[]} stageGuidance={stageGuidance} />);
 
     const postGroup = screen.getByRole("heading", { name: "계약 후" }).closest("section")!;
     expect(within(postGroup).getAllByRole("listitem")).toHaveLength(2);

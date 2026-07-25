@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildActionFirstItems,
+  cleanReason,
   type ActionFirstItem,
 } from "../../src/features/result-report/actionFirstViewModel";
 import type {
@@ -85,6 +86,27 @@ function judgmentGuidance(judgmentId: string, question: string): JudgmentGuidanc
     fallback_reason: null,
   };
 }
+
+describe("cleanReason", () => {
+  it("removes the repeated title, result sentence, and shared tail note", () => {
+    const cleaned = cleanReason(
+      "계약서 임대인=등기 소유자",
+      "계약서 임대인=등기 소유자: 계약 상대와 등기상 소유자 관계를 확인합니다. 결과: 불일치. 공식 근거와 함께 확인해 주세요.",
+    );
+
+    expect(cleaned).toBe("계약 상대와 등기상 소유자 관계를 확인합니다.");
+  });
+
+  it("keeps text unchanged when the generated pattern is absent", () => {
+    const reason = "기재된 날짜를 문서에서 다시 대조해 주세요.";
+
+    expect(cleanReason("지급일·입주일·계약기간 일관성", reason)).toBe(reason);
+  });
+
+  it("keeps the result sentence when it is the only content", () => {
+    expect(cleanReason("보증금·월세 기재 상태", "결과: 명확.")).toBe("결과: 명확.");
+  });
+});
 
 describe("buildActionFirstItems", () => {
   it("sorts actions by display priority and attaches timing, target, and generated question", () => {

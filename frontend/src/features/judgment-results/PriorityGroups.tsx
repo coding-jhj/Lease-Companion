@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { JudgmentResultDto, RuleResultDto, Urgency } from "../../types/api";
 import { EvidenceDisclosure } from "../evidence-sources/EvidenceDisclosure";
 import { plainGuideById } from "./plainGuides";
+// 타입만 가져온다. actionFirstViewModel이 이 파일의 함수를 쓰므로 값 import는 순환이 된다.
+import type { ActionFirstItem } from "../result-report/actionFirstViewModel";
 
 export type DisplayPriority = "반드시 확인" | "확인 권장" | "일반 확인";
 
@@ -42,24 +44,37 @@ export function cannotJudgeNow(item: ReportResultDto) {
     || ("rule_id" in item && externalDataRuleIds.has(item.rule_id));
 }
 
-function ResultCard({ item, idPrefix }: { item: ReportResultDto; idPrefix: string }) {
+function ResultCard({ item, idPrefix, action, anchorId }: {
+  item: ReportResultDto;
+  idPrefix: string;
+  action?: ActionFirstItem;
+  anchorId?: string;
+}) {
   // 판정(J) 가이드 우선, 없으면 규칙 id(R) 가이드로 폴백 — J 미매핑 규칙도 개별 안내를 보이게.
   const guide = plainGuideById(item.judgment_id ?? ("rule_id" in item ? item.rule_id : null));
   return (
-    <article className="result-card">
+    <article className="result-card" id={anchorId}>
+      <div className="result-card__meta">
+        {action && <span>{action.timing}</span>}
+        <span className="result-card__status">{item.status}</span>
+      </div>
       <h3>{resultName(item)}</h3>
-      <p>{item.reason}</p>
-      <details className="result-technical-details">
-        <summary>세부 판정 정보</summary>
+      <p>{action?.reason ?? item.reason}</p>
+      {action && (
+        <div className="result-card__question">
+          <strong>{action.questionTarget}</strong>
+          <span>{action.question ?? "이 항목의 문서 내용을 내가 다시 확인해 주세요."}</span>
+        </div>
+      )}
+      {/* 접힘을 하나로 합친다. 판정 id·상태·시급도는 그 안 첫 줄에 둔다. */}
+      <details className="result-support">
+        <summary>자세히 보기</summary>
         <p className="result-meta">
           <strong>{resultId(item)}</strong>
           {" · "}{resultScope(item)}
           {" · 상태: "}{item.status}
           {" · 시급도: "}{item.urgency}
         </p>
-      </details>
-      <details className="result-support">
-        <summary>근거와 판정 한계 확인</summary>
         <EvidenceDisclosure
           idPrefix={idPrefix}
           sources={item.evidence_sources}
@@ -76,10 +91,13 @@ export function PriorityGroups({
   items,
   idPrefix = "priority",
   focusPriority,
+  actionById,
 }: {
   items: ReportResultDto[];
   idPrefix?: string;
   focusPriority?: DisplayPriority;
+  /** 시점·질문·정리된 설명. 있으면 카드가 "먼저 할 일" 정보를 함께 보여준다. */
+  actionById?: Map<string, ActionFirstItem>;
 }) {
   const [expandedPriorities, setExpandedPriorities] = useState<DisplayPriority[]>(["반드시 확인"]);
   const [showUnavailable, setShowUnavailable] = useState(false);
@@ -126,10 +144,12 @@ export function PriorityGroups({
             {expanded && <div className="priority-group__items" id={`${headingId}-items`}>
               {groupItems.length === 0 ? (
                 <p className="group-empty">해당하는 확인 항목이 없습니다.</p>
-              ) : groupItems.map((item) => (
+              ) : groupItems.map((item, index) => (
                 <ResultCard
                   item={item}
                   idPrefix={`${idPrefix}-${resultId(item)}`}
+                  action={actionById?.get(resultId(item))}
+                  anchorId={priority === focusPriority && index === 0 ? "first-action-item" : undefined}
                   key={resultId(item)}
                 />
               ))}

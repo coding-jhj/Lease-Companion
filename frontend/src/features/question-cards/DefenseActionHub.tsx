@@ -83,14 +83,18 @@ function ActionList({
   items,
   collapsible = false,
   copyable = false,
+  defaultOpen = true,
 }: {
   title: string;
   description: string;
   items: string[];
   collapsible?: boolean;
   copyable?: boolean;
+  /** false면 제목 줄만 먼저 보이고 눌러야 펼쳐진다. 지금 단계가 아닌 블록에 쓴다. */
+  defaultOpen?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [copiedQuestion, setCopiedQuestion] = useState<string | null>(null);
   const [copyError, setCopyError] = useState(false);
   const hiddenCount = Math.max(0, items.length - INITIAL_ACTION_COUNT);
@@ -105,6 +109,33 @@ function ActionList({
     } catch {
       setCopyError(true);
     }
+  }
+
+  if (!defaultOpen) {
+    return (
+      <section className="action-hub__group action-hub__group--foldable">
+        <button
+          className="action-hub__section-toggle"
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <h3>{title}</h3>
+          <span className="action-hub__count">{items.length}개</span>
+          <span className="collapse-arrow" aria-hidden="true">{open ? "▾" : "▸"}</span>
+        </button>
+        {open && <>
+          <p>{description}</p>
+          <ul>{visibleItems.map((item) => <li key={item}><span>{item}</span></li>)}</ul>
+          {collapsible && hiddenCount > 0 && (
+            <button className="text-button action-hub__more" type="button" onClick={() => setExpanded((current) => !current)}>
+              {expanded ? "접기" : `${hiddenCount}개 더 보기`}
+            </button>
+          )}
+          {items.length === 0 && <p className="action-hub__empty">현재 추가로 안내할 내용이 없습니다.</p>}
+        </>}
+      </section>
+    );
   }
 
   return (
@@ -171,7 +202,39 @@ export function buildQuestionGroups(
   return groups;
 }
 
-export function DefenseActionHub({
+export function QuestionHub({
+  results,
+  guidance,
+  stageGuidance,
+}: {
+  results: DefenseResultItem[];
+  guidance: DefenseGuidanceItem[];
+  stageGuidance: StageGuidanceDto | null;
+}) {
+  const questionsByTarget = buildQuestionGroups(results, guidance, stageGuidance);
+  return (
+    <section className="action-hub" aria-labelledby="action-hub-title">
+      <header className="action-hub__header">
+        <h2 id="action-hub-title">상대방에게 물어볼 말</h2>
+        <span>같은 문구는 한 번만 보여드립니다. 그대로 읽거나 복사해 물어보세요.</span>
+      </header>
+      <div className="action-hub__grid">
+        <ActionList copyable collapsible title="중개사에게 물어볼 말" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
+        <ActionList copyable collapsible title="임대인에게 물어볼 말" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
+        <ActionList copyable collapsible title="내가 문서에서 다시 볼 것" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
+      </div>
+    </section>
+  );
+}
+
+// 지금 계약 단계에 해당하는 블록만 펼친 채로 시작한다. 나머지는 제목 줄만 보인다.
+const OPEN_BLOCK_BY_STAGE: Record<StageGuidanceDto["contract_context"]["contract_stage"], string> = {
+  "계약금 입금 전": "계약 전",
+  "서명 전": "계약 중",
+  "계약 직후": "계약 후",
+};
+
+export function StageActions({
   results,
   guidance,
   stageGuidance,
@@ -192,7 +255,6 @@ export function DefenseActionHub({
   const guidedIds = new Set(guidance.map(idOf));
   const unguidedResults = actionableResults.filter((item) => !guidedIds.has(resultIdOf(item)));
 
-  const questionsByTarget = buildQuestionGroups(results, guidance, stageGuidance);
   const signingActions = prioritized([
     ...unguidedResults.flatMap((item) => item.recommended_actions.map((text) => ({ text, rank: rankOf(item.urgency) }))),
     ...guidance.flatMap((item) => item.signing_checklist_items.map((entry) => ({ text: entry.text, rank: guidanceRank(item) }))),
@@ -207,33 +269,22 @@ export function DefenseActionHub({
   const duringContract = unique(stageGuidance?.during_contract_actions ?? signingActions).map(toPoliteEnding);
   const closingDay = unique(stageGuidance?.closing_day_actions ?? []).map(toPoliteEnding);
   const afterContract = unique(stageGuidance?.after_contract_actions ?? postActions).map(toPoliteEnding);
+  const openBlock = stageGuidance
+    ? OPEN_BLOCK_BY_STAGE[stageGuidance.contract_context.contract_stage]
+    : "계약 전";
   return (
-    <>
-      <section className="action-hub" aria-labelledby="action-hub-title">
-        <header className="action-hub__header">
-          <p>그대로 읽거나 복사해 물어보세요</p>
-          <h2 id="action-hub-title">상대방에게 물어볼 말</h2>
-          <span>같은 문구는 한 번만 보여드리며, 확인할 대상을 나눠 정리했습니다.</span>
-        </header>
-        <div className="action-hub__grid">
-          <ActionList copyable collapsible title="중개사에게 물어볼 말" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
-          <ActionList copyable collapsible title="임대인에게 물어볼 말" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
-          <ActionList copyable collapsible title="내가 문서에서 다시 볼 것" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
-        </div>
-      </section>
-      <section className="stage-guidance" aria-labelledby="stage-guidance-title">
-        <div className="section-heading">
-          <p>계약 진행 순서에 맞춰 이어서 확인하세요</p>
-          <h2 id="stage-guidance-title">계약 단계별 행동</h2>
-        </div>
-        <div className="stage-guidance__grid">
-          <ActionList collapsible title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
-          <ActionList collapsible title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
-          <ActionList collapsible title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
-          <ActionList collapsible title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
-          <ActionList title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
-        </div>
-      </section>
-    </>
+    <section className="stage-guidance" aria-labelledby="stage-guidance-title">
+      <div className="section-heading">
+        <h2 id="stage-guidance-title">계약 단계별 행동</h2>
+        <p>지금 단계를 먼저 펼쳐 두었습니다. 다른 단계는 눌러서 확인하세요.</p>
+      </div>
+      <div className="stage-guidance__grid">
+        <ActionList collapsible defaultOpen={openBlock === "계약 전"} title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
+        <ActionList collapsible defaultOpen={openBlock === "계약 중"} title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
+        <ActionList collapsible defaultOpen={false} title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
+        <ActionList collapsible defaultOpen={openBlock === "계약 후"} title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
+        <ActionList defaultOpen={false} title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
+      </div>
+    </section>
   );
 }

@@ -101,25 +101,19 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     name: "확인 결과 준비 완료",
   })).toBeVisible();
   await page.getByRole("button", { name: "확인 결과 보기" }).click();
-  const firstActionHeading = page.getByRole("heading", { name: "먼저 할 일" });
-  const questionsHeading = page.getByRole("heading", { name: "상대방에게 물어볼 말" });
-  const reasonsHeading = page.getByRole("heading", { name: "왜 확인해야 하나요?" });
-  const referencesHeading = page.getByRole("heading", { name: "비슷한 상황에서 확인할 점" });
-  for (const heading of [
-    firstActionHeading,
-    questionsHeading,
-    reasonsHeading,
-    referencesHeading,
-  ]) {
-    await expect(heading).toBeVisible();
+  // 확인 항목 탭이 기본이며, 질문·단계별 행동은 탭 전환으로만 보인다.
+  for (const label of ["확인 항목", "물어볼 말", "단계별 행동"]) {
+    await expect(page.getByRole("tab", { name: label })).toBeVisible();
   }
+  await expect(page.getByRole("tab", { name: "확인 항목" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "비슷한 상황에서 확인할 점" })).toBeVisible();
   const headingDomPositions = await page.evaluate(
     (ids) => ids.map((id) => {
       const element = document.getElementById(id);
       if (!element) throw new Error(`결과 섹션 제목을 찾지 못했습니다: ${id}`);
       return [...document.querySelectorAll("body *")].indexOf(element);
     }),
-    ["action-first-title", "action-hub-title", "all-results-title", "damage-reference-title"],
+    ["report-guide-title", "report-tab-items", "damage-reference-title"],
   );
   expect(headingDomPositions).toEqual([...headingDomPositions].sort((left, right) => left - right));
 
@@ -129,12 +123,12 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     for (const { label, locator } of [
       { label: "결과 hero 제목", locator: page.locator(".report-hero h2") },
       {
-        label: "첫 행동 제목",
-        locator: page.locator("#first-action-item .action-first__title"),
+        label: "첫 확인 항목 제목",
+        locator: page.locator("#first-action-item h3"),
       },
       {
-        label: "물어볼 말 진입 링크",
-        locator: page.getByRole("link", { name: "물어볼 말 바로 보기" }),
+        label: "물어볼 말 탭",
+        locator: page.getByRole("tab", { name: "물어볼 말" }),
       },
     ]) {
       const box = await locator.boundingBox();
@@ -153,13 +147,13 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   }
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--report/);
-    await expect(page.locator(".report-results-column")).toBeVisible();
+    await expect(page.locator("#report-panel-items")).toBeVisible();
   }
-  const allResults = page.locator('section[aria-labelledby="all-results-title"]');
-  const firstTechnicalDetails = allResults.locator(".result-technical-details").first();
-  const firstInternalId = firstTechnicalDetails.locator(".result-meta strong");
+  const allResults = page.locator("#report-panel-items");
+  const firstSupport = allResults.locator(".result-support").first();
+  const firstInternalId = firstSupport.locator(".result-meta strong");
   await expect(firstInternalId).toBeHidden();
-  await firstTechnicalDetails.getByText("세부 판정 정보").click();
+  await firstSupport.getByText("자세히 보기").click();
   await expect(firstInternalId).toBeVisible();
   await expect(firstInternalId).toHaveText(/^[RJ]\d{2}$/);
   await expandAllResultGroups(page);
@@ -173,6 +167,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(j10).toContainText("상태: 확인 필요");
     await expect(j10).toContainText("신규 임차인의 입주에 연동");
 
+    await page.locator(".damage-table-fold > summary").click();
     const refundPattern = page.locator(".damage-patterns__row").filter({
       hasText: "보증금 반환 조건",
     });
@@ -181,23 +176,18 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(refundPattern.getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeVisible();
     await expect(refundPattern.getByRole("link", { name: "계약기간 종료 후 보증금 미반환 유형" })).toBeVisible();
   }
-  for (const title of [
-    "중개사에게 물어볼 말",
-    "임대인에게 물어볼 말",
-    "내가 문서에서 다시 볼 것",
-    "계약 전",
-    "계약 중",
-    "잔금·입주 당일",
-    "계약 후",
-    "보관할 자료",
-  ]) {
+  await page.getByRole("tab", { name: "물어볼 말" }).click();
+  for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것"]) {
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  }
+  await page.getByRole("tab", { name: "단계별 행동" }).click();
+  for (const title of ["계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
   await expect(page.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "첫 확인 행동으로 이동" })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "확인 항목" })).toHaveAttribute("aria-selected", "true");
   await expandAllResultGroups(page);
   await expect(allResults).toContainText("J01");
   await expect(allResults).toContainText("J12");

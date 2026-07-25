@@ -44,6 +44,27 @@ function guidanceId(item: GuidanceItem): string {
   return "rule_id" in item ? item.rule_id : item.judgment_id;
 }
 
+// 생성 문구는 "제목: 제목을 확인합니다. 결과: X. 공식 근거와 함께 확인해 주세요." 형태가 많다.
+// 제목은 카드 heading에, 상태는 상태 배지에 이미 있으므로 본문에서만 덜어낸다.
+// 패턴이 없으면 원문을 그대로 둔다(규칙 원문 reason은 문장 구조가 다르다).
+const TRAILING_NOTE = "공식 근거와 함께 확인해 주세요.";
+const RESULT_SENTENCE = /\s*결과:\s*[^.]*\.\s*$/;
+
+export function cleanReason(title: string, reason: string): string {
+  const original = reason.trim();
+  let text = original;
+  if (text.startsWith(title)) {
+    const rest = text.slice(title.length).replace(/^\s*[:：]\s*/, "").trim();
+    if (rest) text = rest;
+  }
+  if (text.endsWith(TRAILING_NOTE)) {
+    text = text.slice(0, -TRAILING_NOTE.length).trim();
+  }
+  const withoutResult = text.replace(RESULT_SENTENCE, "").trim();
+  if (withoutResult) text = withoutResult;
+  return text || original;
+}
+
 function timingFor(urgency: Urgency, stageGuidance: StageGuidanceDto | null): string {
   if (stageGuidance?.contract_context.contract_stage === "계약 직후") {
     return urgency === "참고" ? "계약 후 다시 확인" : "계약 후 지금 확인";
@@ -79,10 +100,11 @@ export function buildActionFirstItems(
       const matchingGuidance = guidanceById.get(id);
       const question = matchingGuidance?.questions.find((item) => item.trim())?.trim() ?? null;
       const priority = displayPriorityForUrgency(sourceResult.urgency);
+      const title = resultTitle(sourceResult);
       return {
         id,
-        title: resultTitle(sourceResult),
-        reason: matchingGuidance?.explanation.trim() || sourceResult.reason,
+        title,
+        reason: cleanReason(title, matchingGuidance?.explanation.trim() || sourceResult.reason),
         priority,
         timing: timingFor(sourceResult.urgency, stageGuidance),
         questionTarget: questionTargetFor(question),

@@ -29,7 +29,7 @@ describe("DamagePatternTable", () => {
 
     fireEvent.click(screen.getByText("근거와 분석 한계"));
 
-    const explanation = screen.getByText("조항을 쉽게 설명하면").closest("section")!;
+    const explanation = screen.getByLabelText("쉬운 설명과 돈에 미치는 영향");
     // DP01 → J01 큐레이션 설명이 들어가야 한다.
     expect(within(explanation).getByText(/등기사항증명서에 적힌 소유자와 같은 사람인지/)).toBeInTheDocument();
     // 메타 문구가 조항 설명 자리를 차지하면 안 된다.

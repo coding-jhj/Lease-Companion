@@ -30,7 +30,7 @@ describe("EvidenceDisclosure", () => {
       />,
     );
 
-    expect(screen.getByText("조항을 쉽게 설명하면").closest("section")?.nextElementSibling).toHaveClass("evidence-disclosure__sources");
+    expect(screen.getByLabelText("쉬운 설명과 돈에 미치는 영향").nextElementSibling).toHaveClass("evidence-disclosure__sources");
     expect(screen.getByLabelText("공식자료 1건")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "주택임대차 표준계약서" })).not.toBeVisible();
     fireEvent.click(screen.getByText("공식자료"));

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
@@ -9,7 +9,7 @@ import {
   displayPriorityForUrgency,
   type DisplayPriority,
 } from "../../features/judgment-results/PriorityGroups";
-import { DefenseActionHub } from "../../features/question-cards/DefenseActionHub";
+import { QuestionHub, StageActions } from "../../features/question-cards/DefenseActionHub";
 import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
 import { DamagePatternTable } from "../../features/damage-patterns/DamagePatternTable";
 import { DetectedSignalSection } from "../../features/damage-patterns/DetectedSignalSection";
@@ -30,6 +30,14 @@ import type {
 import { contractIdFromRoute } from "../../utils/contractId";
 
 const priorities: DisplayPriority[] = ["반드시 확인", "확인 권장", "일반 확인"];
+
+const TABS = [
+  { key: "items", label: "확인 항목" },
+  { key: "questions", label: "물어볼 말" },
+  { key: "stages", label: "단계별 행동" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
 
 function actionHeroTitle(stage: StageGuidanceDto["contract_context"]["contract_stage"] | undefined, count: number) {
   if (stage === "계약금 입금 전") return `계약금을 보내기 전에 ${count}가지를 먼저 확인해 주세요`;
@@ -54,6 +62,8 @@ export function ResultReportPage() {
   const [generationFailed, setGenerationFailed] = useState(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [tab, setTab] = useState<TabKey>("items");
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   async function loadReport() {
     setStatus("loading");
@@ -79,7 +89,6 @@ export function ResultReportPage() {
 
   const allResults = [...items, ...judgments];
   const userFacingResults = judgments.length > 0 ? judgments : items;
-  const usesJudgmentSummary = judgments.length > 0;
   // v1.9에서 J10/J11이 명확성 판정의 canonical 결과다. 이전 저장 결과에
   // legacy R08/R09 안내가 함께 있어도 서로 모순된 수정 요청을 다시 노출하지 않는다.
   const canonicalJudgmentIds = new Set(judgments.map((item) => item.judgment_id));
@@ -88,7 +97,10 @@ export function ResultReportPage() {
     || (item.rule_id === "R09" && canonicalJudgmentIds.has("J11"))
   ));
   const allGuidance = [...compatibleRuleGuidance, ...judgmentGuidance];
+  // 같은 항목을 "먼저 할 일"과 "왜 확인해야 하나요?"로 두 번 보여주지 않는다.
+  // 시점·질문·정리된 설명을 확인 항목 카드 하나에 합쳐 전달한다.
   const actionFirstItems = buildActionFirstItems(userFacingResults, allGuidance, stageGuidance);
+  const actionById = new Map(actionFirstItems.map((item) => [item.id, item]));
   // 상단 요약 개수는 하단 그룹과 같은 기준으로 센다: "지금 판단할 수 없는 항목"
   // (확인 불가·적용 제외·외부데이터 미연결)은 우선순위 그룹에서 빠지므로 카운트에서도 제외한다.
   const actionableResults = userFacingResults.filter((item) => !cannotJudgeNow(item));
@@ -110,6 +122,19 @@ export function ResultReportPage() {
     document.title = previousTitle;
   }
 
+  function moveTabFocus(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const last = TABS.length - 1;
+    let next = index;
+    if (event.key === "ArrowRight") next = index === last ? 0 : index + 1;
+    else if (event.key === "ArrowLeft") next = index === 0 ? last : index - 1;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = last;
+    else return;
+    event.preventDefault();
+    setTab(TABS[next].key);
+    tabRefs.current[next]?.focus();
+  }
+
   return (
     <PageShell layout="report" step="7 / 8" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 물어볼 말을 순서대로 살펴보세요.">
       <div className="stack">
@@ -123,86 +148,76 @@ export function ResultReportPage() {
           <>
             <section className="report-hero" aria-labelledby="report-guide-title">
               <div>
-                <p>가장 먼저 할 일부터 시작하세요</p>
                 <h2 id="report-guide-title">
                   {actionHeroTitle(stageGuidance?.contract_context.contract_stage, actionFirstItems.length)}
                 </h2>
                 <span>확인 항목은 문서와 상대방에게 확인할 순서이며, 계약 진행 여부를 대신 결정하지 않습니다.</span>
+                <ul className="report-hero__counts" aria-label="확인 우선순위 전체 개수">
+                  {priorities.map((priority) => (
+                    <li data-priority={priority} key={priority}>
+                      <span>{priority}</span>
+                      <strong>{counts[priority]}<em>개</em></strong>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              {actionFirstItems.length > 0 && <a className="report-hero__link" href="#first-action-item">첫 확인 행동으로 이동</a>}
-            </section>
-            <section className="action-first" aria-labelledby="action-first-title">
-              <div className="section-heading">
-                <p>시점·대상·물어볼 말을 한 번에 확인하세요</p>
-                <h2 id="action-first-title">먼저 할 일</h2>
-              </div>
-              <a className="action-first__questions-link" href="#action-hub-title">물어볼 말 바로 보기</a>
-              <div className="action-first__list">
-                {actionFirstItems.map((item, index) => (
-                  <article
-                    id={index === 0 ? "first-action-item" : undefined}
-                    className="action-first__item"
-                    data-priority={item.priority}
-                    key={item.id}
-                  >
-                    <div className="action-first__meta">
-                      <span>{item.priority}</span>
-                      <span>{item.timing}</span>
-                    </div>
-                    <strong className="action-first__title">{item.title}</strong>
-                    <p>{item.reason}</p>
-                    <div className="action-first__question">
-                      <strong>{item.questionTarget}</strong>
-                      <span>{item.question ?? "이 항목의 문서 내용을 내가 다시 확인해 주세요."}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <button className="report-hero__print" type="button" onClick={printReport}>확인 결과 PDF 저장</button>
             </section>
             {createPortal(<ReportPrintSheet contractId={contractId} patterns={damagePatterns} actionResults={userFacingResults} results={allResults} guidance={allGuidance} specialClauseReviews={specialClauseReviews} specialClauseGuidance={specialClauseGuidance} stageGuidance={stageGuidance} />, document.body)}
-            <DefenseActionHub results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
-            <section className="report-results-column stack" aria-labelledby="all-results-title">
-              <div className="section-heading">
-                <p>
-                  {usesJudgmentSummary
-                    ? "내부 검사 결과의 중복을 빼고 계약에서 확인할 항목만 정리했습니다"
-                    : "기존 저장 결과에서 확인할 항목을 정리했습니다"}
-                </p>
-                <h2 id="all-results-title">왜 확인해야 하나요?</h2>
-              </div>
-              <section className="priority-summary" aria-label="확인 우선순위 전체 개수">
-                {priorities.map((priority) => (
-                  <div data-priority={priority} key={priority}>
-                    <span>{priority}</span>
-                    <strong>{counts[priority]}개</strong>
-                  </div>
-                ))}
-              </section>
+            <div className="report-tabs" role="tablist" aria-label="확인 결과 보기 방식">
+              {TABS.map((item, index) => (
+                <button
+                  className="report-tabs__tab"
+                  type="button"
+                  role="tab"
+                  id={`report-tab-${item.key}`}
+                  aria-selected={tab === item.key}
+                  aria-controls={`report-panel-${item.key}`}
+                  tabIndex={tab === item.key ? 0 : -1}
+                  ref={(node) => { tabRefs.current[index] = node; }}
+                  onClick={() => setTab(item.key)}
+                  onKeyDown={(event) => moveTabFocus(event, index)}
+                  key={item.key}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {/* 탭을 옮겨도 펼쳐 둔 그룹·"더 보기" 상태가 풀리지 않도록 감추기만 한다. */}
+            <div className="report-panel stack" role="tabpanel" id="report-panel-items" aria-labelledby="report-tab-items" hidden={tab !== "items"}>
               <PriorityGroups
                 items={userFacingResults}
                 idPrefix="all-results-priority"
                 focusPriority={firstPriority}
+                actionById={actionById}
               />
-            </section>
-            <SpecialClauseReviewSection reviews={specialClauseReviews} guidance={specialClauseGuidance} generationFailed={generationFailed} />
+              <SpecialClauseReviewSection reviews={specialClauseReviews} guidance={specialClauseGuidance} generationFailed={generationFailed} />
+            </div>
+            <div className="report-panel" role="tabpanel" id="report-panel-questions" aria-labelledby="report-tab-questions" hidden={tab !== "questions"}>
+              <QuestionHub results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
+            </div>
+            <div className="report-panel" role="tabpanel" id="report-panel-stages" aria-labelledby="report-tab-stages" hidden={tab !== "stages"}>
+              <StageActions results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
+            </div>
             {damagePatterns.length > 0 && (
               <section className="damage-reference-section stack" aria-labelledby="damage-reference-title">
                 <div className="section-heading">
-                  <p>공식 근거와 검증된 참고 사례는 서로 구분해 확인하세요</p>
                   <h2 id="damage-reference-title">비슷한 상황에서 확인할 점</h2>
+                  <p>공식 근거와 검증된 참고 사례는 서로 구분해 확인하세요</p>
                 </div>
-                <section className="comparison-summary" aria-label="제출 자료 기준 피해 유형 비교 요약">
-                  <strong>제출 자료 기준 비교</strong>
-                  <span>관련 확인 신호 {patternCounts.signal}건</span>
-                  <span>관련 신호 미확인 {patternCounts.clear}건</span>
-                  <span>자료 부족 {patternCounts.unknown}건</span>
-                </section>
                 <DetectedSignalSection patterns={damagePatterns} guidance={allGuidance} />
-                <DamagePatternTable items={damagePatterns} />
+                <details className="damage-table-fold">
+                  <summary>
+                    전체 비교표 보기 — 관련 확인 신호 {patternCounts.signal}건 · 관련 신호 미확인 {patternCounts.clear}건 · 자료 부족 {patternCounts.unknown}건
+                  </summary>
+                  <DamagePatternTable items={damagePatterns} />
+                </details>
               </section>
             )}
-            <div className="report-export-toolbar"><p>비교표·질문·단계별 행동을 함께 저장할 수 있습니다.</p><button className="secondary" type="button" onClick={printReport}>확인 결과 PDF 저장</button></div>
-            <ResultFeedback contractId={contractId} />
+            <details className="feedback-fold">
+              <summary>리포트 의견 보내기</summary>
+              <ResultFeedback contractId={contractId} />
+            </details>
           </>
         )}
         <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>이제 할 일 확인하기</button>
