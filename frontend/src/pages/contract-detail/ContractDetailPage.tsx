@@ -31,6 +31,9 @@ const analysisStatusLabels: Record<AnalysisRunSummaryDto["status"], string> = {
   failed: "실패",
 };
 
+// 처음에는 남은 항목 5개만 보여준다. 22개가 한 번에 쌓이면 화면이 4배로 길어진다.
+const INITIAL_VISIBLE_ITEMS = 5;
+
 export function ContractDetailPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -44,6 +47,7 @@ export function ContractDetailPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [updateError, setUpdateError] = useState("");
   const [savingItemKey, setSavingItemKey] = useState("");
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -189,6 +193,7 @@ export function ContractDetailPage() {
     completedActionLabel,
     emptyMessage,
     collapsible = false,
+    hideWhenEmpty = false,
   }: {
     title: string;
     entries: ChecklistViewItem[];
@@ -196,44 +201,63 @@ export function ContractDetailPage() {
     completedActionLabel: string;
     emptyMessage: string;
     collapsible?: boolean;
+    hideWhenEmpty?: boolean;
   }) {
+    // 항목이 없으면 빈 칸을 만들지 않는다. 화면 절반이 비어 보이던 원인이다.
+    if (hideWhenEmpty && entries.length === 0) return null;
+
+    const expanded = expandedSections.includes(title);
+    const visibleEntries = collapsible || expanded ? entries : entries.slice(0, INITIAL_VISIBLE_ITEMS);
+    const hiddenCount = entries.length - visibleEntries.length;
     const content = entries.length === 0
       ? <p className="checklist-section__empty">{emptyMessage}</p>
-      : <div className="checklist-section__items">
-        {entries.map((item) => {
-          const label = item.done ? completedActionLabel : actionLabel;
-          const saving = savingItemKey === item.item_key;
-          const guide = guideForItem(item);
-          return (
-            <div className={`check-item check-item--button${item.done ? " check-item--complete" : ""}`} key={item.kind + ":" + item.item_key}>
-              <span className="check-item__text">
-                {item.text}
-                {item.resultIds.length > 0 && <small className="check-item__source">근거 판정 {item.resultIds.join(" · ")}</small>}
-              </span>
-              {item.writable
-                ? <button
-                  aria-label={`${item.text} ${label}`}
-                  className="check-item__button"
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void toggle(item)}
-                >
-                  {saving ? "저장 중" : label}
-                </button>
-                : <span className="check-item__status">변경 불가</span>}
-              <details className="check-item__guide">
-                <summary>쉽게 보기 · 왜 확인해야 하나요</summary>
-                <div className="check-item__guide-body">
-                  <p>{guide.explanation}</p>
-                  <p className="check-item__guide-money">
-                    <strong>확인하지 않으면</strong> {guide.financialImpact}
-                  </p>
-                </div>
-              </details>
-            </div>
-          );
-        })}
-      </div>;
+      : <>
+        <ul className="checklist-section__items">
+          {visibleEntries.map((item) => {
+            const label = item.done ? completedActionLabel : actionLabel;
+            const saving = savingItemKey === item.item_key;
+            const guide = guideForItem(item);
+            return (
+              <li className={`check-item check-item--row${item.done ? " check-item--complete" : ""}`} key={item.kind + ":" + item.item_key}>
+                {item.writable
+                  ? <button
+                    aria-label={`${item.text} ${label}`}
+                    aria-pressed={item.done}
+                    className="check-item__check"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void toggle(item)}
+                  >
+                    <span aria-hidden="true">{saving ? "…" : item.done ? "✓" : ""}</span>
+                  </button>
+                  : <span className="check-item__status" aria-label="변경 불가">✕</span>}
+                <span className="check-item__text">{item.text}</span>
+                {item.resultIds.length > 0 && (
+                  <span className="check-item__source">근거 판정 {item.resultIds.join(" · ")}</span>
+                )}
+                <details className="check-item__guide">
+                  <summary>쉽게 보기</summary>
+                  <div className="check-item__guide-body">
+                    <p>{guide.explanation}</p>
+                    <p className="check-item__guide-money">
+                      <strong>확인하지 않으면</strong> {guide.financialImpact}
+                    </p>
+                  </div>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+        {hiddenCount > 0 && (
+          <button
+            className="text-button checklist-section__more"
+            type="button"
+            onClick={() => setExpandedSections((current) => [...current, title])}
+          >
+            남은 항목 {hiddenCount}개 더 보기
+          </button>
+        )}
+      </>;
 
     if (collapsible) {
       return (
@@ -250,9 +274,22 @@ export function ContractDetailPage() {
       );
     }
 
+    const total = title === "서명 전 체크리스트"
+      ? checklistItems.length
+      : title === "계약 직후 행동" ? postActions.length : entries.length;
+    const done = total - entries.length;
+
     return (
       <section className="history-section checklist-section">
-        <h2>{title}</h2>
+        <div className="checklist-section__head">
+          <h2>{title}</h2>
+          <span className="checklist-section__count">{done} / {total} 확인 완료</span>
+        </div>
+        {total > 0 && (
+          <div className="checklist-progress" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={`${title} ${done} / ${total} 확인 완료`}>
+            <div className="checklist-progress__fill" style={{ width: `${(done / total) * 100}%` }} />
+          </div>
+        )}
         {content}
       </section>
     );
@@ -310,6 +347,7 @@ export function ContractDetailPage() {
                 actionLabel: "완료",
                 completedActionLabel: "완료 취소",
                 emptyMessage: "현재 남아 있는 계약 직후 행동이 없습니다.",
+                hideWhenEmpty: true,
               })}
             </div>
             {hasCompletedItems && (
@@ -336,9 +374,11 @@ export function ContractDetailPage() {
         )}
         {updateError && <p className="error" role="alert">{updateError}</p>}
         {status === "success" && (
-          <div className="history-grid">
-            <section className="history-section">
-              <h2>확인 결과 이력</h2>
+          <details className="history-fold">
+            <summary>지난 기록 보기 (확인 결과 {analysisRuns.length}건 · 문서 {documents.length}건)</summary>
+            <div className="history-grid">
+              <section className="history-section">
+                <h2>확인 결과 이력</h2>
               {analysisRuns.length === 0
                 ? <p>저장된 확인 결과가 없습니다.</p>
                 : <ul>{analysisRuns.map((run) => (
@@ -348,14 +388,15 @@ export function ContractDetailPage() {
                       : <span>{new Date(run.created_at).toLocaleString("ko-KR")} · {analysisStatusLabels[run.status]}</span>}
                   </li>
                 ))}</ul>}
-            </section>
-            <section className="history-section">
-              <h2>문서 이력</h2>
+              </section>
+              <section className="history-section">
+                <h2>문서 이력</h2>
               {documents.length === 0
                 ? <p>업로드된 문서가 없습니다.</p>
                 : <ul>{documents.map((document) => <li key={document.id}>{document.doc_type} · {document.filename}</li>)}</ul>}
-            </section>
-          </div>
+              </section>
+            </div>
+          </details>
         )}
         <div className="page-actions">
           <Link className="button-link secondary" to={`/contracts/${contractId}/report`}>확인 결과 다시 보기</Link>

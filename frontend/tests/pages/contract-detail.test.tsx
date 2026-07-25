@@ -81,6 +81,43 @@ describe("ContractDetailPage", () => {
     expect(within(pendingSection).getByRole("button", { name: `${actionText} 확인` })).toBeInTheDocument();
   });
 
+  it("shows only the first five pending items and hides the empty post-action column", async () => {
+    const generation = generationResultFixture as GenerationResultDto;
+    const detail: AnalysisRunDetailDto = {
+      analysis_run_id: "RUN-1001-001",
+      input_snapshot_id: "SNAP-1001-001",
+      status: "completed",
+      error: null,
+      created_at: "2026-07-18T00:00:00Z",
+      result: analysisRunResultFixture as AnalysisRunResultDto,
+      generation_result: generation,
+      generation_status: "completed",
+      generation_error: null,
+    };
+    vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue(detail);
+    vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([detail]);
+    vi.spyOn(mvpService, "getDocuments").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getChecklist").mockResolvedValue([]);
+
+    render(
+      <MemoryRouter initialEntries={["/contracts/1001"]}>
+        <Routes><Route path="/contracts/:contractId" element={<ContractDetailPage />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    const pendingSection = (await screen.findByRole("heading", { name: "서명 전 체크리스트" })).closest("section")!;
+    expect(pendingSection.querySelectorAll(".check-item--row")).toHaveLength(5);
+    const moreButton = within(pendingSection).getByRole("button", { name: /^남은 항목 \d+개 더 보기$/ });
+
+    fireEvent.click(moreButton);
+
+    expect(pendingSection.querySelectorAll(".check-item--row").length).toBeGreaterThan(5);
+    expect(within(pendingSection).queryByRole("button", { name: /더 보기$/ })).not.toBeInTheDocument();
+    expect(within(pendingSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "0");
+    // 남은 계약 직후 행동이 없으면 빈 칸을 만들지 않는다.
+    expect(screen.queryByRole("heading", { name: "계약 직후 행동" })).not.toBeInTheDocument();
+  });
+
   it("moves a confirmed signing item below and reveals post-contract actions", async () => {
     const generation = structuredClone(generationResultFixture) as GenerationResultDto;
     const signingAction = generation.items[0].signing_checklist_items[0];
