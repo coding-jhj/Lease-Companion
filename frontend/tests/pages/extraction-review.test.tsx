@@ -162,6 +162,74 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByText("분쟁을 줄이기 위해 확인합니다.")).toBeInTheDocument();
   });
 
+  it("shows grouped items together and bulk-confirms only safe pending items", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      issue_date: extractedField("issue_date", "2026-07-18"),
+      other_note: extractedField("other_note", "추가 메모"),
+      already_checked: extractedField("already_checked", "확인한 내용", {
+        verification_status: "confirmed",
+      }),
+    }));
+
+    renderPage();
+
+    await screen.findByRole("navigation", { name: "확인 구역" });
+    fireEvent.click(screen.getByRole("button", { name: /5 추가 확인 항목/ }));
+
+    expect(screen.getByRole("heading", { name: "추가 확인 항목 모아보기" }))
+      .toBeInTheDocument();
+    expect(screen.getByText(/전체 3개 · 확인 1개 · 남은 항목 2개/)).toBeInTheDocument();
+    expect(screen.getByRole("button", {
+      name: "안전한 2개 모두 문서와 같음",
+    })).toBeEnabled();
+    expect(screen.getByText("수정했거나 직접 확인이 필요한 항목은 묶음 확인에서 자동 제외됩니다."))
+      .toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "안전한 2개 모두 문서와 같음",
+    }));
+
+    expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
+      .toBeInTheDocument();
+    expect(screen.getByText(/확인한 항목/)).toHaveTextContent("3개");
+  });
+
+  it("removes an opened or corrected grouped item from bulk confirmation", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      issue_date: extractedField("issue_date", "2026-07-18"),
+      other_note: extractedField("other_note", "추가 메모"),
+    }));
+
+    renderPage();
+
+    await screen.findByRole("navigation", { name: "확인 구역" });
+    fireEvent.click(screen.getByRole("button", { name: /5 추가 확인 항목/ }));
+    expect(screen.getByRole("button", {
+      name: "안전한 2개 모두 문서와 같음",
+    })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /등기 발급일.*자세히 보기/ }));
+    expect(screen.getByRole("button", {
+      name: "안전한 1개 모두 문서와 같음",
+    })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "등기 발급일 수정 내용" }), {
+      target: { value: "2026-07-19" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+
+    expect(screen.getByRole("button", {
+      name: "안전한 1개 모두 문서와 같음",
+    })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", {
+      name: "안전한 1개 모두 문서와 같음",
+    }));
+
+    expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
+      .toBeInTheDocument();
+    expect(screen.getByText(/확인한 항목/)).toHaveTextContent("2개");
+  });
+
   it("guides the user through one important item at a time without technical labels", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(completedExtraction);
 

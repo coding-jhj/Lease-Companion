@@ -128,10 +128,11 @@ export function ExtractionReviewPage() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocumentExtractionDto[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftValue>>({});
-  const [, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
+  const [verificationByKey, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
   const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
   const [savedDraftKeys, setSavedDraftKeys] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [expandedGroupedKey, setExpandedGroupedKey] = useState<string | null>(null);
   const [unresolvedReasonByKey, setUnresolvedReasonByKey] = useState<
     Record<string, CannotVerifyReason>
   >({});
@@ -149,6 +150,7 @@ export function ExtractionReviewPage() {
 
   const fields = fieldViewModels(documents);
   const queue = buildReviewPlan(fields);
+  const reviewedKeySet = new Set(reviewedKeys);
   const currentItem = queue[currentIndex] ?? null;
   const currentSection = currentItem
     ? REVIEW_SECTIONS.find((section) => section.key === currentItem.section) ?? null
@@ -164,6 +166,19 @@ export function ExtractionReviewPage() {
   const completedCount = queue.filter((item) => reviewedKeys.includes(item.key)).length;
   const reviewedItems = queue.filter((item) => reviewedKeys.includes(item.key));
   const unresolvedItems = queue.filter((item) => unresolvedReasonByKey[item.key] !== undefined);
+  const groupedItems = queue.filter((item) => item.section === "grouped");
+  const groupedHandledCount = groupedItems.filter(
+    (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
+  ).length;
+  const bulkConfirmItems = groupedItems.filter((item) => (
+    item.bulkConfirmAllowed
+    && !reviewedKeySet.has(item.key)
+    && unresolvedReasonByKey[item.key] === undefined
+    && expandedGroupedKey !== item.key
+    && !Object.prototype.hasOwnProperty.call(drafts, item.key)
+    && (verificationByKey[item.key] ?? item.view.field.verification_status) === "unverified"
+  ));
+  const bulkConfirmKeySet = new Set(bulkConfirmItems.map((item) => item.key));
   const pendingCorrectionKeys = Object.keys(drafts).filter(
     (key) => !savedDraftKeys.includes(key),
   );
@@ -210,6 +225,7 @@ export function ExtractionReviewPage() {
       setDocuments(extractedDocuments);
       setDrafts({});
       setSavedDraftKeys([]);
+      setExpandedGroupedKey(null);
       setCurrentIndex(firstUnverifiedIndex === -1 ? loadedQueue.length : firstUnverifiedIndex);
       setUnresolvedReasonByKey({});
       setExtractionConfirmed(false);
@@ -307,6 +323,7 @@ export function ExtractionReviewPage() {
   }
 
   function markReviewed(item: ReviewQueueItem) {
+    setExpandedGroupedKey((current) => current === item.key ? null : current);
     setReviewedKeys((current) => [...new Set([...current, item.key])]);
     setVerificationByKey((current) => ({
       ...current,
@@ -323,6 +340,7 @@ export function ExtractionReviewPage() {
   function changeCurrent(item: ReviewQueueItem, value: string | string[]) {
     setExtractionConfirmed(false);
     setAnalysisStartUncertain(false);
+    setExpandedGroupedKey((current) => current === item.key ? null : current);
     if (Array.isArray(value)) {
       updateClauseDraft(item.view, value);
     } else {
@@ -342,9 +360,33 @@ export function ExtractionReviewPage() {
   }
 
   function markCannotVerify(item: ReviewQueueItem, reason: CannotVerifyReason) {
+    setExpandedGroupedKey((current) => current === item.key ? null : current);
     setReviewedKeys((current) => current.filter((key) => key !== item.key));
     setUnresolvedReasonByKey((current) => ({ ...current, [item.key]: reason }));
     advanceToNextUnreviewed(item.key);
+  }
+
+  function markGroupedItemsReviewed() {
+    const keys = bulkConfirmItems.map((item) => item.key);
+    if (keys.length === 0) return;
+
+    const nextReviewedKeys = new Set([...reviewedKeys, ...keys]);
+    setExtractionConfirmed(false);
+    setAnalysisStartUncertain(false);
+    setExpandedGroupedKey((current) => current !== null && keys.includes(current) ? null : current);
+    setReviewedKeys([...nextReviewedKeys]);
+    setVerificationByKey((current) => {
+      const next = { ...current };
+      for (const key of keys) next[key] = "confirmed";
+      return next;
+    });
+    setCurrentIndex(() => {
+      const nextIndex = queue.findIndex((item) => (
+        !nextReviewedKeys.has(item.key)
+        && unresolvedReasonByKey[item.key] === undefined
+      ));
+      return nextIndex === -1 ? queue.length : nextIndex;
+    });
   }
 
   function selectSection(section: ReviewSection) {
@@ -630,12 +672,12 @@ export function ExtractionReviewPage() {
                     </span>
                   </header>
                 )}
-                {currentItem.reasons.length > 0 && (
+                {currentItem.section !== "grouped" && currentItem.reasons.length > 0 && (
                   <ul className="review-item-reasons" aria-label="이 항목을 확인하는 이유">
                     {currentItem.reasons.map((reason) => <li key={reason}>{reason}</li>)}
                   </ul>
                 )}
-                {currentIndex > 0 && (
+                {currentItem.section !== "grouped" && currentIndex > 0 && (
                   <button
                     className="secondary guided-review-previous"
                     type="button"
@@ -645,14 +687,89 @@ export function ExtractionReviewPage() {
                     이전 내용 보기
                   </button>
                 )}
-                <GuidedReviewCard
-                  item={currentItem}
-                  draftValue={drafts[currentItem.key]}
-                  busy={submitting}
-                  onConfirm={() => markReviewed(currentItem)}
-                  onChange={(value) => changeCurrent(currentItem, value)}
-                  onCannotVerify={(reason) => markCannotVerify(currentItem, reason)}
-                />
+                {currentItem.section === "grouped" ? (
+                  <section className="grouped-review-panel" aria-labelledby="grouped-review-title">
+                    <header className="grouped-review-panel__head">
+                      <div>
+                        <h3 id="grouped-review-title">추가 확인 항목 모아보기</h3>
+                        <p>
+                          전체 {groupedItems.length}개 · 확인 {groupedHandledCount}개 · 남은 항목{" "}
+                          {groupedItems.length - groupedHandledCount}개
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={submitting || bulkConfirmItems.length === 0}
+                        onClick={markGroupedItemsReviewed}
+                      >
+                        안전한 {bulkConfirmItems.length}개 모두 문서와 같음
+                      </button>
+                    </header>
+                    <p className="grouped-review-panel__notice">
+                      수정했거나 직접 확인이 필요한 항목은 묶음 확인에서 자동 제외됩니다.
+                    </p>
+                    <ul className="grouped-review-list">
+                      {groupedItems.map((item) => {
+                        const meta = fieldStatusMeta(item.view);
+                        const expanded = expandedGroupedKey === item.key;
+                        const bulkAllowed = bulkConfirmKeySet.has(item.key);
+                        return (
+                          <li className="grouped-review-list__item" key={item.key}>
+                            <button
+                              className="grouped-review-list__summary"
+                              type="button"
+                              aria-expanded={expanded}
+                              aria-controls={`grouped-review-${item.key}`}
+                              aria-label={[
+                                item.title,
+                                meta.label,
+                                bulkAllowed ? "묶음 확인 가능" : null,
+                                expanded ? "접기" : "자세히 보기",
+                              ].filter(Boolean).join(", ")}
+                              onClick={() => setExpandedGroupedKey(expanded ? null : item.key)}
+                            >
+                              <span className="grouped-review-list__title">
+                                <strong>{item.title}</strong>
+                                <span>{displayValue(item, drafts)}</span>
+                              </span>
+                              <span className="grouped-review-list__status">
+                                {bulkAllowed && <em>묶음 확인 가능</em>}
+                                <span className={`review-status-chip review-status-chip--${meta.tone}`}>
+                                  {meta.label}
+                                </span>
+                                <span aria-hidden="true">{expanded ? "접기" : "보기"}</span>
+                              </span>
+                            </button>
+                            {expanded && (
+                              <div
+                                className="grouped-review-list__body"
+                                id={`grouped-review-${item.key}`}
+                              >
+                                <GuidedReviewCard
+                                  item={item}
+                                  draftValue={drafts[item.key]}
+                                  busy={submitting}
+                                  onConfirm={() => markReviewed(item)}
+                                  onChange={(value) => changeCurrent(item, value)}
+                                  onCannotVerify={(reason) => markCannotVerify(item, reason)}
+                                />
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ) : (
+                  <GuidedReviewCard
+                    item={currentItem}
+                    draftValue={drafts[currentItem.key]}
+                    busy={submitting}
+                    onConfirm={() => markReviewed(currentItem)}
+                    onChange={(value) => changeCurrent(currentItem, value)}
+                    onCannotVerify={(reason) => markCannotVerify(currentItem, reason)}
+                  />
+                )}
               </section>
             )}
 
