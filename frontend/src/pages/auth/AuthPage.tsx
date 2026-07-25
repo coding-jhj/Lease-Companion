@@ -59,7 +59,7 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
   return (
     <PageShell layout="auth" step="시작" title={isLogin ? "로그인" : "회원가입"} description="계약 건별로 확인 결과와 체크리스트를 저장합니다." showLogout={false} showJourney={false} hero={hero}>
       <form className="stack" onSubmit={submit}>
-        <label>아이디<input autoComplete="username" required value={username} onChange={(event) => setUsername(event.target.value)} /></label>
+        <label>아이디<input className="auth-ime-off" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required value={username} onChange={(event) => setUsername(event.target.value)} /></label>
         {!isLogin && <label>이메일<input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>}
         <label>비밀번호<input type="password" autoComplete={isLogin ? "current-password" : "new-password"} required minLength={8} maxLength={isLogin ? undefined : 16} aria-describedby={isLogin ? undefined : "password-rule"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
         {!isLogin && <p className="field-hint" id="password-rule">8~16자 영문 대소문자, 숫자, 특수문자를 조합하여 입력해 주세요.</p>}

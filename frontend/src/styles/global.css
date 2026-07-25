@@ -109,6 +109,8 @@ label { display: grid; gap: 8px; font-weight: 700; }
 .beginner-guide { margin-bottom: 16px; padding: 16px 18px; border: 1px solid #cbd9ce; border-radius: 14px; background: #f2f8f3; }
 .beginner-guide p { margin: 5px 0 0; color: #354039; line-height: 1.55; }
 input:not([type="radio"]):not([type="checkbox"]), select { width: 100%; min-height: 44px; padding: 13px 14px; border: 1px solid #bdc9bf; border-radius: 12px; background: #fff; font-size: 16px; }
+/* 아이디 입력은 영문 시작이 자연스러워 IME를 끈다(지원 브라우저 한정). */
+.auth-ime-off { ime-mode: disabled; }
 button, .button-link { display: block; width: 100%; min-height: 44px; padding: 14px 16px; border: 0; border-radius: 12px; background: #1c6a3a; color: #fff; font-size: 16px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
 button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .secondary { background: #e5eee7; color: #245236; }
@@ -228,11 +230,11 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .guided-review-card > p { color: #2c3d33; font-size: 16px; font-weight: 600; line-height: 1.6; }
 .guided-review-card > section:first-of-type { display: grid; gap: 7px; padding: 16px; border-radius: 14px; background: #f4f7f4; }
 .guided-review-card > section:first-of-type h3 { color: #526159; font-size: 14px; }
-.guided-review-card > section:first-of-type p { color: #1f3527; font-size: 17px; font-weight: 800; line-height: 1.55; white-space: pre-wrap; }
+.guided-review-card > section:first-of-type p { color: #1f3527; font-size: 16px; font-weight: 700; line-height: 1.55; white-space: pre-wrap; }
 .guided-clause-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: gc; }
 .guided-clause-list li { position: relative; display: grid; gap: 8px; padding: 14px 16px 15px 46px; border: 1px solid #dde5de; border-radius: 12px; background: #fff; counter-increment: gc; }
 .guided-clause-list li::before { content: counter(gc); position: absolute; left: 14px; top: 15px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #245c38; color: #fff; font-size: 12px; font-weight: 800; }
-.guided-clause-list__text { color: #22302a; font-size: 15px; font-weight: 700; line-height: 1.7; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
+.guided-clause-list__text { color: #22302a; font-size: 16px; font-weight: 700; line-height: 1.7; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
 .guided-clause-hint { border-left: 3px solid #7aa585; border-radius: 6px; background: #eef5ef; }
 .guided-clause-hint > summary { padding: 9px 12px; color: #2f5a3c; font-size: 14px; font-weight: 800; list-style: none; cursor: pointer; }
 .guided-clause-hint > summary::-webkit-details-marker { display: none; }
