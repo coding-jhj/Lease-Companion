@@ -164,6 +164,17 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     session = _create_session(
         client, owner_headers, "PRACTICE-DEFERRED-REFUND-001"
     )
+    initial = client.get(
+        f"/api/practice-sessions/{session['practice_session_id']}/media/latest",
+        headers=owner_headers,
+    )
+    assert initial.status_code == 200
+    initial_media = initial.json()
+    assert initial_media["status"] == "queued"
+    assert initial_media["speech_text"] == avatar_speech_text(
+        session["current_turn"]["prompt"]
+    )
+    assert launched_job_ids == [initial_media["media_job_id"]]
 
     response = client.post(
         f"/api/practice-sessions/{session['practice_session_id']}/turns",
@@ -185,7 +196,10 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     assert media["speech_text"] == avatar_speech_text(_prompt)
     assert media["audio_url"] is None
     assert media["video_url"] is None
-    assert launched_job_ids == [media["media_job_id"]]
+    assert launched_job_ids == [
+        initial_media["media_job_id"],
+        media["media_job_id"],
+    ]
 
     owned = client.get(
         f"/api/practice-media-jobs/{media['media_job_id']}",

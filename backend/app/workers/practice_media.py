@@ -85,7 +85,7 @@ def _warm_practice_media_runtime() -> None:
                 "tts_voice": os.getenv("SUPERTONIC_VOICE", "F1"),
                 "tts_language": os.getenv("SUPERTONIC_LANGUAGE", "ko"),
                 "tts_steps": int(os.getenv("SUPERTONIC_TOTAL_STEPS", "8")),
-                "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.0")),
+                "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.1")),
             },
             audio_path,
         )

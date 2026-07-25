@@ -63,11 +63,11 @@ def avatar_speech_text(dialogue_response: str) -> str:
     text = " ".join(dialogue_response.split())
     max_sentences = max(
         1,
-        int(os.getenv("PRACTICE_MEDIA_MAX_SPEECH_SENTENCES", "1")),
+        int(os.getenv("PRACTICE_MEDIA_MAX_SPEECH_SENTENCES", "2")),
     )
     max_chars = max(
         20,
-        int(os.getenv("PRACTICE_MEDIA_MAX_SPEECH_CHARS", "48")),
+        int(os.getenv("PRACTICE_MEDIA_MAX_SPEECH_CHARS", "65")),
     )
     sentences = [
         sentence.strip()
@@ -81,6 +81,52 @@ def avatar_speech_text(dialogue_response: str) -> str:
     if len(clipped) < max_chars // 2:
         clipped = selected[:max_chars].strip()
     return clipped.rstrip(" ,;:") + "."
+
+
+def queue_initial_practice_media_job(
+    db: Session,
+    session_row: PracticeSession,
+) -> PracticeMediaJob | None:
+    """Queue the first counterparty prompt without creating an evaluation turn."""
+
+    if not practice_media_enabled():
+        return None
+
+    request_id = f"initial-media-{session_row.practice_session_id}"
+    anchor = db.scalar(
+        select(PracticeTurn).where(
+            PracticeTurn.practice_session_fk == session_row.id,
+            PracticeTurn.request_id == request_id,
+        )
+    )
+    if anchor is None:
+        scenario, _ = load_approved_practice_assets(session_row.scenario_id)
+        prompt = next(
+            (
+                item.prompt
+                for item in scenario.dialogue_turns
+                if item.turn_id == session_row.current_state
+            ),
+            None,
+        )
+        if not prompt:
+            return None
+        anchor = PracticeTurn(
+            practice_turn_id=uuid.uuid4().hex,
+            practice_session_fk=session_row.id,
+            turn_id="MEDIA-INTRO",
+            attempt_no=0,
+            request_id=request_id,
+            input_payload={"kind": "initial_prompt"},
+            evaluation_payload=None,
+            dialogue_generation_payload={"source": "scenario_initial_prompt"},
+            dialogue_response=prompt,
+        )
+        db.add(anchor)
+        db.commit()
+        db.refresh(anchor)
+
+    return queue_practice_media_job(db, session_row, anchor)
 
 
 def queue_practice_media_job(
@@ -110,7 +156,7 @@ def queue_practice_media_job(
             "tts_voice": os.getenv("SUPERTONIC_VOICE", "F1"),
             "tts_language": os.getenv("SUPERTONIC_LANGUAGE", "ko"),
             "tts_steps": int(os.getenv("SUPERTONIC_TOTAL_STEPS", "8")),
-            "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.0")),
+            "tts_speed": float(os.getenv("SUPERTONIC_SPEED", "1.1")),
             "musetalk_version": os.getenv("MUSETALK_VERSION", "v15"),
             "musetalk_batch_size": int(os.getenv("MUSETALK_BATCH_SIZE", "12")),
             "musetalk_extra_margin": int(
@@ -130,7 +176,7 @@ def queue_practice_media_job(
                 os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "9")
             ),
             "target_total_seconds": float(
-                os.getenv("PRACTICE_MEDIA_TARGET_SECONDS", "15")
+                os.getenv("PRACTICE_MEDIA_TARGET_SECONDS", "16")
             ),
         },
     )

@@ -40,6 +40,7 @@ from app.services.practice_media import (
     get_latest_practice_media_job,
     get_owned_practice_media_job,
     media_job_response,
+    queue_initial_practice_media_job,
     queue_practice_media_job,
     resolve_media_file,
 )
@@ -83,6 +84,9 @@ def start_session(
 ) -> PracticeSessionResponse:
     try:
         row = create_practice_session(db, user, body.scenario_id)
+        initial_media = queue_initial_practice_media_job(db, row)
+        if initial_media is not None and initial_media.status == "queued":
+            launch_practice_media_job(initial_media.media_job_id)
         return session_response(row)
     except PracticeServiceError as exc:
         _raise_http(exc)

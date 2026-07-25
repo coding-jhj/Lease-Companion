@@ -1,7 +1,71 @@
 from pathlib import Path
+from types import SimpleNamespace
 
+from app.services import practice_media as practice_media_service
 from app.services.practice_media import avatar_speech_text
 from app.workers import practice_media
+
+
+def test_initial_prompt_media_uses_a_non_evaluation_anchor(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("PRACTICE_MEDIA_ENABLED", "true")
+    prompt = "첫 계약 질문입니다. 이 조건으로 진행해도 괜찮으시죠?"
+    monkeypatch.setattr(
+        practice_media_service,
+        "load_approved_practice_assets",
+        lambda _scenario_id: (
+            SimpleNamespace(
+                dialogue_turns=[
+                    SimpleNamespace(turn_id="TURN-01", prompt=prompt),
+                ]
+            ),
+            None,
+        ),
+    )
+    captured: dict[str, object] = {}
+
+    class FakeDb:
+        def scalar(self, _query):
+            return None
+
+        def add(self, row):
+            captured["anchor"] = row
+
+        def commit(self):
+            return None
+
+        def refresh(self, _row):
+            return None
+
+    expected_job = object()
+
+    def fake_queue(_db, _session, turn):
+        captured["queued_turn"] = turn
+        return expected_job
+
+    monkeypatch.setattr(
+        practice_media_service,
+        "queue_practice_media_job",
+        fake_queue,
+    )
+    session = SimpleNamespace(
+        id=7,
+        practice_session_id="session-001",
+        scenario_id="scenario-001",
+        current_state="TURN-01",
+    )
+
+    result = practice_media_service.queue_initial_practice_media_job(FakeDb(), session)
+
+    anchor = captured["anchor"]
+    assert result is expected_job
+    assert captured["queued_turn"] is anchor
+    assert anchor.turn_id == "MEDIA-INTRO"
+    assert anchor.attempt_no == 0
+    assert anchor.input_payload == {"kind": "initial_prompt"}
+    assert anchor.evaluation_payload is None
+    assert anchor.dialogue_response == prompt
 
 
 def test_generate_video_supports_separate_source_and_asset_roots(
@@ -77,6 +141,18 @@ def test_avatar_speech_text_keeps_full_first_sentence(monkeypatch) -> None:
     monkeypatch.setenv("PRACTICE_MEDIA_MAX_SPEECH_CHARS", "48")
 
     assert avatar_speech_text("첫 문장입니다. 두 번째 문장은 화면에만 표시합니다.") == "첫 문장입니다."
+
+
+def test_avatar_speech_text_keeps_two_sentences_up_to_65_chars(monkeypatch) -> None:
+    monkeypatch.setenv("PRACTICE_MEDIA_MAX_SPEECH_SENTENCES", "2")
+    monkeypatch.setenv("PRACTICE_MEDIA_MAX_SPEECH_CHARS", "65")
+    prompt = (
+        "임대인분은 특약대로 다음 세입자가 들어오면 보증금을 바로 반환하겠다고 하십니다. "
+        "이 조건으로 진행해도 괜찮으시죠?"
+    )
+
+    assert len(prompt) == 63
+    assert avatar_speech_text(prompt) == prompt
 
 
 def test_avatar_speech_text_caps_long_dialogue(monkeypatch) -> None:

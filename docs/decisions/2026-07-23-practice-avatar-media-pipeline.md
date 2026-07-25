@@ -28,8 +28,9 @@ RTX 3070 8GB Windows 환경에서 한국어 Supertonic 3 WAV와 MuseTalk 1.5 MP4
 - 상주 모델·avatar cache·NVENC·batch 12 적용 후 7.66초 warm 입력: 13.42~17.09초
 - 아바타 음성을 최대 5.5초로 제한한 첫 사용자 warm 입력: 11.47초
 - Supertonic까지 이미 warm인 대표 짧은 문장 end-to-end: 4.67초
+- 2026-07-25 두 문장·63자 대표 입력: `SUPERTONIC_SPEED=1.0`에서 21.88초, `1.1`에서 12.55초. 65자 제한의 16초 목표는 `1.1` 기본값과 상주 runtime을 전제로 한다.
 
-현재 구현은 15초 생성 예산을 둔 비동기 로컬 MVP다. 모델 적재와 avatar 좌표·latent·mask 생성은 서버 시작 background warm-up으로 분리하며, warm 완료 전 요청은 queued 상태로 기다린다. 단일 RTX 3070 실측이므로 여러 동시 사용자에 대한 실시간 아바타 성능으로 확대 해석하지 않는다.
+현재 구현은 16초 생성 예산을 둔 비동기 로컬 MVP다. 모델 적재와 avatar 좌표·latent·mask 생성은 서버 시작 background warm-up으로 분리하며, warm 완료 전 요청은 queued 상태로 기다린다. 단일 RTX 3070 실측이므로 여러 동시 사용자에 대한 실시간 아바타 성능으로 확대 해석하지 않는다.
 
 ## 설정
 
@@ -37,7 +38,7 @@ RTX 3070 8GB Windows 환경에서 한국어 Supertonic 3 WAV와 MuseTalk 1.5 MP4
 
 - Supertonic: `SUPERTONIC_VOICE`, `SUPERTONIC_LANGUAGE`, `SUPERTONIC_TOTAL_STEPS`, `SUPERTONIC_SPEED`
 - MuseTalk: `MUSETALK_ROOT`(소스), `MUSETALK_ASSET_ROOT`(선택적 모델·상대경로 자산 루트), `MUSETALK_PYTHON`, `MUSETALK_SOURCE_AVATAR`, `MUSETALK_UNET_MODEL_PATH`, `MUSETALK_UNET_CONFIG`
-- 실행: `MUSETALK_VERSION`, `MUSETALK_USE_FLOAT16`, `MUSETALK_BATCH_SIZE`, `MUSETALK_FPS`, `MUSETALK_AVATAR_SECONDS`, `MUSETALK_VIDEO_ENCODER`, `PRACTICE_MEDIA_WARM_ON_STARTUP`, `PRACTICE_MEDIA_MAX_AUDIO_SECONDS`, `PRACTICE_MEDIA_TIMEOUT_SECONDS`
+- 실행: `MUSETALK_VERSION`, `MUSETALK_USE_FLOAT16`, `MUSETALK_BATCH_SIZE`, `MUSETALK_FPS`, `MUSETALK_AVATAR_SECONDS`, `MUSETALK_VIDEO_ENCODER`, `PRACTICE_MEDIA_WARM_ON_STARTUP`, `PRACTICE_MEDIA_TARGET_SECONDS`, `PRACTICE_MEDIA_MAX_SPEECH_SENTENCES`, `PRACTICE_MEDIA_MAX_SPEECH_CHARS`, `PRACTICE_MEDIA_MAX_AUDIO_SECONDS`, `PRACTICE_MEDIA_TIMEOUT_SECONDS`
 
 ## 영향과 제한
 

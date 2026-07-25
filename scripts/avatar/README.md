@@ -34,11 +34,11 @@ Supertonic은 Backend 가상환경에 설치하고 최초 실행에서 모델을
 
 설치 스크립트가 완료되면 FastAPI만 재시작한다. `.env.example`의 MuseTalk 경로는 저장소 기준 상대경로이므로 특정 사용자 홈이나 드라이브 문자에 의존하지 않는다.
 
-## 15초 생성 목표
+## 16초 생성 목표
 
 - RTX 3070 8GB 검증 기본값은 FP16, batch 12, 25fps, NVENC 우선이다. NVENC를 사용할 수 없으면 `libx264 ultrafast`로 자동 복구한다.
-- 화면의 전체 답변은 유지하되 아바타 발화는 첫 문장·48자 이내로 제한한다. WAV가 9초보다 길면 문장을 자르지 않고 `atempo`로 9초 예산에 맞춘다.
-- 같은 avatar cache와 상주 모델을 사용하는 warm 경로만 15초 목표의 대상이다. 최초 모델 적재·avatar cache 생성은 준비 시간으로 분리한다.
+- 화면의 전체 답변은 유지하되 아바타 발화는 두 문장·65자 이내로 제한한다. 기본 TTS 속도는 `1.1`이며 WAV가 9초보다 길면 문장을 자르지 않고 `atempo`로 9초 예산에 맞춘다.
+- 같은 avatar cache와 상주 모델을 사용하는 warm 경로만 16초 목표의 대상이다. 최초 모델 적재·avatar cache 생성은 준비 시간으로 분리한다.
 - 생성 시간은 `PracticeMediaJob.settings_payload.timings_ms`와 `target_met`에 저장한다.
 
 관련 설정은 `PRACTICE_MEDIA_WARM_ON_STARTUP`, `PRACTICE_MEDIA_MAX_SPEECH_CHARS`, `PRACTICE_MEDIA_MAX_AUDIO_SECONDS`, `MUSETALK_BATCH_SIZE`, `MUSETALK_FPS`, `MUSETALK_AVATAR_SECONDS`, `MUSETALK_EXTRA_MARGIN`, `MUSETALK_PARSING_MODE`, `MUSETALK_LEFT_CHEEK_WIDTH`, `MUSETALK_RIGHT_CHEEK_WIDTH`, `MUSETALK_VIDEO_ENCODER`다. 현재 초기 마스크 튜닝값은 아래쪽 크롭 여백 `8`, `jaw` 파싱, 좌우 볼 너비 `80`이며 볼 너비도 avatar cache 식별자에 포함되어 값이 바뀌면 좌표·latent·mask를 다시 준비한다.
