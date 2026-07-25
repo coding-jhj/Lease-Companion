@@ -7,7 +7,7 @@ export interface PracticeMission {
   targetCount: number | null;
 }
 
-const missionGuide = "정답 문장을 외우지 않아도 됩니다. 확인할 내용과 보류 의사가 전달되면 됩니다.";
+const missionGuide = "정해진 정답 문장을 외울 필요는 없습니다. 확인할 내용과 보류 의사가 전달되면 됩니다.";
 
 const defaultMission: PracticeMission = {
   title: "계약을 서두르지 않고 확인하기",
