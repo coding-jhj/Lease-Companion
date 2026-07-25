@@ -62,14 +62,14 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   await page.goto("/signup");
   await page.getByLabel("아이디").fill(username);
   await page.getByLabel("이메일").fill(`${username}@example.com`);
-  await page.getByLabel("비밀번호").fill("password1!");
+  await page.getByLabel("비밀번호").fill("Password1!");
   await page.getByRole("button", { name: "회원가입" }).click();
   await page.getByLabel("아이디").fill(username);
-  await page.getByLabel("비밀번호").fill("password1!");
+  await page.getByLabel("비밀번호").fill("Password1!");
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
   await page.getByRole("link", { name: /실전 계약 점검/ }).click();
   await page.getByRole("link", { name: "아직 계약서를 받지 않았어요" }).click();
-  await page.getByRole("link", { name: "이 상황을 연습해 볼게요" }).click();
+  await page.getByRole("link", { name: "계약할 때 시뮬레이션 체험하러 가기" }).click();
   await expect(page.getByRole("heading", { name: "계약 상황을 미리 연습해 보세요" })).toBeVisible();
 
   const catalog = page.getByRole("region", { name: "연습 시나리오 목록" });
@@ -89,23 +89,28 @@ async function signUpAndOpenPractice(page: Page, scenario: PracticeScenario, tes
   }
 }
 
-async function submitAnswer(page: Page, answer: string, staysOnComposer = true) {
+async function submitAnswer(page: Page, answer: string, expectNextAnswer = true) {
   const answerBox = page.getByLabel("내 답변");
   await expect(answerBox).toBeVisible();
   await answerBox.fill(answer);
   await page.getByRole("button", { name: "이렇게 말할게요" }).click();
-  if (staysOnComposer) await expect(answerBox).toHaveValue("");
+  if (expectNextAnswer) {
+    await expect(answerBox).toBeVisible();
+    await expect(answerBox).toHaveValue("");
+  } else {
+    await expect(answerBox).not.toBeVisible();
+  }
+  await expect(page.getByRole("button", { name: "다음 상황으로", exact: true })).toHaveCount(0);
 }
 
 async function finishPractice(page: Page, scenario: PracticeScenario) {
   await submitAnswer(page, scenario.answers[0]);
   await submitAnswer(page, scenario.answers[1]);
   await submitAnswer(page, scenario.answers[2], false);
-  const finalSection = page.getByRole("heading", { name: "연습 결과 확인하기" }).locator("xpath=ancestor::section[1]");
+  const finalSection = page.getByRole("heading", { name: "대화가 끝났습니다" }).locator("xpath=ancestor::section[1]");
   await expect(finalSection).toBeVisible();
-  await page.getByRole("button", { name: "보류", exact: true }).click();
   await expect(page.locator("button.primary")).toHaveCount(1);
-  await finalSection.getByRole("button", { name: "연습 결과 확인하기" }).click();
+  await finalSection.getByRole("button", { name: "조심할 부분 확인하기" }).click();
   await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+\/result$/);
 }
 
@@ -131,24 +136,20 @@ test.describe("세 가지 계약 대화 연습", () => {
       await signUpAndOpenPractice(page, scenario, testInfo);
       await page.getByRole("button", { name: "연습 시작하기" }).click();
       await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+$/);
-      await expect(page.getByText("미션 진행")).toBeVisible();
+      await expect(page.getByText("미션 진행")).toHaveCount(0);
       await expect(page.getByTestId("practice-video")).toBeVisible();
       await expect(page.locator("button.primary")).toHaveCount(1);
       await expect(page.locator("body")).not.toContainText(scenario.nextPrompt);
       await expect(page.locator("body")).not.toContainText(/TURN-|hidden_confirmation_signals|answer key/i);
       await expectMobilePracticeLayout(page);
 
-      await page.getByRole("button", { name: "말할 내용 힌트 보기" }).click();
-      const hint = page.getByRole("region", { name: "말할 내용 힌트" });
-      await expect(hint).toContainText("방향");
-      await expect(hint).not.toContainText(/TURN-|hidden_confirmation_signals|answer key/i);
-      await page.getByRole("button", { name: "다음 힌트" }).click();
-      await expect(hint).toContainText(await page.locator("#practice-avatar-title").textContent() ?? "");
+      await expect(page.getByRole("button", { name: "말할 내용 힌트 보기" })).toHaveCount(0);
 
       await finishPractice(page, scenario);
-      await expect(page.getByRole("heading", { name: "연습 결과 복기" })).toBeVisible();
-      const confirmed = page.getByRole("heading", { name: "잘 확인한 행동" }).locator("xpath=parent::section");
-      for (const action of scenario.confirmedActions) await expect(confirmed).toContainText(action);
+      await expect(page.getByRole("heading", { name: "이 상황에서 조심할 점" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "확인 전 계약·송금 보류" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "조심해야 할 부분" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "이렇게 말하세요" })).toBeVisible();
       const sources = page.getByRole("heading", { name: "연결된 공식 근거" }).locator("xpath=parent::section");
       for (const sourceName of scenario.officialSourceNames) await expect(sources).toContainText(sourceName);
     });

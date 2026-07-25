@@ -87,6 +87,18 @@ def validate_provider_result(
         )
         if validated.turn_id != request.turn_id:
             raise ValueError("turn_id 불일치")
+        if validated.answer_category == "needs_review":
+            # 모델이 사용자 발화의 모호함을 시스템 실패로 오인해 같은 TURN을
+            # 반복하지 않도록 한다. needs_review는 service가 실제 provider
+            # 장애·timeout·형식 오류를 잡았을 때만 생성한다.
+            validated = validated.model_copy(
+                update={
+                    "answer_category": "ambiguous_answer",
+                    "confirmed_action_ids": [],
+                    "next_dialogue_state": request.success_next_state,
+                    "fallback_reason": None,
+                }
+            )
         if validated.answer_category == "appropriate_check":
             if validated.confirmed_action_ids != [request.goal_action_id]:
                 raise ValueError("goal_action_id 불일치")

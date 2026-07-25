@@ -75,11 +75,27 @@ def build_practice_result(
             for signal_id in action_by_id[action_id].linked_signal_ids
         )
     )
+    all_action_ids = [action.action_id for action in scenario.target_actions]
+    if set(confirmed_ids) == set(all_action_ids):
+        ending_type = "rights_asserted"
+    elif selected_action == "거절" or any(
+        action_id in confirmed_ids
+        for action_id in answer_key.debrief.defensive_stop_action_ids
+    ):
+        ending_type = "transaction_stopped"
+    else:
+        ending_type = "insufficient_protection"
+    ending = answer_key.debrief.ending_reports[ending_type]
     texts = (
         *confirmed_actions,
         *missed_signals,
         *answer_key.debrief.recommended_phrases,
         *answer_key.debrief.next_actions,
+        ending.title,
+        ending.feedback_label,
+        ending.feedback,
+        ending.practice_phrase,
+        *ending.action_summary,
     )
     if has_prohibited_claim(texts) or any(
         forbidden in text
@@ -92,6 +108,12 @@ def build_practice_result(
         session_id=session_id,
         scenario_id=scenario.scenario_id,
         scenario_version=scenario.scenario_version,
+        ending_type=ending_type,
+        ending_title=ending.title,
+        feedback_label=ending.feedback_label,
+        feedback=ending.feedback,
+        practice_phrase=ending.practice_phrase,
+        action_summary=list(ending.action_summary),
         selected_action=selected_action,
         confirmed_action_ids=confirmed_ids,
         missed_action_ids=missed_ids,

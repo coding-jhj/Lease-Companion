@@ -2,7 +2,7 @@
   "fixture_type": "synthetic_practice_answer_key",
   "scenario_id": "PRACTICE-PROXY-AUTHORITY-001",
   "scenario_version": "1.1.0",
-  "answer_key_version": "1.0.0",
+  "answer_key_version": "1.1.0",
   "review_status": "approved",
   "answer_statuses": [
     {
@@ -86,6 +86,75 @@
       ]
     }
   ],
+  "deterministic_semantic_rules": [
+    {
+      "rule_id": "DSR-PROXY-T1-RELATION",
+      "turn_id": "TURN-01",
+      "answer_category": "appropriate_check",
+      "all_of_keyword_groups": [
+        ["등기", "소유자", "집주인"],
+        ["대리인", "계약 상대"],
+        ["관계", "누구", "일치", "확인"]
+      ],
+      "none_of_keywords": ["가족이면 괜찮", "믿겠습니다"]
+    },
+    {
+      "rule_id": "DSR-PROXY-T1-TRUST",
+      "turn_id": "TURN-01",
+      "answer_category": "avoidance",
+      "all_of_keyword_groups": [
+        ["가족", "중개사", "확인하셨"],
+        ["괜찮", "믿", "진행"]
+      ],
+      "none_of_keywords": ["등기", "소유자 확인", "관계 확인", "확인해야", "하지만", "생각", "고민"]
+    },
+    {
+      "rule_id": "DSR-PROXY-T2-DOCUMENTS",
+      "turn_id": "TURN-02",
+      "answer_category": "appropriate_check",
+      "all_of_keyword_groups": [
+        ["위임장"],
+        ["인감증명", "본인서명사실확인"],
+        ["계약 전", "서명 전", "먼저"],
+        ["계약 체결", "계약금 수령", "권한 범위", "위임 범위"]
+      ],
+      "none_of_keywords": ["계약 후", "나중에"]
+    },
+    {
+      "rule_id": "DSR-PROXY-T2-ID-ONLY",
+      "turn_id": "TURN-02",
+      "answer_category": "avoidance",
+      "all_of_keyword_groups": [
+        ["신분증", "서류"],
+        ["만", "계약 후", "나중"],
+        ["괜찮", "진행", "서명"]
+      ],
+      "none_of_keywords": ["위임장과 인감", "권한 범위 확인"]
+    },
+    {
+      "rule_id": "DSR-PROXY-T3-HOLD",
+      "turn_id": "TURN-03",
+      "answer_category": "appropriate_check",
+      "all_of_keyword_groups": [
+        ["계약 체결 권한", "대리 권한", "수령 권한"],
+        ["확인 전", "확인하기 전", "확인될 때까지"],
+        ["서명하지", "계약하지", "보류"],
+        ["송금하지", "입금하지", "보내지", "보류"]
+      ],
+      "none_of_keywords": ["일단 서명", "먼저 송금"]
+    },
+    {
+      "rule_id": "DSR-PROXY-T3-ACT-FIRST",
+      "turn_id": "TURN-03",
+      "answer_category": "avoidance",
+      "all_of_keyword_groups": [
+        ["서명", "송금", "가계약금"],
+        ["일단", "먼저", "우선"],
+        ["나중", "이후", "서류"]
+      ],
+      "none_of_keywords": ["하지 않", "보류"]
+    }
+  ],
   "evaluation_examples": [
     {
       "example_id": "EX-001",
@@ -114,7 +183,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-004",
@@ -123,7 +192,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-005",
@@ -134,16 +203,16 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-006",
       "turn_id": "TURN-01",
       "user_input": "소유자는 확인해야 하지만 가족이면 그냥 진행해도 될 것 같습니다.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-007",
@@ -172,7 +241,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-010",
@@ -181,7 +250,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-011",
@@ -192,16 +261,16 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-012",
       "turn_id": "TURN-02",
       "user_input": "위임 범위는 확인해야 하지만 서류는 나중에 받아도 됩니다.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-013",
@@ -230,7 +299,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-016",
@@ -239,7 +308,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-017",
@@ -250,16 +319,16 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-018",
       "turn_id": "TURN-03",
       "user_input": "서명은 미루겠지만 계약금은 지금 보내겠습니다.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-019",
@@ -308,7 +377,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-024",
@@ -317,12 +386,12 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-025",
       "turn_id": "TURN-01",
-      "user_input": "등기상 소유자와 대리인의 관계를 확인하겠습니다.",
+      "user_input": "이 조건을 다시 검토해 주세요.",
       "input_context": {
         "provider_error": "timeout"
       },
@@ -377,7 +446,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-031",
@@ -386,12 +455,12 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-032",
       "turn_id": "TURN-02",
-      "user_input": "위임장과 인감증명서에서 계약과 수령 권한을 확인하겠습니다.",
+      "user_input": "관련 내용을 다시 확인해 주세요.",
       "input_context": {
         "provider_error": "timeout"
       },
@@ -446,7 +515,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-038",
@@ -455,12 +524,12 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-039",
       "turn_id": "TURN-03",
-      "user_input": "권한 확인 전에는 서명하거나 송금하지 않겠습니다.",
+      "user_input": "계약 진행 여부를 다시 검토하겠습니다.",
       "input_context": {
         "provider_error": "timeout"
       },
@@ -499,6 +568,44 @@
       "위법 확정",
       "계약 진행 권고",
       "계약 거절 권고"
-    ]
+    ],
+    "defensive_stop_action_ids": [
+      "PA03"
+    ],
+    "ending_reports": {
+      "rights_asserted": {
+        "title": "✨ 권리 확인 엔딩",
+        "feedback_label": "잘한 점",
+        "feedback": "가족이라는 설명에 의존하지 않고 등기상 소유자, 위임 서류, 계약 체결·대금 수령 권한을 차례로 확인한 뒤 서명과 송금을 보류했습니다.",
+        "practice_phrase": "가족 관계와 별개로 소유자의 계약 의사, 위임장·인감증명서, 계약 체결과 대금 수령 권한 범위를 확인하겠습니다. 확인 전에는 서명하거나 송금하지 않겠습니다.",
+        "action_summary": [
+          "등기상 소유자와 현재 계약 상대의 관계를 확인한다.",
+          "위임 서류와 계약·대금 수령 권한 범위를 구체적으로 대조한다.",
+          "대리 권한 확인 전에는 계약서 서명과 계약금 송금을 보류한다."
+        ]
+      },
+      "insufficient_protection": {
+        "title": "조건 수용 엔딩",
+        "feedback_label": "부족했던 부분",
+        "feedback": "가족이나 대리인이라는 구두 설명을 받아들이는 데 그쳐, 실제 위임 범위와 대금 수령 권한을 자료로 확인하지 못했습니다.",
+        "practice_phrase": "가족이라는 설명만으로는 계약 권한을 확인하기 어렵습니다. 소유자의 의사와 위임장·인감증명서, 계약금 수령 권한을 확인한 뒤 계약 여부를 검토하겠습니다.",
+        "action_summary": [
+          "가족 관계와 계약 대리 권한은 별도로 확인한다.",
+          "위임장에 계약 체결과 대금 수령 범위가 포함되는지 읽는다.",
+          "권한 확인 전에는 서명·송금을 서두르지 않는다."
+        ]
+      },
+      "transaction_stopped": {
+        "title": "⚠️ 진행 중단 엔딩",
+        "feedback_label": "잘한 점과 보완할 점",
+        "feedback": "권한 자료가 없는 상태에서 계약을 멈춘 것은 방어적인 대응이었습니다. 다음에는 필요한 위임 자료와 확인 범위를 구체적으로 제시해 보세요.",
+        "practice_phrase": "현재는 소유자의 위임 의사와 권한 범위를 확인할 자료가 없어 계약을 진행하지 않겠습니다. 위임장·인감증명서와 대금 수령 권한 자료를 제시해 주세요.",
+        "action_summary": [
+          "대리 권한이 확인되지 않으면 계약 진행을 중단한다.",
+          "필요한 위임 서류와 권한 범위를 구체적으로 요청한다.",
+          "확인 전에는 계약서에 서명하거나 계약금을 보내지 않는다."
+        ]
+      }
+    }
   }
 }

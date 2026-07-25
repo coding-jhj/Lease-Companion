@@ -91,10 +91,56 @@ describe("Practice MSW handlers", () => {
     expect(result.scenario_id).toBe(scenarioId);
     expect(result.confirmed_action_ids).toEqual(["PA01", "PA02", "PA03"]);
     expect(result.missed_action_ids).toEqual([]);
+    expect(result.ending_type).toBe("rights_asserted");
+    expect(result.action_summary).toHaveLength(3);
     expect(result.official_source_ids.length).toBeGreaterThan(0);
   });
 
-  it("keeps a timed-out answer on the current turn", async () => {
+  it.each([
+    {
+      label: "conditions accepted",
+      answers: [
+        "다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다.",
+        "말씀하신 대로 진행하겠습니다.",
+        "그대로 계약하겠습니다.",
+      ],
+      ending: "insufficient_protection",
+    },
+    {
+      label: "transaction held",
+      answers: [
+        "다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다.",
+        "설명은 알겠습니다.",
+        "수정된 특약을 확인하기 전에는 계약을 보류하겠습니다.",
+      ],
+      ending: "transaction_stopped",
+    },
+  ] as const)("returns the $label ending report", async ({ answers, ending }) => {
+    let session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
+    for (let index = 0; index < answers.length; index += 1) {
+      const response = await practiceService.submitTurn(session.practice_session_id, {
+        request_id: `ending-${ending}-${index}`,
+        turn_id: session.current_turn!.turn_id,
+        user_answer: answers[index],
+        timed_out: false,
+        response_time_seconds: 2,
+      });
+      session = response.session;
+    }
+    await practiceService.submitFinalAction(session.practice_session_id, {
+      request_id: `ending-final-${ending}`,
+      selected_action: "보류",
+      response_time_seconds: 1,
+    });
+
+    const result = (await practiceService.getResult(session.practice_session_id)).result;
+    expect(result.ending_type).toBe(ending);
+    expect(result.ending_title).toBeTruthy();
+    expect(result.practice_phrase).toBeTruthy();
+    expect(result.action_summary).toHaveLength(3);
+  });
+
+  it("records a timed-out answer and advances to the next turn", async () => {
     const session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
     const response = await practiceService.submitTurn(session.practice_session_id, {
       request_id: "timeout-request-001",
@@ -105,7 +151,64 @@ describe("Practice MSW handlers", () => {
     });
 
     expect(response.evaluation?.answer_category).toBe("no_response");
-    expect(response.session.current_turn?.turn_id).toBe("TURN-01");
+    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+  });
+
+  it("recognizes a clear refund demand even when the wording includes 특약대로", async () => {
+    const session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
+    const response = await practiceService.submitTurn(session.practice_session_id, {
+      request_id: "clear-refund-demand-001",
+      turn_id: "TURN-01",
+      user_answer: "특약대로 다음 세입자가 안 들어오게 되더라도 보증금 반환해 주셔야죠.",
+      timed_out: false,
+      response_time_seconds: 2,
+    });
+
+    expect(response.evaluation?.answer_category).toBe("appropriate_check");
+    expect(response.session.confirmed_action_ids).toEqual(["PA01"]);
+    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+  });
+
+  it("recognizes clear acceptance as avoidance from the canonical rule set", async () => {
+    const session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
+    const response = await practiceService.submitTurn(session.practice_session_id, {
+      request_id: "clear-acceptance-001",
+      turn_id: "TURN-01",
+      user_answer: "다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다.",
+      timed_out: false,
+      response_time_seconds: 2,
+    });
+
+    expect(response.evaluation?.answer_category).toBe("avoidance");
+    expect(response.session.confirmed_action_ids).toEqual([]);
+    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+  });
+
+  it.each([
+    [
+      "오늘 점심은 뭘 먹을까요?",
+      "ambiguous_answer",
+      "말씀하신 뜻이 분명하지 않은데, 앞서 안내드린 조건대로 진행해도 될까요?",
+    ],
+    [
+      "계약 얘기는 알겠는데 조금 고민됩니다.",
+      "partial_check",
+      "말씀하신 취지는 알겠지만, 그 부분은 나중에 확인하고 우선 진행하시죠.",
+    ],
+  ])("returns an in-role reaction for %s and still advances", async (answer, category, reaction) => {
+    const session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
+    const response = await practiceService.submitTurn(session.practice_session_id, {
+      request_id: `reaction-${category}`,
+      turn_id: "TURN-01",
+      user_answer: answer,
+      timed_out: false,
+      response_time_seconds: 2,
+    });
+
+    expect(response.evaluation?.answer_category).toBe(category);
+    expect(response.dialogue_response).toBe(reaction);
+    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+    expect(response.session.confirmed_action_ids).toEqual([]);
   });
 
   it("advances without confirming the current action", async () => {

@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
+import re
 
 from lease_companion_ai.providers.errors import (
     ProviderError,
@@ -103,10 +104,19 @@ class PracticeEvaluationService:
                 turn_id=turn.turn_id,
                 answer_category="no_response",
                 confirmed_action_ids=[],
-                next_dialogue_state=turn.turn_id,
+                next_dialogue_state=turn.next_turn_id,
             )
         if turn_input.user_answer is None:
             raise ValueError("대화 턴에는 사용자 답변이 필요합니다.")
+        deterministic = match_deterministic_semantic_rule(
+            self._answer_key,
+            turn.turn_id,
+            turn.goal_action_id,
+            turn.next_turn_id,
+            turn_input.user_answer,
+        )
+        if deterministic is not None:
+            return deterministic
         if self._provider is None:
             return self._fallback(
                 turn.turn_id, "provider_unavailable", turn_input.user_answer
@@ -215,6 +225,51 @@ class PracticeEvaluationService:
         )
 
 
+def match_deterministic_semantic_rule(
+    answer_key: PracticeAnswerKey,
+    turn_id: str,
+    goal_action_id: str,
+    success_next_state: str,
+    user_answer: str,
+) -> PracticeTurnEvaluation | None:
+    """승인 answer-key의 고신뢰 의미 묶음만 확정하고 나머지는 Gemini에 맡긴다."""
+
+    normalized_answer = _normalize_semantic_text(user_answer)
+    for rule in answer_key.deterministic_semantic_rules:
+        if rule.turn_id != turn_id:
+            continue
+        if any(
+            _normalize_semantic_text(keyword) in normalized_answer
+            for keyword in rule.none_of_keywords
+        ):
+            continue
+        if not all(
+            any(
+                _normalize_semantic_text(keyword) in normalized_answer
+                for keyword in group
+            )
+            for group in rule.all_of_keyword_groups
+        ):
+            continue
+        confirmed = (
+            [goal_action_id]
+            if rule.answer_category == "appropriate_check"
+            else []
+        )
+        return PracticeTurnEvaluation(
+            turn_id=turn_id,
+            answer_category=rule.answer_category,
+            confirmed_action_ids=confirmed,
+            next_dialogue_state=success_next_state,
+            evidence_text=user_answer,
+        )
+    return None
+
+
+def _normalize_semantic_text(value: str) -> str:
+    return re.sub(r"[\W_]+", "", value.casefold(), flags=re.UNICODE)
+
+
 class PracticeSimulationService:
     """한 턴 평가를 세션 상태 전이와 최종 복기에 연결한다."""
 
@@ -284,6 +339,14 @@ class PracticeSimulationService:
                 turn_input,
                 evaluation,
             )
+            if evaluation.answer_category != "appropriate_check":
+                # grounded 생성 메타데이터는 추적하되, 부족하거나 불명확한
+                # 답변에 노출할 대사는 승인된 역할 반응으로 고정한다.
+                response = getattr(turn.responses, evaluation.answer_category)
+        elif evaluation.answer_category != "appropriate_check":
+            # 부족하거나 불명확한 답변에는 정답을 가르치는 변형 대사보다
+            # 시나리오가 승인한 회유·진행 확인 반응을 우선한다.
+            response = getattr(turn.responses, evaluation.answer_category)
         else:
             response = select_dialogue_response(
                 self._answer_key,

@@ -122,7 +122,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-003",
@@ -131,7 +131,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-004",
@@ -142,7 +142,7 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-005",
@@ -211,16 +211,16 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-04"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-012",
       "turn_id": "TURN-04",
       "user_input": "확인하고 보내겠습니다. 아니, 그냥 지금 보낼게요.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-04"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-013",
@@ -267,6 +267,45 @@
       "위법 확정",
       "계약 진행 권고",
       "계약 거절 권고"
-    ]
+    ],
+    "defensive_stop_action_ids": [
+      "PA01",
+      "PA04"
+    ],
+    "ending_reports": {
+      "rights_asserted": {
+        "title": "✨ 권리 확인 엔딩",
+        "feedback_label": "잘한 점",
+        "feedback": "빠른 결정을 요구하는 압박에 흔들리지 않고 등기·소유자·권한·특약·입금 명의를 확인한 뒤 계약과 송금을 보류했습니다.",
+        "practice_phrase": "지금 바로 결정하지 않겠습니다. 최신 등기, 소유자와 계약 권한, 보증금 반환 특약, 입금 명의를 모두 확인한 뒤 계약 여부를 검토하겠습니다.",
+        "action_summary": [
+          "빠른 결정을 요구받아도 확인 시간을 확보한다.",
+          "등기·소유자·권한·특약 내용을 문서로 대조한다.",
+          "모든 확인이 끝나기 전에는 계약하거나 송금하지 않는다."
+        ]
+      },
+      "insufficient_protection": {
+        "title": "조건 수용 엔딩",
+        "feedback_label": "부족했던 부분",
+        "feedback": "매물이 곧 나간다는 압박이나 관례라는 설명을 받아들여, 계약 상대·권한·특약·입금 명의를 충분히 확인하지 못했습니다.",
+        "practice_phrase": "급하게 결정해야 한다는 이유로 확인 절차를 생략하지 않겠습니다. 최신 등기와 권한 자료, 특약 문구, 입금 명의를 먼저 보여 주세요.",
+        "action_summary": [
+          "시간 압박을 계약 확인 절차보다 우선하지 않는다.",
+          "말로 들은 내용은 등기·권한 자료·계약 문구로 다시 확인한다.",
+          "확인 전 계약금이나 가계약금 송금 요구를 보류한다."
+        ]
+      },
+      "transaction_stopped": {
+        "title": "⚠️ 진행 중단 엔딩",
+        "feedback_label": "잘한 점과 보완할 점",
+        "feedback": "확인되지 않은 상태에서 결정을 미루거나 송금을 중단한 것은 방어적인 대응이었습니다. 다음에는 누락된 자료와 수정할 문구를 구체적으로 요구해 보세요.",
+        "practice_phrase": "현재 자료만으로는 계약 상대와 조건을 확인하기 어려워 진행하지 않겠습니다. 최신 등기, 권한 자료, 특약 문구와 입금 명의를 서면으로 제시해 주세요.",
+        "action_summary": [
+          "확인되지 않은 급한 계약은 즉시 멈춘다.",
+          "부족한 자료와 수정할 계약 문구를 구체적으로 요청한다.",
+          "확인 자료가 갖춰지기 전에는 계약금·가계약금을 보내지 않는다."
+        ]
+      }
+    }
   }
 }

@@ -4,7 +4,6 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { practiceService } from "../../services/practiceService";
 import type { PracticeScenarioDetailDto } from "../../types/api";
-import { PracticeMissionCard } from "./PracticeMissionCard";
 
 const money = new Intl.NumberFormat("ko-KR");
 const INITIAL_MEDIA_WAIT_MS = 90_000;
@@ -70,13 +69,12 @@ export function PracticeScenarioPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="계약 연습" eyebrow="계약 연습" title={scenario?.title ?? "계약 연습 상황"} description="오늘의 미션을 확인한 뒤 연습을 시작하세요." showJourney={false}>
+    <PageShell layout="workspace" step="계약 연습" eyebrow="계약 연습" title={scenario?.title ?? "계약 연습 상황"} description="계약 내용을 참고한 뒤 상대방과의 대화를 시작하세요. 주의사항은 대화가 끝난 뒤 보여드립니다." showJourney={false}>
       <div className="stack">
         {status === "loading" && <LoadingState title="연습 상황을 불러오는 중" description="연습에 필요한 정보만 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="연습 상황을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadScenario()} />}
         {status === "success" && scenario && (
           <>
-            <PracticeMissionCard scenarioId={scenario.scenario_id} />
             <details className="practice-contract-details" onToggle={(event) => setContractOpen(event.currentTarget.open)}>
               <summary>참고할 계약 내용 보기</summary>
               <section className="practice-contract-card" aria-labelledby="practice-contract-title" hidden={!contractOpen}>

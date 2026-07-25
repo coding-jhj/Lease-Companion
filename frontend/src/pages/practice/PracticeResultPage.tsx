@@ -23,6 +23,9 @@ export function PracticeResultPage() {
   const officialSourceNames = result
     ? getOfficialSourceDisplayNames(result.official_source_ids)
     : [];
+  const cautionItems = result
+    ? [...new Set([...result.missed_signals, ...result.next_actions])]
+    : [];
 
   async function loadResult() {
     setStatus("loading");
@@ -38,22 +41,29 @@ export function PracticeResultPage() {
   useEffect(() => { void loadResult(); }, [sessionId]);
 
   return (
-    <PageShell layout="report" step="계약 연습" title="연습 결과 복기" description="점수가 아니라 실제로 표현한 확인 행동, 놓친 신호, 다음에 사용할 문장을 확인합니다." showJourney={false}>
+    <PageShell layout="report" step="계약 연습" title="대화 연습 평가서" description="대화에서 표현한 확인·문서화·보류 행동을 기준으로 복기합니다." showJourney={false}>
       <div className="stack">
         {status === "loading" && <LoadingState title="연습 결과를 불러오는 중" description="대화 근거와 최종 행동을 정리하고 있습니다." />}
         {status === "error" && <ErrorState title="연습 결과를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadResult()} />}
         {status === "success" && result && (
           <>
             <section className="practice-result-hero">
-              <p>내가 선택한 최종 행동</p>
-              <h2>{result.selected_action ?? "선택하지 않음"}</h2>
-              <span>이 결과는 가상 연습 복기이며 실제 계약의 안전·위험을 판정하지 않습니다.</span>
+              <p>이번 대화의 대응 결과</p>
+              <h2>{result.ending_title}</h2>
+              <span>이 결과는 가상 대화에서 표현한 대응을 복기하며 실제 계약의 성사·피해·안전 여부를 판정하지 않습니다.</span>
             </section>
+            <section className="practice-result-card">
+              <h2>{result.feedback_label}</h2>
+              <p>{result.feedback}</p>
+            </section>
+            <section className="practice-result-card">
+              <h2>실제로 이렇게 말해보세요</h2>
+              <p>“{result.practice_phrase}”</p>
+            </section>
+            <ResultList title="행동 지침 3줄 요약" items={result.action_summary} emptyText="추가 행동 지침이 없습니다." />
             <div className="practice-result-grid">
-              <ResultList title="잘 확인한 행동" items={result.confirmed_actions} emptyText="대화에서 명확히 확인된 행동이 없습니다." />
-              <ResultList title="놓친 확인 신호" items={result.missed_signals} emptyText="이번 연습에서 놓친 확인 신호가 없습니다." />
-              <ResultList title="다음에 말할 문장" items={result.recommended_phrases} emptyText="추가 권장 문장이 없습니다." />
-              <ResultList title="다음 행동" items={result.next_actions} emptyText="추가 행동이 없습니다." />
+              <ResultList title="추가로 조심해야 할 부분" items={cautionItems} emptyText="추가로 안내할 주의사항이 없습니다." />
+              <ResultList title="다른 표현 예시" items={result.recommended_phrases} emptyText="추가 권장 문장이 없습니다." />
             </div>
             <section className="practice-source-card">
               <h2>연결된 공식 근거</h2>

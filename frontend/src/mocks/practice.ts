@@ -1,4 +1,7 @@
 import { http, HttpResponse } from "msw";
+import semanticRulesByScenario, {
+  debriefByScenario,
+} from "virtual:practice-semantic-rules";
 import type {
   PracticeAnswerCategory,
   PracticeConversationTurnDto,
@@ -236,18 +239,52 @@ function error(code: string, message: string, status: number) {
   return HttpResponse.json({ error: { code, message } }, { status });
 }
 
-function evaluate(turnId: string, answer: string | null, timedOut: boolean, actionId: string): PracticeTurnEvaluationDto {
+function normalizeSemanticText(value: string) {
+  return value.toLocaleLowerCase("ko-KR").match(/[\p{L}\p{N}]+/gu)?.join("") ?? "";
+}
+
+function deterministicCategory(
+  scenarioId: string,
+  turnId: string,
+  answer: string,
+): "appropriate_check" | "avoidance" | null {
+  const normalizedAnswer = normalizeSemanticText(answer);
+  const rules = semanticRulesByScenario[scenarioId] ?? [];
+  for (const rule of rules) {
+    if (rule.turn_id !== turnId) continue;
+    if (rule.none_of_keywords.some((keyword) =>
+      normalizedAnswer.includes(normalizeSemanticText(keyword)))) continue;
+    const matches = rule.all_of_keyword_groups.every((group) =>
+      group.some((keyword) => normalizedAnswer.includes(normalizeSemanticText(keyword))));
+    if (matches) return rule.answer_category;
+  }
+  return null;
+}
+
+function evaluate(
+  scenarioId: string,
+  turnId: string,
+  answer: string | null,
+  timedOut: boolean,
+  actionId: string,
+): PracticeTurnEvaluationDto {
+  const deterministic = answer
+    ? deterministicCategory(scenarioId, turnId, answer)
+    : null;
   const category: PracticeAnswerCategory = timedOut
     ? "no_response"
-    : /확인|요청|수정|고쳐|보류|송금하지|서명하지/.test(answer ?? "")
-      ? "appropriate_check"
-      : "partial_check";
+    : deterministic
+      ?? (/확인|요청|수정|고쳐|보류|송금하지|서명하지/.test(answer ?? "")
+        ? "appropriate_check"
+        : /보증금|특약|계좌|명의|권한|서류|등기|임대인|계약/.test(answer ?? "")
+          ? "partial_check"
+          : "ambiguous_answer");
   return {
     schema_version: "1.9.0",
     turn_id: turnId,
     answer_category: category,
     confirmed_action_ids: category === "appropriate_check" ? [actionId] : [],
-    next_dialogue_state: timedOut ? turnId : "next",
+    next_dialogue_state: "next",
     fallback_reason: null,
     evidence_text: category === "appropriate_check" ? answer : null,
     verbal_reliance: "not_observed",
@@ -315,8 +352,14 @@ export const practiceHandlers = [
     session.requestIds.add(body.request_id);
     const scenario = findScenario(session.response.scenario_id)!;
     const actionId = `PA${String(session.turnIndex + 1).padStart(2, "0")}`;
-    const evaluation = evaluate(body.turn_id, body.user_answer, body.timed_out, actionId);
-    if (!body.timed_out) session.turnIndex += 1;
+    const evaluation = evaluate(
+      session.response.scenario_id,
+      body.turn_id,
+      body.user_answer,
+      body.timed_out,
+      actionId,
+    );
+    session.turnIndex += 1;
     if (evaluation.confirmed_action_ids.length > 0) session.response.confirmed_action_ids.push(actionId);
     const nextTurn = scenario.turns[session.turnIndex] ?? null;
     session.response = {
@@ -325,7 +368,13 @@ export const practiceHandlers = [
       current_turn: nextTurn,
     };
     const practiceTurnId = crypto.randomUUID().replaceAll("-", "");
-    const dialogueResponse = body.timed_out ? "답변을 기다리고 있습니다. 같은 상황에서 다시 말해 보세요." : "말씀하신 확인 내용을 반영했습니다. 다음 상황으로 넘어가겠습니다.";
+    const dialogueResponse = evaluation.answer_category === "no_response"
+      ? "답변이 없으시면 앞서 안내드린 조건대로 진행해도 될까요?"
+      : evaluation.answer_category === "ambiguous_answer"
+        ? "말씀하신 뜻이 분명하지 않은데, 앞서 안내드린 조건대로 진행해도 될까요?"
+        : evaluation.answer_category === "partial_check"
+          ? "말씀하신 취지는 알겠지만, 그 부분은 나중에 확인하고 우선 진행하시죠."
+          : "확인 요청은 임대인분께 전달하겠습니다.";
     session.messages.push({
       practice_turn_id: practiceTurnId,
       turn_id: body.turn_id,
@@ -387,12 +436,28 @@ export const practiceHandlers = [
     if (session.response.current_state !== "ACTION-SELECTION" || !finalActions.includes(body.selected_action)) return error("invalid_practice_transition", "현재 선택할 수 없는 최종 행동입니다.", 409);
     const scenario = findScenario(session.response.scenario_id)!;
     const confirmedNames = scenario.targetActions.filter((_, index) => session.response.confirmed_action_ids.includes(`PA${String(index + 1).padStart(2, "0")}`));
+    const allActionIds = scenario.targetActions.map((_, index) => `PA${String(index + 1).padStart(2, "0")}`);
+    const debrief = debriefByScenario[scenario.scenario_id];
+    const endingType = allActionIds.every((actionId) =>
+      session.response.confirmed_action_ids.includes(actionId))
+      ? "rights_asserted"
+      : body.selected_action === "중단" || debrief.defensive_stop_action_ids.some((actionId) =>
+          session.response.confirmed_action_ids.includes(actionId))
+        ? "transaction_stopped"
+        : "insufficient_protection";
+    const ending = debrief.ending_reports[endingType];
     session.response = { ...session.response, status: "completed", current_state: "DEBRIEF", current_turn: null, selected_action: body.selected_action, completed_at: now };
     session.result = {
       schema_version: "1.9.0",
       session_id: session.response.practice_session_id,
       scenario_id: scenario.scenario_id,
       scenario_version: scenario.scenario_version,
+      ending_type: endingType,
+      ending_title: ending.title,
+      feedback_label: ending.feedback_label,
+      feedback: ending.feedback,
+      practice_phrase: ending.practice_phrase,
+      action_summary: ending.action_summary,
       selected_action: body.selected_action,
       confirmed_action_ids: session.response.confirmed_action_ids,
       missed_action_ids: scenario.targetActions.map((_, index) => `PA${String(index + 1).padStart(2, "0")}`).filter((id) => !session.response.confirmed_action_ids.includes(id)),

@@ -337,7 +337,7 @@ def test_provider_factory_prefers_key_then_offline_fake_then_none(monkeypatch):
     assert missing is None
 
 
-def test_offline_fake_does_not_guess_unapproved_free_form_answer(monkeypatch):
+def test_offline_fake_treats_unapproved_free_form_answer_as_ambiguous(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     scenario, answer_key = _assets()
@@ -349,9 +349,9 @@ def test_offline_fake_does_not_guess_unapproved_free_form_answer(monkeypatch):
         _turn_input("TURN-01", "정답표에 없는 새로운 자유 답변입니다.")
     )
 
-    assert result.answer_category == "needs_review"
-    assert result.fallback_reason == "fake_no_matching_example"
-    assert result.next_dialogue_state == "TURN-01"
+    assert result.answer_category == "ambiguous_answer"
+    assert result.fallback_reason is None
+    assert result.next_dialogue_state == "TURN-02"
 
 
 OFFLINE_FREE_FORM_EXAMPLES = (
@@ -444,27 +444,30 @@ def test_offline_fake_accepts_natural_answers_with_required_intent(
 
 
 @pytest.mark.parametrize(
-    "scenario_id,turn_id,answer",
+    "scenario_id,turn_id,answer,expected_category",
     (
         (
             "PRACTICE-DEFERRED-REFUND-001",
             "TURN-02",
             "새 임차인 입주 조건은 그대로 두고 특약 문구만 수정한 뒤 진행하겠습니다.",
+            "ambiguous_answer",
         ),
         (
             "PRACTICE-THIRD-PARTY-PAYMENT-001",
             "TURN-03",
             "입금 명의와 수령 권한은 나중에 확인하고 가계약금을 먼저 송금하겠습니다.",
+            "avoidance",
         ),
         (
             "PRACTICE-PROXY-AUTHORITY-001",
             "TURN-03",
             "대리권은 나중에 확인하고 일단 계약서에 서명한 뒤 계약금을 보내겠습니다.",
+            "avoidance",
         ),
     ),
 )
-def test_offline_fake_does_not_accept_conflicting_free_form_answer(
-    monkeypatch, scenario_id, turn_id, answer
+def test_offline_fake_advances_conflicting_free_form_answer_without_confirming(
+    monkeypatch, scenario_id, turn_id, answer, expected_category
 ):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
@@ -475,9 +478,13 @@ def test_offline_fake_does_not_accept_conflicting_free_form_answer(
 
     result = service.evaluate(_turn_input(turn_id, answer))
 
-    assert result.answer_category == "needs_review"
+    expected_next_state = next(
+        turn.next_turn_id for turn in scenario.dialogue_turns if turn.turn_id == turn_id
+    )
+    assert result.answer_category == expected_category
     assert result.confirmed_action_ids == []
-    assert result.next_dialogue_state == turn_id
+    assert result.fallback_reason is None
+    assert result.next_dialogue_state == expected_next_state
 
 
 FAKE_EXAMPLES = []

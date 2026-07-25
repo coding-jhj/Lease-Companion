@@ -544,6 +544,12 @@ export interface PracticeResultDto {
   session_id: string;
   scenario_id: string;
   scenario_version: string;
+  ending_type: "rights_asserted" | "insufficient_protection" | "transaction_stopped";
+  ending_title: string;
+  feedback_label: string;
+  feedback: string;
+  practice_phrase: string;
+  action_summary: [string, string, string];
   selected_action: PracticeSelectedAction | null;
   confirmed_action_ids: string[];
   missed_action_ids: string[];

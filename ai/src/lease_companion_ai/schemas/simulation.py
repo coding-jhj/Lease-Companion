@@ -40,12 +40,17 @@ AnswerCategory = Literal[
     "no_response",
     "needs_review",
 ]
+PracticeEndingType = Literal[
+    "rights_asserted",
+    "insufficient_protection",
+    "transaction_stopped",
+]
 
-# 진행이 목표문장 완전 충족(appropriate_check)에만 묶이면 연습이 되지 않는다.
-# 회피·무응답·검토불가만 같은 턴에 고정하고, 부분 충족·모호한 시도는 계약 상황에 맞으면
-# 진행(success)할 수 있게 허용해 평가(LLM)가 상황에 맞게 선택한다.
-_ADVANCE_ONLY_CATEGORIES = frozenset({"appropriate_check"})
-_RETRY_ONLY_CATEGORIES = frozenset({"avoidance", "no_response", "needs_review"})
+# 계약 대화 연습은 정답을 맞힐 때까지 같은 장면을 반복하는 퀴즈가 아니다.
+# 사용자가 한 번 응답한 결과는 확인 행동 인정 여부와 별개로 저장하고 다음 장면으로
+# 진행한다. provider 장애·timeout·형식 오류인 needs_review만 사용자 오답으로
+# 기록하지 않고 현재 장면에서 재시도 또는 명시적 건너뛰기를 선택하게 한다.
+_RETRY_ONLY_CATEGORIES = frozenset({"needs_review"})
 
 
 def allowed_next_dialogue_states(
@@ -53,15 +58,12 @@ def allowed_next_dialogue_states(
 ) -> frozenset[str]:
     """답변 분류별 허용 다음 대화 상태.
 
-    appropriate_check → 진행만, 회피·무응답·검토불가 → 재시도만,
-    partial_check·ambiguous_answer → 진행/재시도 모두 허용(평가가 상황에 맞게 선택).
-    목표문장을 그대로 말하지 않아도 합리적인 답변이면 진행할 수 있게 한다.
+    needs_review → 재시도만, 그 외 사용자 응답 범주 → 진행만.
+    확인 행동 인정 여부는 confirmed_action_ids에 누적하고 마지막 복기에서 안내한다.
     """
-    if answer_category in _ADVANCE_ONLY_CATEGORIES:
-        return frozenset({success_next_state})
     if answer_category in _RETRY_ONLY_CATEGORIES:
         return frozenset({retry_state})
-    return frozenset({success_next_state, retry_state})
+    return frozenset({success_next_state})
 
 
 SelectedAction = Literal["진행", "추가 확인", "특약 수정 요구", "보류", "중단"]
@@ -570,6 +572,20 @@ class PracticeResult(BaseModel):
     session_id: str = Field(min_length=1)
     scenario_id: ScenarioId
     scenario_version: ScenarioVersion = Field(pattern=r"^\d+\.\d+\.\d+$")
+    ending_type: PracticeEndingType = "insufficient_protection"
+    ending_title: str = "확인 행동을 더 구체적으로 표현해 보세요"
+    feedback_label: str = "보완할 점"
+    feedback: str = "중요한 조건을 확인하고 문서로 남기겠다는 의사를 더 명확하게 표현할 필요가 있습니다."
+    practice_phrase: str = "확인 자료와 수정된 계약 문구를 보기 전에는 계약이나 송금을 진행하지 않겠습니다."
+    action_summary: list[str] = Field(
+        default_factory=lambda: [
+            "중요한 조건을 계약서와 공식 자료로 확인한다.",
+            "구두 설명은 계약서나 특약 문구로 남긴다.",
+            "확인이 끝나기 전에는 계약·서명·송금을 보류한다.",
+        ],
+        min_length=3,
+        max_length=3,
+    )
     selected_action: SelectedAction | None = None
     confirmed_action_ids: list[ActionId] = Field(default_factory=list)
     missed_action_ids: list[ActionId] = Field(default_factory=list)
@@ -589,6 +605,7 @@ class PracticeResult(BaseModel):
             "recommended_phrases",
             "next_actions",
             "official_source_ids",
+            "action_summary",
         ):
             _unique(getattr(self, name), label=name)
         if set(self.confirmed_action_ids) & set(self.missed_action_ids):

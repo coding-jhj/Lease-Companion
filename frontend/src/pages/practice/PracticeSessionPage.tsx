@@ -4,13 +4,9 @@ import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
 import { PracticeAvatarStage } from "./PracticeAvatarStage";
-import { PracticeHintPanel } from "./PracticeHintPanel";
 import { PracticeChatPanel } from "./PracticeChatPanel";
-import { PracticeMissionCard } from "./PracticeMissionCard";
-import { practiceMissionForScenario } from "./practiceMissionCatalog";
 import type {
   PracticeScenarioDetailDto,
-  PracticeSelectedAction,
   PracticeSessionDto,
   PracticeConversationTurnDto,
   PracticeMediaJobDto,
@@ -74,9 +70,7 @@ export function PracticeSessionPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [hintOpen, setHintOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<"contract" | "conversation">("conversation");
-  const [selectedAction, setSelectedAction] = useState<PracticeSelectedAction | null>(null);
   const [conversationOpen, setConversationOpen] = useState(isWideViewport);
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
@@ -84,10 +78,8 @@ export function PracticeSessionPage() {
 
   async function loadSession() {
     setStatus("loading");
-    setHintOpen(false);
     setDrawerTab("conversation");
     setConversationOpen(isWideViewport());
-    setSelectedAction(null);
     try {
       const loaded = await practiceService.getSession(sessionId);
       if (loaded.status === "completed") {
@@ -193,7 +185,8 @@ export function PracticeSessionPage() {
       });
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
-      setAvatarSpeechText(response.dialogue_response);
+      // 중개사 반응은 대화 기록에 남기고 다음 질문을 자연스럽게 이어서 보여 준다.
+      setAvatarSpeechText(response.session.current_turn?.prompt ?? response.dialogue_response);
       setAvatarVideoUrl((current) => {
         if (current) URL.revokeObjectURL(current);
         return null;
@@ -210,7 +203,6 @@ export function PracticeSessionPage() {
       });
       setConversationRefreshToken((current) => current + 1);
       setAnswer("");
-      setHintOpen(false);
       turnStartedAt.current = Date.now();
     } catch {
       setErrorMessage("답변을 보내지 못했습니다. 입력한 답변은 그대로 남아 있습니다. 다시 시도해 주세요.");
@@ -231,12 +223,16 @@ export function PracticeSessionPage() {
       });
       setSession(response.session);
       setLastResponse(null);
-      // 다음 상황으로 이동하면 직전 응답은 초기화해 새 상황 prompt가 큰 대사로 보이게 한다.
+      setAvatarMedia(null);
+      setAvatarVideoUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return null;
+      });
+      // provider 오류 복구로 대화를 계속할 때 직전 오류 응답과 미디어를 초기화한다.
       setAvatarSpeechText(null);
-      setHintOpen(false);
       turnStartedAt.current = Date.now();
     } catch {
-      setErrorMessage("다음 상황으로 이동하지 못했습니다. 현재 연습 내용은 그대로입니다. 다시 시도해 주세요.");
+      setErrorMessage("대화를 이어가지 못했습니다. 현재 연습 내용은 그대로입니다. 다시 시도해 주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -254,61 +250,34 @@ export function PracticeSessionPage() {
     void sendTurn(false);
   }
 
-  async function chooseFinalAction() {
-    if (!selectedAction) return;
+  async function showSafetyReview() {
     setSubmitting(true);
     setErrorMessage("");
     try {
       await practiceService.submitFinalAction(sessionId, {
         request_id: createPracticeRequestId("final"),
-        selected_action: selectedAction,
+        selected_action: "보류",
         response_time_seconds: elapsedSeconds(turnStartedAt.current),
       });
       navigate(`/practice/sessions/${sessionId}/result`);
     } catch {
-      setErrorMessage("선택을 저장하지 못했습니다. 현재 선택은 그대로입니다. 다시 시도해 주세요.");
+      setErrorMessage("주의사항을 정리하지 못했습니다. 다시 시도해 주세요.");
       setSubmitting(false);
     }
   }
 
   const isActionSelection = session?.current_state === "ACTION-SELECTION";
   const evaluationNotice = practiceEvaluationNotice(lastResponse);
-  const confirmedCount = session?.confirmed_action_ids.length ?? 0;
-  const mission = practiceMissionForScenario(session?.scenario_id ?? "");
-  const progressText = mission.targetCount === null
-    ? `확인 행동 ${confirmedCount}개`
-    : `확인 행동 ${confirmedCount} / ${mission.targetCount}`;
-  // 큰 대사는 직전 답변에 대한 사람다운 응답(dialogue_response), 답 전에는 현재 TURN prompt.
+  // 상대방 반응은 대화 기록에 쌓이고, 큰 화면에는 지금 답할 대사만 표시한다.
   const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
 
   return (
-    <PageShell layout="workspace" step="계약 연습" title="상대방에게 직접 말해 보세요" description="정답 문구를 외우기보다, 확인할 내용과 진행 보류 의사를 자신의 말로 표현하는 연습입니다." showJourney={false}>
+    <PageShell layout="workspace" step="계약 연습" title="상대방에게 직접 말해 보세요" description="상대방의 말을 듣고 자연스럽게 답해 보세요. 조심할 부분은 대화가 끝난 뒤 정리해 드립니다." showJourney={false}>
       <div className="stack">
         {status === "loading" && <LoadingState title="대화 상태를 불러오는 중" description="마지막으로 저장된 턴부터 이어서 준비합니다." />}
         {status === "error" && <ErrorState title="대화를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadSession()} />}
         {status === "success" && session && (
           <>
-            <div className="practice-progress" role="status" aria-live="polite">
-              <div className="practice-progress__head">
-                <span>미션 진행</span>
-                <strong>{progressText}</strong>
-              </div>
-              {mission.targetCount !== null && (
-                <div
-                  className="practice-progress__bar"
-                  role="progressbar"
-                  aria-label="확인 행동 진행"
-                  aria-valuemin={0}
-                  aria-valuemax={mission.targetCount}
-                  aria-valuenow={Math.min(mission.targetCount, confirmedCount)}
-                >
-                  <span style={{ width: `${Math.min(100, (confirmedCount / mission.targetCount) * 100)}%` }} />
-                </div>
-              )}
-            </div>
-            <div className="practice-session-mission">
-              <PracticeMissionCard scenarioId={session.scenario_id} confirmedCount={confirmedCount} showProgress={false} />
-            </div>
             {!isActionSelection && session.current_turn && (
               <>
                 <div className={`practice-session-stage${conversationOpen ? " practice-session-stage--open" : ""}`}>
@@ -347,20 +316,18 @@ export function PracticeSessionPage() {
                       <form className="practice-answer-composer" onSubmit={submitAnswer}>
                         <div className="practice-answer-composer__row">
                           <label htmlFor="practice-answer">말하기</label>
-                          <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="궁금한 내용이나 확인할 조건을 입력하세요…" disabled={submitting} />
+                          <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="하고 싶은 말을 입력하세요…" disabled={submitting} />
                           <button type="submit" className="primary" disabled={submitting || !answer.trim()}>{submitting ? "확인 중…" : "이렇게 말할게요"}</button>
                         </div>
                         <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
                         <button type="button" className="secondary practice-answer-composer__skip" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
                       </form>
-                      {!hintOpen && <button type="button" className="secondary" disabled={submitting} onClick={() => setHintOpen(true)}>말할 내용 힌트 보기</button>}
-                      {hintOpen && <PracticeHintPanel guide={mission.guide} prompt={session.current_turn.prompt} />}
                       {evaluationNotice && (
                         <>
                           <p className="notice" role="alert">{evaluationNotice}</p>
                           <div className="practice-dialogue-actions" aria-label="연습 계속하기">
                             <button type="button" className="secondary" disabled={submitting} onClick={() => setLastResponse(null)}>다시 확인하기</button>
-                            <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue()}>다음 상황으로</button>
+                            <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue()}>대화를 계속하기</button>
                           </div>
                         </>
                       )}
@@ -371,13 +338,11 @@ export function PracticeSessionPage() {
             )}
             {isActionSelection && (
               <section className="practice-final-actions" aria-labelledby="practice-final-title">
-                <h2 id="practice-final-title">연습 결과 확인하기</h2>
-                <div className="practice-final-actions__grid">
-                  {session.allowed_final_actions.map((action) => (
-                    <button type="button" className="secondary" aria-pressed={selectedAction === action} disabled={submitting} onClick={() => setSelectedAction(action)} key={action}>{action}</button>
-                  ))}
-                </div>
-                <button type="button" className="primary" disabled={submitting || !selectedAction} onClick={() => void chooseFinalAction()}>연습 결과 확인하기</button>
+                <h2 id="practice-final-title">대화가 끝났습니다</h2>
+                <p>이 상황에서 바로 계약하거나 송금하면 안 되는 이유와 확인할 내용을 정리해 드릴게요.</p>
+                <button type="button" className="primary" disabled={submitting} onClick={() => void showSafetyReview()}>
+                  {submitting ? "정리 중…" : "조심할 부분 확인하기"}
+                </button>
               </section>
             )}
             {errorMessage && <p className="notice" role="alert">{errorMessage}</p>}

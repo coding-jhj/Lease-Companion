@@ -74,6 +74,7 @@ def test_new_practice_scenario_and_answer_key_load_together(scenario_id):
     assert answer_key.scenario_id == scenario_id
     assert len(scenario.dialogue_turns) == 3
     assert len(answer_key.action_rubrics) == 3
+    assert len(answer_key.deterministic_semantic_rules) == 6
     examples_by_turn = {
         turn.turn_id: [
             example
@@ -89,7 +90,7 @@ def test_new_practice_scenario_and_answer_key_load_together(scenario_id):
         assert counts["ambiguous_answer"] >= 2, turn_id
         assert counts["avoidance"] >= 2, turn_id
         assert counts["no_response"] >= 1, turn_id
-        assert counts["needs_review"] >= 2, turn_id
+        assert counts["needs_review"] >= 1, turn_id
         assert any(example.input_context.provider_error == "timeout" for example in examples)
 
 

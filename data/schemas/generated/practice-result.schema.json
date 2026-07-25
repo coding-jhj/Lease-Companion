@@ -4,6 +4,15 @@
   "additionalProperties": false,
   "description": "점수 없이 행동·신호·공식 근거로 구성한 최종 복기.",
   "properties": {
+    "action_summary": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Action Summary",
+      "type": "array"
+    },
     "confirmed_action_ids": {
       "items": {
         "type": "string"
@@ -17,6 +26,31 @@
       },
       "title": "Confirmed Actions",
       "type": "array"
+    },
+    "ending_title": {
+      "default": "확인 행동을 더 구체적으로 표현해 보세요",
+      "title": "Ending Title",
+      "type": "string"
+    },
+    "ending_type": {
+      "default": "insufficient_protection",
+      "enum": [
+        "rights_asserted",
+        "insufficient_protection",
+        "transaction_stopped"
+      ],
+      "title": "Ending Type",
+      "type": "string"
+    },
+    "feedback": {
+      "default": "중요한 조건을 확인하고 문서로 남기겠다는 의사를 더 명확하게 표현할 필요가 있습니다.",
+      "title": "Feedback",
+      "type": "string"
+    },
+    "feedback_label": {
+      "default": "보완할 점",
+      "title": "Feedback Label",
+      "type": "string"
     },
     "missed_action_ids": {
       "items": {
@@ -45,6 +79,11 @@
       },
       "title": "Official Source Ids",
       "type": "array"
+    },
+    "practice_phrase": {
+      "default": "확인 자료와 수정된 계약 문구를 보기 전에는 계약이나 송금을 진행하지 않겠습니다.",
+      "title": "Practice Phrase",
+      "type": "string"
     },
     "recommended_phrases": {
       "items": {

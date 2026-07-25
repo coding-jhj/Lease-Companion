@@ -60,9 +60,8 @@ def advance_dialogue(
     )
     if turn is None or evaluation.turn_id != turn.turn_id:
         raise ValueError("평가 turn_id가 현재 대화 상태와 일치하지 않습니다.")
-    # 진행 여부는 분류별 허용 전이 안에서 평가(LLM)가 상황에 맞게 정한다.
-    # appropriate_check는 진행 고정, 회피·무응답·검토불가는 재시도 고정,
-    # partial_check·ambiguous_answer는 진행/재시도 모두 허용한다.
+    # 사용자 응답은 확인 행동 인정 여부와 별개로 한 번 저장한 뒤 다음 장면으로
+    # 진행한다. provider 실패인 needs_review만 현재 장면에 남는다.
     allowed = allowed_next_dialogue_states(
         evaluation.answer_category, turn.next_turn_id, turn.turn_id
     )

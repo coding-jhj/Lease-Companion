@@ -11,7 +11,10 @@ from lease_companion_ai.schemas.simulation import (
     allowed_next_dialogue_states,
 )
 from lease_companion_ai.simulation.models import load_practice_assets
-from lease_companion_ai.simulation.service import PracticeSimulationService
+from lease_companion_ai.simulation.service import (
+    PracticeSimulationService,
+    match_deterministic_semantic_rule,
+)
 from lease_companion_ai.simulation.dialogue_provider import (
     DialogueClaim,
     DialogueGenerationResult,
@@ -85,8 +88,13 @@ class ExampleProvider:
 def test_all_three_scenario_examples_use_the_common_evaluation_service(
     scenario, answer_key, example
 ):
+    effective_answer_key = (
+        answer_key.model_copy(update={"deterministic_semantic_rules": ()})
+        if example.input_context.provider_error
+        else answer_key
+    )
     provider = ExampleProvider(example)
-    service = PracticeSimulationService(scenario, answer_key, provider)
+    service = PracticeSimulationService(scenario, effective_answer_key, provider)
     session = service.start_session("practice-session-001", 1, STARTED_AT)
     session_payload = session.model_dump(mode="python")
     session_payload["current_state"] = example.turn_id
@@ -98,6 +106,18 @@ def test_all_three_scenario_examples_use_the_common_evaluation_service(
         user_answer=None if timed_out else example.user_input,
         timed_out=timed_out,
         response_time_seconds=example.input_context.elapsed_seconds or 0,
+    )
+    turn = next(item for item in scenario.dialogue_turns if item.turn_id == example.turn_id)
+    deterministic = (
+        None
+        if timed_out
+        else match_deterministic_semantic_rule(
+            effective_answer_key,
+            turn.turn_id,
+            turn.goal_action_id,
+            turn.next_turn_id,
+            example.user_input,
+        )
     )
 
     step = service.submit(session, turn_input, occurred_at=STARTED_AT)
@@ -111,7 +131,7 @@ def test_all_three_scenario_examples_use_the_common_evaluation_service(
     assert evaluation.next_dialogue_state == example.expected_next_turn_id
     assert evaluation.evidence_text == (None if timed_out else example.user_input)
     assert step.session.current_state == example.expected_next_turn_id
-    assert provider.calls == (0 if timed_out else 1)
+    assert provider.calls == (0 if timed_out or deterministic is not None else 1)
 
 
 class TurnProvider:
@@ -266,7 +286,7 @@ def test_no_response_count_and_transition_are_deterministic():
     repeated = service.submit(session, timed_out, occurred_at=STARTED_AT)
 
     assert first == repeated
-    assert first.session.current_state == "TURN-01"
+    assert first.session.current_state == "TURN-02"
     assert first.session.no_response_counts == {"TURN-01": 1}
     assert first.evaluation is not None
     assert first.evaluation.answer_category == "no_response"
@@ -290,7 +310,7 @@ def test_action_selection_is_rejected_before_dialogue_completion():
         )
 
 
-# --- 진행 정책: 목표문장이 아니어도 상황에 맞으면 진행 (LLM 판단) ---
+# --- 진행 정책: 사용자 응답은 한 번 저장하고 다음 장면에서 이어서 연습 ---
 
 def _first_turn_eval(scenario, category, *, advance: bool):
     turn = scenario.dialogue_turns[0]
@@ -302,12 +322,13 @@ def _first_turn_eval(scenario, category, *, advance: bool):
     )
 
 
-def test_policy_allows_partial_and_ambiguous_to_advance_or_retry():
+def test_policy_advances_user_responses_and_retries_only_provider_review():
     assert allowed_next_dialogue_states("appropriate_check", "TURN-02", "TURN-01") == {"TURN-02"}
-    assert allowed_next_dialogue_states("avoidance", "TURN-02", "TURN-01") == {"TURN-01"}
-    assert allowed_next_dialogue_states("no_response", "TURN-02", "TURN-01") == {"TURN-01"}
-    assert allowed_next_dialogue_states("partial_check", "TURN-02", "TURN-01") == {"TURN-01", "TURN-02"}
-    assert allowed_next_dialogue_states("ambiguous_answer", "TURN-02", "TURN-01") == {"TURN-01", "TURN-02"}
+    assert allowed_next_dialogue_states("partial_check", "TURN-02", "TURN-01") == {"TURN-02"}
+    assert allowed_next_dialogue_states("ambiguous_answer", "TURN-02", "TURN-01") == {"TURN-02"}
+    assert allowed_next_dialogue_states("avoidance", "TURN-02", "TURN-01") == {"TURN-02"}
+    assert allowed_next_dialogue_states("no_response", "TURN-02", "TURN-01") == {"TURN-02"}
+    assert allowed_next_dialogue_states("needs_review", "TURN-02", "TURN-01") == {"TURN-01"}
 
 
 def test_partial_check_can_advance_to_next_turn():
@@ -320,23 +341,24 @@ def test_partial_check_can_advance_to_next_turn():
     assert advanced.current_state == turn.next_turn_id  # 목표문장 없어도 진행
 
 
-def test_partial_check_may_still_retry_same_turn():
+def test_partial_check_cannot_retry_same_turn():
     scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
     session = start_practice_session(scenario, "S-RETRY", 1, STARTED_AT)
     turn, evaluation = _first_turn_eval(scenario, "partial_check", advance=False)
 
-    advanced = advance_dialogue(session, scenario, evaluation)
-
-    assert advanced.current_state == turn.turn_id
-
-
-def test_avoidance_cannot_advance_even_if_requested():
-    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
-    session = start_practice_session(scenario, "S-AVOID", 1, STARTED_AT)
-    _, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
-
     with pytest.raises(ValueError, match="허용된 전이"):
         advance_dialogue(session, scenario, evaluation)
+
+
+def test_avoidance_advances_without_confirming_action():
+    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
+    session = start_practice_session(scenario, "S-AVOID", 1, STARTED_AT)
+    turn, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
+
+    advanced = advance_dialogue(session, scenario, evaluation)
+
+    assert advanced.current_state == turn.next_turn_id
+    assert advanced.confirmed_action_ids == []
 
 
 def test_user_can_leave_an_unconfirmed_turn_or_finish_the_dialogue():

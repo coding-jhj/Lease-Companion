@@ -7,7 +7,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lease_companion_ai.schemas.simulation import AnswerCategory, ScenarioDefinition
+from lease_companion_ai.schemas.simulation import (
+    AnswerCategory,
+    PracticeEndingType,
+    ScenarioDefinition,
+)
 
 
 class AnswerStatusDefinition(BaseModel):
@@ -26,6 +30,29 @@ class ActionRubric(BaseModel):
     required_semantics: tuple[str, ...] = Field(min_length=1)
     partial_semantics: tuple[str, ...] = Field(min_length=1)
     not_sufficient: tuple[str, ...] = Field(min_length=1)
+
+
+class DeterministicSemanticRule(BaseModel):
+    """Gemini 호출 전에 확정할 수 있는 고신뢰 의미 묶음."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_id: str = Field(pattern=r"^DSR-[A-Z0-9-]+$")
+    turn_id: str = Field(pattern=r"^TURN-\d{2}$")
+    answer_category: Literal["appropriate_check", "avoidance"]
+    all_of_keyword_groups: tuple[tuple[str, ...], ...] = Field(min_length=1)
+    none_of_keywords: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def _check_keywords(self) -> "DeterministicSemanticRule":
+        if any(
+            not group or any(not keyword.strip() for keyword in group)
+            for group in self.all_of_keyword_groups
+        ):
+            raise ValueError("deterministic semantic rule에는 빈 키워드 그룹을 넣을 수 없습니다.")
+        if any(not keyword.strip() for keyword in self.none_of_keywords):
+            raise ValueError("none_of_keywords에는 빈 키워드를 넣을 수 없습니다.")
+        return self
 
 
 class EvaluationInputContext(BaseModel):
@@ -64,6 +91,24 @@ class DialogueResponseVariant(BaseModel):
         return self
 
 
+class DebriefEndingDefinition(BaseModel):
+    """대화에서 사용자가 취한 대응에 따라 보여 줄 최종 복기 문구."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    title: str = Field(min_length=1)
+    feedback_label: str = Field(min_length=1)
+    feedback: str = Field(min_length=1)
+    practice_phrase: str = Field(min_length=1)
+    action_summary: tuple[str, str, str]
+
+    @model_validator(mode="after")
+    def _check_action_summary(self) -> "DebriefEndingDefinition":
+        if any(not item.strip() for item in self.action_summary):
+            raise ValueError("ending action_summary에는 빈 문장을 넣을 수 없습니다.")
+        return self
+
+
 class DebriefDefinition(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -81,6 +126,19 @@ class DebriefDefinition(BaseModel):
     next_actions: tuple[str, ...] = Field(min_length=1)
     official_source_ids: tuple[str, ...] = Field(min_length=1)
     forbidden_conclusions: tuple[str, ...] = Field(min_length=1)
+    defensive_stop_action_ids: tuple[str, ...] = Field(min_length=1)
+    ending_reports: dict[PracticeEndingType, DebriefEndingDefinition]
+
+    @model_validator(mode="after")
+    def _check_endings(self) -> "DebriefDefinition":
+        expected = {
+            "rights_asserted",
+            "insufficient_protection",
+            "transaction_stopped",
+        }
+        if set(self.ending_reports) != expected:
+            raise ValueError("ending_reports는 승인된 3개 대응 엔딩을 모두 포함해야 합니다.")
+        return self
 
 
 class PracticeAnswerKey(BaseModel):
@@ -93,6 +151,7 @@ class PracticeAnswerKey(BaseModel):
     review_status: Literal["approved"]
     answer_statuses: tuple[AnswerStatusDefinition, ...] = Field(min_length=6)
     action_rubrics: tuple[ActionRubric, ...] = Field(min_length=1)
+    deterministic_semantic_rules: tuple[DeterministicSemanticRule, ...] = ()
     evaluation_examples: tuple[EvaluationExample, ...] = Field(min_length=1)
     dialogue_response_variants: tuple[DialogueResponseVariant, ...] = ()
     debrief: DebriefDefinition
@@ -116,6 +175,16 @@ class PracticeAnswerKey(BaseModel):
             raise ValueError("action_rubrics에 중복 action_id가 있습니다.")
         if len(rubric_turns) != len(set(rubric_turns)):
             raise ValueError("action_rubrics에 중복 turn_id가 있습니다.")
+        semantic_rule_ids = [
+            item.rule_id for item in self.deterministic_semantic_rules
+        ]
+        if len(semantic_rule_ids) != len(set(semantic_rule_ids)):
+            raise ValueError("deterministic_semantic_rules에 중복 rule_id가 있습니다.")
+        if any(
+            item.turn_id not in set(rubric_turns)
+            for item in self.deterministic_semantic_rules
+        ):
+            raise ValueError("deterministic_semantic_rules가 정의되지 않은 turn을 참조합니다.")
         example_ids = [item.example_id for item in self.evaluation_examples]
         if len(example_ids) != len(set(example_ids)):
             raise ValueError("evaluation_examples에 중복 example_id가 있습니다.")
@@ -124,6 +193,11 @@ class PracticeAnswerKey(BaseModel):
             raise ValueError("dialogue_response_variants에 중복 variant_id가 있습니다.")
         if any(item.turn_id not in set(rubric_turns) for item in self.dialogue_response_variants):
             raise ValueError("dialogue_response_variants가 정의되지 않은 turn을 참조합니다.")
+        if any(
+            action_id not in set(rubric_actions)
+            for action_id in self.debrief.defensive_stop_action_ids
+        ):
+            raise ValueError("defensive_stop_action_ids가 정의되지 않은 action을 참조합니다.")
         return self
 
 

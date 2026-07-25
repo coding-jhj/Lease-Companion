@@ -4,7 +4,6 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/
 import { PageShell } from "../../components/layout/PageShell";
 import { practiceService } from "../../services/practiceService";
 import type { PracticeScenarioSummaryDto } from "../../types/api";
-import { practiceMissionForScenario } from "./practiceMissionCatalog";
 
 export function PracticeHomePage() {
   const [scenarios, setScenarios] = useState<PracticeScenarioSummaryDto[]>([]);
@@ -29,7 +28,7 @@ export function PracticeHomePage() {
       <div className="stack">
         <div className="practice-safety-note">
           <strong>실제 계약 결과와 분리된 연습입니다.</strong>
-          <p>점수나 안전 판정 없이, 직접 확인한 행동과 놓친 확인 항목을 복기합니다.</p>
+          <p>상대방과 대화한 뒤, 바로 진행하면 안 되는 이유와 확인할 내용을 마지막에 알려드립니다.</p>
         </div>
         {status === "loading" && <LoadingState title="연습 목록을 불러오는 중" description="연습 상황을 확인하고 있습니다." />}
         {status === "error" && <ErrorState title="연습 목록을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadScenarios()} />}
@@ -48,16 +47,11 @@ export function PracticeHomePage() {
 }
 
 function PracticeScenarioCard({ scenario }: { scenario: PracticeScenarioSummaryDto }) {
-  const mission = practiceMissionForScenario(scenario.scenario_id);
-  const missionSummary = mission.targetCount === null
-    ? "확인할 내용 살펴보기"
-    : `약 3분 · 확인 행동 ${mission.targetCount}개`;
-
   return (
     <article className="practice-scenario-card">
       <h2>{scenario.title}</h2>
-      <p>{mission.description}</p>
-      <p className="practice-meta">{missionSummary}</p>
+      <p>상대방의 제안을 직접 들어보고 자유롭게 답해 보는 대화입니다.</p>
+      <p className="practice-meta">약 3분 · 대화 후 주의사항 안내</p>
       <Link className="text-link" to={`/practice/scenarios/${scenario.scenario_id}`}>상황 확인하기</Link>
     </article>
   );

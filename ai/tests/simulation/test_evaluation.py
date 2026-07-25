@@ -101,9 +101,9 @@ def test_approved_assets_load_and_rules_link_to_target_actions():
             ["PA01"],
             "TURN-02",
         ),
-        ("TURN-01", "조금 더 생각해 볼게요.", "ambiguous_answer", [], "TURN-01"),
-        ("TURN-01", "네, 바로 진행할게요.", "avoidance", [], "TURN-01"),
-        ("TURN-02", "등기사항증명서를 다시 보여 주세요.", "partial_check", [], "TURN-02"),
+        ("TURN-01", "조금 더 생각해 볼게요.", "ambiguous_answer", [], "TURN-02"),
+        ("TURN-01", "네, 바로 진행할게요.", "avoidance", [], "TURN-02"),
+        ("TURN-02", "등기사항증명서를 다시 보여 주세요.", "partial_check", [], "TURN-03"),
     ],
 )
 def test_provider_categories_follow_the_approved_turn_contract(
@@ -131,27 +131,15 @@ def test_provider_categories_follow_the_approved_turn_contract(
 
 
 @pytest.mark.parametrize(
-    "answer,expected_response",
+    "answer",
     [
-        (
-            "후임 임차인이 안 구해지면 어떻게 되나요?",
-            "그 경우의 반환 시점은 현재 특약에 따로 적혀 있지 않습니다.",
-        ),
-        (
-            "계약 종료일에 바로 돌려받을 수 있나요?",
-            "현재 특약은 새 임차인의 입주와 보증금 수령 후 반환하는 내용입니다.",
-        ),
-        (
-            "특약 3번은 무슨 뜻인가요?",
-            "현재 특약은 새 임차인의 입주와 보증금 수령 후 반환하는 내용입니다.",
-        ),
-        (
-            "이 특약 조건을 삭제해 주세요.",
-            "특약 수정 요청은 임대인분께 전달해 보겠습니다.",
-        ),
+        "후임 임차인이 안 구해지면 어떻게 되나요?",
+        "계약 종료일에 바로 돌려받을 수 있나요?",
+        "특약 3번은 무슨 뜻인가요?",
+        "이 특약 조건을 삭제해 주세요.",
     ],
 )
-def test_same_turn_uses_question_specific_counterparty_response(answer, expected_response):
+def test_partial_answer_uses_persuasion_response_while_advancing(answer):
     modules = _modules()
     scenario, answer_key = modules["models"].load_practice_assets(
         DEFERRED_FIXTURE_DIR / "scenario.json",
@@ -162,7 +150,7 @@ def test_same_turn_uses_question_specific_counterparty_response(answer, expected
             turn_id="TURN-01",
             answer_category="partial_check",
             confirmed_action_ids=[],
-            next_dialogue_state="TURN-01",
+            next_dialogue_state="TURN-02",
         )
     )
     service = modules["service"].PracticeSimulationService(scenario, answer_key, provider)
@@ -180,7 +168,7 @@ def test_same_turn_uses_question_specific_counterparty_response(answer, expected
         occurred_at=occurred_at,
     )
 
-    assert step.dialogue_response == expected_response
+    assert step.dialogue_response == scenario.dialogue_turns[0].responses.partial_check
 
 
 def test_timeout_input_is_no_response_without_calling_provider():
@@ -201,7 +189,7 @@ def test_timeout_input_is_no_response_without_calling_provider():
     )
 
     assert result.answer_category == "no_response"
-    assert result.next_dialogue_state == "TURN-01"
+    assert result.next_dialogue_state == "TURN-02"
     assert provider.calls == []
 
 
@@ -224,6 +212,109 @@ def test_provider_failures_return_needs_review_fallback(error, reason):
     assert result.answer_category == "needs_review"
     assert result.fallback_reason == reason
     assert result.next_dialogue_state == "TURN-02"
+
+
+def test_provider_semantic_needs_review_is_normalized_to_ambiguous_and_advances():
+    modules = _modules()
+    scenario, answer_key = _assets()
+    semantic_uncertainty = PracticeTurnEvaluation(
+        turn_id="TURN-01",
+        answer_category="needs_review",
+        confirmed_action_ids=[],
+        next_dialogue_state="TURN-01",
+        fallback_reason="conflicting_semantics",
+    )
+    evaluator = modules["service"].PracticeEvaluationService(
+        scenario, answer_key, StubProvider(semantic_uncertainty)
+    )
+
+    result = evaluator.evaluate(_turn_input("TURN-01", "오늘 점심은 뭘 먹을까요?"))
+
+    assert result.answer_category == "ambiguous_answer"
+    assert result.fallback_reason is None
+    assert result.next_dialogue_state == "TURN-02"
+    assert result.confirmed_action_ids == []
+
+
+def test_clear_deferred_refund_demand_is_not_downgraded_to_ambiguous():
+    modules = _modules()
+    scenario, answer_key = modules["models"].load_practice_assets(
+        DEFERRED_FIXTURE_DIR / "scenario.json",
+        DEFERRED_FIXTURE_DIR / "answer-key.json",
+    )
+    provider = StubProvider(
+        error=AssertionError("명백한 의미는 provider를 호출하면 안 됩니다.")
+    )
+    evaluator = modules["service"].PracticeEvaluationService(
+        scenario, answer_key, provider
+    )
+
+    result = evaluator.evaluate(
+        _turn_input(
+            "TURN-01",
+            "특약대로 다음 세입자가 안 들어오게 되더라도 보증금 반환해 주셔야죠.",
+        )
+    )
+
+    assert result.answer_category == "appropriate_check"
+    assert result.confirmed_action_ids == ["PA01"]
+    assert result.next_dialogue_state == "TURN-02"
+    assert provider.calls == []
+
+
+def test_clear_acceptance_is_avoidance_without_calling_provider():
+    modules = _modules()
+    scenario, answer_key = modules["models"].load_practice_assets(
+        DEFERRED_FIXTURE_DIR / "scenario.json",
+        DEFERRED_FIXTURE_DIR / "answer-key.json",
+    )
+    provider = StubProvider(
+        error=AssertionError("명백한 동의는 provider를 호출하면 안 됩니다.")
+    )
+    evaluator = modules["service"].PracticeEvaluationService(
+        scenario, answer_key, provider
+    )
+
+    result = evaluator.evaluate(
+        _turn_input(
+            "TURN-01",
+            "다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다.",
+        )
+    )
+
+    assert result.answer_category == "avoidance"
+    assert result.confirmed_action_ids == []
+    assert result.next_dialogue_state == "TURN-02"
+    assert provider.calls == []
+
+
+def test_complex_answer_falls_back_to_provider():
+    modules = _modules()
+    scenario, answer_key = modules["models"].load_practice_assets(
+        DEFERRED_FIXTURE_DIR / "scenario.json",
+        DEFERRED_FIXTURE_DIR / "answer-key.json",
+    )
+    provider = StubProvider(
+        PracticeTurnEvaluation(
+            turn_id="TURN-01",
+            answer_category="partial_check",
+            confirmed_action_ids=[],
+            next_dialogue_state="TURN-02",
+        )
+    )
+    evaluator = modules["service"].PracticeEvaluationService(
+        scenario, answer_key, provider
+    )
+
+    result = evaluator.evaluate(
+        _turn_input(
+            "TURN-01",
+            "그 조건의 의미는 알겠는데 제 상황에서는 어떻게 판단해야 할지 더 설명해 주세요.",
+        )
+    )
+
+    assert result.answer_category == "partial_check"
+    assert len(provider.calls) == 1
 
 
 def test_invalid_provider_state_is_rejected_as_response_validation_fallback():
@@ -397,6 +488,49 @@ def test_safe_debrief_contains_actions_missed_signals_and_approved_evidence():
     assert result.missed_action_ids == ["PA02", "PA03", "PA04"]
     assert result.missed_signals
     assert result.official_source_ids == ["SRC-STD-LEASE"]
+
+
+@pytest.mark.parametrize(
+    "confirmed_action_ids,expected_ending",
+    [
+        (["PA01", "PA02", "PA03"], "rights_asserted"),
+        ([], "insufficient_protection"),
+        (["PA03"], "transaction_stopped"),
+    ],
+)
+def test_debrief_selects_response_ending_from_confirmed_actions(
+    confirmed_action_ids, expected_ending
+):
+    modules = _modules()
+    scenario, answer_key = modules["models"].load_practice_assets(
+        DEFERRED_FIXTURE_DIR / "scenario.json",
+        DEFERRED_FIXTURE_DIR / "answer-key.json",
+    )
+    evaluations = [
+        PracticeTurnEvaluation(
+            turn_id=f"TURN-{index:02d}",
+            answer_category="appropriate_check",
+            confirmed_action_ids=[action_id],
+            next_dialogue_state=(
+                f"TURN-{index + 1:02d}" if index < 3 else "ACTION-SELECTION"
+            ),
+        )
+        for index, action_id in enumerate(confirmed_action_ids, start=1)
+    ]
+
+    result = modules["debrief"].build_practice_result(
+        "practice-session-ending",
+        scenario,
+        answer_key,
+        evaluations,
+        {},
+    )
+
+    assert result.ending_type == expected_ending
+    assert result.ending_title
+    assert result.feedback
+    assert result.practice_phrase
+    assert len(result.action_summary) == 3
 
 
 def test_practice_judgment_state_accepts_every_canonical_judgment_id():

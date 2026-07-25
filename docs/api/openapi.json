@@ -3307,6 +3307,45 @@
             "pattern": "^\\d+\\.\\d+\\.\\d+$",
             "title": "Scenario Version"
           },
+          "ending_type": {
+            "type": "string",
+            "enum": [
+              "rights_asserted",
+              "insufficient_protection",
+              "transaction_stopped"
+            ],
+            "title": "Ending Type",
+            "default": "insufficient_protection"
+          },
+          "ending_title": {
+            "type": "string",
+            "title": "Ending Title",
+            "default": "확인 행동을 더 구체적으로 표현해 보세요"
+          },
+          "feedback_label": {
+            "type": "string",
+            "title": "Feedback Label",
+            "default": "보완할 점"
+          },
+          "feedback": {
+            "type": "string",
+            "title": "Feedback",
+            "default": "중요한 조건을 확인하고 문서로 남기겠다는 의사를 더 명확하게 표현할 필요가 있습니다."
+          },
+          "practice_phrase": {
+            "type": "string",
+            "title": "Practice Phrase",
+            "default": "확인 자료와 수정된 계약 문구를 보기 전에는 계약이나 송금을 진행하지 않겠습니다."
+          },
+          "action_summary": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Action Summary"
+          },
           "selected_action": {
             "anyOf": [
               {

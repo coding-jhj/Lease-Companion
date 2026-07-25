@@ -26,6 +26,10 @@ export function PracticeChatPanel({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showLatest, setShowLatest] = useState(false);
   const [error, setError] = useState("");
+  const currentPromptTurn = currentTurn
+    && (items.length === 0 || items[items.length - 1]?.turn_id !== currentTurn.turn_id)
+    ? currentTurn
+    : null;
 
   function scrollToBottom(behavior: ScrollBehavior = "auto") {
     const viewport = viewportRef.current;
@@ -134,7 +138,7 @@ export function PracticeChatPanel({
               {loadingOlder ? "이전 대화를 불러오는 중…" : "이전 대화 불러오기"}
             </button>
           )}
-          {!hasMore && items.length > 0 && <span>대화의 시작입니다</span>}
+          {!hasMore && (items.length > 0 || currentTurn) && <span>대화의 시작입니다</span>}
         </div>
         <ol className="practice-chat__messages">
           {items.map((item, index) => (
@@ -154,8 +158,18 @@ export function PracticeChatPanel({
               )}
             </li>
           ))}
+          {currentPromptTurn && (
+            <li className="practice-chat__turn" key={`current-${currentPromptTurn.turn_id}`}>
+              <MessageBubble
+                sender="counterparty"
+                label="공인중개사"
+                content={currentPromptTurn.prompt}
+                current
+              />
+            </li>
+          )}
         </ol>
-        {items.length === 0 && <p className="practice-chat__empty">아직 주고받은 답변이 없습니다.</p>}
+        {items.length === 0 && !currentTurn && <p className="practice-chat__empty">아직 주고받은 답변이 없습니다.</p>}
         {error && <p className="notice practice-chat__error" role="alert">{error}</p>}
       </div>
       {showLatest && (

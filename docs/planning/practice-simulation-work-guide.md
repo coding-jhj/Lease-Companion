@@ -1,6 +1,6 @@
 # 계약 연습 시뮬레이션 구현·검증 가이드
 
-> 갱신: 2026-07-24. 현재 코드·fixture·테스트 기준. 과거 작업 순서와 완료 로그는 Git history를 사용한다.
+> 갱신: 2026-07-26. 현재 코드·fixture·테스트 기준. 과거 작업 순서와 완료 로그는 Git history를 사용한다.
 
 ## 현재 상태
 
@@ -23,12 +23,14 @@ flowchart LR
     C --> D[상황·특약 확인]
     D --> E[세션 시작]
     E --> F[현재 TURN 답변]
-    F --> G[Gemini 또는 Fake 평가]
-    G -->|진행| H[다음 TURN]
-    G -->|재시도| F
-    H --> I[최종 행동 선택]
-    I --> J[복기·공식 근거]
-    J --> K[저장·재조회]
+    F --> G[answer-key 고신뢰 의미 규칙]
+    G -->|명백한 확인·동의| H[사용자 응답 저장]
+    G -->|규칙으로 확정 불가| I[Gemini 또는 Fake 평가]
+    I -->|분류 성공| H
+    I -->|provider 확인 실패| F
+    H --> J[다음 TURN]
+    J --> K[대화 종료 후 주의사항·공식 근거]
+    K --> L[저장·재조회]
 ```
 
 ## 시나리오
@@ -49,7 +51,8 @@ R04는 압류·가압류 규칙이다. 대리권 시나리오에 연결하지 �
 
 - 승인된 `scenario.json`·`answer-key.json`을 로드한다.
 - Python 규칙 엔진만 R/J 상태와 `urgency`를 결정한다.
-- Gemini는 현재 사용자 답변의 의미를 분류한다.
+- `answer-key.json`의 `deterministic_semantic_rules`가 명백한 확인 요구와 명백한 동의·회피를 먼저 분류한다.
+- 고신뢰 의미 규칙으로 확정할 수 없는 복잡한 문장만 Gemini가 분류한다.
 - 상태 머신이 provider 제안을 검증하고 최종 전이를 결정한다.
 - provider 실패·timeout·형식 오류는 사용자 오답으로 처리하지 않고 `needs_review`로 유지한다.
 - 후임 임차인 조건부 반환 시나리오에서는 Python이 질문 의도·`speech_act`·공개 fact를 정한다.
@@ -87,11 +90,18 @@ needs_review
 
 진행 규칙:
 
-- `appropriate_check`: 다음 상태만 허용
-- `avoidance`, `no_response`, `needs_review`: 현재 TURN 재시도만 허용
-- `partial_check`, `ambiguous_answer`: 답변 의미에 따라 진행 또는 재시도 허용
+- Backend와 개발용 MSW는 `answer-key.json`의 `deterministic_semantic_rules`를 같은 1차 판별 원본으로 사용한다. 정답표 전체는 Frontend/API에 노출하지 않으며, Vite 개발 가상 모듈은 MSW 실행 시 규칙 부분만 읽는다.
+- 각 규칙은 단일 단어가 아니라 `all_of_keyword_groups`의 의미 묶음을 모두 충족해야 확정된다. `none_of_keywords`가 있으면 상충·부정 문장은 Gemini fallback으로 보낸다.
+- 고신뢰 규칙에 일치하지 않는 답변만 Gemini/Fake provider로 전달한다.
+- `appropriate_check`, `partial_check`, `ambiguous_answer`, `avoidance`, `no_response`: 답변을 한 번 저장하고 다음 상태로 진행
+- 직전 답변에 대한 중개사 반응은 대화 기록에 남기고 다음 TURN 대사를 자연스럽게 이어서 보여 준다. 일반 대화에는 `다음 상황으로` 버튼을 두지 않는다. `ambiguous_answer`는 앞서 제시한 조건으로 진행할지 되묻고, `partial_check`는 확인을 뒤로 미루도록 회유하는 역할 대사를 사용한다.
+- `needs_review`: provider 장애·timeout·형식 오류이므로 사용자 오답으로 기록하지 않고 현재 TURN에서 재시도 또는 명시적 건너뛰기 허용
+- provider가 사용자 답변의 모호함·상충을 `needs_review`로 반환하더라도 서비스 경계에서 `ambiguous_answer`와 다음 TURN으로 정규화한다. 사용자 답변 의미만으로 같은 TURN을 반복하지 않는다.
 - provider가 허용되지 않은 상태를 반환하면 `needs_review`로 바꾼다.
-- 목표 문장을 그대로 복사하지 않아도 필요한 확인 행동이 의미상 포함되면 진행할 수 있다.
+- `appropriate_check`만 내부 확인 행동으로 누적하되 대화 중 미션·진행률·정답 힌트는 표시하지 않는다. 놓친 주의점과 권장 문장은 마지막 복기에서만 안내한다.
+- 목표 문장을 그대로 복사하지 않아도 연습 흐름은 계속되며, 확인 행동 인정 여부와 진행 여부를 분리한다.
+- 마지막 복기는 `answer-key.json`의 `defensive_stop_action_ids`와 `ending_reports`를 단일 원본으로 사용한다. 모든 목표 행동 확인은 `rights_asserted`, 방어적 보류 행동만 확인되면 `transaction_stopped`, 그 외에는 `insufficient_protection`으로 분기한다.
+- 엔딩은 실제 계약 성공·실패·사기·금전 피해를 확정하지 않고 가상 대화에서 표현한 대응만 설명한다.
 
 ## Provider 선택
 
@@ -200,7 +210,7 @@ npm run test:e2e:practice:real
 검증 범위:
 
 - 시나리오 3개 노출
-- 미응답 재시도
+- 미응답 기록 후 다음 TURN 진행
 - 3개 TURN 진행
 - 부분 답변 진행 정책
 - provider 실패 시 현재 TURN 유지

@@ -191,9 +191,10 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
-    # 화면 큰 대사는 직전 답변에 대한 응답(dialogue_response) 전체를 유지하되, 아바타 음성은 같은 문장을 짧게 잘라 읽는다
-    _dialogue = response.json()["dialogue_response"]
-    assert media["speech_text"] == avatar_speech_text(_dialogue.strip())
+    # 답변 직후 다음 TURN이 자연스럽게 이어지므로 화면에 표시되는 다음 대사를 재생한다.
+    assert media["speech_text"] == avatar_speech_text(
+        response.json()["session"]["current_turn"]["prompt"]
+    )
     assert media["audio_url"] is None
     assert media["video_url"] is None
     assert launched_job_ids == [
@@ -312,7 +313,7 @@ def test_turn_request_validation_and_stale_turn_rejection(client: TestClient):
     assert restored.json()["confirmed_action_ids"] == []
 
 
-def test_timed_out_turn_is_saved_as_no_response_and_can_retry(client: TestClient):
+def test_timed_out_turn_is_saved_as_no_response_and_advances(client: TestClient):
     headers = _headers(client)
     session = _create_session(client, headers, "PRACTICE-PROXY-AUTHORITY-001")
     session_id = session["practice_session_id"]
@@ -331,7 +332,7 @@ def test_timed_out_turn_is_saved_as_no_response_and_can_retry(client: TestClient
     payload = response.json()
     assert payload["attempt_no"] == 1
     assert payload["evaluation"]["answer_category"] == "no_response"
-    assert payload["session"]["current_state"] == "TURN-01"
+    assert payload["session"]["current_state"] == "TURN-02"
     assert payload["session"]["confirmed_action_ids"] == []
 
 
@@ -527,8 +528,8 @@ def test_three_scenarios_retry_complete_and_remain_immutable(client: TestClient,
     assert partial_response.json()["evaluation"]["answer_category"] == "partial_check"
     assert partial_response.json()["session"]["current_state"] == partial.expected_next_turn_id
 
-    # partial_check는 평가 데이터에 따라 진행 또는 재시도가 모두 가능하다.
-    # 전체 완료·멱등성 검증은 모든 목표 행동을 확인할 수 있도록 새 세션에서 수행한다.
+    # partial_check도 다음 장면으로 진행하므로 전체 확인 행동·멱등성 검증은
+    # 모든 목표 행동을 확인할 수 있도록 새 세션에서 수행한다.
     session = _create_session(client, headers, scenario_id)
     session_id = session["practice_session_id"]
     turns_endpoint = f"/api/practice-sessions/{session_id}/turns"

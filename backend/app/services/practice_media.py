@@ -36,6 +36,21 @@ def practice_media_root() -> Path:
     )
 
 
+def _speech_source(session_row: PracticeSession, turn: PracticeTurn) -> str:
+    """Generate media for the next broker prompt shown after the submitted answer."""
+
+    scenario, _ = load_approved_practice_assets(session_row.scenario_id)
+    current_prompt = next(
+        (
+            item.prompt
+            for item in scenario.dialogue_turns
+            if item.turn_id == session_row.current_state
+        ),
+        None,
+    )
+    return (current_prompt or turn.dialogue_response or "").strip()
+
+
 def avatar_speech_text(dialogue_response: str) -> str:
     """Keep generated video short while the UI retains the full dialogue text."""
 
@@ -122,8 +137,10 @@ def queue_practice_media_job(
     if existing is not None:
         return existing
 
-    full_dialogue = turn.dialogue_response.strip()
-    speech_text = avatar_speech_text(full_dialogue)
+    full_speech = _speech_source(session_row, turn)
+    if not full_speech:
+        return None
+    speech_text = avatar_speech_text(full_speech)
     job = PracticeMediaJob(
         media_job_id=uuid.uuid4().hex,
         practice_session_fk=session_row.id,
@@ -148,8 +165,8 @@ def queue_practice_media_job(
             "musetalk_right_cheek_width": int(
                 os.getenv("MUSETALK_RIGHT_CHEEK_WIDTH", "80")
             ),
-            "speech_truncated": speech_text != full_dialogue,
-            "source_character_count": len(full_dialogue),
+            "speech_truncated": speech_text != full_speech,
+            "source_character_count": len(full_speech),
             "speech_character_count": len(speech_text),
             "max_audio_seconds": float(
                 os.getenv("PRACTICE_MEDIA_MAX_AUDIO_SECONDS", "9")

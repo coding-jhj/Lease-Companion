@@ -2,7 +2,7 @@
   "fixture_type": "synthetic_practice_answer_key",
   "scenario_id": "PRACTICE-THIRD-PARTY-PAYMENT-001",
   "scenario_version": "1.1.0",
-  "answer_key_version": "1.0.0",
+  "answer_key_version": "1.1.0",
   "review_status": "approved",
   "answer_statuses": [
     {
@@ -86,6 +86,74 @@
       ]
     }
   ],
+  "deterministic_semantic_rules": [
+    {
+      "rule_id": "DSR-PAYEE-T1-MISMATCH",
+      "turn_id": "TURN-01",
+      "answer_category": "appropriate_check",
+      "all_of_keyword_groups": [
+        ["계좌", "입금 명의", "명의"],
+        ["중개사", "공인중개사"],
+        ["임대인", "소유자", "집주인"],
+        ["다르", "아닌", "이유", "불일치"]
+      ],
+      "none_of_keywords": ["괜찮", "보내겠습니다", "송금하겠습니다"]
+    },
+    {
+      "rule_id": "DSR-PAYEE-T1-RECEIPT-ACCEPT",
+      "turn_id": "TURN-01",
+      "answer_category": "avoidance",
+      "all_of_keyword_groups": [
+        ["영수증", "중개사 계좌"],
+        ["괜찮", "보내", "송금", "진행"]
+      ],
+      "none_of_keywords": ["확인", "권한", "보류", "않겠습니다"]
+    },
+    {
+      "rule_id": "DSR-PAYEE-T2-AUTHORITY",
+      "turn_id": "TURN-02",
+      "answer_category": "appropriate_check",
+      "all_of_keyword_groups": [
+        ["임대인", "집주인"],
+        ["관계", "위임", "권한"],
+        ["자료", "서류", "증명", "위임장"],
+        ["수령", "받을", "가계약금"]
+      ],
+      "none_of_keywords": ["나중에", "믿겠습니다"]
+    },
+    {
+      "rule_id": "DSR-PAYEE-T2-TRUST",
+      "turn_id": "TURN-02",
+      "answer_category": "avoidance",
+      "all_of_keyword_groups": [
+        ["영수증", "중개사님", "알아서"],
+        ["믿", "괜찮", "충분"]
+      ],
+      "none_of_keywords": ["권한 자료", "위임장", "확인", "생각", "고민"]
+    },
+    {
+      "rule_id": "DSR-PAYEE-T3-HOLD",
+      "turn_id": "TURN-03",
+      "answer_category": "appropriate_check",
+      "all_of_keyword_groups": [
+        ["명의", "권한", "수령"],
+        ["확인 전", "확인하기 전", "확인될 때까지"],
+        ["송금하지", "보내지", "입금하지", "보류"]
+      ],
+      "none_of_keywords": ["먼저 보내", "일단 보내"]
+    },
+    {
+      "rule_id": "DSR-PAYEE-T3-SEND-FIRST",
+      "turn_id": "TURN-03",
+      "answer_category": "avoidance",
+      "all_of_keyword_groups": [
+        ["송금", "보내", "입금"],
+        ["먼저", "지금", "우선"],
+        ["나중", "이후", "자료"]
+      ],
+      "none_of_keywords": ["하지 않", "보류"]
+    }
+  ],
   "evaluation_examples": [
     {
       "example_id": "EX-001",
@@ -114,7 +182,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-004",
@@ -123,7 +191,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-005",
@@ -134,16 +202,16 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-006",
       "turn_id": "TURN-01",
       "user_input": "중개사 계좌인지 임대인 계좌인지 모르겠지만 아무튼 보내겠습니다, 아니 보내지 않겠습니다.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-007",
@@ -172,7 +240,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-010",
@@ -181,7 +249,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-011",
@@ -192,16 +260,16 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-012",
       "turn_id": "TURN-02",
       "user_input": "권한 서류가 필요하지만 영수증만 있으면 필요 없을 것 같습니다.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-013",
@@ -230,7 +298,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-016",
@@ -239,7 +307,7 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-017",
@@ -250,16 +318,16 @@
       },
       "expected_status_id": "no_response",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-018",
       "turn_id": "TURN-03",
       "user_input": "확인 전에는 안 보내겠습니다. 그래도 집을 잡으려면 지금 보낼게요.",
       "input_context": {},
-      "expected_status_id": "needs_review",
+      "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-019",
@@ -308,7 +376,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-024",
@@ -317,12 +385,12 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-01"
+      "expected_next_turn_id": "TURN-02"
     },
     {
       "example_id": "EX-025",
       "turn_id": "TURN-01",
-      "user_input": "입금 명의와 계약 상대가 같은지 확인하겠습니다.",
+      "user_input": "이 조건을 다시 검토해 주세요.",
       "input_context": {
         "provider_error": "timeout"
       },
@@ -377,7 +445,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-031",
@@ -386,12 +454,12 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-02"
+      "expected_next_turn_id": "TURN-03"
     },
     {
       "example_id": "EX-032",
       "turn_id": "TURN-02",
-      "user_input": "임대인과의 관계와 가계약금 수령 권한 자료를 확인하겠습니다.",
+      "user_input": "관련 내용을 다시 확인해 주세요.",
       "input_context": {
         "provider_error": "timeout"
       },
@@ -446,7 +514,7 @@
       "input_context": {},
       "expected_status_id": "ambiguous_answer",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-038",
@@ -455,12 +523,12 @@
       "input_context": {},
       "expected_status_id": "avoidance",
       "expected_confirmed_action_ids": [],
-      "expected_next_turn_id": "TURN-03"
+      "expected_next_turn_id": "ACTION-SELECTION"
     },
     {
       "example_id": "EX-039",
       "turn_id": "TURN-03",
-      "user_input": "명의와 권한을 확인하기 전에는 송금하지 않겠습니다.",
+      "user_input": "계약 진행 여부를 다시 검토하겠습니다.",
       "input_context": {
         "provider_error": "timeout"
       },
@@ -499,6 +567,44 @@
       "위법 확정",
       "계약 진행 권고",
       "계약 거절 권고"
-    ]
+    ],
+    "defensive_stop_action_ids": [
+      "PA03"
+    ],
+    "ending_reports": {
+      "rights_asserted": {
+        "title": "✨ 권리 확인 엔딩",
+        "feedback_label": "잘한 점",
+        "feedback": "입금 명의가 계약 상대와 다르다는 점을 놓치지 않고, 임대인과의 관계 및 수령 권한 자료를 요구한 뒤 확인 전 송금을 보류했습니다.",
+        "practice_phrase": "중개사님 명의 계좌로 보내야 하는 이유와 임대인의 수령 위임 자료를 먼저 확인하겠습니다. 관계와 권한이 확인되기 전에는 가계약금을 송금하지 않겠습니다.",
+        "action_summary": [
+          "계약 상대·등기상 소유자·입금 계좌 명의를 서로 대조한다.",
+          "제3자 계좌라면 관계와 수령 권한을 증빙 자료로 확인한다.",
+          "명의와 권한 확인 전에는 계약금·가계약금 송금을 보류한다."
+        ]
+      },
+      "insufficient_protection": {
+        "title": "조건 수용 엔딩",
+        "feedback_label": "부족했던 부분",
+        "feedback": "중개사의 설명이나 영수증 약속만으로 제3자 명의 계좌 송금에 동의해, 실제 수령 권한을 확인할 기회를 놓쳤습니다.",
+        "practice_phrase": "영수증만으로는 입금 권한을 확인하기 어렵습니다. 임대인과 계좌 명의자의 관계 및 수령 위임 자료를 보여주시면 확인한 뒤 송금 여부를 결정하겠습니다.",
+        "action_summary": [
+          "중개업소의 관행이라는 설명만으로 제3자 계좌에 송금하지 않는다.",
+          "송금 전에 계좌 명의와 계약 상대의 관계를 자료로 확인한다.",
+          "확인되지 않은 급한 송금 요구에는 즉시 보류 의사를 밝힌다."
+        ]
+      },
+      "transaction_stopped": {
+        "title": "⚠️ 진행 중단 엔딩",
+        "feedback_label": "잘한 점과 보완할 점",
+        "feedback": "권한이 확인되지 않은 계좌로 송금하지 않은 것은 방어적인 대응이었습니다. 다음에는 어떤 자료가 제시되면 다시 검토할 수 있는지도 함께 말해 보세요.",
+        "practice_phrase": "현재 자료만으로는 이 계좌의 수령 권한을 확인할 수 없어 송금하지 않겠습니다. 임대인의 위임 자료와 계좌 명의 관계를 서면으로 제시해 주세요.",
+        "action_summary": [
+          "권한이 불명확한 계좌로의 송금을 중단한다.",
+          "필요한 관계·권한 자료를 구체적으로 요청한다.",
+          "자료를 확인하기 전에는 계약금이나 가계약금을 보내지 않는다."
+        ]
+      }
+    }
   }
 }
