@@ -18,8 +18,6 @@ interface PracticeAvatarStageProps {
   hasUserInput: boolean;
   submitting: boolean;
   generatedVideoUrl?: string | null;
-  generatedAudioUrl?: string | null;
-  onGeneratedAudioEnded?: () => void;
   nextPrompt?: string | null;
   mediaStatus?: PracticeMediaStatus | null;
   onToggleConversation?: () => void;
@@ -33,8 +31,6 @@ export function PracticeAvatarStage({
   hasUserInput,
   submitting,
   generatedVideoUrl = null,
-  generatedAudioUrl = null,
-  onGeneratedAudioEnded,
   nextPrompt = null,
   mediaStatus = null,
   onToggleConversation,
@@ -169,25 +165,11 @@ export function PracticeAvatarStage({
               <h3>{nextPrompt}</h3>
             </div>
           )}
-          {generatedAudioUrl && !generatedVideoUrl && (
-            <audio
-              className="practice-avatar-stage__audio"
-              src={generatedAudioUrl}
-              autoPlay
-              controls
-              aria-label="공인중개사 응답 음성"
-              onEnded={onGeneratedAudioEnded}
-            />
-          )}
           {(mediaStatus === "queued" || mediaStatus === "generating_audio" || mediaStatus === "generating_video") && (
             <span className="practice-avatar-stage__media-state" role="status">
               {mediaStatus === "queued" && "아바타 응답을 준비하고 있습니다."}
               {mediaStatus === "generating_audio" && "응답 음성을 만들고 있습니다."}
-              {mediaStatus === "generating_video" && (
-                generatedAudioUrl
-                  ? "음성으로 먼저 안내합니다. 립싱크 영상은 백그라운드에서 준비합니다."
-                  : "립싱크 영상을 백그라운드에서 준비하고 있습니다."
-              )}
+              {mediaStatus === "generating_video" && "립싱크 영상을 준비하고 있습니다."}
             </span>
           )}
           {mediaStatus === "failed" && (

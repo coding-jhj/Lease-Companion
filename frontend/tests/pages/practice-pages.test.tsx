@@ -202,6 +202,12 @@ describe("Practice scenario pages", () => {
     const createSession = vi.spyOn(practiceService, "createSession").mockResolvedValue(
       session({ practice_session_id: `session-${scenarioId}` }),
     );
+    let finishInitialMedia!: (value: null) => void;
+    vi.spyOn(practiceService, "getLatestMedia").mockReturnValue(
+      new Promise((resolve) => {
+        finishInitialMedia = resolve;
+      }),
+    );
     renderScenario(scenarioId);
 
     expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
@@ -218,6 +224,8 @@ describe("Practice scenario pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "연습 시작하기" }));
 
     await waitFor(() => expect(createSession).toHaveBeenCalledWith(scenarioId));
+    expect(await screen.findByText("시뮬레이션 준비중입니다. 잠시만 기다려주세요.")).toBeInTheDocument();
+    finishInitialMedia(null);
     expect(await screen.findByText("대화 세션 진입 완료")).toBeInTheDocument();
   });
 });

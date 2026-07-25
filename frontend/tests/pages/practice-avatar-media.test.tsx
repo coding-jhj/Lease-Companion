@@ -50,44 +50,22 @@ describe("PracticeAvatarStage generated media", () => {
       />,
     );
 
-    expect(screen.getByText("립싱크 영상을 백그라운드에서 준비하고 있습니다.")).toBeInTheDocument();
+    expect(screen.getByText("립싱크 영상을 준비하고 있습니다.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "계약 조건을 확인하시겠습니까?" })).toBeInTheDocument();
   });
 
-  it("plays Supertonic audio while MuseTalk is still generating", () => {
-    const onEnded = vi.fn();
+  it("waits for the completed lip-sync video instead of playing standalone audio", () => {
     render(
       <PracticeAvatarStage
         prompt="계약 조건을 다시 확인해 주세요."
         pressureDelaySeconds={null}
         hasUserInput={false}
         submitting={false}
-        generatedAudioUrl="blob:supertonic-audio"
-        onGeneratedAudioEnded={onEnded}
         mediaStatus="generating_video"
       />,
     );
 
-    const audio = screen.getByLabelText("공인중개사 응답 음성");
-    expect(audio).toHaveAttribute("src", "blob:supertonic-audio");
-    expect(audio).toHaveAttribute("autoplay");
-    expect(audio).toHaveAttribute("controls");
-    audio.dispatchEvent(new Event("ended", { bubbles: true }));
-    expect(onEnded).toHaveBeenCalledOnce();
-  });
-
-  it("describes MuseTalk as a background task after audio is ready", () => {
-    render(
-      <PracticeAvatarStage
-        prompt="다음 확인 질문입니다."
-        pressureDelaySeconds={null}
-        hasUserInput={false}
-        submitting={false}
-        generatedAudioUrl="blob:supertonic-audio"
-        mediaStatus="generating_video"
-      />,
-    );
-
-    expect(screen.getByText("음성으로 먼저 안내합니다. 립싱크 영상은 백그라운드에서 준비합니다.")).toBeInTheDocument();
+    expect(document.querySelector("audio")).not.toBeInTheDocument();
+    expect(screen.getByText("립싱크 영상을 준비하고 있습니다.")).toBeInTheDocument();
   });
 });

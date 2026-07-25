@@ -7,6 +7,27 @@ import type { PracticeScenarioDetailDto } from "../../types/api";
 import { PracticeMissionCard } from "./PracticeMissionCard";
 
 const money = new Intl.NumberFormat("ko-KR");
+const INITIAL_MEDIA_WAIT_MS = 90_000;
+const INITIAL_MEDIA_POLL_MS = 1_000;
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function waitForInitialMedia(sessionId: string) {
+  let media = await practiceService.getLatestMedia(sessionId);
+  if (!media) return;
+
+  const deadline = Date.now() + INITIAL_MEDIA_WAIT_MS;
+  while (
+    media.status !== "completed"
+    && media.status !== "failed"
+    && Date.now() < deadline
+  ) {
+    await wait(INITIAL_MEDIA_POLL_MS);
+    media = await practiceService.getMediaJob(media.media_job_id);
+  }
+}
 
 export function PracticeScenarioPage() {
   const { scenarioId = "" } = useParams();
@@ -36,6 +57,11 @@ export function PracticeScenarioPage() {
     setErrorMessage("");
     try {
       const session = await practiceService.createSession(scenarioId);
+      try {
+        await waitForInitialMedia(session.practice_session_id);
+      } catch {
+        // 미디어는 선택 기능이다. 준비 조회 실패 시 텍스트 연습으로 계속한다.
+      }
       navigate(`/practice/sessions/${session.practice_session_id}`);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "연습을 시작하지 못했습니다.");
@@ -80,9 +106,14 @@ export function PracticeScenarioPage() {
               </section>
             </details>
             {errorMessage && <p className="notice" role="alert">{errorMessage}</p>}
+            {starting && (
+              <p className="notice" role="status" aria-live="polite">
+                시뮬레이션 준비중입니다. 잠시만 기다려주세요.
+              </p>
+            )}
             <div className="page-actions">
               <Link className="text-link" to="/practice">다른 상황 선택</Link>
-              <button type="button" disabled={starting} onClick={() => void startPractice()}>{starting ? "연습을 준비하는 중…" : "연습 시작하기"}</button>
+              <button type="button" disabled={starting} onClick={() => void startPractice()}>{starting ? "준비 중…" : "연습 시작하기"}</button>
             </div>
           </>
         )}

@@ -231,7 +231,8 @@ class PersistentRenderer:
         avatar_signature = hashlib.sha256(
             (
                 f"{source}:{source.stat().st_mtime_ns}:{args.version}:"
-                f"{bbox_shift}:{args.extra_margin}:{args.parsing_mode}"
+                f"{bbox_shift}:{args.extra_margin}:{args.parsing_mode}:"
+                f"{args.left_cheek_width}:{args.right_cheek_width}"
             ).encode()
         ).hexdigest()[:16]
         avatar_id = f"lease-companion-{avatar_signature}"

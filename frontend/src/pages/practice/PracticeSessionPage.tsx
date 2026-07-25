@@ -79,10 +79,8 @@ export function PracticeSessionPage() {
   const [selectedAction, setSelectedAction] = useState<PracticeSelectedAction | null>(null);
   const [conversationOpen, setConversationOpen] = useState(isWideViewport);
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
-  const [avatarAudioUrl, setAvatarAudioUrl] = useState<string | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
   const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
-  const [playedAudioJobId, setPlayedAudioJobId] = useState<string | null>(null);
 
   async function loadSession() {
     setStatus("loading");
@@ -101,7 +99,6 @@ export function PracticeSessionPage() {
         const latestMedia = await practiceService.getLatestMedia(sessionId);
         setAvatarMedia(latestMedia);
         setAvatarSpeechText(latestMedia?.speech_text ?? null);
-        setPlayedAudioJobId(null);
       } catch {
         setAvatarMedia(null);
         setAvatarSpeechText(null);
@@ -150,28 +147,6 @@ export function PracticeSessionPage() {
 
   useEffect(() => {
     if (
-      !avatarMedia?.audio_url
-      || avatarMedia.status === "completed"
-      || avatarAudioUrl
-      || playedAudioJobId === avatarMedia.media_job_id
-    ) return;
-    let cancelled = false;
-
-    void practiceService.getMediaAudio(avatarMedia.audio_url)
-      .then((audio) => {
-        if (!cancelled) setAvatarAudioUrl(URL.createObjectURL(audio));
-      })
-      .catch(() => {
-        // MuseTalk MP4 폴링은 계속한다. 음성 단독 조회 실패가 TURN을 막지 않는다.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [avatarMedia?.audio_url, avatarMedia?.media_job_id, avatarMedia?.status, avatarAudioUrl, playedAudioJobId]);
-
-  useEffect(() => {
-    if (
       avatarMedia?.status !== "completed"
       || !avatarMedia.video_url
       || avatarVideoUrl
@@ -199,10 +174,6 @@ export function PracticeSessionPage() {
   }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl]);
 
   useEffect(() => () => {
-    if (avatarAudioUrl) URL.revokeObjectURL(avatarAudioUrl);
-  }, [avatarAudioUrl]);
-
-  useEffect(() => () => {
     if (avatarVideoUrl) URL.revokeObjectURL(avatarVideoUrl);
   }, [avatarVideoUrl]);
 
@@ -223,11 +194,6 @@ export function PracticeSessionPage() {
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
       setAvatarSpeechText(response.dialogue_response);
-      setPlayedAudioJobId(null);
-      setAvatarAudioUrl((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return null;
-      });
       setAvatarVideoUrl((current) => {
         if (current) URL.revokeObjectURL(current);
         return null;
@@ -251,14 +217,6 @@ export function PracticeSessionPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function handleAvatarAudioEnded() {
-    if (avatarMedia) setPlayedAudioJobId(avatarMedia.media_job_id);
-    setAvatarAudioUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return null;
-    });
   }
 
   async function advanceDialogue() {
@@ -381,8 +339,6 @@ export function PracticeSessionPage() {
                       hasUserInput={Boolean(answer.trim())}
                       submitting={submitting}
                       generatedVideoUrl={avatarVideoUrl}
-                      generatedAudioUrl={avatarAudioUrl}
-                      onGeneratedAudioEnded={handleAvatarAudioEnded}
                       mediaStatus={avatarMedia?.status ?? null}
                       onToggleConversation={() => setConversationOpen((open) => !open)}
                       conversationOpen={conversationOpen}
