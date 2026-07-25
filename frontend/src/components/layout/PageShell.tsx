@@ -75,7 +75,16 @@ export function PageShell({
   const nextLabel = journey?.nextLabel ?? journeySteps[currentStep];
   const showModeSelect = showLogout && location.pathname !== "/choose-mode";
   const contractId = location.pathname.match(/\/contracts\/(\d+)/)?.[1] ?? null;
-  const previousPath = validStep && currentStep > 1 ? stepPath(currentStep - 1, contractId) : null;
+  // 6단계(결과 준비)처럼 되돌아갈 수 없는 단계는 건너뛰고 그 앞 단계를 찾는다.
+  // 건너뛰지 않으면 7단계에서 "이전 단계" 버튼이 사라진다.
+  const previousPath = (() => {
+    if (!validStep) return null;
+    for (let step = currentStep - 1; step >= 1; step -= 1) {
+      const path = stepPath(step, contractId);
+      if (path) return path;
+    }
+    return null;
+  })();
   const currentStepRef = useRef<HTMLDivElement | null>(null);
   const [showFullJourney, setShowFullJourney] = useState(false);
 

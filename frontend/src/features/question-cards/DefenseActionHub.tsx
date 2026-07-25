@@ -84,6 +84,7 @@ function ActionList({
   collapsible = false,
   copyable = false,
   defaultOpen = true,
+  foldable = false,
   hideWhenEmpty = false,
   showCount = false,
 }: {
@@ -92,8 +93,10 @@ function ActionList({
   items: string[];
   collapsible?: boolean;
   copyable?: boolean;
-  /** false면 제목 줄만 먼저 보이고 눌러야 펼쳐진다. 지금 단계가 아닌 블록에 쓴다. */
+  /** 처음부터 펼쳐진 상태로 시작할지. foldable일 때만 의미가 있다. */
   defaultOpen?: boolean;
+  /** 제목 줄을 항상 펼침·접기 버튼으로 만든다. 단계별 행동 5칸이 같은 모양을 갖게 한다. */
+  foldable?: boolean;
   hideWhenEmpty?: boolean;
   showCount?: boolean;
 }) {
@@ -118,7 +121,7 @@ function ActionList({
   // 질문이 없는 대상은 빈 상자를 만들지 않는다(단계별 행동 블록은 개수 표시를 위해 유지).
   if (hideWhenEmpty && items.length === 0) return null;
 
-  if (!defaultOpen) {
+  if (foldable) {
     return (
       <section className="action-hub__group action-hub__group--foldable">
         <button
@@ -291,11 +294,11 @@ export function StageActions({
         <p>지금 단계를 먼저 펼쳐 두었습니다. 다른 단계는 눌러서 확인하세요.</p>
       </div>
       <div className="stage-guidance__grid">
-        <ActionList collapsible defaultOpen={openBlock === "계약 전"} title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
-        <ActionList collapsible defaultOpen={openBlock === "계약 중"} title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
-        <ActionList collapsible defaultOpen={false} title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
-        <ActionList collapsible defaultOpen={openBlock === "계약 후"} title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
-        <ActionList defaultOpen={false} title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
+        <ActionList collapsible foldable defaultOpen={openBlock === "계약 전"} title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
+        <ActionList collapsible foldable defaultOpen={openBlock === "계약 중"} title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
+        <ActionList collapsible foldable defaultOpen={openBlock === "잔금·입주 당일"} title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
+        <ActionList collapsible foldable defaultOpen={openBlock === "계약 후"} title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
+        <ActionList foldable defaultOpen={false} title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
       </div>
     </section>
   );

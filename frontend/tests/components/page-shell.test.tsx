@@ -133,6 +133,17 @@ describe("PageShell logout", () => {
     expect(screen.queryByRole("link", { name: /확인 결과/ })).not.toBeInTheDocument();
   });
 
+  it("skips the analysis step when walking back from the report", () => {
+    render(
+      <MemoryRouter initialEntries={["/contracts/12/report"]}>
+        <PageShell step="7 / 8" title="내 계약 확인 결과" description="결과"><p>내용</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    // 6단계(결과 준비)는 되돌아갈 수 없으므로 5단계 내용 확인으로 건너뛴다.
+    expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts/12/review");
+  });
+
   it("hides the previous-step link on the first step", () => {
     render(
       <MemoryRouter initialEntries={["/choose-mode"]}>

@@ -42,8 +42,8 @@ export function ResultFeedback({ contractId }: { contractId: number }) {
   }
 
   return (
-    <section className="feedback-card" aria-labelledby="feedback-title">
-      <h2 id="feedback-title">리포트 의견 보내기</h2>
+    // 제목은 감싸는 접힘 줄이 갖는다. 같은 제목을 두 번 쓰지 않는다.
+    <section className="feedback-card" aria-label="리포트 의견 보내기">
       <form className="stack" onSubmit={submit}>
         <label>평점
           <select value={rating ?? ""} onChange={(event) => setRating(event.target.value ? Number(event.target.value) : null)}>
