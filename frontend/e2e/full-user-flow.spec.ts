@@ -172,7 +172,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expect(firstInternalId).toBeVisible();
   await expect(firstInternalId).toHaveText(/^[RJ]\d{2}$/);
   await expandAllResultGroups(page);
-  for (const judgmentId of Array.from({ length: 12 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
+  for (const judgmentId of Array.from({ length: 13 }, (_, index) => `J${String(index + 1).padStart(2, "0")}`)) {
     await expect(allResults).toContainText(judgmentId);
   }
   await expect(allResults).not.toContainText("R01");
@@ -206,6 +206,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expandAllResultGroups(page);
   await expect(allResults).toContainText("J01");
   await expect(allResults).toContainText("J12");
+  await expect(allResults).toContainText("J13");
   await expect(allResults).not.toContainText("R01");
 
   if (!isRealApi) {
