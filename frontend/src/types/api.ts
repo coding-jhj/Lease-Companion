@@ -516,6 +516,7 @@ export type PracticeMediaStatus =
 export interface PracticeMediaJobDto {
   media_job_id: string;
   practice_turn_id: string;
+  media_kind: "initial_prompt" | "dialogue_response";
   status: PracticeMediaStatus;
   provider: string;
   speech_text: string;

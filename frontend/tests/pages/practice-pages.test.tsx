@@ -421,6 +421,7 @@ describe("PracticeSessionPage", () => {
     vi.mocked(practiceService.getLatestMedia).mockResolvedValue({
       media_job_id: "media-old",
       practice_turn_id: "practice-turn-old",
+      media_kind: "dialogue_response",
       status: "failed",
       provider: "local",
       speech_text: "이전 질문의 중개사 반응입니다.",
@@ -460,6 +461,7 @@ describe("PracticeSessionPage", () => {
     vi.mocked(practiceService.getLatestMedia).mockResolvedValue({
       media_job_id: "media-current",
       practice_turn_id: "practice-turn-current",
+      media_kind: "dialogue_response",
       status: "failed",
       provider: "local",
       speech_text: "현재 질문에 대한 중개사 반응입니다.",
