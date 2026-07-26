@@ -26,6 +26,23 @@ const baseProps = {
 };
 
 describe("PracticeAvatarStage", () => {
+  it("mutes static avatar clips but keeps generated speech audible", () => {
+    const { rerender } = render(<PracticeAvatarStage {...baseProps} />);
+
+    expect(screen.getByTestId("practice-video")).toHaveProperty("muted", true);
+
+    rerender(
+      <PracticeAvatarStage
+        {...baseProps}
+        generatedVideoUrl="blob:generated-speech"
+        mediaStatus="completed"
+      />,
+    );
+
+    expect(screen.getByTestId("practice-video")).toHaveProperty("muted", false);
+    expect(screen.getByTestId("practice-video")).toHaveAttribute("controls");
+  });
+
   it("falls back to text when the avatar video cannot play, without blocking the turn", () => {
     render(<PracticeAvatarStage {...baseProps} />);
     const video = document.querySelector("video");
