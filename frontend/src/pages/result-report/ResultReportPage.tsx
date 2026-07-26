@@ -33,7 +33,7 @@ const priorities: DisplayPriority[] = ["반드시 확인", "확인 권장", "일
 
 const TABS = [
   { key: "items", label: "확인 항목" },
-  { key: "questions", label: "물어볼 말" },
+  { key: "questions", label: "확인할 내용" },
   { key: "stages", label: "단계별 행동" },
 ] as const;
 
@@ -136,7 +136,7 @@ export function ResultReportPage() {
   }
 
   return (
-    <PageShell layout="report" step="7 / 8" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 물어볼 말을 순서대로 살펴보세요.">
+    <PageShell layout="report" step="7 / 8" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 직접 확인할 내용을 순서대로 살펴보세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="확인 결과를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
         {status === "error" && <ErrorState title="확인 결과를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}

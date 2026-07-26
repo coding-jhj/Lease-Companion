@@ -139,7 +139,7 @@ test("situation entry and critical report actions work with the keyboard", async
   await itemsTab.focus();
   await expect(itemsTab).toBeFocused();
   await page.keyboard.press("ArrowRight");
-  const questionsTab = page.getByRole("tab", { name: "물어볼 말" });
+  const questionsTab = page.getByRole("tab", { name: "확인할 내용" });
   await expect(questionsTab).toBeFocused();
   await expect(questionsTab).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("ArrowLeft");
@@ -161,7 +161,7 @@ test("situation entry and critical report actions work with the keyboard", async
   await checklistButton.focus();
   await expect(checklistButton).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "체크리스트와 계약 직후 행동" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "체크리스트와 계약 후 행동" })).toBeVisible();
   if ((page.viewportSize()?.width ?? 0) <= 360) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
     expect(await page.locator("main.app-shell").evaluate((element) =>

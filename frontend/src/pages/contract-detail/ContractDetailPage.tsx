@@ -188,20 +188,26 @@ export function ContractDetailPage() {
 
   function renderActionItems({
     title,
+    description,
     entries,
     actionLabel,
     completedActionLabel,
     emptyMessage,
     collapsible = false,
     hideWhenEmpty = false,
+    total = entries.length,
   }: {
     title: string;
+    /** 제목 아래 안내 문구. 남은 항목을 보여주는 섹션에만 전달한다(완료 섹션에는 넣지 않는다). */
+    description?: string;
     entries: ChecklistViewItem[];
     actionLabel: string;
     completedActionLabel: string;
     emptyMessage: string;
     collapsible?: boolean;
     hideWhenEmpty?: boolean;
+    /** 진행률 분모. 제목 글자로 분기하면 제목을 바꿀 때 조용히 0%로 굳는다. */
+    total?: number;
   }) {
     // 항목이 없으면 빈 칸을 만들지 않는다. 화면 절반이 비어 보이던 원인이다.
     if (hideWhenEmpty && entries.length === 0) return null;
@@ -274,9 +280,6 @@ export function ContractDetailPage() {
       );
     }
 
-    const total = title === "서명 전 체크리스트"
-      ? checklistItems.length
-      : title === "계약 직후 행동" ? postActions.length : entries.length;
     const done = total - entries.length;
 
     return (
@@ -285,6 +288,7 @@ export function ContractDetailPage() {
           <h2>{title}</h2>
           <span className="checklist-section__count">{done} / {total} 확인 완료</span>
         </div>
+        {description && <p className="checklist-section__description">{description}</p>}
         {total > 0 && (
           <div className="checklist-progress" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={`${title} ${done} / ${total} 확인 완료`}>
             <div className="checklist-progress__fill" style={{ width: `${(done / total) * 100}%` }} />
@@ -296,7 +300,7 @@ export function ContractDetailPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="8 / 8" title="체크리스트와 계약 직후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
+    <PageShell layout="workspace" step="8 / 8" title="체크리스트와 계약 후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
       <div className="stack">
         {status === "loading" && <LoadingState title="계약 상세를 불러오는 중" description="체크리스트와 저장 이력을 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 상세를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContractDetail()} />}
@@ -336,18 +340,22 @@ export function ContractDetailPage() {
             <div className="checklist-active-grid">
               {renderActionItems({
                 title: "서명 전 체크리스트",
+                description: "서명하기 전, 금전 피해와 분쟁으로 이어질 수 있는 항목을 한 번 더 확인해 보세요.",
                 entries: pendingChecklistItems,
                 actionLabel: "확인",
                 completedActionLabel: "확인 취소",
                 emptyMessage: "모든 서명 전 체크리스트 항목을 확인했습니다.",
+                total: checklistItems.length,
               })}
               {renderActionItems({
-                title: "계약 직후 행동",
+                title: "계약 후 해야 할 행동",
+                description: "계약 후 보증금과 임차인의 권리를 보호하기 위해 필요한 조치를 확인해 보세요.",
                 entries: pendingPostActions,
                 actionLabel: "완료",
                 completedActionLabel: "완료 취소",
-                emptyMessage: "현재 남아 있는 계약 직후 행동이 없습니다.",
+                emptyMessage: "현재 남아 있는 계약 후 행동이 없습니다.",
                 hideWhenEmpty: true,
+                total: postActions.length,
               })}
             </div>
             {hasCompletedItems && (
@@ -361,11 +369,11 @@ export function ContractDetailPage() {
                   collapsible: true,
                 })}
                 {renderActionItems({
-                  title: "완료된 계약 직후 행동",
+                  title: "완료된 계약 후 행동",
                   entries: completedPostActions,
                   actionLabel: "완료",
                   completedActionLabel: "완료 취소",
-                  emptyMessage: "완료된 계약 직후 행동이 없습니다.",
+                  emptyMessage: "완료된 계약 후 행동이 없습니다.",
                   collapsible: true,
                 })}
               </div>

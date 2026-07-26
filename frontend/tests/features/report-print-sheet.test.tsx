@@ -118,8 +118,8 @@ describe("ReportPrintSheet", () => {
     expect(screen.getByRole("heading", { name: "내 계약 확인 결과", hidden: true })).toBeInTheDocument();
     const headings = screen.getAllByRole("heading", { hidden: true }).map((heading) => heading.textContent);
     expect(headings.indexOf("지금 먼저 확인할 일"))
-      .toBeLessThan(headings.indexOf("물어볼 말"));
-    expect(headings.indexOf("물어볼 말"))
+      .toBeLessThan(headings.indexOf("직접 확인할 내용"));
+    expect(headings.indexOf("직접 확인할 내용"))
       .toBeLessThan(headings.indexOf("계약 단계별 할 일"));
     expect(headings.indexOf("계약 단계별 할 일"))
       .toBeLessThan(headings.indexOf("판단 이유"));
@@ -128,10 +128,10 @@ describe("ReportPrintSheet", () => {
     expect(headings.indexOf("문서 근거와 세부 판정 정보"))
       .toBeLessThan(headings.indexOf("비슷한 상황에서 확인할 점"));
 
-    const questions = screen.getByRole("heading", { name: "물어볼 말", hidden: true }).closest("section")!;
-    expect(within(questions).getByRole("heading", { name: "중개사에게 물어볼 말", hidden: true })).toBeInTheDocument();
-    expect(within(questions).getByRole("heading", { name: "임대인에게 물어볼 말", hidden: true })).toBeInTheDocument();
-    expect(within(questions).getByRole("heading", { name: "내가 문서에서 다시 볼 것", hidden: true })).toBeInTheDocument();
+    const questions = screen.getByRole("heading", { name: "직접 확인할 내용", hidden: true }).closest("section")!;
+    expect(within(questions).getByRole("heading", { name: "중개사에게 확인해야 할 사항", hidden: true })).toBeInTheDocument();
+    expect(within(questions).getByRole("heading", { name: "임대인에게 확인해야 할 사항", hidden: true })).toBeInTheDocument();
+    expect(within(questions).getByRole("heading", { name: "문서에서 다시 확인할 내용", hidden: true })).toBeInTheDocument();
     for (const question of [
       "임대인에게 등기 소유자와의 관계를 물어보세요.",
       "중개사에게 최신 등기를 확인하세요.",
@@ -144,7 +144,7 @@ describe("ReportPrintSheet", () => {
 
     const detail = screen.getByRole("heading", { name: "문서 근거와 세부 판정 정보", hidden: true }).closest("section")!;
     expect(within(detail).getByText(/J01 · 상태: 불일치 · 시급도: 즉시 확인/)).toBeInTheDocument();
-    for (const title of ["지금 먼저 확인할 일", "물어볼 말", "계약 단계별 할 일", "판단 이유", "비슷한 상황에서 확인할 점"]) {
+    for (const title of ["지금 먼저 확인할 일", "직접 확인할 내용", "계약 단계별 할 일", "판단 이유", "비슷한 상황에서 확인할 점"]) {
       const section = screen.getByRole("heading", { name: title, hidden: true }).closest("section")!;
       expect(section).not.toHaveTextContent("J01 · 상태: 불일치 · 시급도: 즉시 확인");
     }
@@ -176,7 +176,7 @@ describe("ReportPrintSheet", () => {
 
     for (const title of [
       "지금 먼저 확인할 일",
-      "물어볼 말",
+      "직접 확인할 내용",
       "계약 단계별 할 일",
       "판단 이유",
       "문서 근거와 세부 판정 정보",

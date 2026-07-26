@@ -4,7 +4,7 @@ type Guidance = RuleGuidanceDto | JudgmentGuidanceDto;
 
 function idOf(item: Guidance) { return "rule_id" in item ? item.rule_id : item.judgment_id; }
 
-// 카드에는 대표 질문 하나만 두고 나머지는 접는다. 같은 질문이 "물어볼 말" 탭에도 있으므로
+// 카드에는 대표 질문 하나만 두고 나머지는 접는다. 같은 질문이 "확인할 내용" 탭에도 있으므로
 // 여기서 목록을 통째로 반복하지 않는다.
 export function DetectedSignalSection({ patterns, guidance }: { patterns: DamagePatternComparisonDto[]; guidance: Guidance[] }) {
   const signals = patterns.filter((item) => item.status === "관련 확인 신호 있음");
@@ -22,7 +22,7 @@ export function DetectedSignalSection({ patterns, guidance }: { patterns: Damage
       return <article className="detected-signal-card" key={signal.pattern_id}>
         <span>반드시 확인</span><h4>{signal.pattern_name}</h4><p>{signal.reason}</p>
         {leadQuestion && <div className="detected-signal-card__lead">
-          <strong>먼저 물어볼 말</strong>
+          <strong>먼저 확인할 내용</strong>
           <p>{leadQuestion}</p>
         </div>}
         {foldedCount > 0 && <details>

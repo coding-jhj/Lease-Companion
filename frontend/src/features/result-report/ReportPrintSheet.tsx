@@ -76,10 +76,10 @@ export function ReportPrintSheet({
       <ul>{actionItems.map((item) => <li key={item.id}><strong>{item.priority} · {item.timing}</strong><br />{item.title}</li>)}</ul>
     </section>}
     {hasQuestions && <section>
-      <h2>물어볼 말</h2>
-      <PrintList title="중개사에게 물어볼 말" items={questionGroups["중개사"]} />
-      <PrintList title="임대인에게 물어볼 말" items={questionGroups["임대인"]} />
-      <PrintList title="내가 문서에서 다시 볼 것" items={questionGroups["내가 다시 확인"]} />
+      <h2>직접 확인할 내용</h2>
+      <PrintList title="중개사에게 확인해야 할 사항" items={questionGroups["중개사"]} />
+      <PrintList title="임대인에게 확인해야 할 사항" items={questionGroups["임대인"]} />
+      <PrintList title="문서에서 다시 확인할 내용" items={questionGroups["내가 다시 확인"]} />
     </section>}
     {stageGroups.some(([, items]) => items.length > 0) && <section>
       <h2>계약 단계별 할 일</h2>

@@ -242,7 +242,7 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .guided-clause-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: gc; }
 .guided-clause-list li { position: relative; display: grid; gap: 8px; padding: 14px 16px 15px 46px; border: 1px solid #dde5de; border-radius: 12px; background: #fff; counter-increment: gc; }
 .guided-clause-list li::before { content: counter(gc); position: absolute; left: 14px; top: 15px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #245c38; color: #fff; font-size: 13px; font-weight: 800; }
-.guided-clause-list__text { color: #22302a; font-size: 16px; font-weight: 700; line-height: 1.7; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
+.guided-clause-list__text { color: #22302a; font-size: 16px; font-weight: 500; line-height: 1.7; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
 .guided-clause-hint { border-left: 3px solid #7aa585; border-radius: 6px; background: #eef5ef; }
 .guided-clause-hint > summary { padding: 9px 12px; color: #2f5a3c; font-size: 14px; font-weight: 800; list-style: none; cursor: pointer; }
 .guided-clause-hint > summary::-webkit-details-marker { display: none; }
@@ -316,17 +316,18 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .completed-checklist-disclosure__content { padding: 16px; }
 .checklist-section__empty { margin: 0; padding: 14px; border-radius: 12px; background: #f3f6f3; color: var(--ink-muted); }
 .check-item--button { grid-template-columns: minmax(0, 1fr) auto; gap: 14px; background: #fff; }
-/* 한 줄짜리 체크 항목. 체크 | 문구 | 근거 배지 | 쉽게 보기 순서로 붙여 카드 높이를 줄인다. */
-.check-item--row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 14px; background: #fff; }
-.check-item--row .check-item__text { font-size: 15px; line-height: 1.5; }
+/* 체크 | 문구 2칸으로 두고, 근거 배지와 "쉽게 보기"는 아랫줄로 내린다. 배지·버튼이 가로 폭을
+   먼저 가져가면 좁은 화면에서 문구가 3~4줄로 접혔다. 체크 상자는 문구 첫 줄에 맞춘다. */
+.check-item--row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px 12px; padding: 12px 14px; background: #fff; }
+.check-item--row .check-item__text { font-size: 15px; line-height: 1.5; word-break: keep-all; overflow-wrap: break-word; }
 .check-item__check { display: grid; place-items: center; width: 26px; height: 26px; min-height: 0; padding: 0; border: 2px solid #2f7549; border-radius: 8px; background: #fff; color: #1f5b35; font-size: 15px; font-weight: 900; }
 .check-item__check:disabled { border-color: #b7c4bb; background: #f2f4f2; }
 .check-item--complete .check-item__check { background: #2f7549; color: #fff; }
-.check-item--row .check-item__source { margin: 0; padding: 4px 9px; border-radius: 999px; background: #f1f4f1; color: var(--ink-muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
-.check-item--row .check-item__guide { grid-column: auto; margin: 0; }
-.check-item--row .check-item__guide[open] { grid-column: 1 / -1; }
+.check-item--row .check-item__source { justify-self: start; margin: 0; padding: 4px 9px; border-radius: 999px; background: #f1f4f1; color: var(--ink-muted); font-size: 13px; font-weight: 700; white-space: nowrap; grid-column: 2; }
+.check-item--row .check-item__guide { grid-column: 2; margin: 0; }
 .checklist-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .checklist-section__count { color: var(--ink-muted); font-size: 14px; font-weight: 800; white-space: nowrap; }
+.checklist-section__description { margin: 8px 0 0; color: var(--ink); font-size: 15px; line-height: 1.6; word-break: keep-all; overflow-wrap: break-word; }
 .checklist-progress { height: 8px; margin: 10px 0 14px; border-radius: 999px; background: #e6ddcd; overflow: hidden; }
 .checklist-progress__fill { height: 100%; border-radius: 999px; background: #1f4a30; transition: width 0.3s ease; }
 .checklist-section__items { margin: 0; padding: 0; list-style: none; }
@@ -930,11 +931,6 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .action-hub__group__count { padding: 3px 9px; border-radius: 999px; background: #e5eee7; color: #245236; font-size: 13px; font-weight: 800; }
 .action-hub__group > p { margin-top: 6px; color: var(--ink); font-size: 15px; line-height: 1.6; }
 .action-hub__group ul { display: grid; gap: 10px; margin: 12px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.6; }
-.action-hub__question { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
-.action-hub__copy { width: auto; min-height: 32px; padding: 5px 8px; }
-.action-hub__copy-status, .action-hub__copy-error { margin-top: 10px !important; font-weight: 800; }
-.action-hub__copy-status { color: #245c38 !important; }
-.action-hub__copy-error { color: #8b2824 !important; }
 .action-hub__more { margin-top: 10px; }
 .action-hub__empty { padding: 10px; border-radius: 9px; background: #f3f0e9; }
 .damage-reference-section > .damage-patterns > .section-heading { display: none; }

@@ -82,7 +82,6 @@ function ActionList({
   description,
   items,
   collapsible = false,
-  copyable = false,
   defaultOpen = true,
   foldable = false,
   hideWhenEmpty = false,
@@ -92,7 +91,6 @@ function ActionList({
   description: string;
   items: string[];
   collapsible?: boolean;
-  copyable?: boolean;
   /** 처음부터 펼쳐진 상태로 시작할지. foldable일 때만 의미가 있다. */
   defaultOpen?: boolean;
   /** 제목 줄을 항상 펼침·접기 버튼으로 만든다. 단계별 행동 5칸이 같은 모양을 갖게 한다. */
@@ -102,21 +100,8 @@ function ActionList({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
-  const [copiedQuestion, setCopiedQuestion] = useState<string | null>(null);
-  const [copyError, setCopyError] = useState(false);
   const hiddenCount = Math.max(0, items.length - INITIAL_ACTION_COUNT);
   const visibleItems = collapsible && !expanded ? items.slice(0, INITIAL_ACTION_COUNT) : items;
-
-  async function copyQuestion(question: string) {
-    setCopiedQuestion(null);
-    setCopyError(false);
-    try {
-      await navigator.clipboard.writeText(question);
-      setCopiedQuestion(question);
-    } catch {
-      setCopyError(true);
-    }
-  }
 
   // 질문이 없는 대상은 빈 상자를 만들지 않는다(단계별 행동 블록은 개수 표시를 위해 유지).
   if (hideWhenEmpty && items.length === 0) return null;
@@ -159,28 +144,12 @@ function ActionList({
       <p>{description}</p>
       {items.length > 0
         ? <>
-          <ul>{visibleItems.map((item) => (
-            <li className={copyable ? "action-hub__question" : undefined} key={item}>
-              <span>{item}</span>
-              {copyable && (
-                <button
-                  className="text-button action-hub__copy"
-                  type="button"
-                  aria-label={`질문 복사: ${item}`}
-                  onClick={() => void copyQuestion(item)}
-                >
-                  복사
-                </button>
-              )}
-            </li>
-          ))}</ul>
+          <ul>{visibleItems.map((item) => <li key={item}><span>{item}</span></li>)}</ul>
           {collapsible && hiddenCount > 0 && (
             <button className="text-button action-hub__more" type="button" onClick={() => setExpanded((current) => !current)}>
               {expanded ? "접기" : `${hiddenCount}개 더 보기`}
             </button>
           )}
-          {copiedQuestion && <p className="action-hub__copy-status" role="status">복사했습니다.</p>}
-          {copyError && <p className="action-hub__copy-error" role="alert">복사하지 못했습니다. 질문을 직접 선택해 복사해 주세요.</p>}
         </>
         : <p className="action-hub__empty">현재 추가로 안내할 내용이 없습니다.</p>}
     </section>
@@ -230,13 +199,13 @@ export function QuestionHub({
   return (
     <section className="action-hub" aria-labelledby="action-hub-title">
       <header className="action-hub__header">
-        <h2 id="action-hub-title">상대방에게 물어볼 말</h2>
-        <span>같은 문구는 한 번만 보여드립니다. 그대로 읽거나 복사해 물어보세요.</span>
+        <h2 id="action-hub-title">상대방에게 직접 확인할 내용</h2>
+        <span>같은 문구는 한 번만 보여드립니다. 그대로 읽고 확인해 보세요.</span>
       </header>
       <div className="action-hub__grid">
-        <ActionList copyable collapsible showCount hideWhenEmpty title="중개사에게 물어볼 말" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
-        <ActionList copyable collapsible showCount hideWhenEmpty title="임대인에게 물어볼 말" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
-        <ActionList copyable collapsible showCount hideWhenEmpty title="내가 문서에서 다시 볼 것" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
+        <ActionList collapsible showCount hideWhenEmpty title="중개사에게 확인해야 할 사항" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
+        <ActionList collapsible showCount hideWhenEmpty title="임대인에게 확인해야 할 사항" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
+        <ActionList collapsible showCount hideWhenEmpty title="문서에서 다시 확인할 내용" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
       </div>
     </section>
   );
