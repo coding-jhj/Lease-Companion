@@ -16,12 +16,27 @@ async function confirmGuidedReview(page: import("@playwright/test").Page) {
   const completeHeading = page.getByRole("heading", {
     name: "중요한 내용을 모두 확인했습니다",
   });
+  const sectionButtons = page
+    .getByRole("navigation", { name: "확인 묶음" })
+    .getByRole("button");
+  const sectionCount = await sectionButtons.count();
 
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let sectionIndex = 0; sectionIndex < sectionCount; sectionIndex += 1) {
     if (await completeHeading.isVisible()) break;
-    const confirmButton = page.getByRole("button", { name: "네, 맞아요" });
-    await expect(confirmButton).toBeVisible();
-    await confirmButton.click();
+    await sectionButtons.nth(sectionIndex).click();
+
+    for (let itemIndex = 0; itemIndex < 80; itemIndex += 1) {
+      const confirmButton = page.getByRole("button", { name: "네, 맞아요" });
+      if (!await confirmButton.isVisible()) break;
+      await confirmButton.click();
+    }
+
+    const bulkConfirmButton = page.getByRole("button", {
+      name: /^\d+개 모두 문서와 같아요$/,
+    });
+    if (await bulkConfirmButton.isVisible() && await bulkConfirmButton.isEnabled()) {
+      await bulkConfirmButton.click();
+    }
   }
 
   await expect(completeHeading).toBeVisible();
@@ -57,10 +72,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expect(page).toHaveURL(/\/prepare$/);
   await page.getByRole("link", { name: "계약서 초안 등을 받아 점검해 보기" }).click();
   await page.getByLabel("계약 이름").fill("E2E 전세 계약");
-  await page.getByRole("button", { name: "다음: 내 상황 알려주기" }).click();
-  await page.getByRole("radio", { name: "전세" }).check();
-  await page.getByLabel("집주인이 직접 계약해요").check();
-  await page.getByRole("button", { name: "다음: 문서 준비하기" }).click();
+  await page.getByRole("button", { name: "다음: 문서 올리기" }).click();
   await expect(page).toHaveURL(/\/upload$/);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
@@ -89,6 +101,9 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
 
   await expect(page.getByRole("heading", { name: "문서에서 읽은 내용 확인" })).toBeVisible();
   await expect(page.getByRole("button", { name: "네, 맞아요" })).toBeVisible();
+  await page.getByRole("button", { name: /3 직접 알려주실 내용/ }).click();
+  await page.getByRole("radio", { name: "전세" }).check();
+  await page.getByRole("radio", { name: "집주인이 직접 계약해요" }).check();
   await confirmGuidedReview(page);
   expect(analysisPostCount).toBe(0);
 
