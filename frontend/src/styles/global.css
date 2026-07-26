@@ -842,14 +842,22 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .mode-select-help { margin: 18px 0 0; color: var(--ink-muted); font-size: 13px; text-align: center; }
 
 .preparation-grid { display: grid; gap: 16px; }
-.preparation-card { display: grid; gap: 14px; padding: 20px; border: 1px solid #d5ddd6; border-radius: 16px; background: #fff; }
-.preparation-card > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; list-style: none; }
+.preparation-card { display: grid; gap: 14px; padding: 22px; border: 1px solid #d5ddd6; border-radius: 16px; background: #fff; }
+/* 접힌 카드가 흰 상자만 남아 눌러야 할 것으로 안 보였다. 단계별 행동 카드와 같은 연초록을 쓴다. */
+.preparation-card:not([open]) { background: #eef5f0; }
+.preparation-card > summary { display: flex; align-items: center; gap: 10px; min-height: 52px; cursor: pointer; list-style: none; }
 .preparation-card > summary::-webkit-details-marker { display: none; }
+.preparation-card > summary:hover { color: #1c5233; }
+.preparation-card > summary h2 { flex: 1; min-width: 0; }
+.preparation-card__count { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; background: #e5eee7; color: #245236; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.preparation-card:not([open]) .preparation-card__count { background: #fff; }
+.preparation-card > summary .collapse-arrow { flex: 0 0 auto; color: #2f6743; font-size: 20px; }
 .preparation-card[open] > summary .collapse-arrow { transform: rotate(90deg); }
+.preparation-card__body { display: grid; gap: 14px; }
 .preparation-card h2, .preparation-card p, .preparation-card ul { margin: 0; }
-.preparation-card ul { display: grid; gap: 8px; padding-left: 20px; color: #2c352f; }
+.preparation-card ul { display: grid; gap: 10px; padding-left: 20px; color: #2c352f; line-height: 1.6; }
 .preparation-script { padding: 14px; border-radius: 12px; background: #eaf3ec; color: #21402a; font-weight: 600; line-height: 1.6; }
-.preparation-warning { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid #edcb7e; border-left: 4px solid #dda21f; border-radius: 12px; background: #fff7e2; color: #624a18; }
+.preparation-warning { display: grid; gap: 10px; padding: 16px 18px; border: 1px solid #edcb7e; border-left: 4px solid #dda21f; border-radius: 12px; background: #fff7e2; color: #624a18; }
 .preparation-warning h3, .preparation-warning ul { margin: 0; }
 .preparation-warning h3 { font-size: 15px; color: #573a08; }
 .preparation-warning ul { line-height: 1.6; }

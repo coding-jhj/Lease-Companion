@@ -55,6 +55,10 @@ describe("ContractPreparationPage", () => {
     for (const title of ["집을 볼 때 유의할 점", "가계약하기 전에 자료 요청", "가계약금을 보내기 전에 확인하기"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
+    // 접힌 카드에도 안에 몇 개가 있는지 남는다.
+    expect(cards.map((card) => card.querySelector(".preparation-card__count")?.textContent)).toEqual(["6개", "5개", "3개"]);
+    // details가 만드는 익명 상자 대신 직접 감싼 상자가 내용 간격을 맡는다.
+    for (const card of cards) expect(card.querySelector(".preparation-card__body")).not.toBeNull();
   });
 
   it("shows a status message after copying the draft request", async () => {
