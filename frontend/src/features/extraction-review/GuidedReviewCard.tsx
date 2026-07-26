@@ -39,6 +39,7 @@ export interface GuidedReviewCardProps {
   item: ReviewQueueItem;
   draftValue: string | string[] | undefined;
   busy: boolean;
+  completionLabel?: string;
   onConfirm: () => void;
   onChange: (value: string | string[]) => void;
   onCannotVerify: (reason: CannotVerifyReason) => void;
@@ -71,6 +72,7 @@ export function GuidedReviewCard({
   item,
   draftValue,
   busy,
+  completionLabel,
   onConfirm,
   onChange,
   onCannotVerify,
@@ -175,7 +177,9 @@ export function GuidedReviewCard({
         </section>
       ) : (
         <div>
-          <button type="button" disabled={busy} onClick={onConfirm}>네, 맞아요</button>
+          <button type="button" disabled={busy || completionLabel !== undefined} onClick={onConfirm}>
+            {completionLabel ?? "네, 맞아요"}
+          </button>
           <button type="button" className="secondary" disabled={busy} onClick={startEditing}>직접 고칠게요</button>
           <button
             type="button"

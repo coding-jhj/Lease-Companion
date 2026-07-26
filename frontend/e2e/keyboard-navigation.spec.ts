@@ -12,7 +12,7 @@ async function finishReviewWithKeyboard(page: import("@playwright/test").Page) {
   for (let guard = 0; guard < 200; guard += 1) {
     if (await completeHeading.isVisible()) break;
 
-    const confirmButton = page.getByRole("button", { name: "네, 맞아요" });
+    const confirmButton = page.getByRole("button", { name: "네, 맞아요" }).first();
     if (await confirmButton.isVisible()) {
       await confirmButton.focus();
       await expect(confirmButton).toBeFocused();
@@ -24,6 +24,16 @@ async function finishReviewWithKeyboard(page: import("@playwright/test").Page) {
     if (await bulkButton.isVisible() && await bulkButton.isEnabled()) {
       await bulkButton.focus();
       await expect(bulkButton).toBeFocused();
+      await page.keyboard.press("Enter");
+      continue;
+    }
+
+    const advanceButton = page.getByRole("button", {
+      name: /^(다음 구역:|남은 구역:|전체 확인 내용 보기)/,
+    });
+    if (await advanceButton.isVisible() && await advanceButton.isEnabled()) {
+      await advanceButton.focus();
+      await expect(advanceButton).toBeFocused();
       await page.keyboard.press("Enter");
       continue;
     }
@@ -121,13 +131,13 @@ test("situation entry and critical report actions work with the keyboard", async
   await expect(firstReviewSection).toBeFocused();
   await page.keyboard.press("Enter");
 
-  const confirmCurrent = page.getByRole("button", { name: "네, 맞아요" });
+  const confirmCurrent = page.getByRole("button", { name: "네, 맞아요" }).first();
   await expect(confirmCurrent).toBeVisible();
   await confirmCurrent.focus();
   await expect(confirmCurrent).toBeFocused();
   await page.keyboard.press("Enter");
 
-  const editCurrent = page.getByRole("button", { name: "직접 고칠게요" });
+  const editCurrent = page.getByRole("button", { name: "직접 고칠게요" }).first();
   await editCurrent.focus();
   await expect(editCurrent).toBeFocused();
   await page.keyboard.press("Enter");

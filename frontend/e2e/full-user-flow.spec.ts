@@ -16,27 +16,32 @@ async function confirmGuidedReview(page: import("@playwright/test").Page) {
   const completeHeading = page.getByRole("heading", {
     name: "중요한 내용을 모두 확인했습니다",
   });
-  const sectionButtons = page
-    .getByRole("navigation", { name: "확인 묶음" })
-    .getByRole("button");
-  const sectionCount = await sectionButtons.count();
-
-  for (let sectionIndex = 0; sectionIndex < sectionCount; sectionIndex += 1) {
+  for (let guard = 0; guard < 200; guard += 1) {
     if (await completeHeading.isVisible()) break;
-    await sectionButtons.nth(sectionIndex).click();
-
-    for (let itemIndex = 0; itemIndex < 80; itemIndex += 1) {
-      const confirmButton = page.getByRole("button", { name: "네, 맞아요" });
-      if (!await confirmButton.isVisible()) break;
-      await confirmButton.click();
-    }
 
     const bulkConfirmButton = page.getByRole("button", {
       name: /^\d+개 모두 문서와 같아요$/,
     });
     if (await bulkConfirmButton.isVisible() && await bulkConfirmButton.isEnabled()) {
       await bulkConfirmButton.click();
+      continue;
     }
+
+    const confirmButton = page.getByRole("button", { name: "네, 맞아요" }).first();
+    if (await confirmButton.isVisible()) {
+      await confirmButton.click();
+      continue;
+    }
+
+    const advanceButton = page.getByRole("button", {
+      name: /^(다음 구역:|남은 구역:|전체 확인 내용 보기)/,
+    });
+    if (await advanceButton.isVisible() && await advanceButton.isEnabled()) {
+      await advanceButton.click();
+      continue;
+    }
+
+    break;
   }
 
   await expect(completeHeading).toBeVisible();
@@ -100,7 +105,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await uploadSubmit.click({ force: true });
 
   await expect(page.getByRole("heading", { name: "문서에서 읽은 내용 확인" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "네, 맞아요" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "네, 맞아요" }).first()).toBeVisible();
   await page.getByRole("button", { name: /3 직접 알려주실 내용/ }).click();
   await page.getByRole("radio", { name: "전세" }).check();
   await page.getByRole("radio", { name: "집주인이 직접 계약해요" }).check();
