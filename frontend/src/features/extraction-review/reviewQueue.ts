@@ -283,9 +283,10 @@ export function buildReviewPlan(fields: FieldViewModel[]): ReviewPlanItem[] {
         section,
         impacts,
         reasons,
-        bulkConfirmAllowed: section === "grouped"
-          && item.view.field.verification_status === "unverified"
-          && item.view.field.user_corrected_value === null,
+        // 개별 확인 버튼을 없앴으므로 아직 확인하지 않은 항목은 모두 묶음 확인 대상이다.
+        // 그렇지 않으면 확인할 방법이 없는 항목이 생겨 구역을 끝낼 수 없다.
+        // 이미 고치거나 확인한 항목은 verification_status로 걸러진다.
+        bulkConfirmAllowed: item.view.field.verification_status === "unverified",
         index,
       };
     })

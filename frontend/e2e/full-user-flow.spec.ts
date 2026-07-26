@@ -20,7 +20,7 @@ async function confirmGuidedReview(page: import("@playwright/test").Page) {
     if (await completeHeading.isVisible()) break;
 
     const bulkConfirmButton = page.getByRole("button", {
-      name: /^\d+개 모두 문서와 같아요$/,
+      name: /^\d+개 모두 네, 맞아요$/,
     });
     if (await bulkConfirmButton.isVisible() && await bulkConfirmButton.isEnabled()) {
       await bulkConfirmButton.click();
@@ -104,7 +104,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   // the hit-test succeeds. Force avoids that second scroll while preserving the check.
   await uploadSubmit.click({ force: true });
 
-  await expect(page.getByRole("heading", { name: "문서에서 읽은 내용 확인" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "읽은 내용 확인" })).toBeVisible();
   await expect(page.getByRole("button", { name: "네, 맞아요" }).first()).toBeVisible();
   await page.getByRole("button", { name: /3 직접 알려주실 내용/ }).click();
   await page.getByRole("radio", { name: "전세" }).check();
@@ -197,7 +197,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(refundPattern.getByRole("link", { name: "계약기간 종료 후 보증금 미반환 유형" })).toBeVisible();
   }
   await page.getByRole("tab", { name: "확인할 내용" }).click();
-  for (const title of ["중개사에게 확인해야 할 사항", "임대인에게 확인해야 할 사항", "문서에서 다시 확인할 내용"]) {
+  // 질문이 없는 대상 묶음은 숨긴다(hideWhenEmpty). 이 합성 계약서에서는 중개사 질문이 없다.
+  for (const title of ["상대방에게 직접 확인할 내용", "임대인에게 확인해야 할 사항", "문서에서 다시 확인할 내용"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
   await page.getByRole("tab", { name: "단계별 행동" }).click();
@@ -215,6 +216,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   await expect(allResults).not.toContainText("R01");
 
   if (!isRealApi) {
+    // 의견 보내기는 접힌 상태로 제공된다. 펼친 뒤 입력한다.
+    await page.locator(".feedback-fold > summary").click();
     await page.getByLabel("평점").selectOption("5");
     await page.getByRole("textbox", { name: "의견", exact: true }).fill("전체 흐름 확인 완료");
     await page.getByRole("button", { name: "의견 저장" }).click();
@@ -226,14 +229,16 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   const checklistSection = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "서명 전 체크리스트" }),
   });
-  const action = checklistSection.locator("button.check-item__button").first();
+  const action = checklistSection.locator("button.check-item__check").first();
   await expect(action).toBeVisible();
   if ((await action.getAttribute("aria-label"))?.endsWith(" 확인")) await action.click();
   const completedChecklistSection = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "완료된 체크리스트 항목" }),
   });
-  const completedAction = completedChecklistSection.locator("button.check-item__button").first();
+  const completedAction = completedChecklistSection.locator("button.check-item__check").first();
   await expect(completedAction).toHaveAttribute("aria-label", /확인 취소$/);
+  // 지난 기록은 접힌 상태로 제공된다. 펼친 뒤 확인한다.
+  await page.locator(".history-fold > summary").click();
   const analysisHistory = page.locator("section.history-section").filter({
     has: page.getByRole("heading", { name: "확인 결과 이력" }),
   });

@@ -176,7 +176,7 @@ describe("buildReviewPlan", () => {
     expect(plan.some((item) => item.fieldName === "agent_name")).toBe(false);
   });
 
-  it("keeps core money fields individual and out of bulk confirmation even when cleanly extracted", () => {
+  it("keeps core money fields in their own sections but allows bulk confirmation", () => {
     const plan = buildReviewPlan([
       reviewField("deposit", { value: 300_000_000 }),
       reviewField("account_number", { value: "123-456" }),
@@ -184,11 +184,13 @@ describe("buildReviewPlan", () => {
       reviewField("management_fee_items", { value: "수도" }),
     ]);
 
+    // 핵심 항목은 여전히 개별 카드로 남아 "직접 고칠게요"를 쓸 수 있고,
+    // 고칠 내용이 없으면 구역 단위 묶음 확인에 포함된다.
     for (const fieldName of ["deposit", "account_number", "special_clauses"]) {
       expect(plan.find((item) => item.fieldName === fieldName)?.section)
         .not.toBe("grouped");
       expect(plan.find((item) => item.fieldName === fieldName)?.bulkConfirmAllowed)
-        .toBe(false);
+        .toBe(true);
     }
     expect(plan.find((item) => item.fieldName === "management_fee_items")).toMatchObject({
       section: "grouped",
@@ -229,7 +231,7 @@ describe("buildReviewPlan", () => {
       .some((reason) => reason.includes("다르"))).toBe(false);
   });
 
-  it("allows bulk confirmation only for cleanly extracted unreviewed non-core fields", () => {
+  it("allows bulk confirmation only for unreviewed fields the user has not corrected", () => {
     const exactDuplicate = reviewField("issue_date");
     const plan = buildReviewPlan([
       exactDuplicate,
@@ -262,7 +264,7 @@ describe("buildReviewPlan", () => {
     });
     expect(plan.find((item) => item.fieldName === "future_failed")).toMatchObject({
       section: "suspected_issue",
-      bulkConfirmAllowed: false,
+      bulkConfirmAllowed: true,
     });
     expect(plan.find((item) => item.fieldName === "future_corrected")).toMatchObject({
       section: "grouped",
