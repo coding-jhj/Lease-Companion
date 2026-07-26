@@ -18,6 +18,7 @@ from lease_companion_ai.schemas.simulation import (
     PracticeTurnEvaluation,
     PracticeTurnInput,
     ScenarioDefinition,
+    SelectedAction,
 )
 from lease_companion_ai.schemas.unified import (
     OfficialSource,
@@ -31,6 +32,7 @@ from lease_companion_ai.simulation.dialogue_guardrail import (
     validate_grounded_dialogue,
 )
 from lease_companion_ai.simulation.dialogue_planner import (
+    detect_dialogue_intent,
     plan_grounded_dialogue,
 )
 from lease_companion_ai.simulation.dialogue_provider import (
@@ -91,6 +93,27 @@ class PracticeEvaluationService:
         return deepcopy(self._rule_results)
 
     def evaluate(self, turn_input: PracticeTurnInput) -> PracticeTurnEvaluation:
+        """답변 범주와 의도를 한 번에 정한다. 의도 판별은 항상 Python이 한다."""
+
+        return self._with_intents(self._classify(turn_input), turn_input)
+
+    def _with_intents(
+        self,
+        evaluation: PracticeTurnEvaluation,
+        turn_input: PracticeTurnInput,
+    ) -> PracticeTurnEvaluation:
+        answer = turn_input.user_answer
+        if answer is None or evaluation.answer_category == "needs_review":
+            # 무응답과 provider 장애는 사용자의 결정으로 읽지 않는다.
+            return evaluation
+        return evaluation.model_copy(
+            update={
+                "dialogue_intent": detect_dialogue_intent(self._scenario, answer),
+                "action_intent": detect_action_intent(answer),
+            }
+        )
+
+    def _classify(self, turn_input: PracticeTurnInput) -> PracticeTurnEvaluation:
         if turn_input.turn_id == "ACTION-SELECTION":
             raise ValueError("행동 선택은 대화 답변 평가 대상이 아닙니다.")
         turn = next(
@@ -268,6 +291,122 @@ def match_deterministic_semantic_rule(
 
 def _normalize_semantic_text(value: str) -> str:
     return re.sub(r"[\W_]+", "", value.casefold(), flags=re.UNICODE)
+
+
+# "특약을 고쳐 주면 계약할게요"처럼 조건을 붙인 답변은 계약 진행 결정이 아니다.
+# 조건 표현이 있으면 진행 의도로 읽지 않는다.
+_CONDITIONAL_MARKERS: tuple[str, ...] = (
+    "하면",
+    "해주면",
+    "해 주면",
+    "된다면",
+    "준다면",
+    "라면",
+    "조건으로",
+    "조건이면",
+    "경우에만",
+    "고쳐야",
+    "수정해야",
+    "바꿔야",
+    "확인하고",
+    "확인한 뒤",
+    "확인한 후",
+)
+
+# 앞에 있는 의도부터 확인한다. 조건부 요구가 계약 진행으로 잘못 읽히지 않도록
+# 중단·보류·수정 요구를 진행보다 먼저 판정한다.
+_ACTION_INTENT_KEYWORDS: tuple[tuple[SelectedAction, tuple[str, ...]], ...] = (
+    (
+        "중단",
+        (
+            "계약하지 않",
+            "계약 안 하",
+            "계약은 안 하",
+            "계약을 그만",
+            "그만두",
+            "안 하겠",
+            "하지 않겠",
+            "포기하겠",
+            "취소하겠",
+            "다른 집을 보",
+        ),
+    ),
+    (
+        "보류",
+        (
+            "보류",
+            "다시 생각",
+            "생각해 보고",
+            "생각 좀",
+            "미루",
+            "나중에 결정",
+            "오늘은 결정하지",
+            "결정을 미루",
+        ),
+    ),
+    (
+        "특약 수정 요구",
+        (
+            "특약을 고쳐",
+            "특약 고쳐",
+            "특약을 수정",
+            "특약 수정",
+            "문구를 바꿔",
+            "특약을 바꿔",
+            "조항을 고쳐",
+            "조항을 수정",
+            "수정해 주세요",
+            "고쳐 주세요",
+        ),
+    ),
+    (
+        "추가 확인",
+        (
+            "확인해 보고",
+            "확인하고 결정",
+            "등기부",
+            "서류를 보고",
+            "자료를 받아",
+            "확인한 뒤에",
+        ),
+    ),
+    (
+        "진행",
+        (
+            "계약하겠",
+            "계약할게",
+            "계약하죠",
+            "계약 진행",
+            "진행하겠",
+            "진행할게",
+            "서명하겠",
+            "서명할게",
+        ),
+    ),
+)
+
+
+def detect_action_intent(user_answer: str) -> SelectedAction | None:
+    """사용자 답변에서 계약 행동 의도를 읽는다. 판정을 바꾸지 않고 기록만 한다.
+
+    이 값은 연습을 즉시 끝내지 않는다. 종료 여부는 사용자가 확인 화면에서 직접
+    고른다. 따라서 오탐의 최대 영향은 확인 화면이 한 번 뜨는 것이다.
+    """
+
+    normalized = _normalize_semantic_text(user_answer)
+    conditional = any(
+        _normalize_semantic_text(marker) in normalized
+        for marker in _CONDITIONAL_MARKERS
+    )
+    for intent, keywords in _ACTION_INTENT_KEYWORDS:
+        if intent == "진행" and conditional:
+            # "고쳐 주면 계약할게요"는 조건부 요구이므로 진행으로 확정하지 않는다.
+            continue
+        if any(
+            _normalize_semantic_text(keyword) in normalized for keyword in keywords
+        ):
+            return intent
+    return None
 
 
 class PracticeSimulationService:

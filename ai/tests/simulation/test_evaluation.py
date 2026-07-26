@@ -559,3 +559,21 @@ def test_practice_judgment_state_accepts_every_canonical_judgment_id():
             urgency=Urgency.IMMEDIATE,
         )
         assert state.judgment_id == judgment_id
+
+
+def test_action_intent_reads_contract_decisions_without_confusing_conditions():
+    """조건을 붙인 답변을 계약 진행으로 읽지 않는다. 오탐이 곧 종료가 되지 않게 한다."""
+
+    from lease_companion_ai.simulation.service import detect_action_intent
+
+    # 3안 4단계의 기준 예시: 확인은 했지만 결정은 아직 아니다.
+    assert detect_action_intent("특약을 고쳐 주면 계약할게요.") == "특약 수정 요구"
+    assert detect_action_intent("새 세입자와 상관없이 돌려주도록 특약을 수정해 주세요.") == "특약 수정 요구"
+
+    # 종료 확인을 띄워야 하는 세 가지 결정.
+    assert detect_action_intent("오늘은 계약하지 않겠습니다.") == "중단"
+    assert detect_action_intent("일단 보류하고 싶어요.") == "보류"
+    assert detect_action_intent("네, 이대로 계약하겠습니다.") == "진행"
+
+    # 결정이 없는 일반 질문은 의도를 만들지 않는다.
+    assert detect_action_intent("이 특약은 무슨 뜻인가요?") is None

@@ -21,6 +21,8 @@ interface PracticeAvatarStageProps {
   mediaStatus?: PracticeMediaStatus | null;
   onToggleConversation?: () => void;
   conversationOpen?: boolean;
+  /** 상대방 발화가 끝났을 때 알린다. 영상이 없거나 재생에 실패해도 반드시 호출한다. */
+  onSpeechEnd?: () => void;
 }
 
 export function PracticeAvatarStage({
@@ -33,6 +35,7 @@ export function PracticeAvatarStage({
   mediaStatus = null,
   onToggleConversation,
   conversationOpen = false,
+  onSpeechEnd,
 }: PracticeAvatarStageProps) {
   const avatarVideos = practiceMediaForScenario(scenarioId);
   const [mode, setMode] = useState<AvatarMode>("idle");
@@ -111,8 +114,16 @@ export function PracticeAvatarStage({
     setPlaybackPaused(true);
   }
 
+  // 영상이 없거나 재생하지 못하면 종료 이벤트가 오지 않는다. 이때도 발화가 끝난 것으로
+  // 알려 다음 질문이 영영 나오지 않는 상태를 막는다.
+  useEffect(() => {
+    if (mode !== "speaking" || (hasVideo && !videoUnavailable)) return;
+    onSpeechEnd?.();
+  }, [hasVideo, mode, videoUnavailable]);
+
   function handleEnded() {
     if (mode === "speaking" || mode === "pressure") setMode("listening");
+    if (mode === "speaking") onSpeechEnd?.();
   }
 
   function handleVideoError() {

@@ -41,10 +41,15 @@ def _normalize(value: str) -> str:
     return "".join(character for character in value.casefold() if character.isalnum())
 
 
-def _detect_intent(
+def detect_dialogue_intent(
     scenario: ScenarioDefinition,
     user_answer: str,
 ) -> DialogueIntent:
+    """승인 키워드로 사용자 발화의 대화 의도를 정한다.
+
+    평가 단계에서 한 번만 호출하고 결과를 평가 결과에 실어 재사용한다. 대사 생성이
+    같은 답변을 다시 해석해 평가와 다른 의도로 반응하는 것을 막는다.
+    """
     config = scenario.grounded_roleplay
     if config is None:
         return "unknown"
@@ -70,7 +75,10 @@ def plan_grounded_dialogue(
     if config is None:
         return None
 
-    detected = _detect_intent(scenario, user_answer)
+    # 평가 단계가 이미 정한 의도를 그대로 쓴다. 값이 없는 예전 평가 기록만 다시 읽는다.
+    detected = evaluation.dialogue_intent or detect_dialogue_intent(
+        scenario, user_answer
+    )
     # 사용자가 방금 말한 주제를 되묻지 않도록, 새 의도가 없으면 직전 의도를 이어받는다.
     # ("네, 그 부분이 우려돼요" 같은 동의 답변이 clarify 루프로 빠지던 문제)
     intent = detected if detected != "unknown" else (previous_intent or "unknown")

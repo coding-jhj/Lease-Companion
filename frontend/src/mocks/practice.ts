@@ -37,7 +37,8 @@ interface MockSession {
 const now = "2026-07-22T00:00:00Z";
 const labels = ["가상 연습", "합성 시나리오"];
 const finalActions: PracticeSelectedAction[] = ["진행", "추가 확인", "보류", "중단"];
-const pressureRepeatLimit = 2;
+// ai PRESSURE_REPEAT_LIMIT과 같은 값. 애매한 답변은 한 번만 되묻는다.
+const pressureRepeatLimit = 1;
 
 function contract(overrides: Partial<PracticeSyntheticContractDto>): PracticeSyntheticContractDto {
   return {
@@ -292,7 +293,30 @@ function evaluate(
     fallback_reason: null,
     evidence_text: category === "appropriate_check" ? answer : null,
     verbal_reliance: "not_observed",
+    dialogue_intent: null,
+    action_intent: category === "no_response" ? null : detectActionIntent(answer ?? ""),
   };
+}
+
+// Backend detect_action_intent와 같은 순서·조건 규칙을 축소해 옮긴 것.
+// 조건을 붙인 답변("고쳐 주면 계약할게요")은 진행으로 읽지 않는다.
+const conditionalMarkers = ["하면", "해주면", "해 주면", "된다면", "준다면", "라면", "조건으로", "확인하고"];
+const actionIntentKeywords: [PracticeSelectedAction, string[]][] = [
+  ["중단", ["계약하지 않", "계약 안 하", "그만두", "안 하겠", "하지 않겠", "포기하겠", "취소하겠"]],
+  ["보류", ["보류", "다시 생각", "생각해 보고", "미루", "나중에 결정"]],
+  ["특약 수정 요구", ["특약을 고쳐", "특약 고쳐", "특약을 수정", "특약 수정", "문구를 바꿔", "조항을 고쳐", "고쳐 주세요", "수정해 주세요"]],
+  ["추가 확인", ["확인해 보고", "확인하고 결정", "등기부", "서류를 보고"]],
+  ["진행", ["계약하겠", "계약할게", "계약하죠", "계약 진행", "진행하겠", "진행할게", "서명하겠"]],
+];
+
+function detectActionIntent(answer: string): PracticeSelectedAction | null {
+  const normalized = normalizeSemanticText(answer);
+  const conditional = conditionalMarkers.some((marker) => normalized.includes(normalizeSemanticText(marker)));
+  for (const [intent, keywords] of actionIntentKeywords) {
+    if (intent === "진행" && conditional) continue;
+    if (keywords.some((keyword) => normalized.includes(normalizeSemanticText(keyword)))) return intent;
+  }
+  return null;
 }
 
 export const practiceHandlers = [
@@ -365,7 +389,7 @@ export const practiceHandlers = [
     );
     if (evaluation.confirmed_action_ids.length > 0) session.response.confirmed_action_ids.push(actionId);
     // Backend 상태 머신과 같은 분기: 조건 수용은 즉시 계약 결정, 부분·애매 답변은
-    // 같은 장면에서 최대 2회 재질문, 그 외에는 다음 장면.
+    // 같은 장면에서 최대 1회 재질문, 그 외에는 다음 장면.
     const pressureCounts = session.pressureCounts ?? {};
     const rounds = pressureCounts[body.turn_id] ?? 0;
     const acceptsTerms = evaluation.answer_category === "avoidance";

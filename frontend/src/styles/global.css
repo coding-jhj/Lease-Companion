@@ -624,6 +624,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-contract-card__clauses ol { display: grid; gap: 15px; margin: 0; padding-left: 24px; line-height: 1.65; }
 .practice-clause-card { border-color: #d2aa5e; background: #fff9ed; }
 .practice-clause-card ul, .practice-result-card ul, .practice-source-card ul { display: grid; gap: 8px; margin: 0; padding-left: 21px; line-height: 1.6; }
+.practice-result-outcome__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; }
+.practice-result-outcome__facts > div { padding: 12px; border-radius: 12px; background: #f4f8f5; }
+.practice-result-outcome__facts dt { margin: 0 0 4px; color: #4a6b53; font-size: 13px; font-weight: 800; }
+.practice-result-outcome__facts dd { margin: 0; font-size: 17px; font-weight: 900; }
+.practice-intent-confirm { margin-bottom: 14px; padding: 16px; border: 2px solid #2f6743; border-radius: 14px; background: #f2f8f3; }
+.practice-intent-confirm h3 { margin: 0 0 6px; font-size: 17px; }
+.practice-intent-confirm p { margin: 0 0 12px; color: #3f6149; line-height: 1.55; }
+@media (max-width: 520px) {
+  .practice-result-outcome__facts { grid-template-columns: 1fr; }
+}
 .practice-prompt-preview, .practice-dialogue { background: #f8faf8; }
 .practice-prompt-preview > p, .practice-dialogue > p, .practice-feedback > p, .practice-final-actions > p,
 .practice-result-hero > p { margin: 0 0 5px; color: #42634c; font-size: 13px; font-weight: 900; }
