@@ -38,7 +38,7 @@ describe("PracticeAvatarStage generated media", () => {
   });
 
   it("announces generation without replacing the text fallback", () => {
-    render(
+    const view = render(
       <PracticeAvatarStage
         prompt="계약 조건을 확인하시겠습니까?"
         pressureDelaySeconds={null}
@@ -49,7 +49,30 @@ describe("PracticeAvatarStage generated media", () => {
     );
 
     expect(screen.getByText("립싱크 영상을 준비하고 있습니다.")).toBeInTheDocument();
+    const video = view.container.querySelector("video");
+    expect(video).toHaveAttribute("src", "/practice/avatar/idle.mp4");
+    expect(video).toHaveAttribute("loop");
+    expect((video as HTMLVideoElement).muted).toBe(true);
+    expect(screen.getByText("공인중개사가 응답을 준비하고 있습니다")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "장면 다시 보기" })).toBeDisabled();
     expect(screen.getByRole("heading", { name: "계약 조건을 확인하시겠습니까?" })).toBeInTheDocument();
+  });
+
+  it("keeps the idle loading loop until the completed video blob is ready", () => {
+    const view = render(
+      <PracticeAvatarStage
+        prompt="확인 결과를 말씀드리겠습니다."
+        pressureDelaySeconds={null}
+        hasUserInput={false}
+        submitting={false}
+        mediaStatus="completed"
+      />,
+    );
+
+    const video = view.container.querySelector("video");
+    expect(video).toHaveAttribute("src", "/practice/avatar/idle.mp4");
+    expect(video).toHaveAttribute("loop");
+    expect(screen.getByText("공인중개사가 응답을 준비하고 있습니다")).toBeInTheDocument();
   });
 
   it("waits for the completed lip-sync video instead of playing standalone audio", () => {
