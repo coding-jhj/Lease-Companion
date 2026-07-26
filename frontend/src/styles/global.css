@@ -232,10 +232,13 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .grouped-review-panel__head p { color: var(--ink); font-size: 15px; font-weight: 500; line-height: 1.6; }
 .grouped-review-panel__head button { flex: 0 0 auto; width: auto; }
 .grouped-review-panel__notice { margin: 0 22px; padding: 10px 12px; border-radius: 10px; background: #fff7df; color: #6b531f; font-size: 13px; font-weight: 700; line-height: 1.5; }
-/* 확인 항목은 한 줄에 3개씩 카드로 늘어놓는다. 폭이 좁아지면 자동으로 줄어든다. */
+/* 확인 항목은 카드로 늘어놓는다. 열 수는 화면에서 계산해 --review-columns로 넘긴다.
+   폭이 좁아지면 자동으로 줄어든다. */
 .grouped-review-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 0; padding: 0 22px 20px; list-style: none; }
 @media (min-width: 900px) {
-  .grouped-review-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grouped-review-list { grid-template-columns: repeat(var(--review-columns, 3), minmax(0, 1fr)); }
+  /* 특약처럼 원문이 긴 항목은 나누지 않고 한 줄을 통째로 쓴다. */
+  .grouped-review-list__item--wide { grid-column: 1 / -1; }
 }
 .grouped-review-list__item { display: grid; align-content: start; overflow: hidden; border: 1px solid #dbe4dd; border-radius: 16px; background: #fff; }
 .grouped-review-list__summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 14px 16px; border: 0; border-radius: 0; background: #f2f6f3; color: #24352a; text-align: left; box-shadow: none; }
