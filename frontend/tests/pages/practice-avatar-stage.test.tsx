@@ -130,4 +130,26 @@ describe("PracticeAvatarStage", () => {
     fireEvent.click(screen.getByRole("button", { name: "장면 다시 보기" }));
     await waitFor(() => expect(play.mock.calls.length).toBeGreaterThan(callsBeforeRetry));
   });
+
+  it("offers a user gesture when audible generated speech is blocked", async () => {
+    const play = vi.mocked(HTMLMediaElement.prototype.play);
+    play.mockRejectedValue(new Error("NotAllowedError"));
+    render(
+      <PracticeAvatarStage
+        {...baseProps}
+        generatedVideoUrl="blob:generated-speech"
+        mediaStatus="completed"
+      />,
+    );
+
+    const soundButton = await screen.findByRole("button", { name: "소리와 함께 재생" });
+    expect(screen.queryByText(/영상을 재생하지 못했습니다/)).not.toBeInTheDocument();
+
+    play.mockResolvedValue(undefined);
+    fireEvent.click(soundButton);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "소리와 함께 재생" })).not.toBeInTheDocument();
+    });
+  });
 });

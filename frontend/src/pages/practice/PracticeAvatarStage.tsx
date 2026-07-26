@@ -41,6 +41,7 @@ export function PracticeAvatarStage({
   const [mode, setMode] = useState<AvatarMode>("idle");
   const [playbackId, setPlaybackId] = useState(0);
   const [videoUnavailable, setVideoUnavailable] = useState(false);
+  const [playbackNeedsGesture, setPlaybackNeedsGesture] = useState(false);
   const [playbackPaused, setPlaybackPaused] = useState(false);
   const pressurePlayedForPrompt = useRef<string | null>(null);
   const playbackFailed = useRef(false);
@@ -54,13 +55,30 @@ export function PracticeAvatarStage({
   const videoSource = isGeneratedSpeech ? generatedVideoUrl! : avatarVideos[displayMode];
   const hasVideo = Boolean(videoSource);
 
-  function requestPlayback() {
+  function requestPlayback(userInitiated = false) {
     if (!videoRef.current || !hasVideo) return;
-    try {
-      const result = videoRef.current.play();
-      if (result) void result.catch(() => setVideoUnavailable(true));
-    } catch {
+    const playbackTarget = videoRef.current;
+    const generatedSpeechAtRequest = isGeneratedSpeech;
+    const handleFailure = () => {
+      if (videoRef.current !== playbackTarget) return;
+      if (generatedSpeechAtRequest && !userInitiated) {
+        setPlaybackNeedsGesture(true);
+        return;
+      }
+      setPlaybackNeedsGesture(false);
       setVideoUnavailable(true);
+    };
+    try {
+      const result = playbackTarget.play();
+      if (result) {
+        void result
+          .then(() => setPlaybackNeedsGesture(false))
+          .catch(handleFailure);
+      } else {
+        setPlaybackNeedsGesture(false);
+      }
+    } catch {
+      handleFailure();
     }
   }
 
@@ -70,6 +88,7 @@ export function PracticeAvatarStage({
     setMode("speaking");
     setPlaybackId((current) => current + 1);
     setVideoUnavailable(false);
+    setPlaybackNeedsGesture(false);
   }, [prompt]);
 
   useEffect(() => {
@@ -83,6 +102,7 @@ export function PracticeAvatarStage({
     setMode("speaking");
     setPlaybackId((current) => current + 1);
     setVideoUnavailable(false);
+    setPlaybackNeedsGesture(false);
   }, [generatedVideoUrl]);
 
   useEffect(() => {
@@ -98,6 +118,7 @@ export function PracticeAvatarStage({
   function replayPrompt() {
     playbackFailed.current = false;
     setVideoUnavailable(false);
+    setPlaybackNeedsGesture(false);
     setMode("speaking");
     setPlaybackPaused(false);
     setPlaybackId((current) => current + 1);
@@ -128,6 +149,7 @@ export function PracticeAvatarStage({
 
   function handleVideoError() {
     playbackFailed.current = true;
+    setPlaybackNeedsGesture(false);
     setVideoUnavailable(true);
   }
 
@@ -159,6 +181,7 @@ export function PracticeAvatarStage({
             onError={handleVideoError}
             onPlaying={() => {
               if (!playbackFailed.current) {
+                setPlaybackNeedsGesture(false);
                 setVideoUnavailable(false);
               }
             }}
@@ -185,6 +208,16 @@ export function PracticeAvatarStage({
           )}
         </div>
         <div className="practice-avatar-stage__controls">
+          {playbackNeedsGesture && isGeneratedSpeech && (
+            <button
+              type="button"
+              className="primary practice-avatar-stage__sound-start"
+              onClick={() => requestPlayback(true)}
+              disabled={submitting}
+            >
+              소리와 함께 재생
+            </button>
+          )}
           {onToggleConversation && (
             <button type="button" className="secondary practice-avatar-stage__conversation-toggle" onClick={onToggleConversation} aria-pressed={conversationOpen}>
               {conversationOpen ? "대화 닫기" : "이전 대화 보기"}
