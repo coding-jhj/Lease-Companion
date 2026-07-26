@@ -488,6 +488,48 @@ def test_conversation_history_is_owned_paginated_and_hides_future_turns(client: 
 
 
 @pytest.mark.parametrize("scenario_id", APPROVED_SCENARIO_IDS)
+def test_all_approved_scenarios_reask_ambiguous_answer_once(
+    client: TestClient, scenario_id: str
+):
+    headers = _headers(client)
+    scenario, answer_key = load_approved_practice_assets(scenario_id)
+    session = _create_session(client, headers, scenario_id)
+    session_id = session["practice_session_id"]
+    first_turn = scenario.dialogue_turns[0]
+    ambiguous = _example(answer_key, first_turn.turn_id, "ambiguous_answer")
+    endpoint = f"/api/practice-sessions/{session_id}/turns"
+
+    first = client.post(
+        endpoint,
+        headers=headers,
+        json={
+            "request_id": f"ambiguous-first-{scenario_id[-3:]}",
+            "turn_id": first_turn.turn_id,
+            "user_answer": ambiguous.user_input,
+            "response_time_seconds": 1,
+        },
+    )
+    second = client.post(
+        endpoint,
+        headers=headers,
+        json={
+            "request_id": f"ambiguous-second-{scenario_id[-3:]}",
+            "turn_id": first_turn.turn_id,
+            "user_answer": ambiguous.user_input,
+            "response_time_seconds": 1,
+        },
+    )
+
+    assert first.status_code == 200
+    assert first.json()["evaluation"]["answer_category"] == "ambiguous_answer"
+    assert first.json()["session"]["current_state"] == first_turn.turn_id
+    assert second.status_code == 200
+    assert second.json()["evaluation"]["answer_category"] == "ambiguous_answer"
+    assert second.json()["session"]["current_state"] == first_turn.next_turn_id
+    assert second.json()["session"]["confirmed_action_ids"] == []
+
+
+@pytest.mark.parametrize("scenario_id", APPROVED_SCENARIO_IDS)
 def test_three_scenarios_retry_complete_and_remain_immutable(client: TestClient, scenario_id: str):
     headers = _headers(client)
     scenario, answer_key = load_approved_practice_assets(scenario_id)

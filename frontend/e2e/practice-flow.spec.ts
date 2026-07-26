@@ -94,8 +94,11 @@ async function submitAnswer(page: Page, answer: string, expectNextAnswer = true)
   await expect(answerBox).toBeVisible();
   await answerBox.fill(answer);
   await page.getByRole("button", { name: "전송" }).click();
+  await expect(answerBox).toBeDisabled();
+  await page.getByTestId("practice-video").dispatchEvent("ended");
   if (expectNextAnswer) {
     await expect(answerBox).toBeVisible();
+    await expect(answerBox).toBeEnabled();
     await expect(answerBox).toHaveValue("");
   } else {
     await expect(answerBox).not.toBeVisible();
@@ -107,10 +110,10 @@ async function finishPractice(page: Page, scenario: PracticeScenario) {
   await submitAnswer(page, scenario.answers[0]);
   await submitAnswer(page, scenario.answers[1]);
   await submitAnswer(page, scenario.answers[2], false);
-  const finalSection = page.getByRole("heading", { name: "계약하시겠습니까?" }).locator("xpath=ancestor::section[1]");
+  const finalSection = page.getByRole("heading", { name: "계약을 중단하시겠습니까?" }).locator("xpath=ancestor::section[1]");
   await expect(finalSection).toBeVisible();
   await expect(page.locator("button.primary")).toHaveCount(1);
-  await finalSection.getByRole("button", { name: "아니요, 오늘은 진행하지 않겠습니다" }).click();
+  await finalSection.getByRole("button", { name: "네, 이렇게 하겠습니다" }).click();
   await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+\/result$/);
 }
 

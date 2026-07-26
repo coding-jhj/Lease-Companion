@@ -93,10 +93,11 @@ needs_review
 - Backend와 개발용 MSW는 `answer-key.json`의 `deterministic_semantic_rules`를 같은 1차 판별 원본으로 사용한다. 정답표 전체는 Frontend/API에 노출하지 않으며, Vite 개발 가상 모듈은 MSW 실행 시 규칙 부분만 읽는다.
 - 각 규칙은 단일 단어가 아니라 `all_of_keyword_groups`의 의미 묶음을 모두 충족해야 확정된다. `none_of_keywords`가 있으면 상충·부정 문장은 Gemini fallback으로 보낸다.
 - 고신뢰 규칙에 일치하지 않는 답변만 Gemini/Fake provider로 전달한다.
-- `appropriate_check`, `partial_check`, `ambiguous_answer`, `avoidance`, `no_response`: 답변을 한 번 저장하고 다음 상태로 진행
-- 직전 답변에 대한 중개사 반응은 대화 기록에 남기고 다음 TURN 대사를 자연스럽게 이어서 보여 준다. 일반 대화에는 `다음 상황으로` 버튼을 두지 않는다. `ambiguous_answer`는 앞서 제시한 조건으로 진행할지 되묻고, `partial_check`는 확인을 뒤로 미루도록 회유하는 역할 대사를 사용한다.
+- `appropriate_check`, `partial_check`, `avoidance`, `no_response`: 답변을 한 번 저장하고 다음 상태로 진행한다. 분기형 시나리오의 `partial_check`는 같은 장면에서 한 번 회유한 뒤 다음 상태로 진행할 수 있다.
+- `ambiguous_answer`: 모든 승인 시나리오에서 같은 장면으로 한 번만 되묻고, 두 번째에도 확인할 수 없으면 확인하지 못한 내용으로 남긴 뒤 다음 상태로 진행한다.
+- 직전 답변에 대한 중개사 반응은 대화 기록에 남긴다. 반응 텍스트·영상이 끝나기 전에는 같은 TURN 재질문, 다음 TURN 질문, 최종 행동 선택과 입력창을 활성화하지 않는다. 일반 대화에는 `다음 상황으로` 버튼을 두지 않는다.
 - `needs_review`: provider 장애·timeout·형식 오류이므로 사용자 오답으로 기록하지 않고 현재 TURN에서 재시도 또는 명시적 건너뛰기 허용
-- provider가 사용자 답변의 모호함·상충을 `needs_review`로 반환하더라도 서비스 경계에서 `ambiguous_answer`와 다음 TURN으로 정규화한다. 사용자 답변 의미만으로 같은 TURN을 반복하지 않는다.
+- provider가 사용자 답변의 모호함·상충을 `needs_review`로 반환하더라도 서비스 경계에서 `ambiguous_answer`로 정규화한다. 상태 머신은 같은 TURN 재질문을 최대 한 번만 허용한다.
 - provider가 허용되지 않은 상태를 반환하면 `needs_review`로 바꾼다.
 - `appropriate_check`만 내부 확인 행동으로 누적하되 대화 중 미션·진행률·정답 힌트는 표시하지 않는다. 놓친 주의점과 권장 문장은 마지막 복기에서만 안내한다.
 - 목표 문장을 그대로 복사하지 않아도 연습 흐름은 계속되며, 확인 행동 인정 여부와 진행 여부를 분리한다.

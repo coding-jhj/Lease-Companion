@@ -388,15 +388,17 @@ export const practiceHandlers = [
       actionId,
     );
     if (evaluation.confirmed_action_ids.length > 0) session.response.confirmed_action_ids.push(actionId);
-    // Backend 상태 머신과 같은 분기: 조건 수용은 즉시 계약 결정, 부분·애매 답변은
-    // 같은 장면에서 최대 1회 재질문, 그 외에는 다음 장면.
+    // Backend 상태 머신과 같은 분기: 애매한 답변은 모든 시나리오에서 한 번만
+    // 재질문하고, 분기형 시나리오는 부분 답변도 한 번 재질문한다.
     const pressureCounts = session.pressureCounts ?? {};
     const rounds = pressureCounts[body.turn_id] ?? 0;
     const acceptsTerms = evaluation.answer_category === "avoidance";
-    const repeats = scenario.branchingFlow
-      && !acceptsTerms
+    const repeats = !acceptsTerms
       && rounds < pressureRepeatLimit
-      && (evaluation.answer_category === "partial_check" || evaluation.answer_category === "ambiguous_answer");
+      && (
+        evaluation.answer_category === "ambiguous_answer"
+        || (scenario.branchingFlow && evaluation.answer_category === "partial_check")
+      );
     if (repeats) {
       pressureCounts[body.turn_id] = rounds + 1;
     } else {

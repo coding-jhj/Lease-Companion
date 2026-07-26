@@ -30,6 +30,14 @@ const intentQuestions: Record<string, string> = {
   중단: "계약을 중단하시겠습니까?",
 };
 
+const finalActionLabels: Record<PracticeSelectedAction, string> = {
+  진행: "계약을 진행하겠습니다",
+  "추가 확인": "계약 전에 추가로 확인하겠습니다",
+  "특약 수정 요구": "특약 수정을 요청하겠습니다",
+  보류: "오늘은 계약을 보류하겠습니다",
+  중단: "계약을 중단하겠습니다",
+};
+
 // 데스크탑(2단)에서는 이전 대화를 기본으로 펼쳐 두고, 모바일(오버레이)에서는 접어 둔다.
 function isWideViewport() {
   return typeof window !== "undefined" && Boolean(window.matchMedia?.("(min-width: 900px)").matches);
@@ -149,6 +157,14 @@ export function PracticeSessionPage() {
     setStatus("loading");
     setDrawerTab("conversation");
     setConversationOpen(isWideViewport());
+    setReactionPlaying(false);
+    setPendingIntent(null);
+    setAvatarSpeechText(null);
+    setAvatarMedia(null);
+    setAvatarVideoUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
     try {
       const loaded = await practiceService.getSession(sessionId);
       if (loaded.status === "completed") {
@@ -157,9 +173,22 @@ export function PracticeSessionPage() {
       }
       setSession(loaded);
       try {
-        const latestMedia = await practiceService.getLatestMedia(sessionId);
-        setAvatarMedia(latestMedia);
-        setAvatarSpeechText(latestMedia?.speech_text ?? null);
+        const [latestMedia, latestConversation] = await Promise.all([
+          practiceService.getLatestMedia(sessionId),
+          practiceService.getMessages(sessionId, undefined, 1),
+        ]);
+        const latestTurn = latestConversation.items.at(-1);
+        const isCurrentTurnReaction = Boolean(
+          latestMedia
+          && latestTurn
+          && latestMedia.practice_turn_id === latestTurn.practice_turn_id
+          && loaded.current_turn?.turn_id === latestTurn.turn_id,
+        );
+        if (latestMedia && isCurrentTurnReaction) {
+          setAvatarMedia(latestMedia);
+          setAvatarSpeechText(latestMedia.speech_text);
+          setReactionPlaying(true);
+        }
       } catch {
         setAvatarMedia(null);
         setAvatarSpeechText(null);
@@ -262,13 +291,9 @@ export function PracticeSessionPage() {
       setAvatarMedia(response.media ?? null);
       // 아바타는 방금 answer에 대한 상대방 반응을 말한다. 반응이 없으면 현재 장면 대사.
       setAvatarSpeechText(response.dialogue_response ?? response.session.current_turn?.prompt ?? null);
-      // 다음 장면으로 넘어갈 때만 반응을 먼저 재생하고 질문을 미룬다. 같은 장면에 머무는
-      // 재질문·provider 복구는 반응 자체가 그 장면의 대사이므로 미룰 것이 없고, 대화가
-      // 끝났으면 곧바로 최종 선택 화면으로 넘어가던 기존 흐름을 유지한다.
-      const nextTurnId = response.session.current_turn?.turn_id;
-      setReactionPlaying(
-        Boolean(response.dialogue_response) && Boolean(nextTurnId) && nextTurnId !== answeredTurn.turn_id,
-      );
+      // 다음 TURN·같은 TURN 재질문·마지막 TURN을 구분하지 않고, 중개사 반응이
+      // 끝날 때까지 다음 질문과 최종 선택 및 입력을 모두 잠근다.
+      setReactionPlaying(Boolean(response.dialogue_response));
       const intent = response.evaluation?.action_intent ?? null;
       setPendingIntent(
         intent && terminalIntents.includes(intent) && !dismissedIntents.includes(intent)
@@ -291,7 +316,7 @@ export function PracticeSessionPage() {
       });
       setConversationRefreshToken((current) => current + 1);
       setAnswer("");
-      turnStartedAt.current = Date.now();
+      if (!response.dialogue_response) turnStartedAt.current = Date.now();
     } catch {
       setErrorMessage("답변을 보내지 못했습니다. 입력한 답변은 그대로 남아 있습니다. 다시 시도해 주세요.");
     } finally {
@@ -332,13 +357,25 @@ export function PracticeSessionPage() {
     if (!reactionPlaying) return;
     setReactionPlaying(false);
     setAvatarSpeechText(null);
+    setAvatarMedia(null);
+    setAvatarVideoUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+    turnStartedAt.current = Date.now();
   }
 
   useEffect(() => {
     if (!reactionPlaying) return;
+    if (
+      avatarMedia?.status === "queued"
+      || avatarMedia?.status === "generating_audio"
+      || avatarMedia?.status === "generating_video"
+      || (avatarMedia?.status === "completed" && Boolean(avatarMedia.video_url) && !avatarVideoUrl)
+    ) return;
     const timer = window.setTimeout(finishReaction, reactionMaxSeconds * 1000);
     return () => window.clearTimeout(timer);
-  }, [reactionPlaying]);
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl, reactionPlaying]);
 
   // 대화 도중 읽은 행동 의도는 사용자가 확인해야 최종 선택으로 확정된다.
   async function confirmIntent(intent: PracticeSelectedAction) {
@@ -466,6 +503,12 @@ export function PracticeSessionPage() {
   // 반응 재생 중과 종료 확인 중에는 새 답변을 받지 않는다.
   const inputLocked = submitting || reactionPlaying || pendingIntent !== null;
   const evaluationNotice = practiceEvaluationNotice(lastResponse);
+  const showConversationStage = reactionPlaying || (!isActionSelection && Boolean(session?.current_turn));
+  const avatarStageMediaStatus = (
+    avatarMedia?.status === "completed"
+    && avatarMedia.video_url
+    && !avatarVideoUrl
+  ) ? "generating_video" : avatarMedia?.status ?? null;
   // 상대방 반응은 대화 기록에 쌓이고, 큰 화면에는 지금 답할 대사만 표시한다.
   const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
 
@@ -476,7 +519,7 @@ export function PracticeSessionPage() {
         {status === "error" && <ErrorState title="대화를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadSession()} />}
         {status === "success" && session && (
           <>
-            {!isActionSelection && session.current_turn && (
+            {showConversationStage && (
               <>
                 <div className={`practice-session-stage${conversationOpen ? " practice-session-stage--open" : ""}`}>
                   <aside className="practice-conversation-drawer" aria-label="계약서와 대화 내용">
@@ -503,11 +546,11 @@ export function PracticeSessionPage() {
                     <PracticeAvatarStage
                       scenarioId={scenario?.scenario_id ?? session.scenario_id}
                       prompt={brokerSpeech}
-                      pressureDelaySeconds={session.current_turn.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
+                      pressureDelaySeconds={reactionPlaying ? null : session.current_turn?.wait_sequence.find((step) => step.state === "WAIT_PRESSURE")?.from_second ?? null}
                       hasUserInput={Boolean(answer.trim())}
                       submitting={submitting}
                       generatedVideoUrl={avatarVideoUrl}
-                      mediaStatus={avatarMedia?.status ?? null}
+                      mediaStatus={avatarStageMediaStatus}
                       onToggleConversation={() => setConversationOpen((open) => !open)}
                       conversationOpen={conversationOpen}
                       onSpeechEnd={finishReaction}
@@ -550,8 +593,8 @@ export function PracticeSessionPage() {
                         <>
                           <p className="notice" role="alert">{evaluationNotice}</p>
                           <div className="practice-dialogue-actions" aria-label="연습 계속하기">
-                            <button type="button" className="secondary" disabled={submitting} onClick={() => setLastResponse(null)}>다시 확인하기</button>
-                            <button type="button" className="secondary" disabled={submitting} onClick={() => void advanceDialogue()}>대화를 계속하기</button>
+                            <button type="button" className="secondary" disabled={inputLocked} onClick={() => setLastResponse(null)}>다시 확인하기</button>
+                            <button type="button" className="secondary" disabled={inputLocked} onClick={() => void advanceDialogue()}>대화를 계속하기</button>
                           </div>
                         </>
                       )}
@@ -560,17 +603,36 @@ export function PracticeSessionPage() {
                 </div>
               </>
             )}
-            {isActionSelection && (
-              <section className="practice-final-actions" aria-labelledby="practice-final-title">
-                <h2 id="practice-final-title">계약하시겠습니까?</h2>
-                <p>지금까지 확인한 내용을 기준으로 오늘 계약을 진행할지 정해 주세요. 선택에 따라 결과가 달라집니다.</p>
+            {isActionSelection && !reactionPlaying && pendingIntent && (
+              <section className="practice-final-actions" aria-labelledby="practice-intent-final-title">
+                <h2 id="practice-intent-final-title">{intentQuestions[pendingIntent]}</h2>
+                <p>사용자가 직접 확인해야 이 행동으로 연습을 마칩니다.</p>
                 <div className="practice-dialogue-actions">
-                  <button type="button" className="primary" disabled={submitting} onClick={() => void decideContract("진행")}>
-                    {submitting ? "정리 중…" : "네, 계약하겠습니다"}
+                  <button type="button" className="primary" disabled={submitting} onClick={() => void confirmIntent(pendingIntent)}>
+                    {submitting ? "정리 중…" : "네, 이렇게 하겠습니다"}
                   </button>
-                  <button type="button" className="secondary" disabled={submitting} onClick={() => void decideContract("중단")}>
-                    아니요, 오늘은 진행하지 않겠습니다
+                  <button type="button" className="secondary" disabled={submitting} onClick={() => dismissIntent(pendingIntent)}>
+                    아니요, 다른 행동을 선택하겠습니다
                   </button>
+                </div>
+              </section>
+            )}
+            {isActionSelection && !reactionPlaying && !pendingIntent && (
+              <section className="practice-final-actions" aria-labelledby="practice-final-title">
+                <h2 id="practice-final-title">마지막 행동을 선택해 주세요</h2>
+                <p>지금까지 확인한 내용을 기준으로 다음 행동을 직접 선택해 주세요.</p>
+                <div className="practice-final-actions__grid">
+                  {session.allowed_final_actions.map((action) => (
+                    <button
+                      type="button"
+                      className={action === "진행" ? "primary" : "secondary"}
+                      disabled={submitting}
+                      key={action}
+                      onClick={() => void decideContract(action)}
+                    >
+                      {submitting ? "정리 중…" : finalActionLabels[action]}
+                    </button>
+                  ))}
                 </div>
                 <button type="button" className="text-link" disabled={submitting} onClick={() => void retryScenario()}>
                   처음부터 다시 연습하기

@@ -52,12 +52,14 @@ PracticeEndingType = Literal[
 # 기록하지 않고 현재 장면에서 재시도 또는 명시적 건너뛰기를 선택하게 한다.
 _RETRY_ONLY_CATEGORIES = frozenset({"needs_review"})
 
-# 분기형 흐름(branching_flow)에서 애매·부분 답변에 상대방이 같은 장면에서 재질문할 수
-# 있는 최대 횟수. 이 횟수를 넘기면 확인하지 못한 내용으로 남기고 다음 장면으로 넘어간다.
+# 애매한 답변과 분기형 흐름(branching_flow)의 부분 답변에 상대방이 같은 장면에서
+# 재질문할 수 있는 최대 횟수. 이 횟수를 넘기면 확인하지 못한 내용으로 남기고
+# 다음 장면으로 넘어간다.
 # 같은 질문을 두 번 넘게 되묻으면 연습이 정답 맞히기처럼 느껴지므로 1회로 제한한다.
 # 정답 답변의 회유·압박은 시나리오의 다음 TURN 대사가 담당한다.
 PRESSURE_REPEAT_LIMIT = 1
-_PRESSURE_CATEGORIES = frozenset({"partial_check", "ambiguous_answer"})
+_ALWAYS_REASK_CATEGORIES = frozenset({"ambiguous_answer"})
+_BRANCHING_REASK_CATEGORIES = frozenset({"partial_check"})
 
 
 def allowed_next_dialogue_states(
@@ -85,17 +87,23 @@ def resolve_next_dialogue_state(
     """상태 머신이 정하는 결정적 다음 대화 상태.
 
     선형 흐름: needs_review(provider 실패)만 현재 장면 유지, 그 외는 다음 장면.
-    분기 흐름: 조건 수용(avoidance)은 즉시 최종 계약 결정, 부분·애매 답변은
-    PRESSURE_REPEAT_LIMIT까지 같은 장면에서 재질문을 이어 간다.
+    모든 흐름: 애매한 답변은 PRESSURE_REPEAT_LIMIT까지 같은 장면에서 재질문한다.
+    분기 흐름: 조건 수용(avoidance)은 즉시 최종 계약 결정, 부분 답변도
+    PRESSURE_REPEAT_LIMIT까지 같은 장면에서 재질문한다.
     """
     if answer_category in _RETRY_ONLY_CATEGORIES:
+        return turn_id
+    if (
+        answer_category in _ALWAYS_REASK_CATEGORIES
+        and pressure_rounds < PRESSURE_REPEAT_LIMIT
+    ):
         return turn_id
     if not branching_flow:
         return next_turn_id
     if answer_category == "avoidance":
         return action_selection_state
     if (
-        answer_category in _PRESSURE_CATEGORIES
+        answer_category in _BRANCHING_REASK_CATEGORIES
         and pressure_rounds < PRESSURE_REPEAT_LIMIT
     ):
         return turn_id

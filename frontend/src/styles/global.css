@@ -232,9 +232,9 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .grouped-review-panel__head p { color: var(--ink); font-size: 15px; font-weight: 500; line-height: 1.6; }
 .grouped-review-panel__head button { flex: 0 0 auto; width: auto; }
 .grouped-review-panel__notice { margin: 0 22px; padding: 10px 12px; border-radius: 10px; background: #fff7df; color: #6b531f; font-size: 13px; font-weight: 700; line-height: 1.5; }
-.grouped-review-list { display: grid; gap: 0; margin: 0; padding: 0; border-top: 1px solid #e2e8e3; list-style: none; }
-.grouped-review-list__item + .grouped-review-list__item { border-top: 1px solid #e8ede9; }
-.grouped-review-list__summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; width: 100%; min-height: 0; padding: 16px 22px; border: 0; border-radius: 0; background: #fff; color: #24352a; text-align: left; box-shadow: none; }
+.grouped-review-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 16px; margin: 0; padding: 0 22px 22px; list-style: none; }
+.grouped-review-list__item { min-width: 0; overflow: hidden; border: 1px solid #d5dfd7; border-radius: 16px; background: #fff; }
+.grouped-review-list__summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 15px 16px; border: 0; border-bottom: 1px solid #e2e8e3; border-radius: 0; background: #f7faf7; color: #24352a; text-align: left; box-shadow: none; }
 .grouped-review-list__summary:hover:not(:disabled) { background: #f5f8f5; color: #24352a; }
 .grouped-review-list__title { display: grid; gap: 4px; min-width: 0; }
 .grouped-review-list__title strong { color: #203d2a; font-size: 15px; }
@@ -242,8 +242,9 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .grouped-review-list__status { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
 .grouped-review-list__status em { padding: 4px 8px; border-radius: 999px; background: #e5f2e8; color: #24603a; font-size: 13px; font-style: normal; font-weight: 900; white-space: nowrap; }
 .grouped-review-list__status > span:last-child { min-width: 28px; color: var(--ink-muted); font-size: 13px; font-weight: 800; text-align: right; }
-.grouped-review-list__body { padding: 0 22px 20px; background: #f7f9f7; }
-.grouped-review-list__body .guided-review-card { border-radius: 14px; box-shadow: none; }
+.grouped-review-list__body { background: #fff; }
+.grouped-review-list__body > .review-item-reasons { padding: 14px 16px 0; }
+.grouped-review-list__body .guided-review-card { padding: 16px; border: 0; border-radius: 0; box-shadow: none; }
 .guided-review-card { display: grid; gap: 18px; padding: 22px; border: 1px solid #ccd9cf; border-radius: 20px; background: #fff; box-shadow: 0 10px 30px rgba(48, 67, 54, 0.08); }
 .guided-review-card h2, .guided-review-card h3, .guided-review-card p { margin: 0; }
 .guided-review-card > p { color: #2c3d33; font-size: 16px; font-weight: 600; line-height: 1.6; }
@@ -994,6 +995,7 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 }
 
 @media (max-width: 900px) {
+  .grouped-review-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .practice-simulation-workspace { grid-template-columns: 1fr; min-height: 0; }
   .practice-simulation-workspace > .practice-avatar-stage { min-height: 420px; border-left: 0; border-top: 1px solid #cfdcd2; }
   .practice-simulation-workspace > .practice-avatar-stage .practice-avatar-stage__video-wrap { aspect-ratio: 16 / 9; }
@@ -1011,7 +1013,8 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   .grouped-review-list__status { justify-content: flex-start; flex-wrap: wrap; }
   .grouped-review-list__status > span:last-child { margin-left: auto; }
   .grouped-review-list__title > span { white-space: normal; }
-  .grouped-review-list__body { padding: 0 14px 16px; }
+  .grouped-review-list { grid-template-columns: 1fr; padding: 0 14px 16px; }
+  .grouped-review-list__body { padding: 0; }
   .app-header { align-items: flex-start; flex-wrap: wrap; }
   .header-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
   .text-link, .app-header a, .app-header button, .header-actions .step-badge { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; }
