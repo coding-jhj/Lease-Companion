@@ -339,10 +339,9 @@ class PracticeSimulationService:
                 turn_input,
                 evaluation,
             )
-            if evaluation.answer_category != "appropriate_check":
-                # grounded 생성 메타데이터는 추적하되, 부족하거나 불명확한
-                # 답변에 노출할 대사는 승인된 역할 반응으로 고정한다.
-                response = getattr(turn.responses, evaluation.answer_category)
+            advanced = advanced.model_copy(
+                update={"last_dialogue_intent": dialogue_generation.question_intent}
+            )
         elif evaluation.answer_category != "appropriate_check":
             # 부족하거나 불명확한 답변에는 정답을 가르치는 변형 대사보다
             # 시나리오가 승인한 회유·진행 확인 반응을 우선한다.
@@ -372,7 +371,11 @@ class PracticeSimulationService:
         assert config is not None
         assert turn_input.user_answer is not None
         plan = plan_grounded_dialogue(
-            self._scenario, turn, turn_input.user_answer, evaluation
+            self._scenario,
+            turn,
+            turn_input.user_answer,
+            evaluation,
+            previous_intent=session.last_dialogue_intent,
         )
         assert plan is not None
         facts_by_id = {fact.fact_id: fact for fact in config.approved_facts}

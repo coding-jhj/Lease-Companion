@@ -12,7 +12,7 @@ function primaryActionFor(contract: ContractSummaryDto) {
     case "done":
       return { label: "확인 결과 보기", to: `/contracts/${contract.id}/report` };
     default:
-      return { label: "점검 시작하기", to: `/contracts/${contract.id}/situation` };
+      return { label: "점검 시작하기", to: `/contracts/${contract.id}/upload` };
   }
 }
 
@@ -21,7 +21,7 @@ function ContractCard({ contract, onDeleted }: { contract: ContractSummaryDto; o
   const [deleteError, setDeleteError] = useState("");
   const primaryAction = primaryActionFor(contract);
 
-  // 8번(계약 상세)의 삭제와 동일한 확인·서비스 호출. 목록 화면이므로 성공 시 목록을 재조회한다.
+  // 7번(계약 상세)의 삭제와 동일한 확인·서비스 호출. 목록 화면이므로 성공 시 목록을 재조회한다.
   async function deleteContract() {
     if (!window.confirm("이 계약과 저장된 분석 이력을 삭제할까요? 삭제한 데이터는 복구할 수 없습니다.")) return;
     setDeleting(true);
@@ -87,7 +87,7 @@ export function DashboardPage() {
 
   useEffect(() => { void loadContracts(); }, []);
 
-  // 8번 화면에서 체크리스트+계약 직후 행동을 다 완료하면 done으로 이동한다.
+  // 7번 화면에서 체크리스트+계약 직후 행동을 다 완료하면 done으로 이동한다.
   const byStatus = (target: ContractSummaryDto["action_status"]) =>
     contracts.filter((contract) => (contract.action_status ?? "none") === target);
   const notStarted = byStatus("none");
@@ -95,7 +95,7 @@ export function DashboardPage() {
   const done = byStatus("done");
 
   return (
-    <PageShell layout="workspace" step="2 / 8" title="내 계약" description="진행 중인 계약을 다시 열거나 새 계약 확인을 시작하세요.">
+    <PageShell layout="workspace" step="2 / 7" title="내 계약" description="진행 중인 계약을 다시 열거나 새 계약 확인을 시작하세요.">
       <div className="stack">
         {status === "loading" && <LoadingState title="계약 목록을 불러오는 중" description="저장된 계약 건을 확인하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 목록을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContracts()} />}

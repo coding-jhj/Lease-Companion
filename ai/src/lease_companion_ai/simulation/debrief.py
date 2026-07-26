@@ -76,9 +76,12 @@ def build_practice_result(
         )
     )
     all_action_ids = [action.action_id for action in scenario.target_actions]
-    if set(confirmed_ids) == set(all_action_ids):
+    if selected_action == "진행":
+        # 확인 행동을 얼마나 했든 마지막에 계약을 진행하면 조건을 수용한 결말이다.
+        ending_type = "insufficient_protection"
+    elif set(confirmed_ids) == set(all_action_ids):
         ending_type = "rights_asserted"
-    elif selected_action == "거절" or any(
+    elif selected_action in {"보류", "중단"} or any(
         action_id in confirmed_ids
         for action_id in answer_key.debrief.defensive_stop_action_ids
     ):

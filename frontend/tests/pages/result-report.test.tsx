@@ -131,7 +131,7 @@ describe("ResultReportPage", () => {
       expect(top?.textContent).toBe(`${bottom?.textContent}개`);
     }
 
-    // 병합된 카드가 시점·상태·물어볼 말을 함께 보여준다.
+    // 병합된 카드가 시점·상태·확인할 내용을 함께 보여준다.
     const firstCard = document.querySelector("#first-action-item")!;
     expect(firstCard).toHaveTextContent("서명·송금 전에 확인");
     expect(firstCard).toHaveTextContent("불일치");
@@ -150,20 +150,22 @@ describe("ResultReportPage", () => {
     }
 
     // 확인 항목 탭에서는 질문 목록·단계별 행동을 함께 쌓아 보여주지 않는다(다른 패널은 hidden).
-    expect(screen.queryByRole("heading", { name: "상대방에게 물어볼 말" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "상대방에게 직접 확인할 내용" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "계약 단계별 행동" })).not.toBeInTheDocument();
     expect(document.querySelector("#report-panel-questions")).toHaveAttribute("hidden");
 
-    fireEvent.click(screen.getByRole("tab", { name: "물어볼 말" }));
-    expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
-    for (const title of ["임대인에게 물어볼 말", "내가 문서에서 다시 볼 것"]) {
+    fireEvent.click(screen.getByRole("tab", { name: "확인할 내용" }));
+    expect(screen.getByRole("heading", { name: "상대방에게 직접 확인할 내용" })).toBeInTheDocument();
+    for (const title of ["임대인에게 확인해야 할 사항", "문서에서 다시 확인할 내용"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     }
     // 질문이 없는 대상은 빈 상자를 만들지 않는다.
-    expect(screen.queryByRole("heading", { name: "중개사에게 물어볼 말" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "중개사에게 확인해야 할 사항" })).not.toBeInTheDocument();
     expect(screen.queryByText("현재 추가로 안내할 내용이 없습니다.")).not.toBeInTheDocument();
     const question = "등기상 소유자와 계약자가 다른 이유와 계약 권한을 확인할 수 있는 서류를 보여주실 수 있나요?";
-    expect(screen.getByRole("button", { name: `질문 복사: ${question}` })).toBeInTheDocument();
+    const questionPanel = document.querySelector("#report-panel-questions") as HTMLElement;
+    expect(within(questionPanel).getByText(question)).toBeInTheDocument();
+    expect(within(questionPanel).queryByRole("button", { name: /복사/ })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "단계별 행동" }));
     for (const title of ["계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
@@ -245,8 +247,8 @@ describe("ResultReportPage", () => {
       const card = screen.getByText(judgmentId).closest("article");
       expect(card).toHaveTextContent("상태: 확인 필요");
     }
-    fireEvent.click(screen.getByRole("tab", { name: "물어볼 말" }));
-    expect(screen.getByRole("heading", { name: "상대방에게 물어볼 말" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "확인할 내용" }));
+    expect(screen.getByRole("heading", { name: "상대방에게 직접 확인할 내용" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("provider_unavailable");
     expect(document.body).not.toHaveTextContent("classification provider");
   });

@@ -140,6 +140,29 @@
       "title": "Evidence Texts",
       "type": "array"
     },
+    "last_dialogue_intent": {
+      "anyOf": [
+        {
+          "enum": [
+            "clause_meaning",
+            "return_timing",
+            "no_successor_case",
+            "verbal_promise",
+            "contract_fact",
+            "clause_change_request",
+            "contract_hold",
+            "unrelated",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Dialogue Intent"
+    },
     "no_response_counts": {
       "additionalProperties": {
         "type": "integer"
@@ -151,6 +174,13 @@
       "default": false,
       "title": "Payment Held",
       "type": "boolean"
+    },
+    "pressure_counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Pressure Counts",
+      "type": "object"
     },
     "recognized_signal_ids": {
       "items": {

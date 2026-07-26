@@ -11,7 +11,7 @@ afterEach(cleanup);
 describe("PageShell logout", () => {
   it.each([
     ["계약 연습", "/practice", "계약 연습"],
-    ["실전 계약 점검", "/contracts", "2 / 8"],
+    ["실전 계약 점검", "/contracts", "2 / 7"],
   ])("links the %s screen back to mode selection", (_label, path, step) => {
     render(
       <MemoryRouter initialEntries={[path]}>
@@ -37,7 +37,7 @@ describe("PageShell logout", () => {
     render(
       <MemoryRouter initialEntries={["/contracts"]}>
         <Routes>
-          <Route path="/contracts" element={<PageShell step="2 / 8" title="내 계약" description="계약 목록"><p>대시보드</p></PageShell>} />
+          <Route path="/contracts" element={<PageShell step="2 / 7" title="내 계약" description="계약 목록"><p>대시보드</p></PageShell>} />
           <Route path="/login" element={<p>로그인 화면</p>} />
         </Routes>
       </MemoryRouter>,
@@ -50,7 +50,7 @@ describe("PageShell logout", () => {
   it("can hide logout on authentication screens", () => {
     render(
       <MemoryRouter>
-        <PageShell step="1 / 8" title="로그인" description="로그인 화면" showLogout={false}><p>인증</p></PageShell>
+        <PageShell step="1 / 7" title="로그인" description="로그인 화면" showLogout={false}><p>인증</p></PageShell>
       </MemoryRouter>,
     );
 
@@ -60,7 +60,7 @@ describe("PageShell logout", () => {
   it("applies the requested responsive layout variant", () => {
     render(
       <MemoryRouter>
-        <PageShell layout="workspace" step="2 / 8" title="내 계약" description="계약 목록"><p>대시보드</p></PageShell>
+        <PageShell layout="workspace" step="2 / 7" title="내 계약" description="계약 목록"><p>대시보드</p></PageShell>
       </MemoryRouter>,
     );
 
@@ -70,21 +70,21 @@ describe("PageShell logout", () => {
   it("derives the current step label and next action from the step number", () => {
     render(
       <MemoryRouter>
-        <PageShell step="4 / 8" title="문서 올리기" description="문서 준비"><p>본문</p></PageShell>
+        <PageShell step="3 / 7" title="문서 올리기" description="문서 준비"><p>본문</p></PageShell>
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("4/8단계")).toBeInTheDocument();
+    expect(screen.getByText("3/7단계")).toBeInTheDocument();
     expect(screen.getByText("문서 준비", { selector: ".journey-progress__title" })).toBeInTheDocument();
     expect(screen.getByText("다음: 내용 확인")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: /4 \/ 8단계/ })).toHaveAttribute("aria-valuenow", "4");
-    // full 8-step map is disclosed only after expanding
+    expect(screen.getByRole("progressbar", { name: /3 \/ 7단계/ })).toHaveAttribute("aria-valuenow", "3");
+    // full 7-step map is disclosed only after expanding
     expect(screen.queryByRole("navigation", { name: "계약 확인 진행 단계" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
 
     const journey = screen.getByRole("navigation", { name: "계약 확인 진행 단계" });
-    for (const label of ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"]) {
+    for (const label of ["시작 방법", "집 등록", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"]) {
       expect(journey).toHaveTextContent(label);
     }
   });
@@ -93,8 +93,8 @@ describe("PageShell logout", () => {
     render(
       <MemoryRouter>
         <PageShell
-          step="5 / 8"
-          journey={{ current: 5, currentLabel: "문서 내용 확인", nextLabel: "확인 결과 준비" }}
+          step="4 / 7"
+          journey={{ current: 4, currentLabel: "문서 내용 확인", nextLabel: "확인 결과 준비" }}
           title="문서에서 읽은 내용 확인하기"
           description="중요한 내용부터 하나씩 확인합니다."
         >
@@ -118,7 +118,7 @@ describe("PageShell logout", () => {
   it("links back to the previous step and to completed steps only", () => {
     render(
       <MemoryRouter initialEntries={["/contracts/12/review"]}>
-        <PageShell step="5 / 8" title="문서에서 읽은 내용 확인" description="확인"><p>내용</p></PageShell>
+        <PageShell step="4 / 7" title="문서에서 읽은 내용 확인" description="확인"><p>내용</p></PageShell>
       </MemoryRouter>,
     );
 
@@ -127,7 +127,7 @@ describe("PageShell logout", () => {
     fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
 
     expect(screen.getByRole("link", { name: /집 등록/ })).toHaveAttribute("href", "/contracts");
-    expect(screen.getByRole("link", { name: /상황 입력/ })).toHaveAttribute("href", "/contracts/12/situation");
+    expect(screen.getByRole("link", { name: /문서 준비/ })).toHaveAttribute("href", "/contracts/12/upload");
     // 현재·예정 단계는 이동 링크를 만들지 않는다.
     expect(screen.queryByRole("link", { name: /내용 확인/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /확인 결과/ })).not.toBeInTheDocument();
@@ -136,18 +136,41 @@ describe("PageShell logout", () => {
   it("skips the analysis step when walking back from the report", () => {
     render(
       <MemoryRouter initialEntries={["/contracts/12/report"]}>
-        <PageShell step="7 / 8" title="내 계약 확인 결과" description="결과"><p>내용</p></PageShell>
+        <PageShell step="6 / 7" title="내 계약 확인 결과" description="결과"><p>내용</p></PageShell>
       </MemoryRouter>,
     );
 
-    // 6단계(결과 준비)는 되돌아갈 수 없으므로 5단계 내용 확인으로 건너뛴다.
+    // 5단계(결과 준비)는 되돌아갈 수 없으므로 4단계 내용 확인으로 건너뛴다.
     expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts/12/review");
+  });
+
+  // 집 등록 바로 앞 화면은 상황 선택(/start)이다. /choose-mode로 보내면 두 화면 뒤로 건너뛴다.
+  it("walks back one screen at a time from the contract registration step", () => {
+    render(
+      <MemoryRouter initialEntries={["/contracts/new"]}>
+        <PageShell step="2 / 7" title="확인할 집 등록하기" description="등록"><p>내용</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/start");
+  });
+
+  it("shows a standalone back link on screens without the journey bar", () => {
+    render(
+      <MemoryRouter initialEntries={["/practice"]}>
+        <PageShell step="계약 연습" title="계약 연습" description="연습" showJourney={false} backTo="/choose-mode" backLabel="모드 다시 선택">
+          <p>내용</p>
+        </PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /모드 다시 선택/ })).toHaveAttribute("href", "/choose-mode");
   });
 
   it("hides the previous-step link on the first step", () => {
     render(
       <MemoryRouter initialEntries={["/choose-mode"]}>
-        <PageShell step="1 / 8" title="시작 방법" description="선택"><p>내용</p></PageShell>
+        <PageShell step="1 / 7" title="시작 방법" description="선택"><p>내용</p></PageShell>
       </MemoryRouter>,
     );
 
@@ -158,8 +181,8 @@ describe("PageShell logout", () => {
     render(
       <MemoryRouter>
         <PageShell
-          step="5 / 8"
-          journey={{ current: 5, currentLabel: "문서 내용 확인", nextLabel: "확인 결과 준비" }}
+          step="4 / 7"
+          journey={{ current: 4, currentLabel: "문서 내용 확인", nextLabel: "확인 결과 준비" }}
           title="준비 화면"
           description="진행 표시 없음"
           showJourney={false}

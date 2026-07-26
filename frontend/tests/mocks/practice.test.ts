@@ -96,26 +96,21 @@ describe("Practice MSW handlers", () => {
     expect(result.official_source_ids.length).toBeGreaterThan(0);
   });
 
+  // 조건을 수용하면 즉시 계약 결정으로 넘어가고, 그 결정이 엔딩을 가른다.
   it.each([
     {
       label: "conditions accepted",
-      answers: [
-        "다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다.",
-        "말씀하신 대로 진행하겠습니다.",
-        "그대로 계약하겠습니다.",
-      ],
+      answers: ["다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다."],
+      finalAction: "진행",
       ending: "insufficient_protection",
     },
     {
       label: "transaction held",
-      answers: [
-        "다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다.",
-        "설명은 알겠습니다.",
-        "수정된 특약을 확인하기 전에는 계약을 보류하겠습니다.",
-      ],
+      answers: ["다음 세입자가 들어오는 그 조건이면 괜찮으니 그대로 진행하겠습니다."],
+      finalAction: "중단",
       ending: "transaction_stopped",
     },
-  ] as const)("returns the $label ending report", async ({ answers, ending }) => {
+  ] as const)("returns the $label ending report", async ({ answers, finalAction, ending }) => {
     let session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
     for (let index = 0; index < answers.length; index += 1) {
       const response = await practiceService.submitTurn(session.practice_session_id, {
@@ -127,9 +122,10 @@ describe("Practice MSW handlers", () => {
       });
       session = response.session;
     }
+    expect(session.current_state).toBe("ACTION-SELECTION");
     await practiceService.submitFinalAction(session.practice_session_id, {
       request_id: `ending-final-${ending}`,
-      selected_action: "보류",
+      selected_action: finalAction,
       response_time_seconds: 1,
     });
 
@@ -181,7 +177,9 @@ describe("Practice MSW handlers", () => {
 
     expect(response.evaluation?.answer_category).toBe("avoidance");
     expect(response.session.confirmed_action_ids).toEqual([]);
-    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+    // 조건 수용은 즉시 계약 결정 화면으로 간다.
+    expect(response.session.current_turn).toBeNull();
+    expect(response.session.current_state).toBe("ACTION-SELECTION");
   });
 
   it.each([
@@ -195,7 +193,7 @@ describe("Practice MSW handlers", () => {
       "partial_check",
       "말씀하신 취지는 알겠지만, 그 부분은 나중에 확인하고 우선 진행하시죠.",
     ],
-  ])("returns an in-role reaction for %s and still advances", async (answer, category, reaction) => {
+  ])("returns an in-role reaction for %s and asks again in the same scene", async (answer, category, reaction) => {
     const session = await practiceService.createSession("PRACTICE-DEFERRED-REFUND-001");
     const response = await practiceService.submitTurn(session.practice_session_id, {
       request_id: `reaction-${category}`,
@@ -207,7 +205,8 @@ describe("Practice MSW handlers", () => {
 
     expect(response.evaluation?.answer_category).toBe(category);
     expect(response.dialogue_response).toBe(reaction);
-    expect(response.session.current_turn?.turn_id).toBe("TURN-02");
+    // 부족·애매한 답변에는 같은 장면에서 최대 2회까지 다시 묻는다.
+    expect(response.session.current_turn?.turn_id).toBe("TURN-01");
     expect(response.session.confirmed_action_ids).toEqual([]);
   });
 

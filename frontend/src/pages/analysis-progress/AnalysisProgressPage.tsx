@@ -149,7 +149,7 @@ export function AnalysisProgressPage() {
         : "결과 준비를 기다리고 있어요";
 
   return (
-    <PageShell step="6 / 8" title={title} description="규칙 판정과 공식 근거를 정리합니다. 종합 안전 점수는 제공하지 않습니다.">
+    <PageShell step="5 / 7" title={title} description="규칙 판정과 공식 근거를 정리합니다. 종합 안전 점수는 제공하지 않습니다.">
       <div className="stack">
         <AnalysisTimeline
           activeStage={activeStage}

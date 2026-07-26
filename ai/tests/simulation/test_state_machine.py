@@ -9,6 +9,7 @@ from lease_companion_ai.schemas.simulation import (
     PracticeTurnEvaluation,
     PracticeTurnInput,
     allowed_next_dialogue_states,
+    resolve_next_dialogue_state,
 )
 from lease_companion_ai.simulation.models import load_practice_assets
 from lease_companion_ai.simulation.service import (
@@ -130,7 +131,15 @@ def test_all_three_scenario_examples_use_the_common_evaluation_service(
     )
     assert evaluation.next_dialogue_state == example.expected_next_turn_id
     assert evaluation.evidence_text == (None if timed_out else example.user_input)
-    assert step.session.current_state == example.expected_next_turn_id
+    # 다음 장면은 평가 제안이 아니라 상태 머신이 시나리오 흐름에 따라 정한다.
+    assert step.session.current_state == resolve_next_dialogue_state(
+        evaluation.answer_category,
+        turn_id=turn.turn_id,
+        next_turn_id=turn.next_turn_id,
+        action_selection_state=scenario.action_selection.state_id,
+        pressure_rounds=0,
+        branching_flow=scenario.branching_flow,
+    )
     assert provider.calls == (0 if timed_out or deterministic is not None else 1)
 
 
@@ -331,33 +340,40 @@ def test_policy_advances_user_responses_and_retries_only_provider_review():
     assert allowed_next_dialogue_states("needs_review", "TURN-02", "TURN-01") == {"TURN-01"}
 
 
-def test_partial_check_can_advance_to_next_turn():
-    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
+def test_linear_scenario_advances_partial_check_to_next_turn():
+    scenario, _ = _assets("PRACTICE-PROXY-AUTHORITY-001")
     session = start_practice_session(scenario, "S-ADV", 1, STARTED_AT)
     turn, evaluation = _first_turn_eval(scenario, "partial_check", advance=True)
 
     advanced = advance_dialogue(session, scenario, evaluation)
 
     assert advanced.current_state == turn.next_turn_id  # 목표문장 없어도 진행
+    assert advanced.pressure_counts == {}
 
 
-def test_partial_check_cannot_retry_same_turn():
+def test_branching_scenario_repeats_ambiguous_answer_twice_then_advances():
     scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
-    session = start_practice_session(scenario, "S-RETRY", 1, STARTED_AT)
-    turn, evaluation = _first_turn_eval(scenario, "partial_check", advance=False)
+    session = start_practice_session(scenario, "S-PRESSURE", 1, STARTED_AT)
+    turn, evaluation = _first_turn_eval(scenario, "ambiguous_answer", advance=False)
 
-    with pytest.raises(ValueError, match="허용된 전이"):
-        advance_dialogue(session, scenario, evaluation)
+    first = advance_dialogue(session, scenario, evaluation)
+    second = advance_dialogue(first, scenario, evaluation)
+    third = advance_dialogue(second, scenario, evaluation)
+
+    assert first.current_state == turn.turn_id
+    assert second.current_state == turn.turn_id
+    assert second.pressure_counts == {turn.turn_id: 2}
+    assert third.current_state == turn.next_turn_id
 
 
-def test_avoidance_advances_without_confirming_action():
+def test_branching_scenario_sends_accepted_terms_straight_to_contract_decision():
     scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
     session = start_practice_session(scenario, "S-AVOID", 1, STARTED_AT)
-    turn, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
+    _turn_definition, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
 
     advanced = advance_dialogue(session, scenario, evaluation)
 
-    assert advanced.current_state == turn.next_turn_id
+    assert advanced.current_state == scenario.action_selection.state_id
     assert advanced.confirmed_action_ids == []
 
 

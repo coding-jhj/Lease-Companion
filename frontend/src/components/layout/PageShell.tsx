@@ -19,27 +19,31 @@ interface PageShellProps {
   layout?: "auth" | "default" | "narrow" | "workspace" | "report";
   eyebrow?: string;
   hero?: ReactNode;
+  /** 7단계 진행 표시 밖 화면(모드 선택 갈래·계약 연습)의 뒤로 가기 주소. 바로 앞 화면 하나만 가리킨다. */
+  backTo?: string;
+  backLabel?: string;
 }
 
-const journeySteps = ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
+// 계약 상황 입력은 별도 화면 대신 "내용 확인"에서 함께 받는다. 그래서 전체가 7단계다.
+const journeySteps = ["시작 방법", "집 등록", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
 
-// 지나온 단계로 돌아갈 주소. 6단계(결과 준비)는 분석 실행 화면이라 되돌아가지 않는다.
+// 지나온 단계로 돌아갈 주소. 5단계(결과 준비)는 분석 실행 화면이라 되돌아가지 않는다.
 function stepPath(step: number, contractId: string | null): string | null {
-  if (step === 1) return "/choose-mode";
+  // 1단계는 모드 선택이 아니라 상황 선택(/start)이다. /choose-mode로 두면 집 등록에서
+  // "이전 단계"가 /start를 건너뛰어 두 화면 뒤로 간다. 모드 전환은 머리말 "처음으로"가 맡는다.
+  if (step === 1) return "/start";
   if (step === 2) return "/contracts";
   if (!contractId) return null;
-  if (step === 3) return `/contracts/${contractId}/situation`;
-  if (step === 4) return `/contracts/${contractId}/upload`;
-  if (step === 5) return `/contracts/${contractId}/review`;
-  if (step === 7) return `/contracts/${contractId}/report`;
-  if (step === 8) return `/contracts/${contractId}`;
+  if (step === 3) return `/contracts/${contractId}/upload`;
+  if (step === 4) return `/contracts/${contractId}/review`;
+  if (step === 6) return `/contracts/${contractId}/report`;
+  if (step === 7) return `/contracts/${contractId}`;
   return null;
 }
 // 아이콘 path = Phosphor Icons (MIT License) — duotone.
 const journeyIconPaths: ReactNode[] = [
   <><path d="M128,32a96,96,0,1,0,96,96A96,96,0,0,0,128,32Zm16,112L80,176l32-64,64-32Z" opacity="0.2" /><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,32a8.05,8.05,0,0,0-3.58,3.58l-32,64A8,8,0,0,0,80,184a8.1,8.1,0,0,0,3.58-.84l64-32a8.05,8.05,0,0,0,3.58-3.58l32-64a8,8,0,0,0-10.74-10.74ZM138,138,97.89,158.11,118,118l40.15-20.07Z" /></>, // 시작 방법 — compass
   <><path d="M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z" opacity="0.2" /><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z" /></>, // 집 등록 — house
-  <><path d="M200,88l-72,72H96V128l72-72Z" opacity="0.2" /><path d="M229.66,58.34l-32-32a8,8,0,0,0-11.32,0l-96,96A8,8,0,0,0,88,128v32a8,8,0,0,0,8,8h32a8,8,0,0,0,5.66-2.34l96-96A8,8,0,0,0,229.66,58.34ZM124.69,152H104V131.31l64-64L188.69,88ZM200,76.69,179.31,56,192,43.31,212.69,64ZM224,128v80a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h80a8,8,0,0,1,0,16H48V208H208V128a8,8,0,0,1,16,0Z" /></>, // 상황 입력 — note-pencil
   <><path d="M208,88H152V32Z" opacity="0.2" /><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z" /></>, // 문서 준비 — file-text
   <><path d="M192,112a80,80,0,1,1-80-80A80,80,0,0,1,192,112Z" opacity="0.2" /><path d="M229.66,218.34,179.6,168.28a88.21,88.21,0,1,0-11.32,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z" /></>, // 내용 확인 — magnifying-glass
   <><path d="M208,48V216a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8H96a39.83,39.83,0,0,0-8,24v8h80V64a39.83,39.83,0,0,0-8-24h40A8,8,0,0,1,208,48Z" opacity="0.2" /><path d="M168,152a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,152Zm-8-40H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm56-64V216a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V48A16,16,0,0,1,56,32H92.26a47.92,47.92,0,0,1,71.48,0H200A16,16,0,0,1,216,48ZM96,64h64a32,32,0,0,0-64,0ZM200,48H173.25A47.93,47.93,0,0,1,176,64v8a8,8,0,0,1-8,8H88a8,8,0,0,1-8-8V64a47.93,47.93,0,0,1,2.75-16H56V216H200Z" /></>, // 결과 준비 — clipboard-text
@@ -66,6 +70,8 @@ export function PageShell({
   layout = "default",
   eyebrow = "첫 계약 확인 도우미",
   hero,
+  backTo,
+  backLabel = "뒤로",
 }: PageShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,8 +81,8 @@ export function PageShell({
   const nextLabel = journey?.nextLabel ?? journeySteps[currentStep];
   const showModeSelect = showLogout && location.pathname !== "/choose-mode";
   const contractId = location.pathname.match(/\/contracts\/(\d+)/)?.[1] ?? null;
-  // 6단계(결과 준비)처럼 되돌아갈 수 없는 단계는 건너뛰고 그 앞 단계를 찾는다.
-  // 건너뛰지 않으면 7단계에서 "이전 단계" 버튼이 사라진다.
+  // 5단계(결과 준비)처럼 되돌아갈 수 없는 단계는 건너뛰고 그 앞 단계를 찾는다.
+  // 건너뛰지 않으면 6단계에서 "이전 단계" 버튼이 사라진다.
   const previousPath = (() => {
     if (!validStep) return null;
     for (let step = currentStep - 1; step >= 1; step -= 1) {
@@ -88,7 +94,7 @@ export function PageShell({
   const currentStepRef = useRef<HTMLDivElement | null>(null);
   const [showFullJourney, setShowFullJourney] = useState(false);
 
-  // 8단계로 늘어난 진행 표시가 좁은 화면에서 가로로 넘칠 때, 현재 단계가 화면 밖에
+  // 진행 표시가 좁은 화면에서 가로로 넘칠 때, 현재 단계가 화면 밖에
   // 숨지 않도록 진행 표시 안에서만 가로 스크롤한다. 포커스는 옮기지 않는다.
   useEffect(() => {
     const element = currentStepRef.current;
@@ -164,6 +170,11 @@ export function PageShell({
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>
+      {backTo && (
+        <Link className="page-back" to={backTo}>
+          <span aria-hidden="true">←</span> {backLabel}
+        </Link>
+      )}
       {showJourney && validStep && (
         <div className="journey-progress">
           <div

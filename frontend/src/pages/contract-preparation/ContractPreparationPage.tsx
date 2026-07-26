@@ -41,6 +41,13 @@ const preparationSections = [
   },
 ] as const;
 
+// 접힌 카드에도 안에 무엇이 몇 개 있는지 남긴다. 자료 요청 묶음은 주의할 점까지 함께 센다.
+function itemCountOf(section: (typeof preparationSections)[number]): number {
+  return "items" in section
+    ? section.items.length
+    : section.requestItems.length + section.warnings.length;
+}
+
 export function ContractPreparationPage() {
   const [copyMessage, setCopyMessage] = useState<"success" | "error" | null>(null);
   const requestSection = preparationSections[1];
@@ -66,40 +73,51 @@ export function ContractPreparationPage() {
       title="계약 전, 금전 피해와 분쟁을 줄이는 준비"
       description="집을 볼 때부터 계약금을 보내기 전까지 꼭 확인할 내용을 차례대로 살펴보세요."
       showJourney={false}
-      showLogout={false}
       eyebrow="실전 계약 점검 · 계약서 초안 없음"
+      backTo="/start"
+      backLabel="상황 다시 선택"
     >
       <section className="beginner-guide" aria-label="계약 준비 안내">
         <strong>급하게 결정하지 않아도 괜찮아요</strong>
-        <p>확인하지 못한 내용이 있다면 계약서 작성이나 송금 전에 중개사·임대인에게 먼저 물어보세요.</p>
+        <p>확인하지 못한 내용은 계약서 작성·송금 전에 중개사·임대인에게 먼저 물어보세요.</p>
       </section>
+      {/* 안내 항목 12개를 한 번에 펼치면 화면이 스크롤 두 번 분량이 된다. 제목만 먼저 보이게
+          접고 첫 묶음만 펼쳐 둔다. 안내 내용은 하나도 줄이지 않는다. */}
       <section className="preparation-grid" aria-label="계약 준비 안내">
-        {preparationSections.map((section) => (
-          <article className="preparation-card" key={section.title}>
-            <h2>{section.title}</h2>
-            <p>{section.description}</p>
-            {"items" in section ? (
-              <ul>
-                {section.items.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            ) : (
-              <>
+        {preparationSections.map((section, index) => (
+          <details className="preparation-card" key={section.title} open={index === 0}>
+            <summary>
+              <h2>{section.title}</h2>
+              <span className="preparation-card__count">{itemCountOf(section)}개</span>
+              <span className="collapse-arrow" aria-hidden="true">▸</span>
+            </summary>
+            {/* details는 summary를 뺀 나머지를 보이지 않는 상자 하나로 묶는다. 그 상자 안쪽에는
+                바깥 gap이 닿지 않아 내용이 서로 붙는다. 감싸는 상자를 직접 두고 간격을 준다. */}
+            <div className="preparation-card__body">
+              <p>{section.description}</p>
+              {"items" in section ? (
                 <ul>
-                  {section.requestItems.map((item) => <li key={item}>{item}</li>)}
+                  {section.items.map((item) => <li key={item}>{item}</li>)}
                 </ul>
-                <aside className="preparation-warning" aria-labelledby="preparation-warning-title">
-                  <h3 id="preparation-warning-title">{section.warningTitle}</h3>
+              ) : (
+                <>
                   <ul>
-                    {section.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                    {section.requestItems.map((item) => <li key={item}>{item}</li>)}
                   </ul>
-                </aside>
-                <p className="preparation-script">{section.script}</p>
-                <button type="button" onClick={copyRequest}>문구 복사</button>
-                {copyMessage === "success" && <p role="status">요청 문장을 복사했습니다.</p>}
-                {copyMessage === "error" && <p role="alert">문장을 복사하지 못했습니다. 직접 선택해 복사해 주세요.</p>}
-              </>
-            )}
-          </article>
+                  <aside className="preparation-warning" aria-labelledby="preparation-warning-title">
+                    <h3 id="preparation-warning-title">{section.warningTitle}</h3>
+                    <ul>
+                      {section.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                    </ul>
+                  </aside>
+                  <p className="preparation-script">{section.script}</p>
+                  <button type="button" onClick={copyRequest}>문구 복사</button>
+                  {copyMessage === "success" && <p role="status">요청 문장을 복사했습니다.</p>}
+                  {copyMessage === "error" && <p role="alert">문장을 복사하지 못했습니다. 직접 선택해 복사해 주세요.</p>}
+                </>
+              )}
+            </div>
+          </details>
         ))}
       </section>
       <section className="preparation-actions" aria-label="다음 단계">

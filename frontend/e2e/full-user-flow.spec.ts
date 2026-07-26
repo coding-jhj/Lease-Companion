@@ -102,7 +102,7 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   })).toBeVisible();
   await page.getByRole("button", { name: "확인 결과 보기" }).click();
   // 확인 항목 탭이 기본이며, 질문·단계별 행동은 탭 전환으로만 보인다.
-  for (const label of ["확인 항목", "물어볼 말", "단계별 행동"]) {
+  for (const label of ["확인 항목", "확인할 내용", "단계별 행동"]) {
     await expect(page.getByRole("tab", { name: label })).toBeVisible();
   }
   await expect(page.getByRole("tab", { name: "확인 항목" })).toHaveAttribute("aria-selected", "true");
@@ -127,8 +127,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
         locator: page.locator("#first-action-item h3"),
       },
       {
-        label: "물어볼 말 탭",
-        locator: page.getByRole("tab", { name: "물어볼 말" }),
+        label: "확인할 내용 탭",
+        locator: page.getByRole("tab", { name: "확인할 내용" }),
       },
     ]) {
       const box = await locator.boundingBox();
@@ -176,8 +176,8 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(refundPattern.getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeVisible();
     await expect(refundPattern.getByRole("link", { name: "계약기간 종료 후 보증금 미반환 유형" })).toBeVisible();
   }
-  await page.getByRole("tab", { name: "물어볼 말" }).click();
-  for (const title of ["중개사에게 물어볼 말", "임대인에게 물어볼 말", "내가 문서에서 다시 볼 것"]) {
+  await page.getByRole("tab", { name: "확인할 내용" }).click();
+  for (const title of ["중개사에게 확인해야 할 사항", "임대인에게 확인해야 할 사항", "문서에서 다시 확인할 내용"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
   await page.getByRole("tab", { name: "단계별 행동" }).click();

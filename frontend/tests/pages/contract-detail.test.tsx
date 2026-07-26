@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
 import generationResultFixture from "../../../data/sample/fixtures/case-001/generation_result.json";
+import { standardPostActionFor } from "../../src/features/post-contract-actions/phases";
 import { normalizeAction } from "../../src/features/question-cards/actionNormalization";
 import { ContractDetailPage } from "../../src/pages/contract-detail/ContractDetailPage";
 import { mvpService } from "../../src/services/mvpService";
@@ -54,7 +55,7 @@ describe("ContractDetailPage", () => {
 
     const completedSection = (await screen.findByRole("heading", { name: "완료된 체크리스트 항목" })).closest("section")!;
     const completedDetails = completedSection.querySelector("details")!;
-    const completedPostActionDetails = screen.getByRole("heading", { name: "완료된 계약 직후 행동" }).closest("section")!.querySelector("details")!;
+    const completedPostActionDetails = screen.getByRole("heading", { name: "완료된 계약 후 행동" }).closest("section")!.querySelector("details")!;
     expect(completedDetails).not.toHaveAttribute("open");
     expect(completedPostActionDetails).not.toHaveAttribute("open");
     fireEvent.click(completedDetails.querySelector("summary")!);
@@ -62,7 +63,7 @@ describe("ContractDetailPage", () => {
     expect(completedPostActionDetails).not.toHaveAttribute("open");
     expect(within(completedSection).getByText(actionText)).toBeInTheDocument();
     expect(within(completedSection).getByText(/근거 판정 R01/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "완료된 계약 직후 행동" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "완료된 계약 후 행동" })).toBeInTheDocument();
     expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /확인 결과 보기/ })).toHaveAttribute(
       "href",
@@ -114,8 +115,8 @@ describe("ContractDetailPage", () => {
     expect(pendingSection.querySelectorAll(".check-item--row").length).toBeGreaterThan(5);
     expect(within(pendingSection).queryByRole("button", { name: /더 보기$/ })).not.toBeInTheDocument();
     expect(within(pendingSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "0");
-    // 남은 계약 직후 행동이 없으면 빈 칸을 만들지 않는다.
-    expect(screen.queryByRole("heading", { name: "계약 직후 행동" })).not.toBeInTheDocument();
+    // 남은 계약 후 행동이 없으면 빈 칸을 만들지 않는다.
+    expect(screen.queryByRole("heading", { name: "계약 후 해야 할 행동" })).not.toBeInTheDocument();
   });
 
   it("moves a confirmed signing item below and reveals post-contract actions", async () => {
@@ -125,7 +126,9 @@ describe("ContractDetailPage", () => {
       item_key: "R01:post_action:000000000001",
       text: "전입신고와 확정일자를 완료한다.",
     };
-    const postActionText = normalizeAction(postAction.text, "post_action").text;
+    const normalizedPostActionText = normalizeAction(postAction.text, "post_action").text;
+    const postActionText = standardPostActionFor(normalizedPostActionText)?.text
+      ?? normalizedPostActionText;
     const signingActionText = normalizeAction(signingAction.text, "checklist").text;
     generation.items[0].post_contract_action_items = [postAction];
     const detail: AnalysisRunDetailDto = {
@@ -160,7 +163,7 @@ describe("ContractDetailPage", () => {
 
     expect(screen.queryByRole("heading", { name: "완료된 체크리스트 항목" })).not.toBeInTheDocument();
     const activeGrid = (await screen.findByRole("heading", { name: "서명 전 체크리스트" })).closest(".checklist-active-grid")!;
-    expect(within(activeGrid).getByRole("heading", { name: "계약 직후 행동" })).toBeInTheDocument();
+    expect(within(activeGrid).getByRole("heading", { name: "계약 후 해야 할 행동" })).toBeInTheDocument();
     expect(within(activeGrid).getByText(postActionText)).toBeInTheDocument();
 
     fireEvent.click(await screen.findByRole("button", { name: `${signingActionText} 확인` }));
@@ -169,14 +172,62 @@ describe("ContractDetailPage", () => {
     const completedSection = screen.getByRole("heading", { name: "완료된 체크리스트 항목" }).closest("section")!;
     fireEvent.click(completedSection.querySelector("summary")!);
     expect(within(completedSection).getByText(signingActionText)).toBeInTheDocument();
-    const postActionSection = screen.getByRole("heading", { name: "계약 직후 행동" }).closest("section")!;
+    const postActionSection = screen.getByRole("heading", { name: "계약 후 해야 할 행동" }).closest("section")!;
     expect(within(postActionSection).getByText(postActionText)).toBeInTheDocument();
 
     fireEvent.click(within(postActionSection).getByRole("button", { name: `${postActionText} 완료` }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(1001, "post_action", postAction.item_key, true));
-    const completedPostActionSection = screen.getByRole("heading", { name: "완료된 계약 직후 행동" }).closest("section")!;
+    const completedPostActionSection = screen.getByRole("heading", { name: "완료된 계약 후 행동" }).closest("section")!;
     fireEvent.click(completedPostActionSection.querySelector("summary")!);
     expect(within(completedPostActionSection).getByText(postActionText)).toBeInTheDocument();
+  });
+
+  // 진행률 분모를 화면 제목 문자열로 고르면 제목을 바꿀 때 done이 조용히 0으로 굳는다.
+  it("counts completed post-contract actions against the full total", async () => {
+    const generation = structuredClone(generationResultFixture) as GenerationResultDto;
+    for (const item of generation.items) item.post_contract_action_items = [];
+    const doneAction = { item_key: "R01:post_action:000000000001", text: "전입신고와 확정일자를 완료한다." };
+    const pendingAction = { item_key: "R01:post_action:000000000002", text: "임대차 신고를 접수한다." };
+    generation.items[0].post_contract_action_items = [doneAction, pendingAction];
+    const detail: AnalysisRunDetailDto = {
+      analysis_run_id: "RUN-1001-001",
+      input_snapshot_id: "SNAP-1001-001",
+      status: "completed",
+      error: null,
+      created_at: "2026-07-18T00:00:00Z",
+      result: analysisRunResultFixture as AnalysisRunResultDto,
+      generation_result: generation,
+      generation_status: "completed",
+      generation_error: null,
+    };
+    vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue(detail);
+    vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getDocuments").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getChecklist").mockResolvedValue([
+      { kind: "post_action", item_key: doneAction.item_key, done: true, updated_at: "2026-07-18T01:00:00Z" },
+    ]);
+
+    render(
+      <MemoryRouter initialEntries={["/contracts/1001"]}>
+        <Routes><Route path="/contracts/:contractId" element={<ContractDetailPage />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    const postSection = (await screen.findByRole("heading", { name: "계약 후 해야 할 행동" })).closest("section")!;
+    // 공식 보충 안내는 체크 진행률에 넣지 않는다.
+    expect(within(postSection).getByText("1 / 2 확인 완료")).toBeInTheDocument();
+    expect(within(postSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "1");
+    for (const phase of ["계약 체결 직후", "잔금 지급 전", "잔금 지급 시", "잔금·입주 후"]) {
+      expect(screen.getAllByRole("heading", { name: phase }).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByRole("heading", { name: "공식 안내에서 추가로 확인할 행동" })).toBeInTheDocument();
+    expect(screen.getByText("도배·장판·수리 등 임대인이 약속한 특약이 이행됐는지 확인하세요.")).toBeInTheDocument();
+    expect(within(postSection).getByText("계약 후 보증금과 임차인의 권리를 보호하기 위해 필요한 조치를 확인해 보세요.")).toBeInTheDocument();
+    const signingSection = screen.getByRole("heading", { name: "서명 전 체크리스트" }).closest("section")!;
+    expect(within(signingSection).getByText("서명하기 전, 금전 피해와 분쟁으로 이어질 수 있는 항목을 한 번 더 확인해 보세요.")).toBeInTheDocument();
+    // 완료 섹션에는 안내 문구가 새어 나오지 않는다.
+    const completedSection = screen.getByRole("heading", { name: "완료된 계약 후 행동" }).closest("section")!;
+    expect(completedSection).not.toHaveTextContent("계약 후 보증금과 임차인의 권리를");
   });
 
   it("deletes after confirmation and returns to the dashboard", async () => {

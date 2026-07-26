@@ -63,7 +63,7 @@ describe("DashboardPage grouping", () => {
     render(<MemoryRouter><DashboardPage /></MemoryRouter>);
 
     const notStarted = (await screen.findByText("시작 전 계약")).closest("article")!;
-    expect(within(notStarted).getByRole("link", { name: "점검 시작하기" })).toHaveAttribute("href", "/contracts/1/situation");
+    expect(within(notStarted).getByRole("link", { name: "점검 시작하기" })).toHaveAttribute("href", "/contracts/1/upload");
 
     const inProgress = screen.getByText("확인 중 계약").closest("article")!;
     expect(within(inProgress).getByRole("link", { name: "이어서 확인하기" })).toHaveAttribute("href", "/contracts/2");

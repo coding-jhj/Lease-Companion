@@ -34,6 +34,8 @@ export const mvpService = {
       body: JSON.stringify({ username, password }),
     }),
   getContracts: () => apiClient<ContractSummaryDto[]>("/api/contracts"),
+  getContract: (contractId: number) =>
+    apiClient<ContractSummaryDto>(`/api/contracts/${contractId}`),
   createContract: (title: string) =>
     apiClient<ContractSummaryDto>("/api/contracts", {
       method: "POST",

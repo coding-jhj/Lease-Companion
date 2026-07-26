@@ -90,6 +90,59 @@ def test_non_question_does_not_proactively_disclose_facts():
     assert plan.allowed_fact_ids == ()
 
 
+def test_statement_about_return_timing_is_answered_without_a_question_mark():
+    scenario, _ = _assets()
+
+    plan = plan_grounded_dialogue(
+        scenario,
+        scenario.dialogue_turns[0],
+        "다음 세입자가 언제 들어올지 알 수가 없잖아요.",
+        _evaluation("TURN-01"),
+    )
+
+    assert plan is not None
+    assert plan.question_intent == "return_timing"
+    assert plan.speech_act == "answer_fact"
+    assert plan.allowed_fact_ids == ("F01", "F02")
+
+
+def test_short_agreement_keeps_the_previous_topic_instead_of_asking_again():
+    scenario, _ = _assets()
+
+    plan = plan_grounded_dialogue(
+        scenario,
+        scenario.dialogue_turns[0],
+        "네, 그 부분이 우려돼요.",
+        _evaluation("TURN-01"),
+        previous_intent="return_timing",
+    )
+
+    assert plan is not None
+    assert plan.question_intent == "return_timing"
+    assert plan.speech_act == "answer_fact"
+    assert plan.allowed_fact_ids == ("F01", "F02")
+
+
+def test_repeated_unknown_intent_stops_asking_the_same_clarification():
+    scenario, _ = _assets()
+    first = plan_grounded_dialogue(
+        scenario,
+        scenario.dialogue_turns[0],
+        "음 글쎄요.",
+        _evaluation("TURN-01"),
+    )
+    second = plan_grounded_dialogue(
+        scenario,
+        scenario.dialogue_turns[0],
+        "그냥 좀 그래요.",
+        _evaluation("TURN-01"),
+        previous_intent=first.question_intent,
+    )
+
+    assert first.speech_act == "clarify_user_intent"
+    assert second.speech_act == "maintain_position"
+
+
 def test_other_scenario_keeps_existing_dialogue_path():
     scenario, _ = _assets("PRACTICE-PROXY-AUTHORITY-001")
 

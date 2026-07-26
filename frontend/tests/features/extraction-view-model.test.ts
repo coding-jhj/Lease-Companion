@@ -3,6 +3,7 @@ import {
   correctionValue,
   extractionStatusMeta,
   fieldViewModels,
+  formatClauseText,
   formatFieldValue,
   reviewStatusMeta,
   splitClauseText,
@@ -294,6 +295,40 @@ describe("J structured field values", () => {
     expect(fee.field.issue_code).toBe("not_stated");
     expect(fee.field.confidence).toBe("불확실");
     expect(fee.field.failure_reason).toContain("고정 관리비 금액이 없습니다");
+  });
+
+  it("breaks a run-on special clause at sentence ends without changing the text", () => {
+    const text = "임차인은 전입신고를 마친다. 임대인은 저당권을 설정할 수 없다. ( □ 동의 ☑ 미동의 ) 철거 계획이 있다.";
+
+    const formatted = formatClauseText(text);
+
+    expect(formatted.split("\n")).toEqual([
+      "임차인은 전입신고를 마친다.",
+      "임대인은 저당권을 설정할 수 없다.",
+      "( □ 동의 ☑ 미동의 ) 철거 계획이 있다.",
+    ]);
+    expect(formatted.replace(/\n/g, " ")).toBe(text);
+  });
+
+  it("keeps cross references, amounts, and 가·나·다 list markers on the same line", () => {
+    const crossReference = "제6조의3 제1항에 따라 30,000,000 원을 초과하는 경우 해제할 수 있다.";
+    expect(formatClauseText(crossReference)).toBe(crossReference);
+
+    // 목록 표시 "다."는 문장 끝이 아니므로 표시와 본문을 갈라 놓지 않는다.
+    expect(formatClauseText("가. 첫째 내용 나. 둘째 내용 다. 셋째 내용")).toBe("가. 첫째 내용 나. 둘째 내용 다. 셋째 내용");
+  });
+
+  // 화면에서 문제가 된 실제 특약 원문. 문장 끝이 없는 서식 구간은 원문 그대로 이어 붙은 채 남는다.
+  it("breaks the real special clause at sentence ends and leaves the form section intact", () => {
+    const text = "주택을 인도받은 임차인은 2026년 9월 13일까지 주민등록(전입신고)과 주택임대차계약서상 확정일자를 받기로 하고, 임대인은 위 약정일자의 다음날 까지 임차주택에 저당권 등 담보권을 설정할 수 없다. 주택임대차계약과 관련하여 분쟁이 있는 경우 임대인 또는 임차인은 법원에 소를 제기하기 전에 먼저 주택임대차분쟁조정위원회에 조정을 신청한다. ( □ 동의 ☑ 미동의 ) 주택의 철거 또는 재건축에 관한 구체적 계획 ( □ 없음 ☑ 있음 ※공사시기: 2028년경 ※소요기간: 32개월 )";
+
+    const lines = formatClauseText(text).split("\n");
+
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toMatch(/^주택을 인도받은 임차인은/);
+    expect(lines[1]).toMatch(/^주택임대차계약과 관련하여/);
+    expect(lines[2]).toMatch(/^\( □ 동의/);
+    expect(lines.join(" ")).toBe(text);
   });
 
   it("splits joined clauses and ① sub-items without dropping content", () => {

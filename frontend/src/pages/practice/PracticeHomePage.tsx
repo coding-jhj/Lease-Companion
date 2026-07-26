@@ -24,7 +24,7 @@ export function PracticeHomePage() {
   useEffect(() => { void loadScenarios(); }, []);
 
   return (
-    <PageShell layout="workspace" step="계약 연습" title="계약 상황을 미리 연습해 보세요" description="확인할 내용을 자신의 말로 질문하고, 결정 전에 보류하는 방법을 연습합니다." showJourney={false}>
+    <PageShell layout="workspace" step="계약 연습" title="계약 상황을 미리 연습해 보세요" description="확인할 내용을 자신의 말로 질문하고, 결정 전에 보류하는 방법을 연습합니다." showJourney={false} backTo="/choose-mode" backLabel="모드 다시 선택">
       <div className="stack">
         <div className="practice-safety-note">
           <strong>실제 계약 결과와 분리된 연습입니다.</strong>

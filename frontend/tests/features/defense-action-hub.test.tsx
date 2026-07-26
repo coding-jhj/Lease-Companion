@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   buildQuestionGroups,
   QuestionHub,
@@ -109,7 +109,7 @@ describe("QuestionHub", () => {
 
     render(<QuestionHub results={results} guidance={[]} stageGuidance={null} />);
 
-    const questionGroup = screen.getByRole("heading", { name: "내가 문서에서 다시 볼 것" }).closest("section")!;
+    const questionGroup = screen.getByRole("heading", { name: "문서에서 다시 확인할 내용"}).closest("section")!;
     const visible = within(questionGroup).getAllByRole("listitem");
     expect(visible).toHaveLength(3);
     expect(visible[0]).toHaveTextContent("긴급 질문");
@@ -156,9 +156,9 @@ describe("QuestionHub", () => {
 
     render(<QuestionHub results={results} guidance={[]} stageGuidance={stageGuidance} />);
 
-    const broker = screen.getByRole("heading", { name: "중개사에게 물어볼 말" }).closest("section")!;
-    const landlord = screen.getByRole("heading", { name: "임대인에게 물어볼 말" }).closest("section")!;
-    const self = screen.getByRole("heading", { name: "내가 문서에서 다시 볼 것" }).closest("section")!;
+    const broker = screen.getByRole("heading", { name: "중개사에게 확인해야 할 사항" }).closest("section")!;
+    const landlord = screen.getByRole("heading", { name: "임대인에게 확인해야 할 사항" }).closest("section")!;
+    const self = screen.getByRole("heading", { name: "문서에서 다시 확인할 내용"}).closest("section")!;
     expect(within(broker).getAllByRole("listitem")).toHaveLength(1);
     expect(within(landlord).getAllByRole("listitem")).toHaveLength(1);
     expect(within(self).getAllByRole("listitem")).toHaveLength(1);
@@ -172,41 +172,34 @@ describe("QuestionHub", () => {
 
     render(<QuestionHub results={results} guidance={[]} stageGuidance={null} />);
 
-    const landlord = screen.getByRole("heading", { name: "임대인에게 물어볼 말" }).closest("section")!;
+    const landlord = screen.getByRole("heading", { name: "임대인에게 확인해야 할 사항" }).closest("section")!;
     expect(within(landlord).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(landlord).getAllByRole("button", { name: "질문 복사: 계좌 명의를 확인하세요." })).toHaveLength(1);
+    expect(within(landlord).getByText("계좌 명의를 확인하세요.")).toBeInTheDocument();
   });
 
-  it("copies each question with an accessible button and announces success", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText },
-    });
+  // 중개사 카드가 비어 사라져도 문서 카드는 아래 한 줄을 그대로 차지해야 한다.
+  it("keeps the document card on its own full-width row", () => {
+    render(
+      <QuestionHub
+        results={[ruleWithQuestion("R01", "즉시 확인", "계약서의 금액 표기를 다시 확인하세요.")]}
+        guidance={[]}
+        stageGuidance={null}
+      />,
+    );
+
+    expect(screen.queryByRole("heading", { name: "중개사에게 확인해야 할 사항" })).not.toBeInTheDocument();
+    const documentSection = screen.getByRole("heading", { name: "문서에서 다시 확인할 내용" }).closest("section")!;
+    expect(documentSection).toHaveClass("action-hub__group--wide");
+  });
+
+  it("shows questions as plain text without copy buttons", () => {
     const question = "임대인에게 입금 계좌 명의를 물어보세요.";
 
     render(<QuestionHub results={[ruleWithQuestion("R01", "즉시 확인", question)]} guidance={[]} stageGuidance={null} />);
 
-    fireEvent.click(screen.getByRole("button", { name: `질문 복사: ${question}` }));
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(question));
-    expect(screen.getByRole("status")).toHaveTextContent("복사했습니다.");
-  });
-
-  it("shows a fixed error when clipboard copy fails", async () => {
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
-    });
-    const question = "계약서의 날짜를 다시 확인하세요.";
-
-    render(<QuestionHub results={[ruleWithQuestion("R01", "즉시 확인", question)]} guidance={[]} stageGuidance={null} />);
-
-    fireEvent.click(screen.getByRole("button", { name: `질문 복사: ${question}` }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "복사하지 못했습니다. 질문을 직접 선택해 복사해 주세요.",
-    );
+    const landlord = screen.getByRole("heading", { name: "임대인에게 확인해야 할 사항" }).closest("section")!;
+    expect(within(landlord).getByText(question)).toBeInTheDocument();
+    expect(within(landlord).queryByRole("button", { name: /복사/ })).not.toBeInTheDocument();
   });
 
 });

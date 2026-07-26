@@ -2,7 +2,6 @@ import { Navigate, Outlet, createBrowserRouter } from "react-router-dom";
 import { AnalysisProgressPage } from "./pages/analysis-progress/AnalysisProgressPage";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { ContractCreatePage } from "./pages/contract-create/ContractCreatePage";
-import { ContractSituationPage } from "./pages/contract-create/ContractSituationPage";
 import { ContractPreparationPage } from "./pages/contract-preparation/ContractPreparationPage";
 import { ContractDetailPage } from "./pages/contract-detail/ContractDetailPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
@@ -33,7 +32,6 @@ export const router = createBrowserRouter([
       { path: "/prepare", element: <ContractPreparationPage /> },
       { path: "/contracts", element: <DashboardPage /> },
       { path: "/contracts/new", element: <ContractCreatePage /> },
-      { path: "/contracts/:contractId/situation", element: <ContractSituationPage /> },
       { path: "/contracts/:contractId/upload", element: <DocumentUploadPage /> },
       { path: "/contracts/:contractId/review", element: <ExtractionReviewPage /> },
       { path: "/contracts/:contractId/analyzing", element: <AnalysisProgressPage /> },
