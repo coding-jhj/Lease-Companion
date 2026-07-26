@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -94,6 +94,35 @@ function displayValue(item: ReviewQueueItem, drafts: Record<string, DraftValue>)
   return displayViewValue(item.view, drafts);
 }
 
+// 특약처럼 원문이 긴 항목은 카드 한 칸에 담으면 그 줄만 길어져 읽기 어렵다.
+// 이런 항목은 나누지 않고 한 줄을 통째로 쓴다.
+const WIDE_ITEM_TEXT_LENGTH = 100;
+
+// 조항 원문 항목은 값 길이와 상관없이 항상 한 줄을 쓴다. 정규화 값이 짧게 들어와도
+// 카드를 열면 조항이 여러 개로 펼쳐지기 때문에 값으로만 판단하면 놓친다.
+const WIDE_FIELD_NAMES = new Set([
+  "special_clauses",
+  "main_clauses",
+  "deposit_return_clause",
+  "repair_responsibility_clause",
+]);
+
+function isWideItem(item: ReviewQueueItem, drafts: Record<string, DraftValue>): boolean {
+  if (item.view.editor === "clause-list") return true;
+  if (WIDE_FIELD_NAMES.has(item.fieldName)) return true;
+  const draft = drafts[item.key];
+  if (Array.isArray(draft)) return draft.length > 1;
+  return displayValue(item, drafts).length >= WIDE_ITEM_TEXT_LENGTH;
+}
+
+// 긴 항목을 뺀 나머지 개수로 열 수를 정한다. 3의 배수면 3열(6개는 2줄로 고르게 나뉜다),
+// 그 외 짝수면 2열, 홀수면 3열.
+function reviewColumnCount(regularItemCount: number): number {
+  if (regularItemCount <= 1) return 1;
+  if (regularItemCount % 3 === 0) return 3;
+  return regularItemCount % 2 === 0 ? 2 : 3;
+}
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -154,6 +183,16 @@ export function ExtractionReviewPage() {
     (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
   );
   const situationReady = situationAnswered(situation);
+  // 원문이 긴 항목은 한 줄을 통째로 쓰고, 남은 항목 수로 열 수를 정한다.
+  const wideItemKeys = new Set(
+    currentSectionItems.filter((item) => isWideItem(item, drafts)).map((item) => item.key),
+  );
+  const sectionColumnCount = reviewColumnCount(currentSectionItems.length - wideItemKeys.size);
+  // 한 줄짜리 항목이 중간에 끼면 그 앞뒤 줄에 빈칸이 생긴다. 순서를 유지한 채 뒤로 모은다.
+  const orderedSectionItems = [
+    ...currentSectionItems.filter((item) => !wideItemKeys.has(item.key)),
+    ...currentSectionItems.filter((item) => wideItemKeys.has(item.key)),
+  ];
   // 아직 손대지 않은 항목. 고친 항목·확인하지 못한 항목은 이미 처리된 것으로 본다.
   const sectionPendingItems = currentSectionItems.filter((item) => (
     !reviewedKeySet.has(item.key) && unresolvedReasonByKey[item.key] === undefined
@@ -644,13 +683,20 @@ export function ExtractionReviewPage() {
                       고칠 내용이 없으면 한 번에 확인할 수 있습니다. 고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다.
                     </p>
                   )}
-                  <ul className="grouped-review-list">
-                    {currentSectionItems.map((item) => {
+                  <ul
+                    className="grouped-review-list"
+                    style={{ "--review-columns": sectionColumnCount } as CSSProperties}
+                  >
+                    {orderedSectionItems.map((item) => {
                         const meta = fieldStatusMeta(item.view);
                         const reviewed = reviewedKeySet.has(item.key);
                         const unresolved = unresolvedReasonByKey[item.key] !== undefined;
+                        const wide = wideItemKeys.has(item.key);
                         return (
-                          <li className="grouped-review-list__item" key={item.key}>
+                          <li
+                            className={`grouped-review-list__item${wide ? " grouped-review-list__item--wide" : ""}`}
+                            key={item.key}
+                          >
                             <div
                               className="grouped-review-list__summary"
                             >
