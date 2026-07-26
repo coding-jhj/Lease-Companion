@@ -66,7 +66,6 @@ export function ContractPreparationPage() {
       title="계약 전, 금전 피해와 분쟁을 줄이는 준비"
       description="집을 볼 때부터 계약금을 보내기 전까지 꼭 확인할 내용을 차례대로 살펴보세요."
       showJourney={false}
-      showLogout={false}
       eyebrow="실전 계약 점검 · 계약서 초안 없음"
     >
       <section className="beginner-guide" aria-label="계약 준비 안내">

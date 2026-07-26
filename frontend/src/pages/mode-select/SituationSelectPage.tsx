@@ -26,7 +26,6 @@ export function SituationSelectPage() {
       title="지금 어떤 상황인가요?"
       description="현재 상황을 알려주시면 먼저 확인할 내용을 안내해 드립니다."
       showJourney={false}
-      showLogout={false}
       eyebrow="실전 계약 점검"
     >
       <Link className="text-link mode-select-back" to="/choose-mode">← 모드 다시 선택</Link>

@@ -36,6 +36,14 @@ describe("ContractPreparationPage", () => {
     expect(screen.getByRole("link", { name: "계약할 때 시뮬레이션 체험하러 가기" })).toHaveAttribute("href", "/practice");
   });
 
+  // 로그인해야 들어오는 화면이라 머리말에서 나가는 길이 있어야 한다.
+  it("keeps the header exits for a signed-in visitor", () => {
+    render(<MemoryRouter><ContractPreparationPage /></MemoryRouter>);
+
+    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
+    expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
+  });
+
   it("shows a status message after copying the draft request", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
