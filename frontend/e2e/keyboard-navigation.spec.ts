@@ -1,6 +1,51 @@
 import { expect, test } from "@playwright/test";
 import { syntheticLeasePdfFixture } from "./fixtures/syntheticLeasePdf";
 
+async function finishReviewWithKeyboard(page: import("@playwright/test").Page) {
+  const completeHeading = page.getByRole("heading", {
+    name: "중요한 내용을 모두 확인했습니다",
+  });
+  const sectionButtons = page
+    .getByRole("navigation", { name: "확인 묶음" })
+    .getByRole("button");
+
+  for (let guard = 0; guard < 200; guard += 1) {
+    if (await completeHeading.isVisible()) break;
+
+    const confirmButton = page.getByRole("button", { name: "네, 맞아요" });
+    if (await confirmButton.isVisible()) {
+      await confirmButton.focus();
+      await expect(confirmButton).toBeFocused();
+      await page.keyboard.press("Enter");
+      continue;
+    }
+
+    const bulkButton = page.getByRole("button", { name: /^\d+개 모두 문서와 같아요$/ });
+    if (await bulkButton.isVisible() && await bulkButton.isEnabled()) {
+      await bulkButton.focus();
+      await expect(bulkButton).toBeFocused();
+      await page.keyboard.press("Enter");
+      continue;
+    }
+
+    let movedToPendingSection = false;
+    for (let index = 0; index < await sectionButtons.count(); index += 1) {
+      const sectionButton = sectionButtons.nth(index);
+      const progress = (await sectionButton.innerText()).match(/(\d+)\s*\/\s*(\d+)/);
+      if (progress && Number(progress[1]) < Number(progress[2])) {
+        await sectionButton.focus();
+        await expect(sectionButton).toBeFocused();
+        await page.keyboard.press("Enter");
+        movedToPendingSection = true;
+        break;
+      }
+    }
+    if (!movedToPendingSection) break;
+  }
+
+  await expect(completeHeading).toBeVisible();
+}
+
 test("situation entry and critical report actions work with the keyboard", async ({ page }) => {
   const suffix = Date.now().toString(36);
   const username = `keyboard_${suffix}`;
@@ -28,30 +73,11 @@ test("situation entry and critical report actions work with the keyboard", async
   await contractName.focus();
   await expect(contractName).toBeFocused();
   await page.keyboard.type("키보드 접근성 계약");
-  const nextToSituation = page.getByRole("button", { name: "다음: 내 상황 알려주기" });
-  await nextToSituation.focus();
-  await expect(nextToSituation).toBeFocused();
-  await page.keyboard.press("Enter");
-
-  const contractType = page.getByRole("radio", { name: "전세" });
-  await contractType.focus();
-  await expect(contractType).toBeFocused();
-  await page.keyboard.press("Space");
-
-  const directLandlord = page.getByLabel("집주인이 직접 계약해요");
-  await directLandlord.focus();
-  await expect(directLandlord).toBeFocused();
-  await page.keyboard.press("Space");
-  await expect(directLandlord).toBeChecked();
-  const dateToggle = page.getByRole("button", { name: "날짜를 입력할게요" });
-  await dateToggle.focus();
-  await expect(dateToggle).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.getByLabel("입주 예정일")).toBeVisible();
-  const nextToUpload = page.getByRole("button", { name: "다음: 문서 준비하기" });
+  const nextToUpload = page.getByRole("button", { name: "다음: 문서 올리기" });
   await nextToUpload.focus();
   await expect(nextToUpload).toBeFocused();
   await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/upload$/);
 
   const contractPicker = page.getByRole("button", { name: "계약서 새 파일 선택" });
   const registryPicker = page.getByRole("button", { name: "등기사항증명서 새 파일 선택" });
@@ -67,6 +93,32 @@ test("situation entry and critical report actions work with the keyboard", async
   const startExtraction = page.getByRole("button", { name: "업로드하고 다음 단계로" });
   await startExtraction.focus();
   await expect(startExtraction).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const situationSection = page.getByRole("button", { name: /3 직접 알려주실 내용/ });
+  await situationSection.focus();
+  await expect(situationSection).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const contractType = page.getByRole("radio", { name: "전세" });
+  await contractType.focus();
+  await expect(contractType).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(contractType).toBeChecked();
+
+  const directLandlord = page.getByRole("radio", { name: "집주인이 직접 계약해요" });
+  await directLandlord.focus();
+  await expect(directLandlord).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(directLandlord).toBeChecked();
+
+  const moveInDate = page.getByLabel("입주 예정일");
+  await moveInDate.focus();
+  await expect(moveInDate).toBeFocused();
+
+  const firstReviewSection = page.getByRole("button", { name: /1 금전 피해/ });
+  await firstReviewSection.focus();
+  await expect(firstReviewSection).toBeFocused();
   await page.keyboard.press("Enter");
 
   const confirmCurrent = page.getByRole("button", { name: "네, 맞아요" });
@@ -97,28 +149,20 @@ test("situation entry and critical report actions work with the keyboard", async
   await expect(notStatedReason).toBeFocused();
   await page.keyboard.press("Space");
 
+  await finishReviewWithKeyboard(page);
+
   const previousReview = page.getByRole("button", { name: "이전 내용 보기" });
   await previousReview.focus();
   await expect(previousReview).toBeFocused();
   await page.keyboard.press("Enter");
-
-  const sourceSummary = page.getByText("문서에서 읽은 전체 내용 보기");
-  await sourceSummary.focus();
-  await expect(sourceSummary).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(sourceSummary.locator("..")).toHaveAttribute("open", "");
-
-  await confirmCurrent.focus();
+  await expect(page.getByRole("navigation", { name: "확인 묶음" })).toBeVisible();
+  const finishReview = page.getByRole("button", { name: "확인을 마치고 결과 준비하기" });
+  await finishReview.focus();
+  await expect(finishReview).toBeFocused();
   await page.keyboard.press("Enter");
   const completeHeading = page.getByRole("heading", {
     name: "중요한 내용을 모두 확인했습니다",
   });
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    if (await completeHeading.isVisible()) break;
-    await confirmCurrent.focus();
-    await expect(confirmCurrent).toBeFocused();
-    await page.keyboard.press("Enter");
-  }
   await expect(completeHeading).toBeVisible();
 
   const startAnalysis = page.getByRole("button", {
