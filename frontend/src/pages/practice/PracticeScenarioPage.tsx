@@ -75,6 +75,9 @@ export function PracticeScenarioPage() {
         {status === "error" && <ErrorState title="연습 상황을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadScenario()} />}
         {status === "success" && scenario && (
           <>
+            <p className="practice-scenario-goal">
+              <strong>목표:</strong> 실제 피해 사례와 유사한 상황에서 공인중개사와 대화하며, 금전 피해를 예방하기 위해 필요한 질문과 대응 방법을 연습해 보세요.
+            </p>
             <details className="practice-contract-details" onToggle={(event) => setContractOpen(event.currentTarget.open)}>
               <summary>참고할 계약 내용 보기</summary>
               <section className="practice-contract-card" aria-labelledby="practice-contract-title" hidden={!contractOpen}>

@@ -25,6 +25,51 @@ function elapsedSeconds(startedAt: number) {
   return Math.min(3600, Math.max(0, (Date.now() - startedAt) / 1000));
 }
 
+interface SpeechRecognitionResultLike {
+  readonly isFinal: boolean;
+  readonly length: number;
+  readonly [index: number]: { readonly transcript: string };
+}
+
+interface SpeechRecognitionEventLike {
+  readonly results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionErrorEventLike {
+  readonly error: string;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
+  const speechWindow = window as typeof window & {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+}
+
+function speechRecognitionErrorMessage(error: string) {
+  if (error === "not-allowed" || error === "service-not-allowed") {
+    return "마이크 권한이 필요합니다. 브라우저 권한을 허용하거나 텍스트로 입력해 주세요.";
+  }
+  if (error === "no-speech") return "음성이 들리지 않았습니다. 다시 말하거나 텍스트로 입력해 주세요.";
+  if (error === "audio-capture") return "마이크를 사용할 수 없습니다. 연결 상태를 확인해 주세요.";
+  return "음성 입력을 완료하지 못했습니다. 다시 시도하거나 텍스트로 입력해 주세요.";
+}
+
 function practiceEvaluationNotice(response: PracticeTurnResponseDto | null) {
   const reason = response?.evaluation?.fallback_reason;
   return reason === "provider_error" || reason === "provider_timeout" || reason === "response_validation_failed"
@@ -76,6 +121,10 @@ export function PracticeSessionPage() {
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
   const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const speechBaseAnswerRef = useRef("");
+  const [isListening, setIsListening] = useState(false);
+  const [speechMessage, setSpeechMessage] = useState("");
 
   async function loadSession() {
     setStatus("loading");
@@ -110,6 +159,11 @@ export function PracticeSessionPage() {
   }
 
   useEffect(() => { void loadSession(); }, [sessionId]);
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort();
+    recognitionRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (!avatarMedia || avatarMedia.status === "completed" || avatarMedia.status === "failed") return;
@@ -172,6 +226,7 @@ export function PracticeSessionPage() {
 
   async function sendTurn(timedOut: boolean) {
     if (!session?.current_turn || (!timedOut && !answer.trim())) return;
+    recognitionRef.current?.stop();
     const answeredTurn = session.current_turn;
     const submittedAnswer = timedOut ? null : answer.trim();
     setSubmitting(true);
@@ -242,6 +297,55 @@ export function PracticeSessionPage() {
   function submitAnswer(event: FormEvent) {
     event.preventDefault();
     void sendTurn(false);
+  }
+
+  function toggleSpeechInput() {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
+      setSpeechMessage("이 브라우저에서는 음성 입력을 지원하지 않습니다. 텍스트로 입력해 주세요.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    let endedWithError = false;
+    speechBaseAnswerRef.current = answer.trim();
+    recognition.lang = "ko-KR";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      const nextAnswer = [speechBaseAnswerRef.current, transcript].filter(Boolean).join(" ");
+      setAnswer(nextAnswer.slice(0, 2000));
+    };
+    recognition.onerror = (event) => {
+      endedWithError = true;
+      setSpeechMessage(speechRecognitionErrorMessage(event.error));
+      setIsListening(false);
+    };
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setIsListening(false);
+      if (!endedWithError) setSpeechMessage("음성 입력이 완료되었습니다.");
+    };
+
+    recognitionRef.current = recognition;
+    setSpeechMessage("듣고 있습니다. 말씀해 주세요.");
+    setIsListening(true);
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setIsListening(false);
+      setSpeechMessage("음성 입력을 시작하지 못했습니다. 다시 시도하거나 텍스트로 입력해 주세요.");
+    }
   }
 
   function handleAnswerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -330,10 +434,20 @@ export function PracticeSessionPage() {
                     <section className="practice-dialogue practice-dialogue--composer" aria-label="현재 답변">
                       <form className="practice-answer-composer" onSubmit={submitAnswer}>
                         <div className="practice-answer-composer__row">
-                          <label htmlFor="practice-answer">말하기</label>
+                          <button
+                            type="button"
+                            className="secondary practice-answer-composer__speech"
+                            aria-controls="practice-answer"
+                            aria-pressed={isListening}
+                            disabled={submitting}
+                            onClick={toggleSpeechInput}
+                          >
+                            {isListening ? "듣는 중…" : "말하기"}
+                          </button>
                           <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="하고 싶은 말을 입력하세요…" disabled={submitting} />
-                          <button type="submit" className="primary" disabled={submitting || !answer.trim()}>{submitting ? "확인 중…" : "이렇게 말할게요"}</button>
+                          <button type="submit" className="primary" disabled={submitting || !answer.trim()}>{submitting ? "전송 중…" : "전송"}</button>
                         </div>
+                        {speechMessage && <p className="practice-answer-speech-status" role="status" aria-live="polite">{speechMessage}</p>}
                         <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
                         <button type="button" className="secondary practice-answer-composer__skip" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
                       </form>

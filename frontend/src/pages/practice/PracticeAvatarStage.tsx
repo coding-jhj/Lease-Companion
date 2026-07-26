@@ -42,8 +42,13 @@ export function PracticeAvatarStage({
   const pressurePlayedForPrompt = useRef<string | null>(null);
   const playbackFailed = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const isGeneratedSpeech = mode === "speaking" && Boolean(generatedVideoUrl);
-  const videoSource = isGeneratedSpeech ? generatedVideoUrl! : avatarVideos[mode];
+  const isMediaPreparing = mediaStatus === "queued"
+    || mediaStatus === "generating_audio"
+    || mediaStatus === "generating_video"
+    || (mediaStatus === "completed" && !generatedVideoUrl);
+  const displayMode = isMediaPreparing ? "idle" : mode;
+  const isGeneratedSpeech = displayMode === "speaking" && Boolean(generatedVideoUrl);
+  const videoSource = isGeneratedSpeech ? generatedVideoUrl! : avatarVideos[displayMode];
   const hasVideo = Boolean(videoSource);
 
   function requestPlayback() {
@@ -67,7 +72,7 @@ export function PracticeAvatarStage({
   useEffect(() => {
     if (!hasVideo || playbackPaused) return;
     requestPlayback();
-  }, [hasVideo, mode, playbackId, playbackPaused]);
+  }, [hasVideo, isMediaPreparing, mode, playbackId, playbackPaused]);
 
   useEffect(() => {
     if (!generatedVideoUrl) return;
@@ -127,7 +132,7 @@ export function PracticeAvatarStage({
         {hasVideo && (
           <video
             ref={videoRef}
-            key={`${mode}-${playbackId}`}
+            key={`${displayMode}-${playbackId}`}
             data-testid="practice-video"
             className="practice-avatar-stage__video"
             src={videoSource}
@@ -136,7 +141,7 @@ export function PracticeAvatarStage({
             muted={!isGeneratedSpeech}
             controls={isGeneratedSpeech}
             playsInline
-            loop={mode === "idle" || mode === "listening"}
+            loop={isMediaPreparing || mode === "idle" || mode === "listening"}
             preload="auto"
             onEnded={handleEnded}
             onAbort={handleVideoError}
@@ -149,8 +154,8 @@ export function PracticeAvatarStage({
           />
         )}
         {fallbackMessage && <p className="practice-avatar-stage__video-fallback" role="status">{fallbackMessage}</p>}
-        <span className={`practice-avatar-stage__status practice-avatar-stage__status--${mode}`} role="status" aria-live="polite">
-          {avatarLabels[mode]}
+        <span className={`practice-avatar-stage__status practice-avatar-stage__status--${displayMode}`} role="status" aria-live="polite">
+          {isMediaPreparing ? "공인중개사가 응답을 준비하고 있습니다" : avatarLabels[mode]}
         </span>
       </div>
       <div className="practice-avatar-stage__caption">
@@ -177,7 +182,7 @@ export function PracticeAvatarStage({
           <button type="button" className="secondary" onClick={togglePlayback} disabled={submitting || !hasVideo}>
             {playbackPaused ? "계속 재생" : "일시정지"}
           </button>
-          <button type="button" className="secondary practice-avatar-stage__retry" onClick={replayPrompt} disabled={submitting}>
+          <button type="button" className="secondary practice-avatar-stage__retry" onClick={replayPrompt} disabled={submitting || isMediaPreparing}>
             장면 다시 보기
           </button>
         </div>

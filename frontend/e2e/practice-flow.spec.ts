@@ -93,7 +93,7 @@ async function submitAnswer(page: Page, answer: string, expectNextAnswer = true)
   const answerBox = page.getByLabel("내 답변");
   await expect(answerBox).toBeVisible();
   await answerBox.fill(answer);
-  await page.getByRole("button", { name: "이렇게 말할게요" }).click();
+  await page.getByRole("button", { name: "전송" }).click();
   if (expectNextAnswer) {
     await expect(answerBox).toBeVisible();
     await expect(answerBox).toHaveValue("");
@@ -131,6 +131,34 @@ async function expectMobilePracticeLayout(page: Page) {
 }
 
 test.describe("세 가지 계약 대화 연습", () => {
+  test("상황 안내 아래에 연습 목표 문구를 표시한다", async ({ page }, testInfo) => {
+    const scenario = scenarios[0];
+    await signUpAndOpenPractice(page, scenario, testInfo);
+
+    const description = page.getByText("계약 내용을 참고한 뒤 상대방과의 대화를 시작하세요. 주의사항은 대화가 끝난 뒤 보여드립니다.");
+    const goal = page.getByText("실제 피해 사례와 유사한 상황에서 공인중개사와 대화하며, 금전 피해를 예방하기 위해 필요한 질문과 대응 방법을 연습해 보세요.");
+    const contractDetails = page.getByText("참고할 계약 내용 보기");
+    await expect(goal).toBeVisible();
+    const [descriptionBox, goalBox, contractDetailsBox] = await Promise.all([
+      description.boundingBox(),
+      goal.boundingBox(),
+      contractDetails.boundingBox(),
+    ]);
+    expect(goalBox?.y ?? 0).toBeGreaterThan(descriptionBox?.y ?? 0);
+    expect(contractDetailsBox?.y ?? 0).toBeGreaterThan(goalBox?.y ?? 0);
+  });
+
+  test("대화 입력에 음성 입력과 전송 버튼을 표시한다", async ({ page }, testInfo) => {
+    const scenario = scenarios[0];
+    await signUpAndOpenPractice(page, scenario, testInfo);
+    await page.getByRole("button", { name: "연습 시작하기" }).click();
+
+    await expect(page).toHaveURL(/\/practice\/sessions\/[^/]+$/);
+    await expect(page.getByRole("button", { name: "말하기" })).toBeVisible();
+    await expect(page.getByLabel("내 답변")).toBeVisible();
+    await expect(page.getByRole("button", { name: "전송" })).toBeVisible();
+  });
+
   for (const scenario of scenarios) {
     test(`${scenario.title}: 현재 대사만 보이며 결과까지 이동한다`, async ({ page }, testInfo) => {
       await signUpAndOpenPractice(page, scenario, testInfo);
