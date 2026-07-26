@@ -107,6 +107,32 @@ export function ContractDetailPage() {
           writable: true,
         });
       }
+      // 생성 결과에 빠진 공식 계약 후 행동도 같은 저장 API를 쓰는 체크 항목으로
+      // 보충한다. 생성 문구와 의미가 같은 항목은 기존 생성 item_key를 유지한다.
+      const matchedStandardIds = new Set(
+        [...compacted.values()]
+          .filter((item) => item.kind === "post_action")
+          .map((item) => standardPostActionFor(item.text)?.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      if (detail?.generation_result) {
+        for (const standard of STANDARD_POST_ACTIONS) {
+          if (matchedStandardIds.has(standard.id)) continue;
+          const saved = stateByKey.get(`post_action:${standard.itemKey}`);
+          compacted.set(`post_action:official:${standard.id}`, {
+            item_key: standard.itemKey,
+            text: standard.text,
+            kind: "post_action",
+            storageKind: "post_action",
+            resultIds: [],
+            done: saved?.done ?? false,
+            updated_at: saved?.updated_at ?? null,
+            writable: true,
+            standardGuide: standard,
+          });
+          generatedKeys.add(`post_action:${standard.itemKey}`);
+        }
+      }
       const merged = [...compacted.values()];
       const legacy = states
         .filter((item) => !generatedKeys.has(item.kind + ":" + item.item_key))
@@ -170,16 +196,9 @@ export function ContractDetailPage() {
   const checklistItems = items.filter((item) => item.kind === "checklist");
   const generatedPostActions = items.filter((item) => item.kind === "post_action");
   const postActions = generatedPostActions.map((item) => {
-    const standardGuide = standardPostActionFor(item.text) ?? undefined;
+    const standardGuide = item.standardGuide ?? standardPostActionFor(item.text) ?? undefined;
     return standardGuide ? { ...item, text: standardGuide.text, standardGuide } : item;
   });
-  const matchedStandardIds = new Set(
-    postActions.map((item) => item.standardGuide?.id).filter((id): id is string => Boolean(id)),
-  );
-  // 분석 결과에 없는 기본 행동은 진행률에 넣지 않는다. 공식 근거가 붙은 보충 안내로만 표시한다.
-  const missingStandardPostActions = generatedPostActions.length === 0
-    ? []
-    : STANDARD_POST_ACTIONS.filter((action) => !matchedStandardIds.has(action.id));
   const pendingChecklistItems = checklistItems.filter((item) => !item.done);
   const completedChecklistItems = checklistItems.filter((item) => item.done);
   const pendingPostActions = postActions.filter((item) => !item.done);
@@ -203,47 +222,6 @@ export function ContractDetailPage() {
       if (judgmentId && judgmentId in plainJudgmentGuides) return plainGuideById(judgmentId);
     }
     return plainGuideById(null);
-  }
-
-  function renderOfficialPostActionGuide(entries: StandardPostAction[]) {
-    if (entries.length === 0) return null;
-    return (
-      <section className="official-post-action-guide" aria-labelledby="official-post-action-guide-title">
-        <h3 id="official-post-action-guide-title">공식 안내에서 추가로 확인할 행동</h3>
-        <p>분석 판정과 별개인 기본 행동입니다. 완료 진행률에는 포함하지 않습니다.</p>
-        {POST_ACTION_PHASES.map((phase) => {
-          const phaseEntries = entries.filter((entry) => entry.phase === phase);
-          if (phaseEntries.length === 0) return null;
-          return (
-            <section className="post-action-phase" key={phase}>
-              <h4>{phase}</h4>
-              <ul className="checklist-section__items">
-                {phaseEntries.map((entry) => (
-                  <li className="check-item check-item--row check-item--guidance" key={entry.id}>
-                    <span className="check-item__status" aria-label="기본 안내">i</span>
-                    <span className="check-item__text">{entry.text}</span>
-                    <details className="check-item__guide">
-                      <summary>방법과 공식 근거</summary>
-                      <div className="check-item__guide-body">
-                        <p>{entry.method}</p>
-                        <p className="check-item__sources">
-                          {entry.sources.map((source, index) => (
-                            <span key={source.url}>
-                              {index > 0 && " · "}
-                              <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
-                            </span>
-                          ))}
-                        </p>
-                      </div>
-                    </details>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-      </section>
-    );
   }
 
   function renderActionItems({
@@ -453,7 +431,6 @@ export function ContractDetailPage() {
                 total: postActions.length,
                 groupByPhase: true,
               })}
-              {renderOfficialPostActionGuide(missingStandardPostActions)}
             </div>
             {hasCompletedItems && (
               <div className="checklist-completed-grid">

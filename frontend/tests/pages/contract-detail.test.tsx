@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
 import generationResultFixture from "../../../data/sample/fixtures/case-001/generation_result.json";
-import { standardPostActionFor } from "../../src/features/post-contract-actions/phases";
+import { STANDARD_POST_ACTIONS, standardPostActionFor } from "../../src/features/post-contract-actions/phases";
 import { normalizeAction } from "../../src/features/question-cards/actionNormalization";
 import { ContractDetailPage } from "../../src/pages/contract-detail/ContractDetailPage";
 import { mvpService } from "../../src/services/mvpService";
@@ -82,7 +82,7 @@ describe("ContractDetailPage", () => {
     expect(within(pendingSection).getByRole("button", { name: `${actionText} 확인` })).toBeInTheDocument();
   });
 
-  it("shows only the first five pending items and hides the empty post-action column", async () => {
+  it("shows only the first five pending items and fills an empty post-action column with official guidance", async () => {
     const generation = generationResultFixture as GenerationResultDto;
     const detail: AnalysisRunDetailDto = {
       analysis_run_id: "RUN-1001-001",
@@ -99,6 +99,13 @@ describe("ContractDetailPage", () => {
     vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([detail]);
     vi.spyOn(mvpService, "getDocuments").mockResolvedValue([]);
     vi.spyOn(mvpService, "getChecklist").mockResolvedValue([]);
+    const officialAction = STANDARD_POST_ACTIONS[0];
+    const update = vi.spyOn(mvpService, "updateChecklistItem").mockResolvedValue({
+      kind: "post_action",
+      item_key: officialAction.itemKey,
+      done: true,
+      updated_at: "2026-07-18T01:00:00Z",
+    });
 
     render(
       <MemoryRouter initialEntries={["/contracts/1001"]}>
@@ -115,8 +122,27 @@ describe("ContractDetailPage", () => {
     expect(pendingSection.querySelectorAll(".check-item--row").length).toBeGreaterThan(5);
     expect(within(pendingSection).queryByRole("button", { name: /더 보기$/ })).not.toBeInTheDocument();
     expect(within(pendingSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "0");
-    // 남은 계약 후 행동이 없으면 빈 칸을 만들지 않는다.
-    expect(screen.queryByRole("heading", { name: "계약 후 해야 할 행동" })).not.toBeInTheDocument();
+    // 생성된 계약 후 행동이 없어도 공식 기본 행동을 시기별 카드로 표시한다.
+    const postSection = screen.getByRole("heading", { name: "계약 후 해야 할 행동" }).closest("section")!;
+    expect(within(postSection).getByText("0 / 12 확인 완료")).toBeInTheDocument();
+    fireEvent.click(within(postSection).getByRole("button", { name: /^남은 항목 \d+개 더 보기$/ }));
+    for (const phase of ["계약 체결 직후", "잔금 지급 전", "잔금 지급 시", "잔금·입주 후"]) {
+      expect(within(postSection).getByRole("heading", { name: phase })).toBeInTheDocument();
+    }
+    expect(within(postSection).getByText("기존 세입자 퇴거와 실제 주택 상태를 확인해 즉시 입주 가능한지 점검하세요.")).toBeInTheDocument();
+    expect(within(postSection).getByText("전세보증금 반환보증 가입 조건과 신청 기한을 확인하세요.")).toBeInTheDocument();
+
+    fireEvent.click(within(postSection).getByRole("button", { name: `${officialAction.text} 완료` }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith(
+      1001,
+      "post_action",
+      officialAction.itemKey,
+      true,
+    ));
+    expect(within(postSection).queryByText(officialAction.text)).not.toBeInTheDocument();
+    const completedPostSection = screen.getByRole("heading", { name: "완료된 계약 후 행동" }).closest("section")!;
+    fireEvent.click(completedPostSection.querySelector("summary")!);
+    expect(within(completedPostSection).getByText(officialAction.text)).toBeInTheDocument();
   });
 
   it("moves a confirmed signing item below and reveals post-contract actions", async () => {
@@ -214,13 +240,13 @@ describe("ContractDetailPage", () => {
     );
 
     const postSection = (await screen.findByRole("heading", { name: "계약 후 해야 할 행동" })).closest("section")!;
-    // 공식 보충 안내는 체크 진행률에 넣지 않는다.
-    expect(within(postSection).getByText("1 / 2 확인 완료")).toBeInTheDocument();
+    // 생성 항목과 겹치지 않는 공식 기본 행동도 저장 가능한 진행률에 포함한다.
+    expect(within(postSection).getByText("1 / 12 확인 완료")).toBeInTheDocument();
     expect(within(postSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "1");
+    fireEvent.click(within(postSection).getByRole("button", { name: /^남은 항목 \d+개 더 보기$/ }));
     for (const phase of ["계약 체결 직후", "잔금 지급 전", "잔금 지급 시", "잔금·입주 후"]) {
       expect(screen.getAllByRole("heading", { name: phase }).length).toBeGreaterThan(0);
     }
-    expect(screen.getByRole("heading", { name: "공식 안내에서 추가로 확인할 행동" })).toBeInTheDocument();
     expect(screen.getByText("도배·장판·수리 등 임대인이 약속한 특약이 이행됐는지 확인하세요.")).toBeInTheDocument();
     expect(within(postSection).getByText("계약 후 보증금과 임차인의 권리를 보호하기 위해 필요한 조치를 확인해 보세요.")).toBeInTheDocument();
     const signingSection = screen.getByRole("heading", { name: "서명 전 체크리스트" }).closest("section")!;
