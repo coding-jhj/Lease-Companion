@@ -91,6 +91,7 @@ class PracticeAdvanceRequest(BaseModel):
 class PracticeMediaJobResponse(BaseModel):
     media_job_id: str
     practice_turn_id: str
+    media_kind: Literal["initial_prompt", "dialogue_response"]
     status: Literal["queued", "generating_audio", "generating_video", "completed", "failed"]
     provider: str
     speech_text: str

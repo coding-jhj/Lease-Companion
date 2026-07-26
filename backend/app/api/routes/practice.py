@@ -122,7 +122,7 @@ def get_latest_session_media(
         if latest is None:
             return None
         job, turn = latest
-        return media_job_response(job, turn.practice_turn_id)
+        return media_job_response(job, turn)
     except PracticeServiceError as exc:
         _raise_http(exc)
 
@@ -179,7 +179,7 @@ def submit_turn(
             ),
             dialogue_response=turn.dialogue_response,
             media=(
-                media_job_response(media_job, turn.practice_turn_id)
+                media_job_response(media_job, turn)
                 if media_job is not None
                 else None
             ),
@@ -200,7 +200,7 @@ def get_media_job(
 ) -> PracticeMediaJobResponse:
     try:
         job, turn = get_owned_practice_media_job(db, user, media_job_id)
-        return media_job_response(job, turn.practice_turn_id)
+        return media_job_response(job, turn)
     except PracticeServiceError as exc:
         _raise_http(exc)
 

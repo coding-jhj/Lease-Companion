@@ -226,11 +226,16 @@ def get_latest_practice_media_job(
 
 def media_job_response(
     job: PracticeMediaJob,
-    practice_turn_id: str,
+    turn: PracticeTurn,
 ) -> PracticeMediaJobResponse:
     return PracticeMediaJobResponse(
         media_job_id=job.media_job_id,
-        practice_turn_id=practice_turn_id,
+        practice_turn_id=turn.practice_turn_id,
+        media_kind=(
+            "initial_prompt"
+            if turn.input_payload.get("kind") == "initial_prompt"
+            else "dialogue_response"
+        ),
         status=job.status,
         provider=job.provider,
         speech_text=job.speech_text,

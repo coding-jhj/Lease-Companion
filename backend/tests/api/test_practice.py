@@ -171,6 +171,7 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     assert initial.status_code == 200
     initial_media = initial.json()
     assert initial_media["status"] == "queued"
+    assert initial_media["media_kind"] == "initial_prompt"
     assert initial_media["speech_text"] == avatar_speech_text(
         session["current_turn"]["prompt"]
     )
@@ -191,6 +192,7 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
+    assert media["media_kind"] == "dialogue_response"
     # 아바타는 방금 답변에 대한 상대방 반응을 말한다(사람다운 대화 기준).
     assert media["speech_text"] == avatar_speech_text(
         response.json()["dialogue_response"]
@@ -208,6 +210,7 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     )
     assert owned.status_code == 200
     assert owned.json()["practice_turn_id"] == response.json()["practice_turn_id"]
+    assert owned.json()["media_kind"] == "dialogue_response"
 
     latest = client.get(
         f"/api/practice-sessions/{session['practice_session_id']}/media/latest",
