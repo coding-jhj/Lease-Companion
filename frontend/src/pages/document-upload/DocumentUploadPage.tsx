@@ -105,7 +105,7 @@ export function DocumentUploadPage() {
   }
 
   return (
-    <PageShell layout="narrow" step="4 / 8" title="가지고 있는 문서 올리기" description="계약서는 필요하며, 다른 문서는 가지고 있는 것만 추가하면 됩니다.">
+    <PageShell layout="narrow" step="3 / 7" title="가지고 있는 문서 올리기" description="계약서는 필요하며, 다른 문서는 가지고 있는 것만 추가하면 됩니다.">
       <form className="stack" onSubmit={submit}>
         <div className="helper-banner">
           <strong>먼저 계약서 초안을 준비해 주세요.</strong>

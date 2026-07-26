@@ -4,6 +4,13 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/
 import { PageShell } from "../../components/layout/PageShell";
 import { GuidedReviewCard } from "../../features/extraction-review/GuidedReviewCard";
 import {
+  SituationAnswers,
+  emptySituationAnswer,
+  situationAnswerFromContract,
+  situationAnswered,
+  type SituationAnswer,
+} from "../../features/extraction-review/SituationAnswers";
+import {
   buildReviewPlan,
   type ReviewQueueItem,
   type ReviewSection,
@@ -51,7 +58,7 @@ const REVIEW_SECTIONS: Array<{
 }> = [
   {
     key: "money_direct",
-    title: "돈에 관한 내용",
+    title: "금전 피해로 이어질 수 있는 내용",
     description: "보증금·월세·계좌·등기 권리",
   },
   {
@@ -61,8 +68,8 @@ const REVIEW_SECTIONS: Array<{
   },
   {
     key: "suspected_issue",
-    title: "다시 봐야 할 내용",
-    description: "값이 빠졌거나 분명하지 않은 부분",
+    title: "직접 알려주실 내용",
+    description: "문서에 없거나 분명하지 않아 직접 답해야 하는 부분",
   },
   {
     key: "manual_or_unreadable",
@@ -96,7 +103,11 @@ export function ExtractionReviewPage() {
   const [verificationByKey, setVerificationByKey] = useState<Record<string, VerificationStatus>>({});
   const [reviewedKeys, setReviewedKeys] = useState<string[]>([]);
   const [savedDraftKeys, setSavedDraftKeys] = useState<string[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // 한 항목씩 넘기던 큐 대신 구역을 고르고 그 안 항목을 한 번에 본다.
+  const [activeSection, setActiveSection] = useState<ReviewSection | null>(null);
+  const [reviewFinished, setReviewFinished] = useState(false);
+  const [situation, setSituation] = useState<SituationAnswer>(emptySituationAnswer);
+  const [situationError, setSituationError] = useState(false);
   const [expandedGroupedKey, setExpandedGroupedKey] = useState<string | null>(null);
   const [unresolvedReasonByKey, setUnresolvedReasonByKey] = useState<
     Record<string, CannotVerifyReason>
@@ -116,36 +127,49 @@ export function ExtractionReviewPage() {
   const fields = fieldViewModels(documents);
   const queue = buildReviewPlan(fields);
   const reviewedKeySet = new Set(reviewedKeys);
-  const currentItem = queue[currentIndex] ?? null;
-  const currentSection = currentItem
-    ? REVIEW_SECTIONS.find((section) => section.key === currentItem.section) ?? null
-    : null;
-  const currentSectionItems = currentItem
-    ? queue.filter((item) => item.section === currentItem.section)
-    : [];
-  const currentSectionPosition = currentItem
-    ? currentSectionItems.findIndex((item) => item.key === currentItem.key) + 1
-    : 0;
   const sectionSummaries = REVIEW_SECTIONS.map((section) => {
     const items = queue.filter((item) => item.section === section.key);
     return {
       ...section,
       items,
-      completedCount: items.filter((item) => reviewedKeys.includes(item.key)).length,
+      // 확인 불가로 표시한 항목도 처리를 마친 것으로 센다. 남은 개수가 줄지 않으면 다음 구역을 못 찾는다.
+      completedCount: items.filter(
+        (item) => reviewedKeys.includes(item.key) || unresolvedReasonByKey[item.key] !== undefined,
+      ).length,
     };
   });
+  // "직접 알려주실 내용"은 계약 상황 질문을 담고 있어 문서 항목이 없어도 항상 남긴다.
+  const visibleSections = sectionSummaries.filter(
+    (section) => section.items.length > 0 || section.key === "suspected_issue",
+  );
+  const currentSection = visibleSections.find((section) => section.key === activeSection)
+    ?? visibleSections[0]
+    ?? null;
+  const currentSectionItems = currentSection ? currentSection.items : [];
   const completedCount = queue.filter((item) => reviewedKeys.includes(item.key)).length;
   const reviewedItems = queue.filter((item) => reviewedKeys.includes(item.key));
   const unresolvedItems = queue.filter((item) => unresolvedReasonByKey[item.key] !== undefined);
-  const groupedItems = queue.filter((item) => item.section === "grouped");
-  const groupedHandledCount = groupedItems.filter(
+  const sectionHandledCount = currentSectionItems.filter(
     (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
   ).length;
-  const bulkConfirmItems = groupedItems.filter((item) => (
-    item.bulkConfirmAllowed
+  const allHandled = queue.length > 0 && queue.every(
+    (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
+  );
+  const situationReady = situationAnswered(situation);
+  // 목록은 다 보이되 아직 확인하지 않은 첫 항목은 펼쳐 둔다. 빈 문자열은 사용자가 직접 접은 상태다.
+  const autoExpandKey = currentSection && currentSection.key !== "grouped"
+    ? currentSectionItems.find(
+      (item) => !reviewedKeySet.has(item.key) && unresolvedReasonByKey[item.key] === undefined,
+    )?.key ?? null
+    : null;
+  const expandedKey = expandedGroupedKey === "" ? null : expandedGroupedKey ?? autoExpandKey;
+  // 묶음 확인은 "나머지 내용"에서만 쓴다. 돈·책임 항목까지 한 번에 넘기면 확인이 형식만 남는다.
+  const bulkConfirmItems = currentSectionItems.filter((item) => (
+    item.section === "grouped"
+    && item.bulkConfirmAllowed
     && !reviewedKeySet.has(item.key)
     && unresolvedReasonByKey[item.key] === undefined
-    && expandedGroupedKey !== item.key
+    && expandedKey !== item.key
     && !Object.prototype.hasOwnProperty.call(drafts, item.key)
     && (verificationByKey[item.key] ?? item.view.field.verification_status) === "unverified"
   ));
@@ -165,6 +189,7 @@ export function ExtractionReviewPage() {
     setErrorMessage("");
 
     try {
+      const contract = await mvpService.getContract(contractId);
       const initialResponse = await mvpService.getLatestExtraction(contractId, controller.signal);
       if (controller.signal.aborted) return;
       const response = await pollUntilTerminal({
@@ -194,10 +219,18 @@ export function ExtractionReviewPage() {
         (item) => !loadedReviewedKeys.includes(item.key),
       );
       setDocuments(extractedDocuments);
+      setSituation(situationAnswerFromContract(contract));
+      setSituationError(false);
       setDrafts({});
       setSavedDraftKeys([]);
       setExpandedGroupedKey(null);
-      setCurrentIndex(firstUnverifiedIndex === -1 ? loadedQueue.length : firstUnverifiedIndex);
+      // 아직 확인하지 않은 항목이 있는 첫 구역부터 연다.
+      setActiveSection(
+        firstUnverifiedIndex === -1
+          ? loadedQueue[0]?.section ?? null
+          : loadedQueue[firstUnverifiedIndex].section,
+      );
+      setReviewFinished(firstUnverifiedIndex === -1 && loadedQueue.length > 0);
       setUnresolvedReasonByKey({});
       setExtractionConfirmed(false);
       setConfirmedInputSnapshotId(null);
@@ -228,6 +261,11 @@ export function ExtractionReviewPage() {
     void loadExtraction();
     return () => activePoll.current?.abort();
   }, [contractId]);
+
+  // 모든 항목과 계약 상황을 답하면 확인 완료 화면으로 넘어간다.
+  useEffect(() => {
+    if (allHandled && situationReady) setReviewFinished(true);
+  }, [allHandled, situationReady]);
 
   function updateField(view: FieldViewModel, value: string) {
     const wasSaved = savedDraftKeys.includes(view.key);
@@ -277,20 +315,9 @@ export function ExtractionReviewPage() {
     setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
   }
 
-  function advanceToNextUnreviewed(handledKey: string) {
-    setCurrentIndex((index) => {
-      const isPending = (item: ReviewQueueItem) => (
-        item.key !== handledKey
-        && !reviewedKeys.includes(item.key)
-        && unresolvedReasonByKey[item.key] === undefined
-      );
-      const nextIndex = queue.findIndex((item, candidateIndex) => (
-        candidateIndex > index && isPending(item)
-      ));
-      if (nextIndex !== -1) return nextIndex;
-      const wrappedIndex = queue.findIndex(isPending);
-      return wrappedIndex === -1 ? queue.length : wrappedIndex;
-    });
+  // 항목을 처리하면 자동 펼침으로 되돌려 다음 미확인 항목이 열리게 한다.
+  function collapseHandled(_handledKey: string) {
+    setExpandedGroupedKey(null);
   }
 
   function markReviewed(item: ReviewQueueItem) {
@@ -305,7 +332,7 @@ export function ExtractionReviewPage() {
       delete next[item.key];
       return next;
     });
-    advanceToNextUnreviewed(item.key);
+    collapseHandled(item.key);
   }
 
   function changeCurrent(item: ReviewQueueItem, value: string | string[]) {
@@ -327,53 +354,35 @@ export function ExtractionReviewPage() {
       delete next[item.key];
       return next;
     });
-    advanceToNextUnreviewed(item.key);
+    collapseHandled(item.key);
   }
 
   function markCannotVerify(item: ReviewQueueItem, reason: CannotVerifyReason) {
     setExpandedGroupedKey((current) => current === item.key ? null : current);
     setReviewedKeys((current) => current.filter((key) => key !== item.key));
     setUnresolvedReasonByKey((current) => ({ ...current, [item.key]: reason }));
-    advanceToNextUnreviewed(item.key);
+    collapseHandled(item.key);
   }
 
   function markGroupedItemsReviewed() {
     const keys = bulkConfirmItems.map((item) => item.key);
     if (keys.length === 0) return;
 
-    const nextReviewedKeys = new Set([...reviewedKeys, ...keys]);
     setExtractionConfirmed(false);
     setAnalysisStartUncertain(false);
     setExpandedGroupedKey((current) => current !== null && keys.includes(current) ? null : current);
-    setReviewedKeys([...nextReviewedKeys]);
+    setReviewedKeys((current) => [...new Set([...current, ...keys])]);
     setVerificationByKey((current) => {
       const next = { ...current };
       for (const key of keys) next[key] = "confirmed";
       return next;
     });
-    setCurrentIndex(() => {
-      const nextIndex = queue.findIndex((item) => (
-        !nextReviewedKeys.has(item.key)
-        && unresolvedReasonByKey[item.key] === undefined
-      ));
-      return nextIndex === -1 ? queue.length : nextIndex;
-    });
   }
 
   function selectSection(section: ReviewSection) {
-    const firstUnreviewedIndex = queue.findIndex(
-      (item) => (
-        item.section === section
-        && !reviewedKeys.includes(item.key)
-        && unresolvedReasonByKey[item.key] === undefined
-      ),
-    );
-    if (firstUnreviewedIndex !== -1) {
-      setCurrentIndex(firstUnreviewedIndex);
-      return;
-    }
-    const firstIndex = queue.findIndex((item) => item.section === section);
-    if (firstIndex !== -1) setCurrentIndex(firstIndex);
+    setReviewFinished(false);
+    setExpandedGroupedKey(null);
+    setActiveSection(section);
   }
 
   function fieldStatusMeta(view: FieldViewModel): { label: string; tone: string } {
@@ -388,6 +397,29 @@ export function ExtractionReviewPage() {
     setConfirmationError("");
     setAnalysisError("");
     setSubmitting(true);
+
+    // 계약 상황은 문서에서 읽을 수 없는 값이라 확인 완료 시점에 함께 저장한다.
+    if (situation.contractType !== null) {
+      try {
+        await mvpService.saveSituation(contractId, {
+          contract_type: situation.contractType,
+          contract_stage: situation.contractStage,
+          deposit_paid: situation.depositPaid,
+          signed: situation.signed,
+          move_in_date: situation.moveInDate || null,
+          balance_payment_date: situation.balancePaymentDate || null,
+          is_proxy_contract: situation.proxyStatus === "unknown"
+            ? null
+            : situation.proxyStatus === "yes",
+        });
+      } catch {
+        setConfirmationError(
+          "계약 상황을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        );
+        setSubmitting(false);
+        return;
+      }
+    }
 
     if (pendingCorrectionKeys.length > 0) {
       const corrections = pendingCorrectionKeys.map((key) => {
@@ -487,12 +519,10 @@ export function ExtractionReviewPage() {
     }
   }
 
-  const reviewFinished = currentIndex >= queue.length;
-
   return (
     <PageShell
       layout="workspace"
-      step="5 / 8"
+      step="4 / 7"
       title="읽은 내용 확인"
       description="계약서와 같은지 확인해 주세요."
     >
@@ -527,14 +557,15 @@ export function ExtractionReviewPage() {
           <>
             <nav className="review-section-nav" aria-label="확인 묶음">
               {sectionSummaries.map((section, index) => (
-                section.items.length === 0 ? null : (
+                // 번호는 구역 정의 순서를 그대로 쓴다. 빈 구역이 있어도 번호가 흔들리지 않는다.
+                !visibleSections.includes(section) ? null : (
                   <button
                     className={`review-section-nav__item${
-                      currentItem?.section === section.key ? " review-section-nav__item--active" : ""
+                      !reviewFinished && currentSection?.key === section.key ? " review-section-nav__item--active" : ""
                     }`}
                     type="button"
                     key={section.key}
-                    aria-current={currentItem?.section === section.key ? "step" : undefined}
+                    aria-current={!reviewFinished && currentSection?.key === section.key ? "step" : undefined}
                     onClick={() => selectSection(section.key)}
                   >
                     <span className="review-section-nav__number">{index + 1}</span>
@@ -566,58 +597,43 @@ export function ExtractionReviewPage() {
               </div>
             </div>
 
-            {!reviewFinished && currentItem && (
+            {!reviewFinished && currentSection && (
               <section className="guided-review-step" aria-label="현재 확인할 내용">
-                {currentSection && (
-                  <header className="review-current-section">
-                    <div>
-                      <h2>{currentSection.title}</h2>
-                      <p>{currentSection.description}</p>
-                    </div>
-                    <span className="review-current-section__count">
-                      {currentItem.section === "grouped"
-                        ? `${currentSectionItems.length}개`
-                        : `${currentSectionItems.length}개 중 ${currentSectionPosition}번째`}
-                    </span>
-                  </header>
-                )}
-                {currentItem.section !== "grouped" && currentItem.reasons.length > 0 && (
-                  <div className="review-item-reasons">
-                    <ul aria-label="이 내용을 확인하는 이유">
-                      <li>{currentItem.reasons[0]}</li>
-                    </ul>
-                    {currentItem.reasons.length > 1 && (
-                      <details>
-                        <summary>{`이유 ${currentItem.reasons.length - 1}개 더 보기`}</summary>
-                        <ul>
-                          {currentItem.reasons.slice(1).map((reason) => (
-                            <li key={reason}>{reason}</li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
+                <header className="review-current-section">
+                  <div>
+                    <h2>{currentSection.title}</h2>
+                    <p>{currentSection.description}</p>
                   </div>
+                  <span className="review-current-section__count">
+                    {`${currentSectionItems.length}개`}
+                  </span>
+                </header>
+                {currentSection.key === "suspected_issue" && (
+                  <>
+                    <SituationAnswers
+                      value={situation}
+                      busy={submitting}
+                      onChange={(next) => {
+                        setSituation(next);
+                        setSituationError(false);
+                        setExtractionConfirmed(false);
+                      }}
+                    />
+                    {situationError && !situationReady && (
+                      <p className="error" role="alert">계약 유형을 골라 주세요.</p>
+                    )}
+                  </>
                 )}
-                {currentItem.section !== "grouped" && currentIndex > 0 && (
-                  <button
-                    className="secondary guided-review-previous"
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
-                  >
-                    이전 내용 보기
-                  </button>
-                )}
-                {currentItem.section === "grouped" ? (
-                  <section className="grouped-review-panel" aria-labelledby="grouped-review-title">
-                    <header className="grouped-review-panel__head">
-                      <div>
-                        <h3 id="grouped-review-title">나머지 내용 모아보기</h3>
-                        <p>
-                          전체 {groupedItems.length}개 · 확인 {groupedHandledCount}개 · 남은 항목{" "}
-                          {groupedItems.length - groupedHandledCount}개
-                        </p>
-                      </div>
+                <section className="grouped-review-panel" aria-labelledby="grouped-review-title">
+                  <header className="grouped-review-panel__head">
+                    <div>
+                      <h3 id="grouped-review-title">{currentSection.title} 모아보기</h3>
+                      <p>
+                        전체 {currentSectionItems.length}개 · 확인 {sectionHandledCount}개 · 남은 항목{" "}
+                        {currentSectionItems.length - sectionHandledCount}개
+                      </p>
+                    </div>
+                    {currentSection.key === "grouped" && (
                       <button
                         type="button"
                         disabled={submitting || bulkConfirmItems.length === 0}
@@ -625,14 +641,17 @@ export function ExtractionReviewPage() {
                       >
                         {bulkConfirmItems.length}개 모두 문서와 같아요
                       </button>
-                    </header>
+                    )}
+                  </header>
+                  {currentSection.key === "grouped" && (
                     <p className="grouped-review-panel__notice">
                       고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다.
                     </p>
-                    <ul className="grouped-review-list">
-                      {groupedItems.map((item) => {
+                  )}
+                  <ul className="grouped-review-list">
+                    {currentSectionItems.map((item) => {
                         const meta = fieldStatusMeta(item.view);
-                        const expanded = expandedGroupedKey === item.key;
+                        const expanded = expandedKey === item.key;
                         const bulkAllowed = bulkConfirmKeySet.has(item.key);
                         return (
                           <li className="grouped-review-list__item" key={item.key}>
@@ -647,7 +666,7 @@ export function ExtractionReviewPage() {
                                 bulkAllowed ? "묶음 확인 가능" : null,
                                 expanded ? "접기" : "자세히 보기",
                               ].filter(Boolean).join(", ")}
-                              onClick={() => setExpandedGroupedKey(expanded ? null : item.key)}
+                              onClick={() => setExpandedGroupedKey(expanded ? "" : item.key)}
                             >
                               <span className="grouped-review-list__title">
                                 <strong>{item.title}</strong>
@@ -666,6 +685,13 @@ export function ExtractionReviewPage() {
                                 className="grouped-review-list__body"
                                 id={`grouped-review-${item.key}`}
                               >
+                                {item.reasons.length > 0 && (
+                                  <div className="review-item-reasons">
+                                    <ul aria-label="이 내용을 확인하는 이유">
+                                      {item.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                                    </ul>
+                                  </div>
+                                )}
                                 <GuidedReviewCard
                                   item={item}
                                   draftValue={drafts[item.key]}
@@ -679,17 +705,24 @@ export function ExtractionReviewPage() {
                           </li>
                         );
                       })}
-                    </ul>
-                  </section>
-                ) : (
-                  <GuidedReviewCard
-                    item={currentItem}
-                    draftValue={drafts[currentItem.key]}
-                    busy={submitting}
-                    onConfirm={() => markReviewed(currentItem)}
-                    onChange={(value) => changeCurrent(currentItem, value)}
-                    onCannotVerify={(reason) => markCannotVerify(currentItem, reason)}
-                  />
+                  </ul>
+                </section>
+                {allHandled && (
+                  <button
+                    className="guided-review-step__finish"
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => {
+                      if (!situationReady) {
+                        setSituationError(true);
+                        selectSection("suspected_issue");
+                        return;
+                      }
+                      setReviewFinished(true);
+                    }}
+                  >
+                    확인을 마치고 결과 준비하기
+                  </button>
                 )}
               </section>
             )}
@@ -720,7 +753,7 @@ export function ExtractionReviewPage() {
                     className="secondary"
                     type="button"
                     disabled={submitting}
-                    onClick={() => setCurrentIndex(Math.max(0, queue.length - 1))}
+                    onClick={() => setReviewFinished(false)}
                   >
                     이전 내용 보기
                   </button>

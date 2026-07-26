@@ -4,6 +4,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { normalizeAction } from "../../features/question-cards/actionNormalization";
+import {
+  POST_ACTION_PHASES,
+  STANDARD_POST_ACTIONS,
+  phaseForAction,
+  standardPostActionFor,
+  type StandardPostAction,
+} from "../../features/post-contract-actions/phases";
 import { plainGuideById, plainJudgmentGuides } from "../../features/judgment-results/plainGuides";
 import { mvpService } from "../../services/mvpService";
 import type {
@@ -22,6 +29,7 @@ interface ChecklistViewItem extends GuidanceActionItemDto {
   done: boolean;
   updated_at: string | null;
   writable: boolean;
+  standardGuide?: StandardPostAction;
 }
 
 const analysisStatusLabels: Record<AnalysisRunSummaryDto["status"], string> = {
@@ -160,7 +168,18 @@ export function ContractDetailPage() {
   }
 
   const checklistItems = items.filter((item) => item.kind === "checklist");
-  const postActions = items.filter((item) => item.kind === "post_action");
+  const generatedPostActions = items.filter((item) => item.kind === "post_action");
+  const postActions = generatedPostActions.map((item) => {
+    const standardGuide = standardPostActionFor(item.text) ?? undefined;
+    return standardGuide ? { ...item, text: standardGuide.text, standardGuide } : item;
+  });
+  const matchedStandardIds = new Set(
+    postActions.map((item) => item.standardGuide?.id).filter((id): id is string => Boolean(id)),
+  );
+  // 분석 결과에 없는 기본 행동은 진행률에 넣지 않는다. 공식 근거가 붙은 보충 안내로만 표시한다.
+  const missingStandardPostActions = generatedPostActions.length === 0
+    ? []
+    : STANDARD_POST_ACTIONS.filter((action) => !matchedStandardIds.has(action.id));
   const pendingChecklistItems = checklistItems.filter((item) => !item.done);
   const completedChecklistItems = checklistItems.filter((item) => item.done);
   const pendingPostActions = postActions.filter((item) => !item.done);
@@ -186,6 +205,47 @@ export function ContractDetailPage() {
     return plainGuideById(null);
   }
 
+  function renderOfficialPostActionGuide(entries: StandardPostAction[]) {
+    if (entries.length === 0) return null;
+    return (
+      <section className="official-post-action-guide" aria-labelledby="official-post-action-guide-title">
+        <h3 id="official-post-action-guide-title">공식 안내에서 추가로 확인할 행동</h3>
+        <p>분석 판정과 별개인 기본 행동입니다. 완료 진행률에는 포함하지 않습니다.</p>
+        {POST_ACTION_PHASES.map((phase) => {
+          const phaseEntries = entries.filter((entry) => entry.phase === phase);
+          if (phaseEntries.length === 0) return null;
+          return (
+            <section className="post-action-phase" key={phase}>
+              <h4>{phase}</h4>
+              <ul className="checklist-section__items">
+                {phaseEntries.map((entry) => (
+                  <li className="check-item check-item--row check-item--guidance" key={entry.id}>
+                    <span className="check-item__status" aria-label="기본 안내">i</span>
+                    <span className="check-item__text">{entry.text}</span>
+                    <details className="check-item__guide">
+                      <summary>방법과 공식 근거</summary>
+                      <div className="check-item__guide-body">
+                        <p>{entry.method}</p>
+                        <p className="check-item__sources">
+                          {entry.sources.map((source, index) => (
+                            <span key={source.url}>
+                              {index > 0 && " · "}
+                              <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
+                            </span>
+                          ))}
+                        </p>
+                      </div>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </section>
+    );
+  }
+
   function renderActionItems({
     title,
     description,
@@ -196,6 +256,7 @@ export function ContractDetailPage() {
     collapsible = false,
     hideWhenEmpty = false,
     total = entries.length,
+    groupByPhase = false,
   }: {
     title: string;
     /** 제목 아래 안내 문구. 남은 항목을 보여주는 섹션에만 전달한다(완료 섹션에는 넣지 않는다). */
@@ -208,6 +269,8 @@ export function ContractDetailPage() {
     hideWhenEmpty?: boolean;
     /** 진행률 분모. 제목 글자로 분기하면 제목을 바꿀 때 조용히 0%로 굳는다. */
     total?: number;
+    /** 계약 후 행동만 시기 4개로 묶어 보여준다. */
+    groupByPhase?: boolean;
   }) {
     // 항목이 없으면 빈 칸을 만들지 않는다. 화면 절반이 비어 보이던 원인이다.
     if (hideWhenEmpty && entries.length === 0) return null;
@@ -215,11 +278,9 @@ export function ContractDetailPage() {
     const expanded = expandedSections.includes(title);
     const visibleEntries = collapsible || expanded ? entries : entries.slice(0, INITIAL_VISIBLE_ITEMS);
     const hiddenCount = entries.length - visibleEntries.length;
-    const content = entries.length === 0
-      ? <p className="checklist-section__empty">{emptyMessage}</p>
-      : <>
-        <ul className="checklist-section__items">
-          {visibleEntries.map((item) => {
+    const renderItems = (list: ChecklistViewItem[]) => (
+      <ul className="checklist-section__items">
+        {list.map((item) => {
             const label = item.done ? completedActionLabel : actionLabel;
             const saving = savingItemKey === item.item_key;
             const guide = guideForItem(item);
@@ -242,18 +303,52 @@ export function ContractDetailPage() {
                   <span className="check-item__source">근거 판정 {item.resultIds.join(" · ")}</span>
                 )}
                 <details className="check-item__guide">
-                  <summary>쉽게 보기</summary>
+                  <summary>{item.standardGuide ? "방법과 공식 근거" : "쉽게 보기"}</summary>
                   <div className="check-item__guide-body">
-                    <p>{guide.explanation}</p>
-                    <p className="check-item__guide-money">
-                      <strong>확인하지 않으면</strong> {guide.financialImpact}
-                    </p>
+                    {item.standardGuide ? (
+                      <>
+                        <p>{item.standardGuide.method}</p>
+                        <p className="check-item__sources">
+                          {item.standardGuide.sources.map((source, index) => (
+                            <span key={source.url}>
+                              {index > 0 && " · "}
+                              <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
+                            </span>
+                          ))}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p>{guide.explanation}</p>
+                        <p className="check-item__guide-money">
+                          <strong>확인하지 않으면</strong> {guide.financialImpact}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </details>
               </li>
             );
-          })}
-        </ul>
+        })}
+      </ul>
+    );
+
+    // 계약 후 행동은 시기 순으로 묶어 보여준다. 그 외 목록은 그대로 한 줄씩 둔다.
+    const content = entries.length === 0
+      ? <p className="checklist-section__empty">{emptyMessage}</p>
+      : <>
+        {groupByPhase
+          ? POST_ACTION_PHASES.map((phase) => {
+            const phaseItems = visibleEntries.filter((item) => phaseForAction(item.text) === phase);
+            if (phaseItems.length === 0) return null;
+            return (
+              <section className="post-action-phase" key={phase}>
+                <h3>{phase}</h3>
+                {renderItems(phaseItems)}
+              </section>
+            );
+          })
+          : renderItems(visibleEntries)}
         {hiddenCount > 0 && (
           <button
             className="text-button checklist-section__more"
@@ -300,7 +395,7 @@ export function ContractDetailPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="8 / 8" title="체크리스트와 계약 후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
+    <PageShell layout="workspace" step="7 / 7" title="체크리스트와 계약 후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
       <div className="stack">
         {status === "loading" && <LoadingState title="계약 상세를 불러오는 중" description="체크리스트와 저장 이력을 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 상세를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContractDetail()} />}
@@ -356,7 +451,9 @@ export function ContractDetailPage() {
                 emptyMessage: "현재 남아 있는 계약 후 행동이 없습니다.",
                 hideWhenEmpty: true,
                 total: postActions.length,
+                groupByPhase: true,
               })}
+              {renderOfficialPostActionGuide(missingStandardPostActions)}
             </div>
             {hasCompletedItems && (
               <div className="checklist-completed-grid">

@@ -86,11 +86,14 @@ function ActionList({
   foldable = false,
   hideWhenEmpty = false,
   showCount = false,
+  wide = false,
 }: {
   title: string;
   description: string;
   items: string[];
   collapsible?: boolean;
+  /** 2열 배치에서 아래 한 줄을 통째로 쓰는 카드. 앞 카드가 비어 사라져도 자리가 밀리지 않는다. */
+  wide?: boolean;
   /** 처음부터 펼쳐진 상태로 시작할지. foldable일 때만 의미가 있다. */
   defaultOpen?: boolean;
   /** 제목 줄을 항상 펼침·접기 버튼으로 만든다. 단계별 행동 5칸이 같은 모양을 갖게 한다. */
@@ -134,7 +137,7 @@ function ActionList({
   }
 
   return (
-    <section className="action-hub__group">
+    <section className={`action-hub__group${wide ? " action-hub__group--wide" : ""}`}>
       <div className="action-hub__group__head">
         <h3>{title}</h3>
         {showCount && items.length > 0 && (
@@ -205,7 +208,7 @@ export function QuestionHub({
       <div className="action-hub__grid">
         <ActionList collapsible showCount hideWhenEmpty title="중개사에게 확인해야 할 사항" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
         <ActionList collapsible showCount hideWhenEmpty title="임대인에게 확인해야 할 사항" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
-        <ActionList collapsible showCount hideWhenEmpty title="문서에서 다시 확인할 내용" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
+        <ActionList wide collapsible showCount hideWhenEmpty title="문서에서 다시 확인할 내용" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
       </div>
     </section>
   );

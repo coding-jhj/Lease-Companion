@@ -18,7 +18,7 @@ function renderContractCreate() {
       <LocationDisplay />
       <Routes>
         <Route path="/contracts/new" element={<ContractCreatePage />} />
-        <Route path="/contracts/:contractId/situation" element={<p>계약 상황</p>} />
+        <Route path="/contracts/:contractId/upload" element={<p>문서 올리기</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -63,11 +63,11 @@ describe("ContractCreatePage", () => {
   it("shows the second step and example placeholder", () => {
     renderContractCreate();
 
-    expect(screen.getByText("2 / 8", { selector: ".step-badge" })).toBeInTheDocument();
+    expect(screen.getByText("2 / 7", { selector: ".step-badge" })).toBeInTheDocument();
     expect(screen.getByLabelText(/계약 이름/)).toHaveAttribute("placeholder", "예: 신림동 원룸 전세");
   });
 
-  it("trims a valid title and moves to its situation page", async () => {
+  it("trims a valid title and moves to the upload page", async () => {
     const createContract = vi.spyOn(mvpService, "createContract").mockResolvedValue(contract(37));
     renderContractCreate();
 
@@ -75,6 +75,6 @@ describe("ContractCreatePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "다음: 내 상황 알려주기" }));
 
     await waitFor(() => expect(createContract).toHaveBeenCalledWith("신림동 원룸 전세"));
-    expect(await screen.findByTestId("location")).toHaveTextContent("/contracts/37/situation");
+    expect(await screen.findByTestId("location")).toHaveTextContent("/contracts/37/upload");
   });
 });

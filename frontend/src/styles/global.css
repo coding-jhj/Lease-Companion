@@ -216,6 +216,14 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .review-item-reasons li { padding: 7px 10px; border-radius: 999px; background: #fff3d7; color: #6d5017; font-size: 13px; font-weight: 800; line-height: 1.35; }
 .review-item-reasons summary { padding: 2px 4px; color: #6d5017; font-size: 13px; font-weight: 800; cursor: pointer; }
 .review-item-reasons details[open] ul { margin-top: 6px; }
+.situation-answers { display: grid; gap: 14px; margin-bottom: 14px; padding: 18px; border: 1px solid #cfe0d4; border-radius: 14px; background: #f4faf5; }
+.situation-answers header { display: grid; gap: 4px; }
+.situation-answers h3 { margin: 0; color: #143b23; font-size: 17px; }
+.situation-answers header p { margin: 0; color: var(--ink-muted); font-size: 14px; line-height: 1.55; }
+.situation-answers fieldset { display: grid; gap: 8px; margin: 0; padding: 14px; border: 1px solid #d9e1da; border-radius: 12px; background: #fff; }
+.situation-answers .check-item { display: flex; align-items: center; gap: 8px; }
+.situation-answers input[type="radio"] { width: auto; }
+.guided-review-step__finish { margin-top: 14px; }
 .grouped-review-panel { display: grid; gap: 14px; overflow: hidden; border: 1px solid #ccd9cf; border-radius: 20px; background: #fff; box-shadow: 0 10px 30px rgba(48, 67, 54, 0.08); }
 .grouped-review-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 20px 22px 0; }
 .grouped-review-panel__head > div { display: grid; gap: 5px; min-width: 0; }
@@ -330,6 +338,15 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .check-item--row .check-item__guide { grid-column: 2; margin: 0; }
 .checklist-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .checklist-section__count { color: var(--ink-muted); font-size: 14px; font-weight: 800; white-space: nowrap; }
+.post-action-phase { display: grid; gap: 10px; }
+.post-action-phase + .post-action-phase { margin-top: 16px; }
+.post-action-phase h3, .post-action-phase h4 { margin: 0; padding-left: 2px; color: #2f6743; font-size: 14px; font-weight: 800; }
+.official-post-action-guide { display: grid; gap: 14px; padding: 18px; border: 1px solid #cfe0d4; border-radius: 16px; background: #f4faf5; }
+.official-post-action-guide > h3, .official-post-action-guide > p { margin: 0; }
+.official-post-action-guide > p { color: var(--ink); font-size: 14px; line-height: 1.55; }
+.check-item--guidance .check-item__status { border-color: #7aa889; color: #2f6743; }
+.check-item__sources { color: var(--ink-muted); font-size: 13px; }
+.check-item__sources a { color: #245f38; font-weight: 800; }
 .checklist-section__description { margin: 8px 0 0; color: var(--ink); font-size: 15px; line-height: 1.6; word-break: keep-all; overflow-wrap: break-word; }
 .checklist-progress { height: 8px; margin: 10px 0 14px; border-radius: 999px; background: #e6ddcd; overflow: hidden; }
 .checklist-progress__fill { height: 100%; border-radius: 999px; background: #1f4a30; transition: width 0.3s ease; }
@@ -935,7 +952,9 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .action-hub__header p { color: #2f6743; font-size: 14px; font-weight: 800; }
 .action-hub__header h2 { margin: 0; color: #143b23; font-size: 22px; }
 .action-hub__header span { display: block; margin-top: 8px; color: var(--ink); font-size: 15px; line-height: 1.6; }
-.action-hub__grid { display: grid; gap: 12px; }
+/* 사람에게 물을 것 2가지는 좌우로 나란히, 내가 문서를 볼 것은 아래 한 줄 전체를 쓴다. */
+.action-hub__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; }
+.action-hub__group--wide { grid-column: 1 / -1; }
 .action-hub__group { padding: 15px; border: 1px solid #ded7ca; border-radius: 14px; background: #fffdf8; }
 .action-hub__group--open { border-color: #8fbf9c; }
 .action-hub__group h3, .action-hub__group p { margin: 0; }
@@ -1009,6 +1028,7 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   .history-grid,
   .extraction-workspace-grid,
   .page-actions,
+  .action-hub__grid,
   .stage-guidance__grid { grid-template-columns: 1fr; }
   .report-hero { align-items: stretch; flex-direction: column; padding: 18px; }
   .report-hero__print { width: 100%; }

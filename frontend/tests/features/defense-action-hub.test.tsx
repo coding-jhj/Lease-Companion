@@ -177,6 +177,21 @@ describe("QuestionHub", () => {
     expect(within(landlord).getByText("계좌 명의를 확인하세요.")).toBeInTheDocument();
   });
 
+  // 중개사 카드가 비어 사라져도 문서 카드는 아래 한 줄을 그대로 차지해야 한다.
+  it("keeps the document card on its own full-width row", () => {
+    render(
+      <QuestionHub
+        results={[ruleWithQuestion("R01", "즉시 확인", "계약서의 금액 표기를 다시 확인하세요.")]}
+        guidance={[]}
+        stageGuidance={null}
+      />,
+    );
+
+    expect(screen.queryByRole("heading", { name: "중개사에게 확인해야 할 사항" })).not.toBeInTheDocument();
+    const documentSection = screen.getByRole("heading", { name: "문서에서 다시 확인할 내용" }).closest("section")!;
+    expect(documentSection).toHaveClass("action-hub__group--wide");
+  });
+
   it("shows questions as plain text without copy buttons", () => {
     const question = "임대인에게 입금 계좌 명의를 물어보세요.";
 

@@ -12,7 +12,8 @@ const CANONICAL_ACTIONS: Array<{
   pattern: RegExp;
   text: string;
 }> = [
-  { identity: "lease-report", kind: "post_action", pattern: /임대차(?:계약)?신고/, text: "신고 대상 여부를 확인하고, 대상이면 계약 체결일부터 30일 이내에 주택 임대차 계약 신고를 완료한 뒤 처리 결과를 보관하세요." },
+  // "임대차계약을 신고"처럼 조사가 끼어도 같은 행동이다. 붙여 쓴 형태만 보면 신고 안내가 세 번 나온다.
+  { identity: "lease-report", kind: "post_action", pattern: /임대차계약.{0,3}신고|임대차신고|주택임대차계약신고/, text: "신고 대상 여부를 확인하고, 대상이면 계약 체결일부터 30일 이내에 주택 임대차 계약 신고를 완료한 뒤 처리 결과를 보관하세요." },
   { identity: "move-in-protection", kind: "post_action", pattern: /전입신고|확정일자/, text: "실제 입주 후 전입신고·확정일자 등 권리 확보 절차를 완료하고 처리 결과를 확인하세요." },
   { identity: "ownership-authority", kind: "checklist", pattern: /갑구.*소유자|소유자.*갑구|등기상소유자|소유자와계약자|소유자와계약상대|계약권한/, text: "최신 등기사항증명서의 소유자와 계약 상대가 일치하는지 확인하고, 다르면 계약 권한 서류를 확인하세요." },
   { identity: "registry-rights", kind: "checklist", pattern: /최신.*등기|등기사항증명서.*발급|갑구와을구|갑구.*을구|소유권제한|권리제한/, text: "계약·잔금 직전 최신 등기사항증명서를 발급받아 갑구·을구의 소유권과 권리제한을 확인하세요." },

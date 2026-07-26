@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import analysisRunResultFixture from "../../../data/sample/fixtures/case-001/analysis_run_result.json";
 import generationResultFixture from "../../../data/sample/fixtures/case-001/generation_result.json";
+import { standardPostActionFor } from "../../src/features/post-contract-actions/phases";
 import { normalizeAction } from "../../src/features/question-cards/actionNormalization";
 import { ContractDetailPage } from "../../src/pages/contract-detail/ContractDetailPage";
 import { mvpService } from "../../src/services/mvpService";
@@ -125,7 +126,9 @@ describe("ContractDetailPage", () => {
       item_key: "R01:post_action:000000000001",
       text: "전입신고와 확정일자를 완료한다.",
     };
-    const postActionText = normalizeAction(postAction.text, "post_action").text;
+    const normalizedPostActionText = normalizeAction(postAction.text, "post_action").text;
+    const postActionText = standardPostActionFor(normalizedPostActionText)?.text
+      ?? normalizedPostActionText;
     const signingActionText = normalizeAction(signingAction.text, "checklist").text;
     generation.items[0].post_contract_action_items = [postAction];
     const detail: AnalysisRunDetailDto = {
@@ -211,8 +214,14 @@ describe("ContractDetailPage", () => {
     );
 
     const postSection = (await screen.findByRole("heading", { name: "계약 후 해야 할 행동" })).closest("section")!;
+    // 공식 보충 안내는 체크 진행률에 넣지 않는다.
     expect(within(postSection).getByText("1 / 2 확인 완료")).toBeInTheDocument();
     expect(within(postSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "1");
+    for (const phase of ["계약 체결 직후", "잔금 지급 전", "잔금 지급 시", "잔금·입주 후"]) {
+      expect(screen.getAllByRole("heading", { name: phase }).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByRole("heading", { name: "공식 안내에서 추가로 확인할 행동" })).toBeInTheDocument();
+    expect(screen.getByText("도배·장판·수리 등 임대인이 약속한 특약이 이행됐는지 확인하세요.")).toBeInTheDocument();
     expect(within(postSection).getByText("계약 후 보증금과 임차인의 권리를 보호하기 위해 필요한 조치를 확인해 보세요.")).toBeInTheDocument();
     const signingSection = screen.getByRole("heading", { name: "서명 전 체크리스트" }).closest("section")!;
     expect(within(signingSection).getByText("서명하기 전, 금전 피해와 분쟁으로 이어질 수 있는 항목을 한 번 더 확인해 보세요.")).toBeInTheDocument();

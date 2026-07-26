@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import contractExtractionFixture from "../../../data/sample/fixtures/case-001/contract_extraction.json";
 import registryExtractionFixture from "../../../data/sample/fixtures/case-001/registry_extraction.json";
 import { ExtractionReviewPage } from "../../src/pages/extraction-review/ExtractionReviewPage";
@@ -108,14 +108,84 @@ function renderPage() {
   );
 }
 
+// 구역을 골라 그 안 항목을 모두 처리한 뒤 계약 상황을 답하고 확인을 마치는 흐름.
+function pendingSectionButton(): HTMLElement | null {
+  const buttons = screen.queryAllByRole("button");
+  return buttons.find((button) => {
+    const match = button.textContent?.match(/(\d+)\s*\/\s*(\d+)/);
+    return match !== undefined && match !== null && Number(match[1]) < Number(match[2]);
+  }) ?? null;
+}
+
+function answerSituation() {
+  const contractType = screen.queryByRole("radio", { name: "전세" }) as HTMLInputElement | null;
+  if (contractType && !contractType.checked) {
+    fireEvent.click(contractType);
+    return true;
+  }
+  return false;
+}
+
+// 계약 상황은 "직접 알려주실 내용" 구역에서만 받는다. 확인 완료로 넘어가려면 계약 유형이 필요하다.
+function answerSituationInSection() {
+  fireEvent.click(screen.getByRole("button", { name: /3 직접 알려주실 내용/ }));
+  fireEvent.click(screen.getByRole("radio", { name: "전세" }));
+}
+
 function finishRemainingQueue() {
-  for (let guard = 0; guard < 100; guard += 1) {
+  for (let guard = 0; guard < 200; guard += 1) {
     const confirmButton = screen.queryByRole("button", { name: "네, 맞아요" });
-    if (!confirmButton) return;
-    fireEvent.click(confirmButton);
+    if (confirmButton) {
+      fireEvent.click(confirmButton);
+      continue;
+    }
+    const bulkButton = screen.queryByRole("button", { name: /개 모두 문서와 같아요$/ }) as HTMLButtonElement | null;
+    if (bulkButton && !bulkButton.disabled) {
+      fireEvent.click(bulkButton);
+      continue;
+    }
+    const nextSection = pendingSectionButton();
+    if (nextSection) {
+      fireEvent.click(nextSection);
+      continue;
+    }
+    if (answerSituation()) continue;
+    const finishButton = screen.queryByRole("button", { name: "확인을 마치고 결과 준비하기" });
+    if (finishButton) {
+      fireEvent.click(finishButton);
+      answerSituation();
+      // 계약 상황까지 답하면 확인 완료 화면으로 자동 전환된다. 남아 있으면 한 번 더 누른다.
+      const stillPending = screen.queryByRole("button", { name: "확인을 마치고 결과 준비하기" });
+      if (stillPending) fireEvent.click(stillPending);
+      return;
+    }
+    return;
   }
   throw new Error("review queue did not finish");
 }
+
+function mockContract() {
+  vi.spyOn(mvpService, "getContract").mockResolvedValue({
+    id: 1001,
+    title: "합성 계약",
+    contract_type: null,
+    contract_stage: null,
+    deposit_paid: null,
+    signed: null,
+    move_in_date: null,
+    balance_payment_date: null,
+    is_proxy_contract: null,
+    registry_case_id: null,
+    action_status: "none",
+    created_at: "2026-07-26T00:00:00Z",
+  });
+}
+
+beforeEach(() => {
+  mockContract();
+  // 계약 상황 저장은 확인 완료 직전에 함께 호출된다. 화면 흐름 테스트에서는 성공으로 둔다.
+  vi.spyOn(mvpService, "saveSituation").mockResolvedValue({} as never);
+});
 
 afterEach(() => {
   cleanup();
@@ -141,11 +211,11 @@ describe("ExtractionReviewPage", () => {
     const view = renderPage();
 
     expect(await screen.findByRole("navigation", { name: "확인 묶음" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /1 돈에 관한 내용/ }))
+    expect(screen.getByRole("button", { name: /1 금전 피해로 이어질 수 있는 내용/ }))
       .toBeInTheDocument();
     expect(screen.getByRole("button", { name: /2 책임과 특약/ }))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /3 다시 봐야 할 내용/ }))
+    expect(screen.getByRole("button", { name: /3 직접 알려주실 내용/ }))
       .toBeInTheDocument();
     expect(screen.getByRole("button", { name: /4 못 읽은 내용/ }))
       .toBeInTheDocument();
@@ -189,6 +259,7 @@ describe("ExtractionReviewPage", () => {
     fireEvent.click(screen.getByRole("button", {
       name: "2개 모두 문서와 같아요",
     }));
+    answerSituationInSection();
 
     expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
       .toBeInTheDocument();
@@ -225,6 +296,7 @@ describe("ExtractionReviewPage", () => {
     fireEvent.click(screen.getByRole("button", {
       name: "1개 모두 문서와 같아요",
     }));
+    answerSituationInSection();
 
     expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
       .toBeInTheDocument();
@@ -239,7 +311,7 @@ describe("ExtractionReviewPage", () => {
     expect(await screen.findByRole("progressbar", { name: /중요한 내용 .*개 중 .*개 확인/ }))
       .toBeInTheDocument();
     expect(screen.getByRole("heading", {
-      name: "돈에 관한 내용",
+      name: "금전 피해로 이어질 수 있는 내용",
     })).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", {
@@ -294,18 +366,22 @@ describe("ExtractionReviewPage", () => {
       target: { value: "수정 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
-    expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
 
+    // 다른 구역을 다녀와도 고친 값이 남아 있어야 한다.
+    fireEvent.click(screen.getByRole("button", { name: /1 금전 피해로 이어질 수 있는 내용/ }));
+    expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", {
       name: /2 책임과 특약/,
     }));
+    fireEvent.click(screen.getByRole("button", { name: /계약하려는 집 주소.*자세히 보기/ }));
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     expect(screen.getByRole("textbox", { name: /주소 수정 내용/ })).toHaveValue("수정 주소");
     fireEvent.click(screen.getByRole("button", { name: "수정 취소" }));
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
 
+    fireEvent.click(screen.getByRole("button", { name: /1 금전 피해로 이어질 수 있는 내용/ }));
     fireEvent.click(screen.getByRole("button", { name: "문서에서 확인하기 어려워요" }));
     fireEvent.click(screen.getByLabelText("어디를 봐야 할지 모르겠어요"));
+    answerSituationInSection();
 
     expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
       .toBeInTheDocument();
@@ -347,7 +423,7 @@ describe("ExtractionReviewPage", () => {
       target: { value: "수정 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => {
@@ -387,7 +463,7 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
     fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => expect(list).toHaveBeenCalledWith(1001));
@@ -414,7 +490,7 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
     fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
     expect(start).toHaveBeenCalledTimes(1);
@@ -443,7 +519,7 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
     fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
 
@@ -471,7 +547,7 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
     fireEvent.click(await screen.findByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("확인 결과 준비를 시작하지 못했습니다");
 
@@ -501,6 +577,7 @@ describe("ExtractionReviewPage", () => {
       target: { value: "첫 특약\n둘째 특약은 쉼표, 그대로" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => expect(submit).toHaveBeenCalledWith({
@@ -535,6 +612,7 @@ describe("ExtractionReviewPage", () => {
       target: { value: "수정 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -546,10 +624,12 @@ describe("ExtractionReviewPage", () => {
     expect(confirm).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: /2 책임과 특약/ }));
+    fireEvent.click(screen.getByRole("button", { name: /계약하려는 집 주소.*보기/ }));
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     expect(screen.getByRole("textbox", { name: /주소 수정 내용/ })).toHaveValue("수정 주소");
     fireEvent.click(screen.getByRole("button", { name: "수정 취소" }));
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
@@ -572,7 +652,7 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    finishRemainingQueue();
 
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -624,17 +704,21 @@ describe("ExtractionReviewPage", () => {
       target: { value: "첫 수정 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "확인 결과 준비를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "이전 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: /2 책임과 특약/ }));
+    fireEvent.click(screen.getByRole("button", { name: /계약하려는 집 주소.*보기/ }));
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     fireEvent.change(await screen.findByRole("textbox", { name: /주소 수정 내용/ }), {
       target: { value: "기존 주소" },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
@@ -673,6 +757,7 @@ describe("ExtractionReviewPage", () => {
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
     fireEvent.click(screen.getByRole("button", { name: "문서에서 확인하기 어려워요" }));
     fireEvent.click(screen.getByLabelText("문서에 적혀 있지 않아요"));
+    finishRemainingQueue();
     fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
 
     await waitFor(() => expect(start).toHaveBeenCalledWith(1001));
@@ -725,6 +810,8 @@ describe("ExtractionReviewPage", () => {
     first.unmount();
 
     vi.restoreAllMocks();
+    mockContract();
+    vi.spyOn(mvpService, "saveSituation").mockResolvedValue({} as never);
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(emptyExtraction);
     renderPage();
     expect(await screen.findByText("확인할 문서 내용이 없습니다")).toBeInTheDocument();
@@ -753,6 +840,8 @@ describe("ExtractionReviewPage", () => {
 
     vi.useRealTimers();
     vi.restoreAllMocks();
+    mockContract();
+    vi.spyOn(mvpService, "saveSituation").mockResolvedValue({} as never);
     const pendingAgain = vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(pending);
     const second = renderPage();
     await screen.findByText("문서 읽기 대기 중");
@@ -799,8 +888,94 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "보증금" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
-    expect(screen.getByRole("heading", { name: "계약하려는 집 주소" })).toBeInTheDocument();
+    // 이미 확인한 임대인 이름은 펼치지 않고, 다음 미확인 항목만 펼친다.
     expect(screen.queryByRole("heading", { name: "임대인 이름" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(screen.getByRole("button", { name: /2 책임과 특약/ }));
+    expect(screen.getByRole("heading", { name: "계약하려는 집 주소" })).toBeInTheDocument();
+  });
+
+  // 지워진 상황 입력 화면의 질문은 "직접 알려주실 내용" 구역에서 받는다.
+  it("restores the saved contract situation when the review is opened again", async () => {
+    vi.mocked(mvpService.getContract).mockResolvedValue({
+      id: 1001,
+      title: "합성 계약",
+      contract_type: "보증부 월세",
+      contract_stage: "계약 직후",
+      deposit_paid: true,
+      signed: true,
+      move_in_date: "2026-09-01",
+      balance_payment_date: "2026-08-30",
+      is_proxy_contract: false,
+      registry_case_id: null,
+      action_status: "none",
+      created_at: "2026-07-26T00:00:00Z",
+    });
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+
+    renderPage();
+
+    await screen.findByRole("navigation", { name: "확인 묶음" });
+    fireEvent.click(screen.getByRole("button", { name: /3 직접 알려주실 내용/ }));
+    expect(screen.getByRole("radio", { name: "보증부 월세" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "이미 서명했어요" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "계약금을 이미 지급했습니다 예" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "계약서에 이미 서명했습니다 예" })).toBeChecked();
+    expect(screen.getByLabelText("입주 예정일")).toHaveValue("2026-09-01");
+    expect(screen.getByLabelText("잔금 지급 예정일")).toHaveValue("2026-08-30");
+    expect(screen.getByRole("radio", { name: "집주인이 직접 계약해요" })).toBeChecked();
+  });
+
+  it("collects the contract situation in the third section and saves it before analysis", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+    const saveSituation = vi.spyOn(mvpService, "saveSituation").mockResolvedValue({} as never);
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue(
+      { input_snapshot_id: "SNAP-1001", created_at: "2026-07-26T00:00:00Z" },
+    );
+    vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
+
+    renderPage();
+
+    await screen.findByRole("navigation", { name: "확인 묶음" });
+    fireEvent.click(screen.getByRole("button", { name: /3 직접 알려주실 내용/ }));
+    expect(screen.getByRole("heading", { name: "계약 상황 알려주기" })).toBeInTheDocument();
+    // 대리인 계약을 고르면 준비할 서류를 함께 알려준다.
+    fireEvent.click(screen.getByRole("radio", { name: "집주인 대신 다른 사람이 계약해요" }));
+    expect(screen.getByText("위임장")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("입주 예정일"), { target: { value: "2026-09-01" } });
+    fireEvent.click(screen.getByRole("radio", { name: "전세" }));
+
+    finishRemainingQueue();
+    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+
+    await waitFor(() => expect(saveSituation).toHaveBeenCalledWith(1001, {
+      contract_type: "전세",
+      contract_stage: "계약금 입금 전",
+      deposit_paid: false,
+      signed: false,
+      move_in_date: "2026-09-01",
+      balance_payment_date: null,
+      is_proxy_contract: true,
+    }));
+  });
+
+  it("asks for the contract type before finishing the review", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      property_address: extractedField("property_address", "기존 주소"),
+    }));
+
+    renderPage();
+
+    await screen.findByRole("heading", { name: "계약하려는 집 주소" });
+    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인을 마치고 결과 준비하기" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("계약 유형을 골라 주세요.");
+    expect(screen.queryByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
+      .not.toBeInTheDocument();
   });
 });

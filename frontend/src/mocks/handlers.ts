@@ -108,6 +108,7 @@ export const handlers = [
       : HttpResponse.json({ access_token: "mock-access-token", token_type: "bearer" });
   }),
   http.get("/api/contracts", () => HttpResponse.json([getDashboardContract()])),
+  http.get("/api/contracts/:contractId", () => HttpResponse.json(getDashboardContract())),
   http.post("/api/contracts", async ({ request }) => {
     const body = (await request.json()) as { title?: string };
     if (!body.title) {
