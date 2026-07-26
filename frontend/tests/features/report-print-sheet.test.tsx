@@ -116,6 +116,12 @@ describe("ReportPrintSheet", () => {
     );
 
     expect(screen.getByRole("heading", { name: "내 계약 확인 결과", hidden: true })).toBeInTheDocument();
+    expect(screen.getByText("서명·송금 전에 확인할 질문과 행동을 우선순위 순으로 정리했습니다."))
+      .toBeInTheDocument();
+    const summary = screen.getByLabelText("확인 결과 요약", { selector: "dl" });
+    expect(summary).toHaveTextContent("우선 확인1개");
+    expect(summary).toHaveTextContent("직접 물어볼 내용5개");
+    expect(summary).toHaveTextContent("단계별 행동5개");
     const headings = screen.getAllByRole("heading", { hidden: true }).map((heading) => heading.textContent);
     expect(headings.indexOf("지금 먼저 확인할 일"))
       .toBeLessThan(headings.indexOf("직접 확인할 내용"));
@@ -143,7 +149,15 @@ describe("ReportPrintSheet", () => {
     }
 
     const detail = screen.getByRole("heading", { name: "문서 근거와 세부 판정 정보", hidden: true }).closest("section")!;
+    expect(detail).toHaveClass("report-print-sheet__section--appendix");
+    expect(within(detail).getByText("상세 부록")).toBeInTheDocument();
     expect(within(detail).getByText(/J01 · 상태: 불일치 · 시급도: 즉시 확인/)).toBeInTheDocument();
+    expect(detail.querySelector(".report-print-sheet__limitations")).toHaveTextContent(
+      "제출 자료를 기준으로 확인했습니다.",
+    );
+    const prioritySection = screen.getByRole("heading", { name: "지금 먼저 확인할 일", hidden: true }).closest("section")!;
+    expect(prioritySection.querySelector(".report-print-sheet__action-list")).toBeInTheDocument();
+    expect(prioritySection.querySelector(".report-print-sheet__action-number")).toHaveTextContent("1");
     for (const title of ["지금 먼저 확인할 일", "직접 확인할 내용", "계약 단계별 할 일", "판단 이유", "비슷한 상황에서 확인할 점"]) {
       const section = screen.getByRole("heading", { name: title, hidden: true }).closest("section")!;
       expect(section).not.toHaveTextContent("J01 · 상태: 불일치 · 시급도: 즉시 확인");
