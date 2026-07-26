@@ -39,7 +39,6 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof GuidedReviewC
     item: item(),
     draftValue: undefined,
     busy: false,
-    onConfirm: vi.fn(),
     onChange: vi.fn(),
     onCannotVerify: vi.fn(),
     ...overrides,
@@ -48,10 +47,11 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof GuidedReviewC
 }
 
 describe("GuidedReviewCard", () => {
-  it("기본 상태에서 확인·수정·확인 불가 행동을 제공한다", () => {
+  it("기본 상태에서 수정·확인 불가 두 행동만 제공한다", () => {
     renderCard();
 
-    expect(screen.getByRole("button", { name: "네, 맞아요" })).toBeEnabled();
+    // 확인은 구역 단위 묶음 버튼이 담당하므로 카드에는 개별 확인 버튼을 두지 않는다.
+    expect(screen.queryByRole("button", { name: "네, 맞아요" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "직접 고칠게요" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "문서에서 확인하기 어려워요" })).toBeEnabled();
     expect(screen.queryByRole("textbox", { name: "보증금 수정 내용" })).not.toBeInTheDocument();
@@ -119,7 +119,6 @@ describe("GuidedReviewCard", () => {
   it("busy이면 모든 행동과 확인 불가 이유 선택을 막는다", () => {
     renderCard({ busy: true });
 
-    expect(screen.getByRole("button", { name: "네, 맞아요" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "직접 고칠게요" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "문서에서 확인하기 어려워요" })).toBeDisabled();
   });
@@ -140,7 +139,6 @@ describe("GuidedReviewCard", () => {
         item={nextItem}
         draftValue="550,000"
         busy={false}
-        onConfirm={card.onConfirm}
         onChange={card.onChange}
         onCannotVerify={card.onCannotVerify}
       />,
@@ -148,7 +146,6 @@ describe("GuidedReviewCard", () => {
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "네, 맞아요" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
     expect(screen.getByRole("textbox", { name: "보증금 수정 내용" })).toHaveValue("550,000");
   });
@@ -164,14 +161,13 @@ describe("GuidedReviewCard", () => {
         item={item("monthly_rent", "500,000")}
         draftValue={undefined}
         busy={false}
-        onConfirm={card.onConfirm}
         onChange={card.onChange}
         onCannotVerify={card.onCannotVerify}
       />,
     );
 
     expect(screen.queryByRole("group", { name: "확인하기 어려운 이유" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "네, 맞아요" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "직접 고칠게요" })).toBeEnabled();
   });
 
   it("busy로 바뀌면 편집 입력과 저장·취소를 모두 막는다", () => {
@@ -183,7 +179,6 @@ describe("GuidedReviewCard", () => {
         item={card.item}
         draftValue={card.draftValue}
         busy
-        onConfirm={card.onConfirm}
         onChange={card.onChange}
         onCannotVerify={card.onCannotVerify}
       />,
@@ -203,7 +198,6 @@ describe("GuidedReviewCard", () => {
         item={card.item}
         draftValue={card.draftValue}
         busy
-        onConfirm={card.onConfirm}
         onChange={card.onChange}
         onCannotVerify={card.onCannotVerify}
       />,

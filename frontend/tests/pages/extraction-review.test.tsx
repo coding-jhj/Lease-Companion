@@ -134,7 +134,7 @@ function answerSituationInSection() {
 
 function finishRemainingQueue() {
   for (let guard = 0; guard < 200; guard += 1) {
-    const bulkButton = screen.queryByRole("button", { name: /개 모두 문서와 같아요$/ }) as HTMLButtonElement | null;
+    const bulkButton = screen.queryByRole("button", { name: /개 모두 네, 맞아요$/ }) as HTMLButtonElement | null;
     if (bulkButton && !bulkButton.disabled) {
       fireEvent.click(bulkButton);
       continue;
@@ -249,13 +249,13 @@ describe("ExtractionReviewPage", () => {
       .toBeInTheDocument();
     expect(screen.getByText(/전체 3개 · 확인 1개 · 남은 항목 2개/)).toBeInTheDocument();
     expect(screen.getByRole("button", {
-      name: "2개 모두 문서와 같아요",
+      name: "2개 모두 네, 맞아요",
     })).toBeEnabled();
-    expect(screen.getByText("고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다."))
+    expect(screen.getByText("고칠 내용이 없으면 한 번에 확인할 수 있습니다. 고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다."))
       .toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", {
-      name: "2개 모두 문서와 같아요",
+      name: "2개 모두 네, 맞아요",
     }));
     answerSituationInSection();
     finishRemainingQueue();
@@ -263,6 +263,28 @@ describe("ExtractionReviewPage", () => {
     expect(screen.getByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
       .toBeInTheDocument();
     expect(screen.getByText(/확인한 항목/)).toHaveTextContent("3개");
+  });
+
+  it("bulk-confirms a money section and moves on to the next section", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      deposit: extractedField("deposit", 100000000),
+      property_address: extractedField("property_address", "서울시 테스트구"),
+    }));
+
+    renderPage();
+
+    await screen.findByRole("navigation", { name: "확인 묶음" });
+    fireEvent.click(screen.getByRole("button", { name: /1 금전 피해로 이어질 수 있는 내용/ }));
+
+    // 고칠 내용이 없으면 구역 전체를 한 번에 확인하고 다음 구역으로 넘어간다.
+    const bulkButton = screen.getByRole("button", { name: /^\d+개 모두 네, 맞아요$/ });
+    expect(bulkButton).toBeEnabled();
+    fireEvent.click(bulkButton);
+
+    expect(screen.queryByRole("heading", { name: "금전 피해로 이어질 수 있는 내용 모아보기" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1 금전 피해로 이어질 수 있는 내용/ }))
+      .toHaveTextContent("1 / 1");
   });
 
   it("removes a corrected grouped item from bulk confirmation", async () => {
@@ -276,7 +298,7 @@ describe("ExtractionReviewPage", () => {
     await screen.findByRole("navigation", { name: "확인 묶음" });
     fireEvent.click(screen.getByRole("button", { name: /5 나머지 내용/ }));
     expect(screen.getByRole("button", {
-      name: "2개 모두 문서와 같아요",
+      name: "2개 모두 네, 맞아요",
     })).toBeEnabled();
 
     fireEvent.click(screen.getAllByRole("button", { name: "직접 고칠게요" })[0]);
@@ -286,10 +308,10 @@ describe("ExtractionReviewPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
 
     expect(screen.getByRole("button", {
-      name: "1개 모두 문서와 같아요",
+      name: "1개 모두 네, 맞아요",
     })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", {
-      name: "1개 모두 문서와 같아요",
+      name: "1개 모두 네, 맞아요",
     }));
     answerSituationInSection();
     finishRemainingQueue();
@@ -315,8 +337,9 @@ describe("ExtractionReviewPage", () => {
     }));
     expect((await screen.findAllByRole("heading", { name: /주소/ })).length).toBeGreaterThan(1);
     expect(await screen.findByRole("heading", { name: "등기사항증명서 계약하려는 집 주소" })).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "네, 맞아요" })[0]);
-    expect(screen.getByRole("button", { name: "확인 완료" })).toBeDisabled();
+    // 개별 확인 버튼은 없애고 구역 단위 묶음 확인만 남겼다.
+    expect(screen.queryByRole("button", { name: "네, 맞아요" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^\d+개 모두 네, 맞아요$/ }));
     expect(view.container.textContent).not.toMatch(/추출값|필드|confidence|스냅샷/);
   });
 
@@ -883,8 +906,9 @@ describe("ExtractionReviewPage", () => {
 
     await screen.findByRole("heading", { name: "보증금" });
     expect(screen.getByRole("heading", { name: "임대인 이름" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "확인 완료" })).toBeDisabled();
-    fireEvent.click(screen.getAllByRole("button", { name: "네, 맞아요" })[0]);
+    // 이미 확인한 항목은 카드에 "확인 완료" 상태로 남고 묶음 확인 대상에서 빠진다.
+    expect(screen.getByText("확인 완료")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^\d+개 모두 네, 맞아요$/ }));
     fireEvent.click(screen.getByRole("button", { name: /2 책임과 특약/ }));
     expect(screen.getByRole("heading", { name: "계약하려는 집 주소" })).toBeInTheDocument();
   });
@@ -965,8 +989,8 @@ describe("ExtractionReviewPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "계약하려는 집 주소" });
-    fireEvent.click(screen.getByRole("button", { name: "네, 맞아요" }));
-    fireEvent.click(screen.getByRole("button", { name: "다음 구역: 직접 알려주실 내용" }));
+    // 묶음 확인이 구역을 끝내고 바로 다음 구역으로 넘긴다.
+    fireEvent.click(screen.getByRole("button", { name: /^\d+개 모두 네, 맞아요$/ }));
     expect(screen.getByRole("button", { name: "계약 유형을 골라 주세요" })).toBeDisabled();
     expect(screen.queryByRole("heading", { name: "중요한 내용을 모두 확인했습니다" }))
       .not.toBeInTheDocument();

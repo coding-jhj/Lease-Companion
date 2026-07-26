@@ -82,7 +82,6 @@ function ActionList({
   description,
   items,
   collapsible = false,
-  defaultOpen = true,
   foldable = false,
   hideWhenEmpty = false,
   showCount = false,
@@ -94,15 +93,14 @@ function ActionList({
   collapsible?: boolean;
   /** 2열 배치에서 아래 한 줄을 통째로 쓰는 카드. 앞 카드가 비어 사라져도 자리가 밀리지 않는다. */
   wide?: boolean;
-  /** 처음부터 펼쳐진 상태로 시작할지. foldable일 때만 의미가 있다. */
-  defaultOpen?: boolean;
   /** 제목 줄을 항상 펼침·접기 버튼으로 만든다. 단계별 행동 5칸이 같은 모양을 갖게 한다. */
   foldable?: boolean;
   hideWhenEmpty?: boolean;
   showCount?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [open, setOpen] = useState(defaultOpen);
+  // 접기 블록은 항상 접힌 채로 시작한다.
+  const [open, setOpen] = useState(false);
   const hiddenCount = Math.max(0, items.length - INITIAL_ACTION_COUNT);
   const visibleItems = collapsible && !expanded ? items.slice(0, INITIAL_ACTION_COUNT) : items;
 
@@ -219,13 +217,6 @@ export function QuestionHub({
   );
 }
 
-// 지금 계약 단계에 해당하는 블록만 펼친 채로 시작한다. 나머지는 제목 줄만 보인다.
-const OPEN_BLOCK_BY_STAGE: Record<StageGuidanceDto["contract_context"]["contract_stage"], string> = {
-  "계약금 입금 전": "계약 전",
-  "서명 전": "계약 중",
-  "계약 직후": "계약 후",
-};
-
 export function StageActions({
   results,
   guidance,
@@ -261,20 +252,18 @@ export function StageActions({
   const duringContract = unique(stageGuidance?.during_contract_actions ?? signingActions).map(toPoliteEnding);
   const closingDay = unique(stageGuidance?.closing_day_actions ?? []).map(toPoliteEnding);
   const afterContract = unique(stageGuidance?.after_contract_actions ?? postActions).map(toPoliteEnding);
-  const openBlock = stageGuidance
-    ? OPEN_BLOCK_BY_STAGE[stageGuidance.contract_context.contract_stage]
-    : "계약 전";
   return (
     <section className="stage-guidance" aria-labelledby="stage-guidance-title">
       <div className="section-heading">
         <h2 id="stage-guidance-title">계약 단계별 행동</h2>
       </div>
       <div className="stage-guidance__grid">
-        <ActionList collapsible foldable defaultOpen={openBlock === "계약 전"} title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
-        <ActionList collapsible foldable defaultOpen={openBlock === "계약 중"} title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
-        <ActionList collapsible foldable defaultOpen={openBlock === "잔금·입주 당일"} title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
-        <ActionList collapsible foldable defaultOpen={openBlock === "계약 후"} title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
-        <ActionList foldable defaultOpen={false} title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
+        {/* 다섯 블록 모두 접힌 채로 시작한다. 필요한 단계를 사용자가 직접 펼친다. */}
+        <ActionList collapsible foldable title="계약 전" description="계약 상대와 문서·권리관계를 먼저 확인하세요." items={beforeContract} />
+        <ActionList collapsible foldable title="계약 중" description="서명할 계약서 문구와 조건을 확인하세요." items={duringContract} />
+        <ActionList collapsible foldable title="잔금·입주 당일" description="송금과 입주 직전에 다시 확인하세요." items={closingDay} />
+        <ActionList collapsible foldable title="계약 후" description="임차권 확보와 자료 보관을 이어서 처리하세요." items={afterContract} />
+        <ActionList foldable title="보관할 자료" description="나중에 다시 확인할 수 있도록 남겨두세요." items={records} />
       </div>
     </section>
   );

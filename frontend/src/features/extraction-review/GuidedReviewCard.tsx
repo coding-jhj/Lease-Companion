@@ -40,7 +40,6 @@ export interface GuidedReviewCardProps {
   draftValue: string | string[] | undefined;
   busy: boolean;
   completionLabel?: string;
-  onConfirm: () => void;
   onChange: (value: string | string[]) => void;
   onCannotVerify: (reason: CannotVerifyReason) => void;
 }
@@ -73,7 +72,6 @@ export function GuidedReviewCard({
   draftValue,
   busy,
   completionLabel,
-  onConfirm,
   onChange,
   onCannotVerify,
 }: GuidedReviewCardProps) {
@@ -176,19 +174,20 @@ export function GuidedReviewCard({
           <button type="button" disabled={busy} onClick={cancelEditing}>수정 취소</button>
         </section>
       ) : (
-        <div>
-          <button type="button" disabled={busy || completionLabel !== undefined} onClick={onConfirm}>
-            {completionLabel ?? "네, 맞아요"}
-          </button>
-          <button type="button" className="secondary" disabled={busy} onClick={startEditing}>직접 고칠게요</button>
-          <button
-            type="button"
-            className="ghost-button"
-            disabled={busy}
-            onClick={() => setMode("cannot-verify")}
-          >
-            문서에서 확인하기 어려워요
-          </button>
+        // 확인은 구역 단위 묶음 버튼이 담당한다. 카드에는 손봐야 할 때 쓰는 두 가지만 남긴다.
+        <div className="guided-review-card__actions">
+          {completionLabel && <p className="guided-review-card__state" role="status">{completionLabel}</p>}
+          <div className="guided-review-card__buttons">
+            <button type="button" className="secondary" disabled={busy} onClick={startEditing}>직접 고칠게요</button>
+            <button
+              type="button"
+              className="ghost-button"
+              disabled={busy}
+              onClick={() => setMode("cannot-verify")}
+            >
+              문서에서 확인하기 어려워요
+            </button>
+          </div>
         </div>
       )}
 

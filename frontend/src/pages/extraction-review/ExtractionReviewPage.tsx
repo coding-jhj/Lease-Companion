@@ -154,12 +154,13 @@ export function ExtractionReviewPage() {
     (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
   );
   const situationReady = situationAnswered(situation);
-  // 묶음 확인은 "나머지 내용"에서만 쓴다. 돈·책임 항목까지 한 번에 넘기면 확인이 형식만 남는다.
-  const bulkConfirmItems = currentSectionItems.filter((item) => (
-    item.section === "grouped"
-    && item.bulkConfirmAllowed
-    && !reviewedKeySet.has(item.key)
-    && unresolvedReasonByKey[item.key] === undefined
+  // 아직 손대지 않은 항목. 고친 항목·확인하지 못한 항목은 이미 처리된 것으로 본다.
+  const sectionPendingItems = currentSectionItems.filter((item) => (
+    !reviewedKeySet.has(item.key) && unresolvedReasonByKey[item.key] === undefined
+  ));
+  // 구역마다 묶음 확인을 제공한다. 직접 고친 항목은 빠지므로 개별 "직접 고칠게요"는 그대로 쓴다.
+  const bulkConfirmItems = sectionPendingItems.filter((item) => (
+    item.bulkConfirmAllowed
     && !Object.prototype.hasOwnProperty.call(drafts, item.key)
     && (verificationByKey[item.key] ?? item.view.field.verification_status) === "unverified"
   ));
@@ -306,19 +307,6 @@ export function ExtractionReviewPage() {
     setVerificationByKey((current) => ({ ...current, [view.key]: "corrected" }));
   }
 
-  function markReviewed(item: ReviewQueueItem) {
-    setReviewedKeys((current) => [...new Set([...current, item.key])]);
-    setVerificationByKey((current) => ({
-      ...current,
-      [item.key]: current[item.key] === "corrected" ? "corrected" : "confirmed",
-    }));
-    setUnresolvedReasonByKey((current) => {
-      const next = { ...current };
-      delete next[item.key];
-      return next;
-    });
-  }
-
   function changeCurrent(item: ReviewQueueItem, value: string | string[]) {
     setExtractionConfirmed(false);
     setAnalysisStartUncertain(false);
@@ -344,7 +332,7 @@ export function ExtractionReviewPage() {
     setUnresolvedReasonByKey((current) => ({ ...current, [item.key]: reason }));
   }
 
-  function markGroupedItemsReviewed() {
+  function markSectionItemsReviewed() {
     const keys = bulkConfirmItems.map((item) => item.key);
     if (keys.length === 0) return;
 
@@ -356,6 +344,12 @@ export function ExtractionReviewPage() {
       for (const key of keys) next[key] = "confirmed";
       return next;
     });
+
+    // 남은 항목을 모두 확인했다면 이어서 다음 구역으로 넘어간다. 상태 반영을 기다리지 않고
+    // 지금 값으로 판단한다.
+    const closesSection = sectionPendingItems.every((item) => keys.includes(item.key))
+      && (currentSection?.key !== "suspected_issue" || situationReady);
+    if (closesSection) goToNextSection();
   }
 
   function selectSection(section: ReviewSection) {
@@ -364,7 +358,12 @@ export function ExtractionReviewPage() {
   }
 
   function advanceSection() {
-    if (!currentSection || !currentSectionReady) return;
+    if (!currentSectionReady) return;
+    goToNextSection();
+  }
+
+  function goToNextSection() {
+    if (!currentSection) return;
 
     const currentIndex = visibleSections.findIndex((section) => section.key === currentSection.key);
     const followingSection = visibleSections[currentIndex + 1];
@@ -630,19 +629,19 @@ export function ExtractionReviewPage() {
                         {currentSectionItems.length - sectionHandledCount}개
                       </p>
                     </div>
-                    {currentSection.key === "grouped" && (
+                    {bulkConfirmItems.length > 0 && (
                       <button
                         type="button"
-                        disabled={submitting || bulkConfirmItems.length === 0}
-                        onClick={markGroupedItemsReviewed}
+                        disabled={submitting}
+                        onClick={markSectionItemsReviewed}
                       >
-                        {bulkConfirmItems.length}개 모두 문서와 같아요
+                        {bulkConfirmItems.length}개 모두 네, 맞아요
                       </button>
                     )}
                   </header>
-                  {currentSection.key === "grouped" && (
+                  {bulkConfirmItems.length > 0 && (
                     <p className="grouped-review-panel__notice">
-                      고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다.
+                      고칠 내용이 없으면 한 번에 확인할 수 있습니다. 고쳤거나 따로 확인이 필요한 항목은 묶음 확인에서 빠집니다.
                     </p>
                   )}
                   <ul className="grouped-review-list">
@@ -678,7 +677,6 @@ export function ExtractionReviewPage() {
                                 draftValue={drafts[item.key]}
                                 busy={submitting}
                                 completionLabel={reviewed ? "확인 완료" : unresolved ? "확인하지 못함" : undefined}
-                                onConfirm={() => markReviewed(item)}
                                 onChange={(value) => changeCurrent(item, value)}
                                 onCannotVerify={(reason) => markCannotVerify(item, reason)}
                               />

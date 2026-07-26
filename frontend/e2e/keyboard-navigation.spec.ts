@@ -20,7 +20,7 @@ async function finishReviewWithKeyboard(page: import("@playwright/test").Page) {
       continue;
     }
 
-    const bulkButton = page.getByRole("button", { name: /^\d+개 모두 문서와 같아요$/ });
+    const bulkButton = page.getByRole("button", { name: /^\d+개 모두 네, 맞아요$/ });
     if (await bulkButton.isVisible() && await bulkButton.isEnabled()) {
       await bulkButton.focus();
       await expect(bulkButton).toBeFocused();
@@ -70,9 +70,7 @@ test("situation entry and critical report actions work with the keyboard", async
   await page.getByRole("button", { name: "로그인하고 시작" }).click();
   await page.getByRole("link", { name: /실전 계약 점검/ }).click();
   const noDraftCard = page.getByRole("link", { name: /아직 계약서를 받지 않았어요/ });
-  const draftCard = page.getByRole("link", {
-    name: "계약서 초안 등을 받아 점검해 보기",
-  });
+  const draftCard = page.getByRole("link", { name: /계약서 초안을 받았어요/ });
   await noDraftCard.focus();
   await expect(noDraftCard).toBeFocused();
   await page.keyboard.press("Tab");
@@ -150,7 +148,10 @@ test("situation entry and critical report actions work with the keyboard", async
   await expect(saveCorrection).toBeFocused();
   await page.keyboard.press("Enter");
 
-  const cannotVerify = page.getByRole("button", { name: "문서에서 확인하기 어려워요" });
+  // 확인 구역 항목을 한 번에 보여주면서 같은 버튼이 여러 개 노출된다. 첫 항목으로 확인한다.
+  const cannotVerify = page.getByRole("button", { name: "문서에서 확인하기 어려워요" }).first();
+  // 수정 저장 요청이 끝나기 전에는 버튼이 비활성이라 포커스가 들어가지 않는다.
+  await expect(cannotVerify).toBeEnabled();
   await cannotVerify.focus();
   await expect(cannotVerify).toBeFocused();
   await page.keyboard.press("Enter");
@@ -166,7 +167,7 @@ test("situation entry and critical report actions work with the keyboard", async
   await expect(previousReview).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("navigation", { name: "확인 묶음" })).toBeVisible();
-  const finishReview = page.getByRole("button", { name: "확인을 마치고 결과 준비하기" });
+  const finishReview = page.getByRole("button", { name: "전체 확인 내용 보기" });
   await finishReview.focus();
   await expect(finishReview).toBeFocused();
   await page.keyboard.press("Enter");

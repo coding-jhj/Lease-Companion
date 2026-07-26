@@ -232,9 +232,13 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .grouped-review-panel__head p { color: var(--ink); font-size: 15px; font-weight: 500; line-height: 1.6; }
 .grouped-review-panel__head button { flex: 0 0 auto; width: auto; }
 .grouped-review-panel__notice { margin: 0 22px; padding: 10px 12px; border-radius: 10px; background: #fff7df; color: #6b531f; font-size: 13px; font-weight: 700; line-height: 1.5; }
-.grouped-review-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 16px; margin: 0; padding: 0 22px 22px; list-style: none; }
-.grouped-review-list__item { min-width: 0; overflow: hidden; border: 1px solid #d5dfd7; border-radius: 16px; background: #fff; }
-.grouped-review-list__summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 15px 16px; border: 0; border-bottom: 1px solid #e2e8e3; border-radius: 0; background: #f7faf7; color: #24352a; text-align: left; box-shadow: none; }
+/* 확인 항목은 한 줄에 3개씩 카드로 늘어놓는다. 폭이 좁아지면 자동으로 줄어든다. */
+.grouped-review-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 0; padding: 0 22px 20px; list-style: none; }
+@media (min-width: 900px) {
+  .grouped-review-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.grouped-review-list__item { display: grid; align-content: start; min-width: 0; overflow: hidden; border: 1px solid #dbe4dd; border-radius: 16px; background: #fff; }
+.grouped-review-list__summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 14px 16px; border: 0; border-radius: 0; background: #f2f6f3; color: #24352a; text-align: left; box-shadow: none; }
 .grouped-review-list__summary:hover:not(:disabled) { background: #f5f8f5; color: #24352a; }
 .grouped-review-list__title { display: grid; gap: 4px; min-width: 0; }
 .grouped-review-list__title strong { color: #203d2a; font-size: 15px; }
@@ -242,9 +246,11 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .grouped-review-list__status { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
 .grouped-review-list__status em { padding: 4px 8px; border-radius: 999px; background: #e5f2e8; color: #24603a; font-size: 13px; font-style: normal; font-weight: 900; white-space: nowrap; }
 .grouped-review-list__status > span:last-child { min-width: 28px; color: var(--ink-muted); font-size: 13px; font-weight: 800; text-align: right; }
-.grouped-review-list__body { background: #fff; }
+.grouped-review-list__body { padding: 0; background: #fff; }
 .grouped-review-list__body > .review-item-reasons { padding: 14px 16px 0; }
-.grouped-review-list__body .guided-review-card { padding: 16px; border: 0; border-radius: 0; box-shadow: none; }
+.grouped-review-list__body .guided-review-card { gap: 12px; padding: 16px; border: 0; border-radius: 0; box-shadow: none; }
+.grouped-review-list__body .guided-review-card h2 { font-size: 17px; }
+.grouped-review-list__body .guided-review-card > p { font-size: 15px; }
 .guided-review-card { display: grid; gap: 18px; padding: 22px; border: 1px solid #ccd9cf; border-radius: 20px; background: #fff; box-shadow: 0 10px 30px rgba(48, 67, 54, 0.08); }
 .guided-review-card h2, .guided-review-card h3, .guided-review-card p { margin: 0; }
 .guided-review-card > p { color: #2c3d33; font-size: 16px; font-weight: 600; line-height: 1.6; }
@@ -262,6 +268,10 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .guided-clause-hint__body { padding: 0 12px 11px; color: #234a30; font-size: 14px; font-weight: 700; line-height: 1.6; }
 .guided-clause-hint__ref { color: var(--ink-muted); font-size: 13px; font-weight: 700; }
 .guided-review-card > div, .guided-review-card > section[aria-label="내용 수정"] { display: grid; gap: 9px; }
+/* 손봐야 할 때 쓰는 두 버튼은 한 줄에 좌우로 나눠 놓는다. */
+.guided-review-card__buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+.guided-review-card__buttons > button { width: 100%; margin: 0; }
+.guided-review-card__state { color: var(--ink-muted); font-size: 14px; font-weight: 700; }
 
 .guided-review-card fieldset { display: grid; gap: 10px; margin: 0; padding: 15px; border: 1px solid #d9e1da; border-radius: 14px; }
 .guided-review-card fieldset label { display: flex; align-items: center; gap: 8px; }
@@ -541,7 +551,27 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .priority-group[data-priority="일반 확인"] .signal-icon { background: #315d70; }
 .priority-group[data-priority="일반 확인"] h2 { color: #284e60; }
 
-.card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+/* 두 칸 높이를 맞춘다. 관리 메뉴를 펼치면 왼쪽 기본 버튼도 같은 높이로 늘어난다. */
+.card-actions { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; gap: 8px; margin-top: 8px; }
+.card-actions > .button-link { display: flex; align-items: center; justify-content: center; }
+/* 계약 관리 메뉴. 스타일이 없으면 링크마다 폭·정렬이 달라져 서로 겹쳐 보인다. */
+.contract-card__management { min-width: 0; }
+.contract-card__management > summary {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef3ef;
+  color: #245236;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+}
+.contract-card__management > summary::marker { content: ""; }
+.contract-card__management > summary::after { content: " ▾"; }
+.contract-card__management[open] > summary::after { content: " ▴"; }
+.contract-card__management[open] > summary { margin-bottom: 8px; }
+.contract-card__management-actions { display: grid; gap: 8px; }
+.contract-card__management-actions > .text-link { display: block; width: 100%; grid-column: auto; }
 .text-link { padding: 10px 12px; border-radius: 10px; background: #eef3ef; color: #245236; font-size: 14px; font-weight: 800; text-align: center; text-decoration: none; }
 .text-link--report { background: #245c38; color: #fff; }
 .text-link--danger { grid-column: 1 / -1; border: 0; background: #fdeceb; color: #8a2020; cursor: pointer; font-family: inherit; }
@@ -1009,12 +1039,11 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   .grouped-review-panel__head { align-items: stretch; flex-direction: column; padding: 18px 14px 0; }
   .grouped-review-panel__head button { width: 100%; }
   .grouped-review-panel__notice { margin: 0 14px; }
-  .grouped-review-list__summary { grid-template-columns: 1fr; gap: 10px; padding: 15px 14px; }
+  .grouped-review-list { grid-template-columns: 1fr; gap: 12px; padding: 0 14px 16px; }
+  .grouped-review-list__summary { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
   .grouped-review-list__status { justify-content: flex-start; flex-wrap: wrap; }
   .grouped-review-list__status > span:last-child { margin-left: auto; }
   .grouped-review-list__title > span { white-space: normal; }
-  .grouped-review-list { grid-template-columns: 1fr; padding: 0 14px 16px; }
-  .grouped-review-list__body { padding: 0; }
   .app-header { align-items: flex-start; flex-wrap: wrap; }
   .header-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
   .text-link, .app-header a, .app-header button, .header-actions .step-badge { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; }
@@ -1139,8 +1168,45 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   .app-shell--report .report-hero h2 { margin: 3px 0 4px; font-size: 18px; }
   .app-shell--report .report-hero span { font-size: 14px; line-height: 1.35; }
   .app-shell--report .report-hero__print { padding: 7px 10px; }
-  .app-shell--report .report-hero__counts { margin-top: 10px; }
-  .app-shell--report .report-hero__counts strong { font-size: 22px; }
+  /* 작은 화면에서 첫 확인 항목이 첫 화면 안에 들어오도록 리포트 머리 부분만 압축한다.
+     확인 우선순위 개수는 한 줄로, 안내·제목 여백은 최소로 줄인다. 종합 판정이 아니라는
+     안내 문구는 그대로 둔다. */
+  .app-shell--report .journey-progress { gap: 6px; padding: 8px 10px; }
+  .app-shell--report .journey-progress__meta { display: none; }
+  .app-shell--report .page-card > .eyebrow { display: none; }
+  .app-shell--report .page-card > h1 { font-size: 20px; }
+  /* 리포트 안내 문장은 바로 아래 확인 항목이 같은 내용을 보여 주므로 작은 화면에서는 감춘다.
+     종합 판정이 아니라는 hero 안내 문구는 그대로 남긴다. */
+  .app-shell--report .page-card > .description { display: none; }
+  .app-shell--report .report-hero { gap: 8px; }
+  .app-shell--report .report-hero h2 { font-size: 17px; line-height: 1.3; }
+  .app-shell--report .report-hero span { margin-top: 4px; font-size: 12px; line-height: 1.4; }
+  .app-shell--report .report-hero__print { padding: 6px 10px; font-size: 13px; }
+  .app-shell--report .report-hero__counts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .app-shell--report .report-hero__counts li {
+    display: grid;
+    gap: 0;
+    padding: 6px 4px;
+    border-top-width: 3px;
+    text-align: center;
+  }
+  .app-shell--report .report-hero__counts li > span { font-size: 12px; }
+  .app-shell--report .report-hero__counts strong { font-size: 18px; }
+  .app-shell--report .report-hero__counts strong em { font-size: 12px; }
+  .app-shell--report .report-tabs { gap: 4px; padding: 3px; }
+  .app-shell--report .report-tabs__tab { padding: 6px 4px; font-size: 13px; }
+  .app-shell--report .journey-progress__back { padding: 6px 8px; font-size: 13px; }
+  .app-shell--report .priority-group__header { gap: 8px; padding: 8px 10px; }
+  .app-shell--report .priority-group__header h2 { font-size: 17px; }
+  /* 묶음 설명은 접기 머리말에만 있는 보조 문구라 작은 화면에서는 감춘다. */
+  .app-shell--report .priority-group__header p { display: none; }
+  .app-shell--report .result-card { padding: 12px; }
+  .app-shell--report .result-card__meta { gap: 4px; margin-bottom: 6px; }
+  .app-shell--report .result-card__meta span { padding: 4px 9px; font-size: 12px; }
   .app-shell--report .report-panel { gap: 10px; }
   h1 { font-size: 24px; }
   .mode-select-grid,
