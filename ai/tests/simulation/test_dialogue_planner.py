@@ -168,3 +168,23 @@ def test_dialogue_plan_has_no_emotion_field():
 
     assert plan is not None
     assert "emotion" not in type(plan).model_fields
+
+
+def test_plan_uses_intent_recorded_by_evaluation_instead_of_re_reading_answer():
+    """평가가 정한 의도를 대사 생성이 그대로 쓴다. 같은 답변을 두 번 해석하지 않는다."""
+
+    scenario, _ = _assets()
+    evaluation = _evaluation("TURN-01").model_copy(
+        update={"dialogue_intent": "contract_hold"}
+    )
+
+    plan = plan_grounded_dialogue(
+        scenario,
+        scenario.dialogue_turns[0],
+        "이 특약은 무슨 뜻인가요?",  # 키워드만 보면 clause_meaning으로 읽히는 문장
+        evaluation,
+    )
+
+    assert plan is not None
+    assert plan.question_intent == "contract_hold"
+    assert plan.speech_act == "respond_to_hold"

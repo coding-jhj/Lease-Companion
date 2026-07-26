@@ -16,6 +16,20 @@ import type {
 
 const money = new Intl.NumberFormat("ko-KR");
 
+// 연습을 끝낼지 되물어야 하는 행동 의도. `추가 확인`·`특약 수정 요구`는 대화를 이어 가는
+// 의도이므로 기록만 하고 확인 화면을 띄우지 않는다. 시나리오가 허용하는 최종 선택지
+// (allowed_final_actions)에 없는 `특약 수정 요구`를 제출하지 않기 위한 구분이기도 하다.
+const terminalIntents: PracticeSelectedAction[] = ["진행", "보류", "중단"];
+
+// 반응 영상이 끝났다는 신호가 오지 않아도 대화가 멈추지 않도록 두는 상한.
+const reactionMaxSeconds = 15;
+
+const intentQuestions: Record<string, string> = {
+  진행: "이대로 계약을 진행하시겠습니까?",
+  보류: "오늘은 계약을 보류하시겠습니까?",
+  중단: "계약을 중단하시겠습니까?",
+};
+
 // 데스크탑(2단)에서는 이전 대화를 기본으로 펼쳐 두고, 모바일(오버레이)에서는 접어 둔다.
 function isWideViewport() {
   return typeof window !== "undefined" && Boolean(window.matchMedia?.("(min-width: 900px)").matches);
@@ -76,6 +90,11 @@ export function PracticeSessionPage() {
   const [avatarMedia, setAvatarMedia] = useState<PracticeMediaJobDto | null>(null);
   const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
   const [avatarSpeechText, setAvatarSpeechText] = useState<string | null>(null);
+  // 상대방 반응을 재생하는 동안에는 다음 질문을 보여 주지 않고 입력도 받지 않는다.
+  const [reactionPlaying, setReactionPlaying] = useState(false);
+  // 답변에서 읽은 계약 행동 의도. 바로 끝내지 않고 사용자에게 한 번 되묻는다.
+  const [pendingIntent, setPendingIntent] = useState<PracticeSelectedAction | null>(null);
+  const [dismissedIntents, setDismissedIntents] = useState<PracticeSelectedAction[]>([]);
 
   async function loadSession() {
     setStatus("loading");
@@ -188,6 +207,19 @@ export function PracticeSessionPage() {
       setAvatarMedia(response.media ?? null);
       // 아바타는 방금 answer에 대한 상대방 반응을 말한다. 반응이 없으면 현재 장면 대사.
       setAvatarSpeechText(response.dialogue_response ?? response.session.current_turn?.prompt ?? null);
+      // 다음 장면으로 넘어갈 때만 반응을 먼저 재생하고 질문을 미룬다. 같은 장면에 머무는
+      // 재질문·provider 복구는 반응 자체가 그 장면의 대사이므로 미룰 것이 없고, 대화가
+      // 끝났으면 곧바로 최종 선택 화면으로 넘어가던 기존 흐름을 유지한다.
+      const nextTurnId = response.session.current_turn?.turn_id;
+      setReactionPlaying(
+        Boolean(response.dialogue_response) && Boolean(nextTurnId) && nextTurnId !== answeredTurn.turn_id,
+      );
+      const intent = response.evaluation?.action_intent ?? null;
+      setPendingIntent(
+        intent && terminalIntents.includes(intent) && !dismissedIntents.includes(intent)
+          ? intent
+          : null,
+      );
       setAvatarVideoUrl((current) => {
         if (current) URL.revokeObjectURL(current);
         return null;
@@ -239,6 +271,51 @@ export function PracticeSessionPage() {
     }
   }
 
+  // 반응 재생이 끝나면 미뤄 둔 다음 질문을 보여 준다. 대사를 비우면 아바타가 현재
+  // TURN 질문을 다시 말한다.
+  function finishReaction() {
+    if (!reactionPlaying) return;
+    setReactionPlaying(false);
+    setAvatarSpeechText(null);
+  }
+
+  useEffect(() => {
+    if (!reactionPlaying) return;
+    const timer = window.setTimeout(finishReaction, reactionMaxSeconds * 1000);
+    return () => window.clearTimeout(timer);
+  }, [reactionPlaying]);
+
+  // 대화 도중 읽은 행동 의도는 사용자가 확인해야 최종 선택으로 확정된다.
+  async function confirmIntent(intent: PracticeSelectedAction) {
+    if (!session) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      if (session.current_state !== "ACTION-SELECTION" && session.current_turn) {
+        await practiceService.advanceDialogue(sessionId, {
+          request_id: createPracticeRequestId("advance"),
+          turn_id: session.current_turn.turn_id,
+          destination: "action_selection",
+        });
+      }
+      await practiceService.submitFinalAction(sessionId, {
+        request_id: createPracticeRequestId("final"),
+        selected_action: intent,
+        response_time_seconds: elapsedSeconds(turnStartedAt.current),
+      });
+      navigate(`/practice/sessions/${sessionId}/result`);
+    } catch {
+      setErrorMessage("선택을 저장하지 못했습니다. 연습 내용은 그대로입니다. 다시 시도해 주세요.");
+      setSubmitting(false);
+    }
+  }
+
+  function dismissIntent(intent: PracticeSelectedAction) {
+    // 같은 의도로 확인 화면을 반복해서 띄우지 않는다.
+    setDismissedIntents((current) => current.includes(intent) ? current : [...current, intent]);
+    setPendingIntent(null);
+  }
+
   function submitAnswer(event: FormEvent) {
     event.preventDefault();
     void sendTurn(false);
@@ -246,7 +323,7 @@ export function PracticeSessionPage() {
 
   function handleAnswerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     const isDesktopKeyboard = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches ?? false;
-    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || !isDesktopKeyboard || submitting || !answer.trim()) return;
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || !isDesktopKeyboard || inputLocked || !answer.trim()) return;
     event.preventDefault();
     void sendTurn(false);
   }
@@ -282,6 +359,8 @@ export function PracticeSessionPage() {
   }
 
   const isActionSelection = session?.current_state === "ACTION-SELECTION";
+  // 반응 재생 중과 종료 확인 중에는 새 답변을 받지 않는다.
+  const inputLocked = submitting || reactionPlaying || pendingIntent !== null;
   const evaluationNotice = practiceEvaluationNotice(lastResponse);
   // 상대방 반응은 대화 기록에 쌓이고, 큰 화면에는 지금 답할 대사만 표시한다.
   const brokerSpeech = avatarSpeechText ?? session?.current_turn?.prompt ?? "";
@@ -309,7 +388,8 @@ export function PracticeSessionPage() {
                             : <p className="practice-chat__empty" role="tabpanel" aria-labelledby="drawer-tab-contract">계약 내용을 불러오지 못했습니다.</p>)
                         : <PracticeChatPanel
                             sessionId={session.practice_session_id}
-                            currentTurn={session.current_turn}
+                            // 반응이 끝나기 전에는 다음 질문을 대화 기록에도 미리 띄우지 않는다.
+                            currentTurn={reactionPlaying ? null : session.current_turn}
                             latestTurn={latestConversationTurn}
                             refreshToken={conversationRefreshToken}
                           />}
@@ -326,16 +406,31 @@ export function PracticeSessionPage() {
                       mediaStatus={avatarMedia?.status ?? null}
                       onToggleConversation={() => setConversationOpen((open) => !open)}
                       conversationOpen={conversationOpen}
+                      onSpeechEnd={finishReaction}
                     />
                     <section className="practice-dialogue practice-dialogue--composer" aria-label="현재 답변">
+                      {pendingIntent && !reactionPlaying && (
+                        <div className="practice-intent-confirm" role="group" aria-labelledby="practice-intent-title">
+                          <h3 id="practice-intent-title">{intentQuestions[pendingIntent]}</h3>
+                          <p>지금 끝내면 지금까지 확인한 내용으로 결과를 정리해 드립니다.</p>
+                          <div className="practice-dialogue-actions">
+                            <button type="button" className="primary" disabled={submitting} onClick={() => void confirmIntent(pendingIntent)}>
+                              {submitting ? "정리 중…" : "네, 이렇게 하겠습니다"}
+                            </button>
+                            <button type="button" className="secondary" disabled={submitting} onClick={() => dismissIntent(pendingIntent)}>
+                              아니요, 대화를 더 하겠습니다
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <form className="practice-answer-composer" onSubmit={submitAnswer}>
                         <div className="practice-answer-composer__row">
                           <label htmlFor="practice-answer">말하기</label>
-                          <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder="하고 싶은 말을 입력하세요…" disabled={submitting} />
-                          <button type="submit" className="primary" disabled={submitting || !answer.trim()}>{submitting ? "확인 중…" : "이렇게 말할게요"}</button>
+                          <textarea id="practice-answer" aria-label="내 답변" value={answer} maxLength={2000} onChange={(event) => setAnswer(event.target.value)} onKeyDown={handleAnswerKeyDown} placeholder={reactionPlaying ? "공인중개사의 말이 끝나면 답할 수 있습니다…" : "하고 싶은 말을 입력하세요…"} disabled={inputLocked} />
+                          <button type="submit" className="primary" disabled={inputLocked || !answer.trim()}>{submitting ? "확인 중…" : "이렇게 말할게요"}</button>
                         </div>
                         <p className="practice-answer-shortcut">Enter로 보내기 · Shift+Enter로 줄바꿈</p>
-                        <button type="button" className="secondary practice-answer-composer__skip" disabled={submitting} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
+                        <button type="button" className="secondary practice-answer-composer__skip" disabled={inputLocked} onClick={() => void sendTurn(true)}>답변하지 못했어요</button>
                       </form>
                       {evaluationNotice && (
                         <>

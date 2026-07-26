@@ -146,10 +146,12 @@ test.describe("세 가지 계약 대화 연습", () => {
       await expect(page.getByRole("button", { name: "말할 내용 힌트 보기" })).toHaveCount(0);
 
       await finishPractice(page, scenario);
-      await expect(page.getByRole("heading", { name: "이 상황에서 조심할 점" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "확인 전 계약·송금 보류" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "조심해야 할 부분" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "이렇게 말하세요" })).toBeVisible();
+      // 복기는 내가 고른 행동과 확인 정도를 서로 다른 축으로 함께 보여 준다.
+      await expect(page.getByRole("heading", { name: "내가 선택한 행동과 확인한 내용" })).toBeVisible();
+      await expect(page.getByText("최종 선택").locator("xpath=following-sibling::dd[1]")).toHaveText("중단");
+      await expect(page.getByRole("heading", { name: "행동 지침 3줄 요약" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "추가로 조심해야 할 부분" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "실제로 이렇게 말해보세요" })).toBeVisible();
       const sources = page.getByRole("heading", { name: "연결된 공식 근거" }).locator("xpath=parent::section");
       for (const sourceName of scenario.officialSourceNames) await expect(sources).toContainText(sourceName);
     });
