@@ -485,6 +485,37 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByLabelText("내 답변")).toBeEnabled();
   });
 
+  it("does not restore initial prompt media after the first turn", async () => {
+    vi.spyOn(practiceService, "getSession").mockResolvedValue(session({
+      current_state: "TURN-02",
+      current_turn: dialogueTurn("TURN-02", "현재 두 번째 질문입니다."),
+    }));
+    vi.mocked(practiceService.getLatestMedia).mockResolvedValue({
+      media_job_id: "media-intro-old",
+      practice_turn_id: "practice-turn-intro",
+      media_kind: "initial_prompt",
+      status: "failed",
+      provider: "local",
+      speech_text: "오래된 첫 번째 질문입니다.",
+      audio_url: null,
+      video_url: null,
+      error_code: "media_generation_failed",
+      created_at: "2026-07-23T00:00:01Z",
+      completed_at: "2026-07-23T00:00:02Z",
+    });
+    vi.mocked(practiceService.getMessages).mockResolvedValue({
+      items: [],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderSession();
+
+    expect(await screen.findByRole("heading", { name: "현재 두 번째 질문입니다." })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "오래된 첫 번째 질문입니다." })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("내 답변")).toBeEnabled();
+  });
+
   it("restores a reaction only when it belongs to the current turn", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session({
       current_state: "TURN-01",
