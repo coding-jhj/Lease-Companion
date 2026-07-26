@@ -799,7 +799,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .practice-chat__latest { position: absolute; right: 14px; bottom: 14px; width: auto; padding: 8px 11px; border: 1px solid #b8c8bc; border-radius: 999px; background: #fff; color: #31543d; box-shadow: 0 3px 10px rgba(32, 57, 40, .18); font-size: 13px; z-index: 2; }
 .practice-final-actions { border-color: #d2aa5e; background: #fff9ed; }
 .practice-final-actions__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.practice-final-actions > button.primary { margin-top: 10px; }
+.practice-final-actions > button { margin-top: 10px; }
 .practice-result-hero { padding: 24px; border-radius: 18px; background: linear-gradient(135deg, #173f29, #2d6541); color: #fff; }
 .practice-result-hero h2 { margin: 4px 0 8px; font-size: 27px; }
 .practice-result-hero span { color: #e1ede4; line-height: 1.55; }

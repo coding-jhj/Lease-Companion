@@ -37,8 +37,10 @@ def practice_media_root() -> Path:
 
 
 def _speech_source(session_row: PracticeSession, turn: PracticeTurn) -> str:
-    """Generate media for the next broker prompt shown after the submitted answer."""
+    """Speak the reaction to the submitted answer; fall back to the scene prompt."""
 
+    if turn.dialogue_response:
+        return turn.dialogue_response.strip()
     scenario, _ = load_approved_practice_assets(session_row.scenario_id)
     current_prompt = next(
         (
@@ -48,7 +50,7 @@ def _speech_source(session_row: PracticeSession, turn: PracticeTurn) -> str:
         ),
         None,
     )
-    return (current_prompt or turn.dialogue_response or "").strip()
+    return (current_prompt or "").strip()
 
 
 def avatar_speech_text(dialogue_response: str) -> str:

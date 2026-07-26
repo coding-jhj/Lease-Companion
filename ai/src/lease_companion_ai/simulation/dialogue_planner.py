@@ -57,19 +57,12 @@ def _detect_intent(
     return next((intent for intent in _INTENT_PRIORITY if intent in matches), "unknown")
 
 
-def _is_question(value: str) -> bool:
-    normalized = value.strip()
-    return (
-        "?" in normalized
-        or normalized.endswith(("나요", "가요", "까요", "인가요", "건가요", "습니까"))
-    )
-
-
 def plan_grounded_dialogue(
     scenario: ScenarioDefinition,
     turn: DialogueTurn,
     user_answer: str,
     evaluation: PracticeTurnEvaluation,
+    previous_intent: DialogueIntent | None = None,
 ) -> DialoguePlan | None:
     """현재 발화에 허용할 사실과 발화 행위를 Python에서 고정한다."""
 
@@ -77,36 +70,40 @@ def plan_grounded_dialogue(
     if config is None:
         return None
 
-    intent = _detect_intent(scenario, user_answer)
-    questioning = _is_question(user_answer)
+    detected = _detect_intent(scenario, user_answer)
+    # 사용자가 방금 말한 주제를 되묻지 않도록, 새 의도가 없으면 직전 의도를 이어받는다.
+    # ("네, 그 부분이 우려돼요" 같은 동의 답변이 clarify 루프로 빠지던 문제)
+    intent = detected if detected != "unknown" else (previous_intent or "unknown")
     if intent == "clause_change_request":
         speech_act: SpeechAct = "acknowledge_request"
     elif intent == "contract_hold":
         speech_act = "respond_to_hold"
-    elif not questioning:
+    elif evaluation.answer_category == "avoidance":
+        speech_act = "maintain_position"
+    elif intent == "unrelated":
+        speech_act = "decline_unrelated"
+    elif intent == "unknown":
+        # 같은 되묻기를 두 번 반복하지 않고 임대인 입장 전달로 넘어간다.
         speech_act = (
             "maintain_position"
-            if evaluation.answer_category == "avoidance"
+            if previous_intent == "unknown"
             else "clarify_user_intent"
         )
     elif intent == "no_successor_case":
         speech_act = "state_missing_fact"
     elif intent == "verbal_promise":
         speech_act = "relay_landlord_claim"
-    elif intent == "unrelated":
-        speech_act = "decline_unrelated"
-    elif intent == "unknown":
-        speech_act = "clarify_user_intent"
     else:
         speech_act = "answer_fact"
 
+    # 질문 형식(?)이 아니어도 의도가 특정되면 승인된 사실로 답한다.
     facts = (
         tuple(
             fact.fact_id
             for fact in config.approved_facts
             if fact.disclosure == "on_request" and intent in fact.allowed_intents
         )
-        if questioning and speech_act in {
+        if speech_act in {
             "answer_fact",
             "state_missing_fact",
             "relay_landlord_claim",

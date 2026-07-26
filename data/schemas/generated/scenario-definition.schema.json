@@ -715,6 +715,11 @@
       "title": "Always Show Labels",
       "type": "array"
     },
+    "branching_flow": {
+      "default": false,
+      "title": "Branching Flow",
+      "type": "boolean"
+    },
     "classification_candidates": {
       "items": {
         "$ref": "#/$defs/ClauseCandidate"

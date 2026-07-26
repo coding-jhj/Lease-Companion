@@ -52,6 +52,12 @@ PracticeEndingType = Literal[
 # 기록하지 않고 현재 장면에서 재시도 또는 명시적 건너뛰기를 선택하게 한다.
 _RETRY_ONLY_CATEGORIES = frozenset({"needs_review"})
 
+# 분기형 흐름(branching_flow)에서 애매·부분 답변에 상대방이 같은 장면에서 재질문할 수
+# 있는 최대 횟수. 이 횟수를 넘기면 다음 장면으로 넘어간다. 정답 답변의 회유·압박은
+# 시나리오의 다음 TURN 대사가 담당한다.
+PRESSURE_REPEAT_LIMIT = 2
+_PRESSURE_CATEGORIES = frozenset({"partial_check", "ambiguous_answer"})
+
 
 def allowed_next_dialogue_states(
     answer_category: "AnswerCategory", success_next_state: str, retry_state: str
@@ -64,6 +70,35 @@ def allowed_next_dialogue_states(
     if answer_category in _RETRY_ONLY_CATEGORIES:
         return frozenset({retry_state})
     return frozenset({success_next_state})
+
+
+def resolve_next_dialogue_state(
+    answer_category: "AnswerCategory",
+    *,
+    turn_id: str,
+    next_turn_id: str,
+    action_selection_state: str,
+    pressure_rounds: int,
+    branching_flow: bool,
+) -> str:
+    """상태 머신이 정하는 결정적 다음 대화 상태.
+
+    선형 흐름: needs_review(provider 실패)만 현재 장면 유지, 그 외는 다음 장면.
+    분기 흐름: 조건 수용(avoidance)은 즉시 최종 계약 결정, 부분·애매 답변은
+    PRESSURE_REPEAT_LIMIT까지 같은 장면에서 재질문을 이어 간다.
+    """
+    if answer_category in _RETRY_ONLY_CATEGORIES:
+        return turn_id
+    if not branching_flow:
+        return next_turn_id
+    if answer_category == "avoidance":
+        return action_selection_state
+    if (
+        answer_category in _PRESSURE_CATEGORIES
+        and pressure_rounds < PRESSURE_REPEAT_LIMIT
+    ):
+        return turn_id
+    return next_turn_id
 
 
 SelectedAction = Literal["진행", "추가 확인", "특약 수정 요구", "보류", "중단"]
@@ -340,6 +375,8 @@ class ScenarioDefinition(BaseModel):
     target_actions: list[TargetAction] = Field(min_length=1)
     hidden_confirmation_signals: list[ConfirmationSignal] = Field(min_length=1)
     grounded_roleplay: GroundedRoleplayConfig | None = None
+    # 조건 수용 즉시 계약 결정·회유 반복이 있는 분기형 흐름 여부. 미지정 시 선형 흐름.
+    branching_flow: bool = False
     dialogue_turns: list[DialogueTurn] = Field(min_length=1)
     action_selection: ActionSelection
     terminal_state_id: str = Field(min_length=1)
@@ -441,6 +478,10 @@ class PracticeSessionState(BaseModel):
     payment_held: bool = False
     evidence_texts: list[str] = Field(default_factory=list)
     no_response_counts: dict[TurnId, int] = Field(default_factory=dict)
+    pressure_counts: dict[TurnId, int] = Field(default_factory=dict)
+    # 직전 사용자 발화에서 확정한 대화 주제. 새 의도가 없는 짧은 동의·반복 답변에
+    # 상대방이 같은 질문을 되묻지 않도록 이어 쓴다.
+    last_dialogue_intent: DialogueIntent | None = None
     selected_action: SelectedAction | None = None
 
     @model_validator(mode="after")
@@ -470,6 +511,14 @@ class PracticeSessionState(BaseModel):
             for turn_id, count in self.no_response_counts.items()
         ):
             raise ValueError("no_response_counts는 TURN별 1 이상의 횟수여야 합니다.")
+        if any(
+            re.fullmatch(r"TURN-\d{2}", turn_id) is None
+            or not 1 <= count <= PRESSURE_REPEAT_LIMIT
+            for turn_id, count in self.pressure_counts.items()
+        ):
+            raise ValueError(
+                f"pressure_counts는 TURN별 1~{PRESSURE_REPEAT_LIMIT}회여야 합니다."
+            )
         evaluation_actions = list(
             dict.fromkeys(
                 action_id

@@ -17,6 +17,7 @@ import type {
 
 interface MockScenario extends PracticeScenarioDetailDto {
   turns: PracticeDialogueTurnDto[];
+  branchingFlow?: boolean;
   targetActions: string[];
   missedSignals: string[];
   recommendedPhrases: string[];
@@ -27,6 +28,7 @@ interface MockScenario extends PracticeScenarioDetailDto {
 interface MockSession {
   response: PracticeSessionDto;
   turnIndex: number;
+  pressureCounts?: Record<string, number>;
   result: PracticeResultDto | null;
   requestIds: Set<string>;
   messages: PracticeConversationTurnDto[];
@@ -35,6 +37,7 @@ interface MockSession {
 const now = "2026-07-22T00:00:00Z";
 const labels = ["가상 연습", "합성 시나리오"];
 const finalActions: PracticeSelectedAction[] = ["진행", "추가 확인", "보류", "중단"];
+const pressureRepeatLimit = 2;
 
 function contract(overrides: Partial<PracticeSyntheticContractDto>): PracticeSyntheticContractDto {
   return {
@@ -95,6 +98,7 @@ const scenarios: MockScenario[] = [
     difficulty: "기본",
     contract_stage: "서명 전",
     always_show_labels: labels,
+    branchingFlow: true,
     synthetic_contract: contract({
       deposit_return_clause: "임대인은 신규 임차인의 입주 및 보증금 수령이 완료된 후 임차인에게 임대차보증금을 반환한다.",
       special_clauses: [
@@ -359,9 +363,27 @@ export const practiceHandlers = [
       body.timed_out,
       actionId,
     );
-    session.turnIndex += 1;
     if (evaluation.confirmed_action_ids.length > 0) session.response.confirmed_action_ids.push(actionId);
-    const nextTurn = scenario.turns[session.turnIndex] ?? null;
+    // Backend 상태 머신과 같은 분기: 조건 수용은 즉시 계약 결정, 부분·애매 답변은
+    // 같은 장면에서 최대 2회 재질문, 그 외에는 다음 장면.
+    const pressureCounts = session.pressureCounts ?? {};
+    const rounds = pressureCounts[body.turn_id] ?? 0;
+    const acceptsTerms = evaluation.answer_category === "avoidance";
+    const repeats = scenario.branchingFlow
+      && !acceptsTerms
+      && rounds < pressureRepeatLimit
+      && (evaluation.answer_category === "partial_check" || evaluation.answer_category === "ambiguous_answer");
+    if (repeats) {
+      pressureCounts[body.turn_id] = rounds + 1;
+    } else {
+      session.turnIndex = scenario.branchingFlow && acceptsTerms
+        ? scenario.turns.length
+        : session.turnIndex + 1;
+    }
+    session.pressureCounts = pressureCounts;
+    const nextTurn = repeats
+      ? session.response.current_turn
+      : scenario.turns[session.turnIndex] ?? null;
     session.response = {
       ...session.response,
       current_state: nextTurn?.turn_id ?? "ACTION-SELECTION",
@@ -438,13 +460,15 @@ export const practiceHandlers = [
     const confirmedNames = scenario.targetActions.filter((_, index) => session.response.confirmed_action_ids.includes(`PA${String(index + 1).padStart(2, "0")}`));
     const allActionIds = scenario.targetActions.map((_, index) => `PA${String(index + 1).padStart(2, "0")}`);
     const debrief = debriefByScenario[scenario.scenario_id];
-    const endingType = allActionIds.every((actionId) =>
-      session.response.confirmed_action_ids.includes(actionId))
-      ? "rights_asserted"
-      : body.selected_action === "중단" || debrief.defensive_stop_action_ids.some((actionId) =>
-          session.response.confirmed_action_ids.includes(actionId))
-        ? "transaction_stopped"
-        : "insufficient_protection";
+    const endingType = body.selected_action === "진행"
+      ? "insufficient_protection"
+      : allActionIds.every((actionId) => session.response.confirmed_action_ids.includes(actionId))
+        ? "rights_asserted"
+        : body.selected_action === "중단" || body.selected_action === "보류"
+          || debrief.defensive_stop_action_ids.some((actionId) =>
+            session.response.confirmed_action_ids.includes(actionId))
+          ? "transaction_stopped"
+          : "insufficient_protection";
     const ending = debrief.ending_reports[endingType];
     session.response = { ...session.response, status: "completed", current_state: "DEBRIEF", current_turn: null, selected_action: body.selected_action, completed_at: now };
     session.result = {
