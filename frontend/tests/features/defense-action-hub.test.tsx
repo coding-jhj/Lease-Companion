@@ -162,6 +162,7 @@ describe("QuestionHub", () => {
     expect(within(broker).getAllByRole("listitem")).toHaveLength(1);
     expect(within(landlord).getAllByRole("listitem")).toHaveLength(1);
     expect(within(self).getAllByRole("listitem")).toHaveLength(1);
+    expect(self).toHaveClass("action-hub__group--wide");
   });
 
   it("normalizes polite endings before deduplicating rendered questions", () => {
@@ -177,8 +178,26 @@ describe("QuestionHub", () => {
     expect(within(landlord).getByText("계좌 명의를 확인하세요.")).toBeInTheDocument();
   });
 
-  // 중개사 카드가 비어 사라져도 문서 카드는 아래 한 줄을 그대로 차지해야 한다.
-  it("keeps the document card on its own full-width row", () => {
+  it("places one visible person card beside the document card", () => {
+    render(
+      <QuestionHub
+        results={[
+          ruleWithQuestion("R01", "즉시 확인", "임대인에게 입금 계좌 명의를 확인하세요."),
+          ruleWithQuestion("R02", "계약 전 확인", "계약서의 금액 표기를 다시 확인하세요."),
+        ]}
+        guidance={[]}
+        stageGuidance={null}
+      />,
+    );
+
+    expect(screen.queryByRole("heading", { name: "중개사에게 확인해야 할 사항" })).not.toBeInTheDocument();
+    const landlordSection = screen.getByRole("heading", { name: "임대인에게 확인해야 할 사항" }).closest("section")!;
+    const documentSection = screen.getByRole("heading", { name: "문서에서 다시 확인할 내용" }).closest("section")!;
+    expect(landlordSection).not.toHaveClass("action-hub__group--wide");
+    expect(documentSection).not.toHaveClass("action-hub__group--wide");
+  });
+
+  it("uses the full row when only the document card is visible", () => {
     render(
       <QuestionHub
         results={[ruleWithQuestion("R01", "즉시 확인", "계약서의 금액 표기를 다시 확인하세요.")]}

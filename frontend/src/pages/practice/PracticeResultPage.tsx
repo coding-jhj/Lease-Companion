@@ -52,6 +52,31 @@ export function PracticeResultPage() {
               <h2>{result.ending_title}</h2>
               <span>이 결과는 가상 대화에서 표현한 대응을 복기하며 실제 계약의 성사·피해·안전 여부를 판정하지 않습니다.</span>
             </section>
+            {/* 내가 고른 행동과 확인 정도는 서로 다른 축이므로 나란히 따로 보여 준다. */}
+            <section className="practice-result-card practice-result-outcome">
+              <h2>내가 선택한 행동과 확인한 내용</h2>
+              <dl className="practice-result-outcome__facts">
+                <div>
+                  <dt>최종 선택</dt>
+                  <dd>{result.selected_action ?? "선택하지 않음"}</dd>
+                </div>
+                <div>
+                  <dt>확인한 내용</dt>
+                  <dd>
+                    {`${result.confirmed_action_ids.length}개 / 전체 ${
+                      result.confirmed_action_ids.length + result.missed_action_ids.length
+                    }개`}
+                  </dd>
+                </div>
+                <div>
+                  <dt>놓친 내용</dt>
+                  <dd>{`${result.missed_action_ids.length}개`}</dd>
+                </div>
+              </dl>
+              {result.confirmed_actions.length > 0 && (
+                <ul>{result.confirmed_actions.map((action) => <li key={action}>{action}</li>)}</ul>
+              )}
+            </section>
             <section className="practice-result-card">
               <h2>{result.feedback_label}</h2>
               <p>{result.feedback}</p>

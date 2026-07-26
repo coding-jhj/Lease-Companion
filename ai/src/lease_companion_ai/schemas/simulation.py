@@ -53,9 +53,10 @@ PracticeEndingType = Literal[
 _RETRY_ONLY_CATEGORIES = frozenset({"needs_review"})
 
 # 분기형 흐름(branching_flow)에서 애매·부분 답변에 상대방이 같은 장면에서 재질문할 수
-# 있는 최대 횟수. 이 횟수를 넘기면 다음 장면으로 넘어간다. 정답 답변의 회유·압박은
-# 시나리오의 다음 TURN 대사가 담당한다.
-PRESSURE_REPEAT_LIMIT = 2
+# 있는 최대 횟수. 이 횟수를 넘기면 확인하지 못한 내용으로 남기고 다음 장면으로 넘어간다.
+# 같은 질문을 두 번 넘게 되묻으면 연습이 정답 맞히기처럼 느껴지므로 1회로 제한한다.
+# 정답 답변의 회유·압박은 시나리오의 다음 TURN 대사가 담당한다.
+PRESSURE_REPEAT_LIMIT = 1
 _PRESSURE_CATEGORIES = frozenset({"partial_check", "ambiguous_answer"})
 
 
@@ -586,6 +587,11 @@ class PracticeTurnEvaluation(BaseModel):
     fallback_reason: str | None = None
     evidence_text: str | None = None
     verbal_reliance: VerbalRelianceObservation = "not_observed"
+    # 답변 의미를 한 곳에서만 해석하기 위해, 대화 의도와 행동 의도를 평가 결과에 함께
+    # 싣는다. 상대방 대사 생성은 이 값을 다시 추론하지 않고 그대로 사용한다.
+    # 두 값 모두 Python이 정하며 provider 응답으로 덮어쓰지 않는다.
+    dialogue_intent: DialogueIntent | None = None
+    action_intent: SelectedAction | None = None
 
     @field_validator("evidence_text")
     @classmethod

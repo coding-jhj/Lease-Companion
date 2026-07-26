@@ -144,7 +144,7 @@ alembic upgrade head              # 스키마 변경 적용
 - **추출 실행·확인·수정 API 구현 완료**: `POST …/extractions`(비동기, 업로드 문서 + 모의 등기 연결 기반) · `GET …/extractions/latest`(폴링) · `POST …/corrections`(원본 보존 + CorrectionRequest 이력) · `POST …/extractions/confirm`(서버 측 불변 InputSnapshot 생성). data-contract-v1 B 인수 체크리스트 5항목 전부 테스트로 충족.
 - **체크리스트·계약 직후 행동 상태 API 구현 완료**: `GET /api/contracts/{id}/checklist-items`(?kind 필터) · `PUT …/checklist-items/{kind}/{item_key}`(`{done}` upsert). 항목 문구는 분석 결과가 원본 — 상태만 계약 건 단위 저장·재조회. 생성 항목 원본과 item_key 존재 검증은 후속 TODO.
 - 백그라운드 실행은 FastAPI BackgroundTasks(`app/workers/analysis.py`) — 별도 워커 프로세스 분리는 LLM 파이프라인 장시간화 시. **기동 시 stale 실행 복구**(2026-07-17): 서버 재시작으로 pending/running에 멈춘 추출·분석·생성 실행을 failed로 정리해 클라이언트 무한 폴링을 방지한다(`fail_stale_runs`). 규칙 결과가 이미 저장된 행의 `result`·`status=completed`는 건드리지 않는다.
-- **CASE-001 통합 시나리오 테스트**: `tests/api/test_case001_e2e.py` — 회원가입→로그인→계약 건→상황 입력→업로드+registry-link→추출→수정→확인→분석 폴링→체크리스트→**재로그인 후 재조회**까지 8단계 흐름 1건 (4단계 통합 검증의 백엔드 몫).
+- **CASE-001 통합 시나리오 테스트**: `tests/api/test_case001_e2e.py` — 회원가입→로그인→계약 건→상황 저장→업로드+registry-link→추출→수정→확인→분석 폴링→체크리스트→**재로그인 후 재조회**까지 계약 건 종단 흐름 1건.
 - **주의**: 기동 시 `create_all`은 새 테이블만 만들고 기존 테이블 컬럼 추가는 못 한다. 기존 테이블 변경은 Alembic revision으로 적용한다(위 "DB 구조가 바뀌었어요" 절 참조).
 - **피드백 API 구현 완료**(2026-07-17): `POST/GET /api/contracts/{id}/feedback` — 자유 텍스트(1~2000자) + 선택 평점(1~5), 계약 건 단위 이력(수정·삭제 없음), 본인 소유만. 신규 테이블 `user_feedbacks`는 기동 시 `create_all`이 자동 생성.
 - **계약 연습 API 구현 완료**(2026-07-22): 승인 시나리오 3개 목록·상세, 사용자별 세션 생성·복원, 현재 TURN 제출, 최종 행동, 결과 재조회 API. `practice_sessions`·`practice_turns`에 저장하며 answer-key·숨은 신호·미래 TURN은 응답하지 않는다.

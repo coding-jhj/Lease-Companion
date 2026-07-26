@@ -15,20 +15,19 @@
 
 ## 목적
 
-로그인한 사용자가 **계약 건 단위**로 계약 문서를 관리한다. 사용자 흐름 8단계를 화면으로 제공하고, AI 추출 결과를 사용자가 확인·수정하게 하며, 분석 결과·체크리스트·계약 직후 행동 상태를 계약 건에 저장하고 재조회한다.
+로그인한 사용자가 **계약 건 단위**로 계약 문서를 관리한다. 사용자 흐름 7단계를 화면으로 제공하고, AI 추출 결과와 계약 상황을 사용자가 확인·입력하게 하며, 분석 결과·체크리스트·계약 직후 행동 상태를 계약 건에 저장하고 재조회한다.
 
-## 사용자 흐름 8단계 ↔ 화면 매핑
+## 사용자 흐름 7단계 ↔ 화면 매핑
 
 | 단계 | 흐름 | 담당 페이지 (`src/pages`) |
 |------|------|--------------------------|
 | 1 | 회원가입·로그인 | `auth` |
 | 2 | 계약 대시보드·계약 건 생성 | `dashboard`, `contract-create` |
-| 3 | 계약 상황 입력 | `contract-create` |
-| 4 | 계약서·등기 등 문서 업로드 | `document-upload` |
-| 5 | 추출값 확인·수정 | `extraction-review` |
-| 6 | 분석 (상용 LLM 구조화 → 규칙 엔진 → RAG → 상용 LLM 생성, 로컬 7B는 선택적 성능비교 실험) | `analysis-progress` |
-| 7 | 판정·원문 증거·공식 근거·피해 유형 비교·감지 신호·질문·수정 요청·행동 리포트/PDF | `result-report` |
-| 8 | 체크리스트·계약 직후 행동 관리 | `contract-detail` |
+| 3 | 계약서·등기 등 문서 업로드 | `document-upload` |
+| 4 | 추출값 확인·수정 + 계약 상황 입력 | `extraction-review` |
+| 5 | 분석 (상용 LLM 구조화 → 규칙 엔진 → RAG → 상용 LLM 생성, 로컬 7B는 선택적 성능비교 실험) | `analysis-progress` |
+| 6 | 판정·원문 증거·공식 근거·피해 유형 비교·감지 신호·질문·수정 요청·행동 리포트/PDF | `result-report` |
+| 7 | 체크리스트·계약 직후 행동 관리 | `contract-detail` |
 
 ## 하위 구조
 
@@ -48,7 +47,7 @@ tests/                  components/ features/ pages/
 
 ## 로컬 실행
 
-백엔드를 `http://127.0.0.1:8000`에서 먼저 실행한 뒤 다음 명령을 사용한다. Vite가 `/api` 요청을 백엔드로 프록시한다.
+백엔드를 `http://127.0.0.1:8301`에서 먼저 실행한 뒤 다음 명령을 사용한다. Vite가 `/api` 요청을 백엔드로 프록시한다.
 
 ```powershell
 cd frontend
@@ -61,7 +60,7 @@ npm run test:e2e:practice
 npm run test:e2e:practice:real
 ```
 
-`npm run test:e2e`는 Playwright Chromium 320px·360px 모바일과 1440×900 PC viewport에서 MSW 기반 8단계 사용자 흐름과 핵심 키보드 탐색 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
+`npm run test:e2e`는 Playwright Chromium 320px·360px 모바일과 1440×900 PC viewport에서 MSW 기반 7단계 사용자 흐름과 핵심 키보드 탐색 흐름을 검증한다. `npm run test:e2e:real`은 PostgreSQL·Backend·MSW 비활성 Frontend를 먼저 실행한 상태에서 같은 흐름을 실제 API로 검증한다. 최초 실행 환경에서는 `npx playwright install chromium`이 필요하다.
 
 계약 연습 전용 명령은 세 시나리오를 각각 320px·360px·1440px에서 실행한다. MSW 사전검증은 `npm run test:e2e:practice`, PostgreSQL·Backend·MSW 비활성 Frontend 실제 연결 검증은 `npm run test:e2e:practice:real`을 사용한다. 서버 준비 절차는 [`docs/testing/practice-real-api-validation.md`](../docs/testing/practice-real-api-validation.md)를 따른다.
 
@@ -88,20 +87,20 @@ npm run test:e2e:practice:real
 
 ## 현재 상태 / TODO
 
-- React + Vite + TypeScript SPA 초기화와 사용자 흐름 8단계 화면 구현 완료.
+- React + Vite + TypeScript SPA 초기화와 사용자 흐름 7단계 화면 구현 완료.
 - 하나의 SPA를 모바일·PC 반응형으로 제공한다. 인증·기본 흐름은 520px 중앙 카드, 대시보드·계약 상세·추출 검토는 최대 1200px workspace, 결과 리포트는 최대 1320px 2열 레이아웃을 사용하며 767px 이하에서는 모두 1열로 축소한다.
 - 문서 업로드는 계약서 필수, 등기사항증명서·중개대상물 확인설명서 선택 카드로 제공한다. 파일명·형식·용량과 문서별 대기/진행/완료/실패 상태를 표시하며, 실패한 문서는 개별 재시도할 수 있다. 등기 미제공 시 관련 판정은 `확인 불가`로 유지한다.
 - 추출값 검토 화면은 API의 canonical 영문 필드명을 변경하지 않고 한글 표시명으로 변환한다. 긴 본문·특약 조항은 기본적으로 접어 두며 필요할 때 펼쳐 항목별로 확인·수정한다.
 - JWT Bearer 로그인, 계약·문서·추출·분석·체크리스트 실제 API 연결 완료. refresh token과 운영 토큰 정책은 Backend TODO를 따른다.
 - 추출과 분석은 `pending`·`running`·`completed`·`failed` 상태를 실제 API 폴링으로 처리한다.
-- 추출과 분석은 공통 `pollUntilTerminal()`을 사용한다. 분석은 규칙 결과뿐 아니라 안내 생성이 완료 또는 실패 상태가 될 때까지 기다린다. 로컬 MVP 임시 최대 대기시간은 60초이며, timeout은 Backend `failed`와 구분해 기존 실행 상태를 다시 확인한다. 화면 이탈 시 폴링을 중단한다.
+- 추출과 분석은 공통 `pollUntilTerminal()`을 사용한다. 분석은 규칙 결과뿐 아니라 안내 생성이 완료 또는 실패 상태가 될 때까지 기다린다. 로컬 MVP 임시 최대 대기시간은 300초이며, 10초 이후 polling 간격을 3초로 늦춘다. timeout은 Backend `failed`와 구분하며 화면 이탈 시 polling을 중단한다.
 - 분석 화면은 실제 API 상태만 사용해 `분석 요청 접수 → 규칙 판정·공식 근거 정리 → 질문·행동 안내 생성 → 리포트 준비 완료` 4단계 타임라인을 표시한다.
 - 분석 규칙 결과와 안내 생성 상태는 분리한다. 안내 생성만 실패하면 규칙 결과를 유지하고 사용자에게 별도 안내를 표시한다.
 - 리포트는 R01~R24와 J01~J13을 화면 우선순위 3단계의 단일 결과 목록으로 묶고, 전체 개수와 첫 확인 그룹 이동을 제공한다. 근거·한계는 접어 두고 공식 근거가 없으면 빈 상태를 명시한다. 중복 질문·권장 행동·단계별 안내는 하나의 방어 행동 허브에서 중복을 제거해 질문·서명 전 행동·계약 직후 행동·보관 자료로 제공한다.
 - 체크리스트·계약 직후 행동은 안정 `item_key`로 실제 문구와 저장 상태를 결합한다.
 - 피드백 등록·이력, 과거 완료 리포트 링크, 문서 이력, 계약 삭제 API를 화면에 연결했다.
 - 계약 연습은 `/practice` 아래 목록·상황·현재 대화·최종 복기 화면을 제공한다. 세 시나리오는 동일한 서비스와 화면 흐름을 사용하며 실제 계약 건과 데이터를 분리한다.
-- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 2026-07-23 기준 Vitest `25`개 파일·`110`개 테스트가 통과했다. 기존 계약 분석 MSW E2E는 별도 Playwright 테스트로 유지한다.
+- MSW는 실제 API 경로·DTO와 같은 계약을 사용한다. 고정 테스트 개수는 문서에 복제하지 않고 현재 `npm test` 결과를 기준으로 확인한다. 계약 분석 MSW E2E는 별도 Playwright 테스트로 유지한다.
 - 계약 연습 전용 `practice-flow.spec.ts`는 목록·상황·미응답 기록 후 진행·3턴·세션 복원·최종 행동·복기 저장을 검증한다. MSW 브라우저 사전검증과 실제 PostgreSQL/API 검증은 같은 파일을 각각 `test:e2e:practice`, `test:e2e:practice:real`로 실행한다.
 - `src/types`는 현재 Backend 응답과 canonical Pydantic 계약(`user_corrected_value`·`verification_status`·3등급 confidence·nullable `page`/`text`)에 맞춘다.
 - 화면 확인 우선순위 3단계(반드시 확인·확인 권장·일반 확인) 매핑과 접근성 원칙은 [`AGENTS.md`](AGENTS.md) 참조

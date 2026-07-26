@@ -4,6 +4,25 @@
   "additionalProperties": false,
   "description": "연습 행동 평가 결과. 계약 규칙 상태와 분리한다.",
   "properties": {
+    "action_intent": {
+      "anyOf": [
+        {
+          "enum": [
+            "진행",
+            "추가 확인",
+            "특약 수정 요구",
+            "보류",
+            "중단"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Action Intent"
+    },
     "answer_category": {
       "enum": [
         "appropriate_check",
@@ -22,6 +41,29 @@
       },
       "title": "Confirmed Action Ids",
       "type": "array"
+    },
+    "dialogue_intent": {
+      "anyOf": [
+        {
+          "enum": [
+            "clause_meaning",
+            "return_timing",
+            "no_successor_case",
+            "verbal_promise",
+            "contract_fact",
+            "clause_change_request",
+            "contract_hold",
+            "unrelated",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dialogue Intent"
     },
     "evidence_text": {
       "anyOf": [

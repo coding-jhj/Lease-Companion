@@ -492,6 +492,9 @@ export interface PracticeTurnEvaluationDto {
   fallback_reason: string | null;
   evidence_text: string | null;
   verbal_reliance: "not_observed" | "relied" | "rejected";
+  // 답변에서 읽은 의도. Backend가 정하며 화면은 표시·확인에만 사용한다.
+  dialogue_intent: string | null;
+  action_intent: PracticeSelectedAction | null;
 }
 
 export interface PracticeTurnResponseDto {

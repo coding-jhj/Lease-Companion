@@ -351,19 +351,20 @@ def test_linear_scenario_advances_partial_check_to_next_turn():
     assert advanced.pressure_counts == {}
 
 
-def test_branching_scenario_repeats_ambiguous_answer_twice_then_advances():
+def test_branching_scenario_repeats_ambiguous_answer_once_then_advances():
+    """애매한 답변은 한 번만 되묻고, 그다음에는 확인하지 못한 채 다음 장면으로 간다."""
+
     scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
     session = start_practice_session(scenario, "S-PRESSURE", 1, STARTED_AT)
     turn, evaluation = _first_turn_eval(scenario, "ambiguous_answer", advance=False)
 
     first = advance_dialogue(session, scenario, evaluation)
     second = advance_dialogue(first, scenario, evaluation)
-    third = advance_dialogue(second, scenario, evaluation)
 
     assert first.current_state == turn.turn_id
-    assert second.current_state == turn.turn_id
-    assert second.pressure_counts == {turn.turn_id: 2}
-    assert third.current_state == turn.next_turn_id
+    assert first.pressure_counts == {turn.turn_id: 1}
+    assert second.current_state == turn.next_turn_id
+    assert not second.confirmed_action_ids
 
 
 def test_branching_scenario_sends_accepted_terms_straight_to_contract_decision():

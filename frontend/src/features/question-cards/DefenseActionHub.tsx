@@ -199,6 +199,11 @@ export function QuestionHub({
   stageGuidance: StageGuidanceDto | null;
 }) {
   const questionsByTarget = buildQuestionGroups(results, guidance, stageGuidance);
+  const visiblePersonGroupCount = Number(questionsByTarget["중개사"].length > 0)
+    + Number(questionsByTarget["임대인"].length > 0);
+  // 사람 카드가 하나면 문서 카드와 같은 줄을 나눠 쓴다. 사람 카드가 둘이면
+  // 둘을 첫 줄에 두고 문서 카드는 다음 줄 전체를 쓴다. 문서만 있어도 전체 폭이다.
+  const documentUsesFullRow = visiblePersonGroupCount !== 1;
   return (
     <section className="action-hub" aria-labelledby="action-hub-title">
       <header className="action-hub__header">
@@ -208,7 +213,7 @@ export function QuestionHub({
       <div className="action-hub__grid">
         <ActionList collapsible showCount hideWhenEmpty title="중개사에게 확인해야 할 사항" description="문서와 중개 설명이 맞는지 확인하세요." items={questionsByTarget["중개사"]} />
         <ActionList collapsible showCount hideWhenEmpty title="임대인에게 확인해야 할 사항" description="계약 권한과 금액·조건을 직접 확인하세요." items={questionsByTarget["임대인"]} />
-        <ActionList wide collapsible showCount hideWhenEmpty title="문서에서 다시 확인할 내용" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
+        <ActionList wide={documentUsesFullRow} collapsible showCount hideWhenEmpty title="문서에서 다시 확인할 내용" description="계약서와 확인 자료를 직접 대조하세요." items={questionsByTarget["내가 다시 확인"]} />
       </div>
     </section>
   );

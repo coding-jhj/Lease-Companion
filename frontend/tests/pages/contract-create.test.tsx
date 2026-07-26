@@ -52,7 +52,7 @@ describe("ContractCreatePage", () => {
 
     expect(screen.getByText("집 등록", { selector: ".journey-progress__title" })).toBeInTheDocument();
     expect(screen.getByText(/여러 계약을 구분하기 위한 이름/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "다음: 내 상황 알려주기" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음: 문서 올리기" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "나중에 알아볼 수 있도록 계약 이름을 입력해 주세요.",
@@ -72,7 +72,7 @@ describe("ContractCreatePage", () => {
     renderContractCreate();
 
     fireEvent.change(screen.getByLabelText(/계약 이름/), { target: { value: "  신림동 원룸 전세  " } });
-    fireEvent.click(screen.getByRole("button", { name: "다음: 내 상황 알려주기" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음: 문서 올리기" }));
 
     await waitFor(() => expect(createContract).toHaveBeenCalledWith("신림동 원룸 전세"));
     expect(await screen.findByTestId("location")).toHaveTextContent("/contracts/37/upload");
