@@ -139,7 +139,7 @@ def test_provider_categories_follow_the_approved_turn_contract(
         "이 특약 조건을 삭제해 주세요.",
     ],
 )
-def test_partial_answer_uses_persuasion_response_while_advancing(answer):
+def test_partial_answer_uses_grounded_roleplay_dialogue(answer):
     modules = _modules()
     scenario, answer_key = modules["models"].load_practice_assets(
         DEFERRED_FIXTURE_DIR / "scenario.json",
@@ -168,7 +168,15 @@ def test_partial_answer_uses_persuasion_response_while_advancing(answer):
         occurred_at=occurred_at,
     )
 
-    assert step.dialogue_response == scenario.dialogue_turns[0].responses.partial_check
+    # grounded 시나리오는 부족한 답변에도 고정 대사 대신 승인 사실 기반 역할 대사를
+    # 쓴다. dialogue provider가 없으면 검수된 speech_act fallback을 사용한다.
+    fallbacks = {
+        line
+        for lines in scenario.grounded_roleplay.fallbacks.values()
+        for line in lines
+    }
+    assert step.dialogue_response in fallbacks
+    assert step.dialogue_generation is not None
 
 
 def test_timeout_input_is_no_response_without_calling_provider():

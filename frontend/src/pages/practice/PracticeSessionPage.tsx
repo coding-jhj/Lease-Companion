@@ -10,6 +10,7 @@ import type {
   PracticeSessionDto,
   PracticeConversationTurnDto,
   PracticeMediaJobDto,
+  PracticeSelectedAction,
   PracticeTurnResponseDto,
 } from "../../types/api";
 
@@ -185,8 +186,8 @@ export function PracticeSessionPage() {
       });
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
-      // 중개사 반응은 대화 기록에 남기고 다음 질문을 자연스럽게 이어서 보여 준다.
-      setAvatarSpeechText(response.session.current_turn?.prompt ?? response.dialogue_response);
+      // 아바타는 방금 answer에 대한 상대방 반응을 말한다. 반응이 없으면 현재 장면 대사.
+      setAvatarSpeechText(response.dialogue_response ?? response.session.current_turn?.prompt ?? null);
       setAvatarVideoUrl((current) => {
         if (current) URL.revokeObjectURL(current);
         return null;
@@ -250,18 +251,32 @@ export function PracticeSessionPage() {
     void sendTurn(false);
   }
 
-  async function showSafetyReview() {
+  async function decideContract(selectedAction: PracticeSelectedAction) {
     setSubmitting(true);
     setErrorMessage("");
     try {
       await practiceService.submitFinalAction(sessionId, {
         request_id: createPracticeRequestId("final"),
-        selected_action: "보류",
+        selected_action: selectedAction,
         response_time_seconds: elapsedSeconds(turnStartedAt.current),
       });
       navigate(`/practice/sessions/${sessionId}/result`);
     } catch {
-      setErrorMessage("주의사항을 정리하지 못했습니다. 다시 시도해 주세요.");
+      setErrorMessage("선택을 저장하지 못했습니다. 다시 시도해 주세요.");
+      setSubmitting(false);
+    }
+  }
+
+  // 재도전은 진행한 세션을 되감지 않고 같은 시나리오로 새 세션을 연다.
+  async function retryScenario() {
+    if (!session) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      const created = await practiceService.createSession(session.scenario_id);
+      navigate(`/practice/sessions/${created.practice_session_id}`);
+    } catch {
+      setErrorMessage("다시 시작하지 못했습니다. 다시 시도해 주세요.");
       setSubmitting(false);
     }
   }
@@ -338,10 +353,18 @@ export function PracticeSessionPage() {
             )}
             {isActionSelection && (
               <section className="practice-final-actions" aria-labelledby="practice-final-title">
-                <h2 id="practice-final-title">대화가 끝났습니다</h2>
-                <p>이 상황에서 바로 계약하거나 송금하면 안 되는 이유와 확인할 내용을 정리해 드릴게요.</p>
-                <button type="button" className="primary" disabled={submitting} onClick={() => void showSafetyReview()}>
-                  {submitting ? "정리 중…" : "조심할 부분 확인하기"}
+                <h2 id="practice-final-title">계약하시겠습니까?</h2>
+                <p>지금까지 확인한 내용을 기준으로 오늘 계약을 진행할지 정해 주세요. 선택에 따라 결과가 달라집니다.</p>
+                <div className="practice-dialogue-actions">
+                  <button type="button" className="primary" disabled={submitting} onClick={() => void decideContract("진행")}>
+                    {submitting ? "정리 중…" : "네, 계약하겠습니다"}
+                  </button>
+                  <button type="button" className="secondary" disabled={submitting} onClick={() => void decideContract("중단")}>
+                    아니요, 오늘은 진행하지 않겠습니다
+                  </button>
+                </div>
+                <button type="button" className="text-link" disabled={submitting} onClick={() => void retryScenario()}>
+                  처음부터 다시 연습하기
                 </button>
               </section>
             )}

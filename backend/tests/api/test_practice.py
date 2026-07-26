@@ -191,9 +191,9 @@ def test_practice_media_job_is_queued_and_owner_scoped(
     media = response.json()["media"]
     assert media["status"] == "queued"
     assert media["provider"] == "supertonic-3+musetalk-1.5"
-    # 답변 직후 다음 TURN이 자연스럽게 이어지므로 화면에 표시되는 다음 대사를 재생한다.
+    # 아바타는 방금 답변에 대한 상대방 반응을 말한다(사람다운 대화 기준).
     assert media["speech_text"] == avatar_speech_text(
-        response.json()["session"]["current_turn"]["prompt"]
+        response.json()["dialogue_response"]
     )
     assert media["audio_url"] is None
     assert media["video_url"] is None
@@ -526,10 +526,12 @@ def test_three_scenarios_retry_complete_and_remain_immutable(client: TestClient,
     assert partial_response.status_code == 200
     assert partial_response.json()["attempt_no"] == 1
     assert partial_response.json()["evaluation"]["answer_category"] == "partial_check"
-    assert partial_response.json()["session"]["current_state"] == partial.expected_next_turn_id
+    # 분기형 시나리오는 부족한 답변에 같은 장면에서 다시 묻고, 선형 시나리오는 진행한다.
+    assert partial_response.json()["session"]["current_state"] == (
+        first_turn.turn_id if scenario.branching_flow else partial.expected_next_turn_id
+    )
 
-    # partial_check도 다음 장면으로 진행하므로 전체 확인 행동·멱등성 검증은
-    # 모든 목표 행동을 확인할 수 있도록 새 세션에서 수행한다.
+    # 전체 확인 행동·멱등성 검증은 모든 목표 행동을 확인할 수 있도록 새 세션에서 수행한다.
     session = _create_session(client, headers, scenario_id)
     session_id = session["practice_session_id"]
     turns_endpoint = f"/api/practice-sessions/{session_id}/turns"
