@@ -19,13 +19,18 @@ interface PageShellProps {
   layout?: "auth" | "default" | "narrow" | "workspace" | "report";
   eyebrow?: string;
   hero?: ReactNode;
+  /** 8단계 진행 표시 밖 화면(모드 선택 갈래·계약 연습)의 뒤로 가기 주소. 바로 앞 화면 하나만 가리킨다. */
+  backTo?: string;
+  backLabel?: string;
 }
 
 const journeySteps = ["시작 방법", "집 등록", "상황 입력", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
 
 // 지나온 단계로 돌아갈 주소. 6단계(결과 준비)는 분석 실행 화면이라 되돌아가지 않는다.
 function stepPath(step: number, contractId: string | null): string | null {
-  if (step === 1) return "/choose-mode";
+  // 1단계는 모드 선택이 아니라 상황 선택(/start)이다. /choose-mode로 두면 집 등록에서
+  // "이전 단계"가 /start를 건너뛰어 두 화면 뒤로 간다. 모드 전환은 머리말 "처음으로"가 맡는다.
+  if (step === 1) return "/start";
   if (step === 2) return "/contracts";
   if (!contractId) return null;
   if (step === 3) return `/contracts/${contractId}/situation`;
@@ -66,6 +71,8 @@ export function PageShell({
   layout = "default",
   eyebrow = "첫 계약 확인 도우미",
   hero,
+  backTo,
+  backLabel = "뒤로",
 }: PageShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -164,6 +171,11 @@ export function PageShell({
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>
+      {backTo && (
+        <Link className="page-back" to={backTo}>
+          <span aria-hidden="true">←</span> {backLabel}
+        </Link>
+      )}
       {showJourney && validStep && (
         <div className="journey-progress">
           <div

@@ -42,6 +42,19 @@ describe("ContractPreparationPage", () => {
 
     expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /상황 다시 선택/ })).toHaveAttribute("href", "/start");
+  });
+
+  // 안내 항목이 12개라 전부 펼치면 화면이 길어진다. 제목은 다 보이고 첫 묶음만 펼쳐 둔다.
+  it("opens only the first guidance card and keeps the rest collapsed", () => {
+    const { container } = render(<MemoryRouter><ContractPreparationPage /></MemoryRouter>);
+
+    const cards = [...container.querySelectorAll<HTMLDetailsElement>("details.preparation-card")];
+    expect(cards).toHaveLength(3);
+    expect(cards.map((card) => card.open)).toEqual([true, false, false]);
+    for (const title of ["집을 볼 때 유의할 점", "가계약하기 전에 자료 요청", "가계약금을 보내기 전에 확인하기"]) {
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+    }
   });
 
   it("shows a status message after copying the draft request", async () => {

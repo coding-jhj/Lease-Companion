@@ -144,6 +144,29 @@ describe("PageShell logout", () => {
     expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts/12/review");
   });
 
+  // 집 등록 바로 앞 화면은 상황 선택(/start)이다. /choose-mode로 보내면 두 화면 뒤로 건너뛴다.
+  it("walks back one screen at a time from the contract registration step", () => {
+    render(
+      <MemoryRouter initialEntries={["/contracts/new"]}>
+        <PageShell step="2 / 8" title="확인할 집 등록하기" description="등록"><p>내용</p></PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/start");
+  });
+
+  it("shows a standalone back link on screens without the journey bar", () => {
+    render(
+      <MemoryRouter initialEntries={["/practice"]}>
+        <PageShell step="계약 연습" title="계약 연습" description="연습" showJourney={false} backTo="/choose-mode" backLabel="모드 다시 선택">
+          <p>내용</p>
+        </PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: /모드 다시 선택/ })).toHaveAttribute("href", "/choose-mode");
+  });
+
   it("hides the previous-step link on the first step", () => {
     render(
       <MemoryRouter initialEntries={["/choose-mode"]}>

@@ -67,15 +67,22 @@ export function ContractPreparationPage() {
       description="집을 볼 때부터 계약금을 보내기 전까지 꼭 확인할 내용을 차례대로 살펴보세요."
       showJourney={false}
       eyebrow="실전 계약 점검 · 계약서 초안 없음"
+      backTo="/start"
+      backLabel="상황 다시 선택"
     >
       <section className="beginner-guide" aria-label="계약 준비 안내">
         <strong>급하게 결정하지 않아도 괜찮아요</strong>
-        <p>확인하지 못한 내용이 있다면 계약서 작성이나 송금 전에 중개사·임대인에게 먼저 물어보세요.</p>
+        <p>확인하지 못한 내용은 계약서 작성·송금 전에 중개사·임대인에게 먼저 물어보세요.</p>
       </section>
+      {/* 안내 항목 12개를 한 번에 펼치면 화면이 스크롤 두 번 분량이 된다. 제목만 먼저 보이게
+          접고 첫 묶음만 펼쳐 둔다. 안내 내용은 하나도 줄이지 않는다. */}
       <section className="preparation-grid" aria-label="계약 준비 안내">
-        {preparationSections.map((section) => (
-          <article className="preparation-card" key={section.title}>
-            <h2>{section.title}</h2>
+        {preparationSections.map((section, index) => (
+          <details className="preparation-card" key={section.title} open={index === 0}>
+            <summary>
+              <h2>{section.title}</h2>
+              <span className="collapse-arrow" aria-hidden="true">▸</span>
+            </summary>
             <p>{section.description}</p>
             {"items" in section ? (
               <ul>
@@ -98,7 +105,7 @@ export function ContractPreparationPage() {
                 {copyMessage === "error" && <p role="alert">문장을 복사하지 못했습니다. 직접 선택해 복사해 주세요.</p>}
               </>
             )}
-          </article>
+          </details>
         ))}
       </section>
       <section className="preparation-actions" aria-label="다음 단계">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { practiceService } from "../../services/practiceService";
@@ -69,7 +69,7 @@ export function PracticeScenarioPage() {
   }
 
   return (
-    <PageShell layout="workspace" step="계약 연습" eyebrow="계약 연습" title={scenario?.title ?? "계약 연습 상황"} description="계약 내용을 참고한 뒤 상대방과의 대화를 시작하세요. 주의사항은 대화가 끝난 뒤 보여드립니다." showJourney={false}>
+    <PageShell layout="workspace" step="계약 연습" eyebrow="계약 연습" title={scenario?.title ?? "계약 연습 상황"} description="계약 내용을 참고한 뒤 상대방과의 대화를 시작하세요. 주의사항은 대화가 끝난 뒤 보여드립니다." showJourney={false} backTo="/practice" backLabel="다른 상황 선택">
       <div className="stack">
         {status === "loading" && <LoadingState title="연습 상황을 불러오는 중" description="연습에 필요한 정보만 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="연습 상황을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadScenario()} />}
@@ -110,7 +110,6 @@ export function PracticeScenarioPage() {
               </p>
             )}
             <div className="page-actions">
-              <Link className="text-link" to="/practice">다른 상황 선택</Link>
               <button type="button" disabled={starting} onClick={() => void startPractice()}>{starting ? "준비 중…" : "연습 시작하기"}</button>
             </div>
           </>
