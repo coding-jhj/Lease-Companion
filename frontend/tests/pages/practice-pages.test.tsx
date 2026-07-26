@@ -447,7 +447,8 @@ describe("PracticeSessionPage", () => {
     renderSession();
 
     expect(await screen.findByRole("heading", { name: "현재 두 번째 질문입니다." })).toBeInTheDocument();
-    expect(screen.queryByText("이전 질문의 중개사 반응입니다.")).not.toBeInTheDocument();
+    // 이전 TURN 반응은 대화 기록에는 남되 아바타 재생(heading)·입력 잠금은 되살리지 않는다.
+    expect(screen.queryByRole("heading", { name: "이전 질문의 중개사 반응입니다." })).not.toBeInTheDocument();
     expect(screen.getByLabelText("내 답변")).toBeEnabled();
   });
 
