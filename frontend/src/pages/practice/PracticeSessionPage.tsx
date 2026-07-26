@@ -178,13 +178,20 @@ export function PracticeSessionPage() {
           practiceService.getMessages(sessionId, undefined, 1),
         ]);
         const latestTurn = latestConversation.items.at(-1);
+        const isInitialPrompt = Boolean(
+          latestMedia
+          && latestMedia.media_kind === "initial_prompt"
+          && loaded.current_state === "TURN-01"
+          && latestConversation.items.length === 0,
+        );
         const isCurrentTurnReaction = Boolean(
           latestMedia
+          && latestMedia.media_kind === "dialogue_response"
           && latestTurn
           && latestMedia.practice_turn_id === latestTurn.practice_turn_id
           && loaded.current_turn?.turn_id === latestTurn.turn_id,
         );
-        if (latestMedia && isCurrentTurnReaction) {
+        if (latestMedia && (isInitialPrompt || isCurrentTurnReaction)) {
           setAvatarMedia(latestMedia);
           setAvatarSpeechText(latestMedia.speech_text);
           setReactionPlaying(true);
