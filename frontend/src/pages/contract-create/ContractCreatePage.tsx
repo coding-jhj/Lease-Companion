@@ -35,7 +35,7 @@ export function ContractCreatePage() {
           <input placeholder="예: 신림동 원룸 전세" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={submitting}>{submitting ? "저장하는 중" : "다음: 내 상황 알려주기"}</button>
+        <button type="submit" disabled={submitting}>{submitting ? "저장하는 중" : "다음: 문서 올리기"}</button>
       </form>
     </PageShell>
   );

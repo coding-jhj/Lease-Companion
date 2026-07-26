@@ -42,10 +42,10 @@ describe("primary page API errors", () => {
     render(<MemoryRouter><ContractCreatePage /></MemoryRouter>);
 
     fireEvent.change(screen.getByLabelText(/계약 이름/), { target: { value: "테스트 계약" } });
-    fireEvent.click(screen.getByRole("button", { name: "다음: 내 상황 알려주기" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음: 문서 올리기" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("계약 이름을 확인해 주세요.");
-    expect(screen.getByRole("button", { name: "다음: 내 상황 알려주기" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "다음: 문서 올리기" })).toBeEnabled();
   });
 
   it("shows a 404 upload response and preserves the selected flow", async () => {
