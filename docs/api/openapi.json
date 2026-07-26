@@ -3200,6 +3200,14 @@
             "type": "string",
             "title": "Practice Turn Id"
           },
+          "media_kind": {
+            "type": "string",
+            "enum": [
+              "initial_prompt",
+              "dialogue_response"
+            ],
+            "title": "Media Kind"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -3274,6 +3282,7 @@
         "required": [
           "media_job_id",
           "practice_turn_id",
+          "media_kind",
           "status",
           "provider",
           "speech_text",
@@ -3728,6 +3737,46 @@
             ],
             "title": "Verbal Reliance",
             "default": "not_observed"
+          },
+          "dialogue_intent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "clause_meaning",
+                  "return_timing",
+                  "no_successor_case",
+                  "verbal_promise",
+                  "contract_fact",
+                  "clause_change_request",
+                  "contract_hold",
+                  "unrelated",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dialogue Intent"
+          },
+          "action_intent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "진행",
+                  "추가 확인",
+                  "특약 수정 요구",
+                  "보류",
+                  "중단"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Intent"
           }
         },
         "additionalProperties": false,

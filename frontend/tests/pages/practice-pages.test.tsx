@@ -481,8 +481,11 @@ describe("PracticeSessionPage", () => {
 
     expect(await screen.findByRole("heading", { name: "첫 번째 질문입니다." })).toBeInTheDocument();
     expect(screen.getByLabelText("내 답변")).toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByTestId("practice-video")).toHaveAttribute("src", "/practice/avatar/speaking.mp4");
+    });
     fireEvent.ended(screen.getByTestId("practice-video"));
-    expect(screen.getByLabelText("내 답변")).toBeEnabled();
+    await waitFor(() => expect(screen.getByLabelText("내 답변")).toBeEnabled());
   });
 
   it("does not restore initial prompt media after the first turn", async () => {
