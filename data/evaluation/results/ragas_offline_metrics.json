@@ -1,0 +1,578 @@
+{
+  "config_version": "ragas-id-offline-bm25-v1",
+  "external_provider_call_count": 0,
+  "general_rag_sources": {
+    "case_scores": [
+      {
+        "case_id": "TEST-001:R01",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-001:R03",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-001:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-002:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-003:R02",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CONFIRM-FORM"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CONFIRM-FORM",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-003:R04",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-003:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-004:R05",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-004:R06",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-004:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-005:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-005:R08",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE"
+        ],
+        "retrieved_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-005:R09",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-HTA-LAW",
+          "SRC-HTA-LAW"
+        ]
+      },
+      {
+        "case_id": "TEST-005:R10",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-006:R03",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-006:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-006:R08",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE"
+        ],
+        "retrieved_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-007:R01",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-007:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-008:R04",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-008:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-008:R10",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-009:R06",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "TEST-009:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-010:R03",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-010:R05",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "TEST-010:R07",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-MOLIT-CHECKLIST"
+        ],
+        "retrieved_context_ids": [
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      }
+    ],
+    "evaluated_case_count": 27,
+    "excluded_no_reference_case_count": 0,
+    "macro_context_precision": 1.0,
+    "macro_context_recall": 1.0,
+    "scope": "general_rag_source_top5",
+    "top_k": 5
+  },
+  "limitations": [
+    "RAGAS ID 기반 지표만 측정했으며 LLM 기반 지표는 실제 API 호출 제외로 측정하지 않았습니다.",
+    "일반 RAG는 로컬 BM25 source Top-5, 특약 RAG는 source·section Top-3 기준입니다.",
+    "정답 context ID가 없는 근거 없음 사례는 macro 평균에서 제외하고 별도 집계했습니다.",
+    "잠긴 합성 test 기준선이며 실제 계약서나 독립 사람 검토 성능이 아닙니다."
+  ],
+  "measured_at": "2026-07-27",
+  "ragas_version": "0.3.9",
+  "special_clause_sections": {
+    "case_scores": [
+      {
+        "case_id": "RET-DEF-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE::제9조(계약의 종료)",
+          "SRC-CIVIL-LEASE::제536조(동시이행의 항변권)",
+          "SRC-HTA-LAW::제4조 제2항(보증금 반환 전 임대차관계 존속)"
+        ],
+        "retrieved_context_ids": [
+          "SRC-HTA-LAW::제4조 제2항(보증금 반환 전 임대차관계 존속)",
+          "SRC-STD-LEASE::제9조(계약의 종료)",
+          "SRC-CIVIL-LEASE::제536조(동시이행의 항변권)"
+        ]
+      },
+      {
+        "case_id": "RET-REP-001",
+        "context_precision": 0.6666666666666666,
+        "context_recall": 0.6666666666666666,
+        "reference_context_ids": [
+          "SRC-STD-LEASE::제4조 제2항~제4항(임차주택의 사용·관리·수선)",
+          "SRC-CIVIL-LEASE::제623조(임대인의 의무)",
+          "SRC-CIVIL-LEASE::제626조(임차인의 상환청구권)"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE::제4조 제2항~제4항(임차주택의 사용·관리·수선)",
+          "SRC-CIVIL-LEASE::제623조(임대인의 의무)",
+          "SRC-STD-LEASE::제3조(입주 전 수리)"
+        ]
+      },
+      {
+        "case_id": "RET-RES-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE::제9조(계약의 종료)",
+          "SRC-CIVIL-LEASE::제615조·제654조(원상회복 준용)"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE::제9조(계약의 종료)",
+          "SRC-CIVIL-LEASE::제615조·제654조(원상회복 준용)"
+        ]
+      },
+      {
+        "case_id": "RET-RGT-001",
+        "context_precision": 0.3333333333333333,
+        "context_recall": 0.3333333333333333,
+        "reference_context_ids": [
+          "SRC-STD-LEASE::[특약사항] 담보권 설정 금지·위반 시 해제 또는 해지",
+          "SRC-MOLIT-CHECKLIST::잔금 지급 전 권리관계 재확인",
+          "SRC-HTA-LAW::제3조(대항력 등)"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE::[특약사항] 담보권 설정 금지·위반 시 해제 또는 해지",
+          "SRC-HTA-LAW::제3조의2(보증금의 회수)",
+          "SRC-MOLIT-CHECKLIST::특약사항 설정(권장)"
+        ]
+      },
+      {
+        "case_id": "RET-MGT-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE::제1조(보증금과 차임 및 관리비)",
+          "SRC-CONFIRM-FORM::[관리비]"
+        ],
+        "retrieved_context_ids": [
+          "SRC-CONFIRM-FORM::[관리비]",
+          "SRC-STD-LEASE::제1조(보증금과 차임 및 관리비)"
+        ]
+      },
+      {
+        "case_id": "RET-CON-001",
+        "context_precision": 0.0,
+        "context_recall": 0.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE::제9조(계약의 종료)",
+          "SRC-CIVIL-LEASE::제536조(동시이행의 항변권)"
+        ],
+        "retrieved_context_ids": [
+          "SRC-HTA-LAW::제3조의2(보증금의 회수)",
+          "SRC-STD-LEASE::[특약사항] 담보권 설정 금지·위반 시 해제 또는 해지",
+          "SRC-STD-LEASE::제3조(입주 전 수리)"
+        ]
+      }
+    ],
+    "evaluated_case_count": 6,
+    "excluded_no_reference_case_count": 1,
+    "macro_context_precision": 0.6666666666666666,
+    "macro_context_recall": 0.6666666666666666,
+    "scope": "special_clause_source_section_top3",
+    "top_k": 3
+  },
+  "special_clause_sources": {
+    "case_scores": [
+      {
+        "case_id": "RET-DEF-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE",
+          "SRC-HTA-LAW"
+        ],
+        "retrieved_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE"
+        ]
+      },
+      {
+        "case_id": "RET-REP-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE",
+          "SRC-CIVIL-LEASE"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "RET-RES-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE"
+        ]
+      },
+      {
+        "case_id": "RET-RGT-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-MOLIT-CHECKLIST",
+          "SRC-HTA-LAW"
+        ],
+        "retrieved_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-HTA-LAW",
+          "SRC-MOLIT-CHECKLIST"
+        ]
+      },
+      {
+        "case_id": "RET-MGT-001",
+        "context_precision": 1.0,
+        "context_recall": 1.0,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CONFIRM-FORM"
+        ],
+        "retrieved_context_ids": [
+          "SRC-CONFIRM-FORM",
+          "SRC-STD-LEASE"
+        ]
+      },
+      {
+        "case_id": "RET-CON-001",
+        "context_precision": 0.5,
+        "context_recall": 0.5,
+        "reference_context_ids": [
+          "SRC-STD-LEASE",
+          "SRC-CIVIL-LEASE"
+        ],
+        "retrieved_context_ids": [
+          "SRC-HTA-LAW",
+          "SRC-STD-LEASE",
+          "SRC-STD-LEASE"
+        ]
+      }
+    ],
+    "evaluated_case_count": 6,
+    "excluded_no_reference_case_count": 1,
+    "macro_context_precision": 0.9166666666666666,
+    "macro_context_recall": 0.9166666666666666,
+    "scope": "special_clause_source_top3",
+    "top_k": 3
+  },
+  "split": "test"
+}

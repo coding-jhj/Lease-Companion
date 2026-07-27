@@ -16,3 +16,4 @@
 - `collect_verified_law_sources.py` — 자유이용이 확인된 국가법령정보센터 법령 2개의 공식 본문을 정규화해 수집.
 - `evaluate_retrieval.py` — `--split dev|test|all`로 로컬 BM25 retrieval을 분리 평가.
 - `evaluate_ai_pipeline.py` — 외부 provider 호출 없이 A 파이프라인 test 기준선을 생성.
+- `evaluate_ragas_offline.py` — 외부 provider 호출 없이 일반·특약 RAG의 RAGAS ID Precision·Recall 기준선을 생성.

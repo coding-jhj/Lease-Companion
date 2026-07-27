@@ -21,7 +21,7 @@
 - guardrail 위반(단정 표현·근거 없는 출력)은 생성 평가에서 반드시 확인한다.
 - 종합 판정(안전/위험/사기 점수)은 평가 대상이 아니다(사용하지 않음).
 
-## 현재 자동 평가 기준선 (2026-07-20)
+## 현재 자동 평가 기준선 (2026-07-27)
 
 `python scripts/evaluate_ai_pipeline.py`는 held-out TEST-001~010과 J goldset 51건을 사용해 외부 호출 없는 기준선을 생성한다. 전체 결과: [`../../data/evaluation/results/offline_test_metrics.json`](../../data/evaluation/results/offline_test_metrics.json).
 
@@ -29,12 +29,21 @@
 - 사용자 수정: CASE-001 correction의 최초 추출값 보존·수정값 effective 반영·`corrected` 상태 3개 검사를 모두 통과했다.
 - R01~R10 상태: 100/100, 100%. 시급도 라벨이 있는 27건도 27/27, 100%.
 - J01~J13: 상태·시급도 51/51, 100%. 이 값은 고정 경계 goldset 회귀 결과다.
-- BM25 검색(2026-07-20 `SRC-MOLIT-CHECKLIST` 적재 후): top-5 정답 근거 포함 27/27, 100%; 전체 기대 source recall 38/39, 97.44%; 로컬 가용 기대 source recall 38/38, 100%; 비공식 source 노출 0건. 남은 누락 1개는 원문 부재이며 BM25 후보 누락·allowlist 제외·Top-5 밖 누락은 0개다.
-- J 검색 계약: 행동 발동 gold 32건·기대 source 41개 중 33개를 회수해 recall 80.49%이며, 로컬 원문으로 사용 가능한 기대 source 33개는 모두 회수했다. 비공식 source 노출은 0건이다. 남은 격차는 metadata-only·미수집 공식 원문으로 관리한다.
+- BM25 검색: top-5 정답 근거 포함 27/27, 100%; 전체 기대 source 39개를 모두 회수해 recall 100%; 로컬 가용 기대 source recall도 39/39, 100%; 비공식 source 노출 0건. BM25 후보 누락·allowlist 제외·Top-5 밖 누락은 0개다.
+- J 검색 계약: 검색 질의 34건·기대 source 43개 중 35개를 회수해 recall 81.40%이며, 로컬 원문으로 사용 가능한 기대 source 35개는 모두 회수했다. 비공식 source 노출은 0건이다. 나머지 8개는 로컬 원문 미수집 상태로 관리한다.
 - template 생성: schema 10/10, R trigger coverage 27/27, J trigger coverage 50/50, R/J grounding 위반 0건, 금지 단정 0건, 분석 결과 불변 10/10. 주관적 쉬운 설명 품질은 미측정.
 - Guardrail adversarial: 동일 3개 fixture를 R/J 양쪽에 적용해 기대 차단 사유 6/6 일치, false negative 0건.
 - PII: 합성 5개 유형의 외부 전송 전 raw PII 제거와 로컬 exact 복원 5/5 통과.
 - 로컬 end-to-end: 10/10 완주. 실제 provider latency·비용은 미측정.
+
+`python scripts/evaluate_ragas_offline.py`는 같은 잠긴 test를 RAGAS `0.3.9`의 ID 기반 지표로 별도 측정한다. 결과: [`../../data/evaluation/results/ragas_offline_metrics.json`](../../data/evaluation/results/ragas_offline_metrics.json).
+
+- 일반 RAG source Top-5, 27질의: macro `IDBasedContextPrecision=1.0`, `IDBasedContextRecall=1.0`.
+- 특약 RAG source Top-3, 정답 있는 6건: macro `IDBasedContextPrecision=0.9167`, `IDBasedContextRecall=0.9167`.
+- 특약 RAG source+section Top-3, 정답 있는 6건: macro `IDBasedContextPrecision=0.6667`, `IDBasedContextRecall=0.6667`.
+- 근거 없음 1건은 정답 context ID가 없어 macro 평균에서 제외하고 `excluded_no_reference_case_count=1`로 기록했다.
+- RAGAS ID 지표는 사례별 ID 집합 점수의 macro 평균이다. 기존 `13/15`, `10/15` 전체 기대 항목 회수율과 집계 방식이 달라 수치를 직접 비교하지 않는다.
+- 외부 provider 호출 0회. Faithfulness 등 LLM 기반 RAGAS 지표는 측정하지 않았다.
 
 추출·R 수치는 고정 합성 TEST-001~010의 정형 문서 기준이며 실제 문서 일반화 성능을 뜻하지 않는다. 검색 개선은 로컬 가용 원문인데 누락된 사례만 BM25·query 구성 대상으로 삼고, 원문 부재는 자료 확보 작업으로 분리한다. 목표치·배포 gate는 합의 전 임의로 설정하지 않는다.
 

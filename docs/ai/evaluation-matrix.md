@@ -26,6 +26,8 @@
 | 12 | 문서당 처리 시간 | `pipelines` | end-to-end 처리 시간 (단계별 분해 가능) | 초, 단계별 선택 |
 | 13 | 문서당 상용 API 비용 | `pipelines`·`providers` | 문서당 상용 LLM 호출 토큰·비용 | 비용/문서 |
 | 14 | 근거 없는 출력·단정 표현 비율 | `generation`·`guardrails` | guardrail 위반(단정 표현·근거 없는 출력) 비율 | 위반/전체, % |
+| 15 | RAGAS ID Context Precision | `rag` | 검색 context ID 중 정답 ID 비율을 사례별 계산 후 macro 평균 | 값 + split + top-k + ID 단위 |
+| 16 | RAGAS ID Context Recall | `rag` | 정답 context ID 중 검색된 ID 비율을 사례별 계산 후 macro 평균 | 값 + split + top-k + ID 단위 |
 
 ## 원칙
 
@@ -44,6 +46,16 @@
 - 원본 결과: `data/evaluation/results/offline_test_metrics.json`의 `special_clauses`.
 
 > 이 값은 `draft_pending_human_review` 평가셋을 혼자 잠근 회귀 기준이다. 독립 평가·실제 Gemini embedding·Cohere rerank·Gemini 생성 성능이 아니다. 특히 section Top-3 `10/15`는 후속 실제 provider 검증에서 확인할 검색 품질 공백이다.
+
+## 2026-07-27 RAGAS ID 오프라인 실측
+
+- 설정: RAGAS `0.3.9`, `ragas-id-offline-bm25-v1`, 잠긴 `test`, 외부 provider 호출 0회.
+- 일반 source Top-5, 27질의: macro Context Precision `1.0000`, Context Recall `1.0000`.
+- 특약 source Top-3, 정답 있는 6건: macro Context Precision `0.9167`, Context Recall `0.9167`.
+- 특약 source+section Top-3, 정답 있는 6건: macro Context Precision `0.6667`, Context Recall `0.6667`.
+- 근거 없음 1건은 정답 ID가 없어 평균에서 제외하고 별도 집계했다.
+- RAGAS ID 지표는 ID 집합 기반 사례별 macro 평균이다. 기존 전체 기대 항목 회수율과 집계 방식이 다르다.
+- 원본 결과: `data/evaluation/results/ragas_offline_metrics.json`.
 
 ## 미정 (TODO)
 

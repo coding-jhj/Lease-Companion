@@ -28,5 +28,5 @@
 - `extraction/` — `eval_extraction.py` 추출 평가 스크립트.
 - `generation/` — R/J 공통 Guardrail adversarial fixture 3건과 합성 PII tokenization·복원 fixture 5건.
 - `retrieval/` — 분리된 dev/test goldset과 `scripts/evaluate_retrieval.py` 평가 실행기. 실측 결과는 `../rag/evaluation/`에 기록한다.
-- `results/` — `scripts/evaluate_ai_pipeline.py`로 생성한 외부 호출 없는 test 기준선. 추출·판독 실패 표현·사용자 수정·R01~R10·J01~J13·RAG·R/J template 생성·Guardrail·PII·end-to-end를 분리 기록한다.
+- `results/` — `scripts/evaluate_ai_pipeline.py`의 전체 오프라인 기준선과 `scripts/evaluate_ragas_offline.py`의 RAGAS ID 기반 일반·특약 검색 지표를 기록한다. 외부 provider 호출은 없다.
 - 상용 provider·routing·주관 설명 품질은 비교 설정 또는 사람/독립 judge 라벨이 없어 미측정이다.
