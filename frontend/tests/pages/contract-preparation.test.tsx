@@ -40,7 +40,7 @@ describe("ContractPreparationPage", () => {
   it("keeps the header exits for a signed-in visitor", () => {
     render(<MemoryRouter><ContractPreparationPage /></MemoryRouter>);
 
-    expect(screen.getByRole("link", { name: "내 계약" })).toHaveAttribute("href", "/contracts");
+    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /상황 다시 선택/ })).toHaveAttribute("href", "/start");
   });
