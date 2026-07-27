@@ -217,13 +217,6 @@
       "title": "Payment Held",
       "type": "boolean"
     },
-    "pressure_counts": {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "title": "Pressure Counts",
-      "type": "object"
-    },
     "recognized_signal_ids": {
       "items": {
         "type": "string"

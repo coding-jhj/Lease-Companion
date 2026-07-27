@@ -52,16 +52,6 @@ PracticeEndingType = Literal[
 # 기록하지 않고 현재 장면에서 재시도 또는 명시적 건너뛰기를 선택하게 한다.
 _RETRY_ONLY_CATEGORIES = frozenset({"needs_review"})
 
-# 애매한 답변과 분기형 흐름(branching_flow)의 부분 답변에 상대방이 같은 장면에서
-# 재질문할 수 있는 최대 횟수. 이 횟수를 넘기면 확인하지 못한 내용으로 남기고
-# 다음 장면으로 넘어간다.
-# 같은 질문을 두 번 넘게 되묻으면 연습이 정답 맞히기처럼 느껴지므로 1회로 제한한다.
-# 정답 답변의 회유·압박은 시나리오의 다음 TURN 대사가 담당한다.
-PRESSURE_REPEAT_LIMIT = 1
-_ALWAYS_REASK_CATEGORIES = frozenset({"ambiguous_answer"})
-_BRANCHING_REASK_CATEGORIES = frozenset({"partial_check"})
-
-
 def allowed_next_dialogue_states(
     answer_category: "AnswerCategory", success_next_state: str, retry_state: str
 ) -> frozenset[str]:
@@ -81,32 +71,20 @@ def resolve_next_dialogue_state(
     turn_id: str,
     next_turn_id: str,
     action_selection_state: str,
-    pressure_rounds: int,
     branching_flow: bool,
 ) -> str:
     """상태 머신이 정하는 결정적 다음 대화 상태.
 
-    선형 흐름: needs_review(provider 실패)만 현재 장면 유지, 그 외는 다음 장면.
-    모든 흐름: 애매한 답변은 PRESSURE_REPEAT_LIMIT까지 같은 장면에서 재질문한다.
-    분기 흐름: 조건 수용(avoidance)은 즉시 최종 계약 결정, 부분 답변도
-    PRESSURE_REPEAT_LIMIT까지 같은 장면에서 재질문한다.
+    needs_review(provider 실패)만 현재 장면을 유지하고, 사용자 응답은 분류와 무관하게
+    한 번 저장한 뒤 다음 장면으로 간다. 같은 장면에서 되묻지 않는다 — 압박을 주려고
+    같은 질문을 두 번 던지면 연습이 정답 맞히기가 되고, 확인하지 못한 내용은 마지막
+    복기에서 안내한다.
+    분기 흐름: 조건 수용(avoidance)만 즉시 최종 계약 결정으로 간다.
     """
     if answer_category in _RETRY_ONLY_CATEGORIES:
         return turn_id
-    if (
-        answer_category in _ALWAYS_REASK_CATEGORIES
-        and pressure_rounds < PRESSURE_REPEAT_LIMIT
-    ):
-        return turn_id
-    if not branching_flow:
-        return next_turn_id
-    if answer_category == "avoidance":
+    if branching_flow and answer_category == "avoidance":
         return action_selection_state
-    if (
-        answer_category in _BRANCHING_REASK_CATEGORIES
-        and pressure_rounds < PRESSURE_REPEAT_LIMIT
-    ):
-        return turn_id
     return next_turn_id
 
 
@@ -487,7 +465,6 @@ class PracticeSessionState(BaseModel):
     payment_held: bool = False
     evidence_texts: list[str] = Field(default_factory=list)
     no_response_counts: dict[TurnId, int] = Field(default_factory=dict)
-    pressure_counts: dict[TurnId, int] = Field(default_factory=dict)
     # 직전 사용자 발화에서 확정한 대화 주제. 새 의도가 없는 짧은 동의·반복 답변에
     # 상대방이 같은 질문을 되묻지 않도록 이어 쓴다.
     last_dialogue_intent: DialogueIntent | None = None
@@ -520,14 +497,6 @@ class PracticeSessionState(BaseModel):
             for turn_id, count in self.no_response_counts.items()
         ):
             raise ValueError("no_response_counts는 TURN별 1 이상의 횟수여야 합니다.")
-        if any(
-            re.fullmatch(r"TURN-\d{2}", turn_id) is None
-            or not 1 <= count <= PRESSURE_REPEAT_LIMIT
-            for turn_id, count in self.pressure_counts.items()
-        ):
-            raise ValueError(
-                f"pressure_counts는 TURN별 1~{PRESSURE_REPEAT_LIMIT}회여야 합니다."
-            )
         evaluation_actions = list(
             dict.fromkeys(
                 action_id

@@ -91,12 +91,7 @@ def plan_grounded_dialogue(
     elif intent == "unrelated":
         speech_act = "decline_unrelated"
     elif intent == "unknown":
-        # 같은 되묻기를 두 번 반복하지 않고 임대인 입장 전달로 넘어간다.
-        speech_act = (
-            "maintain_position"
-            if previous_intent == "unknown"
-            else "clarify_user_intent"
-        )
+        speech_act = "clarify_user_intent"
     elif intent == "no_successor_case":
         speech_act = "state_missing_fact"
     elif intent == "verbal_promise":

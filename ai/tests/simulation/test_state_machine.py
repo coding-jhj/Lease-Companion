@@ -137,7 +137,6 @@ def test_all_three_scenario_examples_use_the_common_evaluation_service(
         turn_id=turn.turn_id,
         next_turn_id=turn.next_turn_id,
         action_selection_state=scenario.action_selection.state_id,
-        pressure_rounds=0,
         branching_flow=scenario.branching_flow,
     )
     assert provider.calls == (0 if timed_out or deterministic is not None else 1)
@@ -340,7 +339,7 @@ def test_policy_advances_user_responses_and_retries_only_provider_review():
     assert allowed_next_dialogue_states("needs_review", "TURN-02", "TURN-01") == {"TURN-01"}
 
 
-def test_linear_scenario_advances_partial_check_to_next_turn():
+def test_partial_check_advances_to_next_turn():
     scenario, _ = _assets("PRACTICE-PROXY-AUTHORITY-001")
     session = start_practice_session(scenario, "S-ADV", 1, STARTED_AT)
     turn, evaluation = _first_turn_eval(scenario, "partial_check", advance=True)
@@ -348,47 +347,33 @@ def test_linear_scenario_advances_partial_check_to_next_turn():
     advanced = advance_dialogue(session, scenario, evaluation)
 
     assert advanced.current_state == turn.next_turn_id  # 목표문장 없어도 진행
-    assert advanced.pressure_counts == {}
 
 
-def test_linear_scenario_repeats_ambiguous_answer_once_then_advances():
-    scenario, _ = _assets("PRACTICE-PROXY-AUTHORITY-001")
-    session = start_practice_session(scenario, "S-LINEAR-AMBIGUOUS", 1, STARTED_AT)
-    turn, evaluation = _first_turn_eval(scenario, "ambiguous_answer", advance=False)
+def test_ambiguous_answer_advances_without_asking_the_same_question_again():
+    """압박을 주려고 같은 질문을 두 번 던지지 않는다. 확인하지 못한 내용은 복기에서 안내한다."""
 
-    first = advance_dialogue(session, scenario, evaluation)
-    second = advance_dialogue(first, scenario, evaluation)
+    for scenario_id in ("PRACTICE-PROXY-AUTHORITY-001", "PRACTICE-DEFERRED-REFUND-001"):
+        scenario, _ = _assets(scenario_id)
+        session = start_practice_session(scenario, f"S-AMBIGUOUS-{scenario_id}", 1, STARTED_AT)
+        turn, evaluation = _first_turn_eval(scenario, "ambiguous_answer", advance=True)
 
-    assert first.current_state == turn.turn_id
-    assert first.pressure_counts == {turn.turn_id: 1}
-    assert second.current_state == turn.next_turn_id
-    assert not second.confirmed_action_ids
+        advanced = advance_dialogue(session, scenario, evaluation)
+
+        assert advanced.current_state == turn.next_turn_id, scenario_id
+        assert not advanced.confirmed_action_ids, scenario_id
 
 
-def test_branching_scenario_repeats_ambiguous_answer_once_then_advances():
-    """애매한 답변은 한 번만 되묻고, 그다음에는 확인하지 못한 채 다음 장면으로 간다."""
+def test_deferred_refund_scenario_runs_the_linear_turn_order():
+    """분기형 흐름을 끄고 원안 9단계 흐름으로 돌린다. 조건 수용도 다음 장면으로 간다."""
 
     scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
-    session = start_practice_session(scenario, "S-PRESSURE", 1, STARTED_AT)
-    turn, evaluation = _first_turn_eval(scenario, "ambiguous_answer", advance=False)
-
-    first = advance_dialogue(session, scenario, evaluation)
-    second = advance_dialogue(first, scenario, evaluation)
-
-    assert first.current_state == turn.turn_id
-    assert first.pressure_counts == {turn.turn_id: 1}
-    assert second.current_state == turn.next_turn_id
-    assert not second.confirmed_action_ids
-
-
-def test_branching_scenario_sends_accepted_terms_straight_to_contract_decision():
-    scenario, _ = _assets("PRACTICE-DEFERRED-REFUND-001")
+    assert scenario.branching_flow is False
     session = start_practice_session(scenario, "S-AVOID", 1, STARTED_AT)
-    _turn_definition, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
+    turn, evaluation = _first_turn_eval(scenario, "avoidance", advance=True)
 
     advanced = advance_dialogue(session, scenario, evaluation)
 
-    assert advanced.current_state == scenario.action_selection.state_id
+    assert advanced.current_state == turn.next_turn_id
     assert advanced.confirmed_action_ids == []
 
 
