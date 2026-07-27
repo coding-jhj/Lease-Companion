@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
+import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { mvpService } from "../../services/mvpService";
 import type { ContractSummaryDto } from "../../types/api";
@@ -99,22 +99,51 @@ export function DashboardPage() {
       <div className="stack">
         {status === "loading" && <LoadingState title="계약 목록을 불러오는 중" description="저장된 계약 건을 확인하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 목록을 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContracts()} />}
-        {status === "success" && contracts.length === 0 && <EmptyState title="아직 저장된 계약이 없습니다" description="새 계약을 만들어 확인을 시작해 보세요." />}
-        {status === "success" && contracts.length > 0 && (
-          <div className="contract-groups">
-            <ContractGroup title="점검을 시작하지 않은 계약" contracts={notStarted} onDeleted={loadContracts} />
-            <ContractGroup title="확인 중인 계약" contracts={inProgress} onDeleted={loadContracts} />
-            {done.length > 0 && (
-              <details className="contract-group contract-group--done">
-                <summary>확인을 마친 계약 {done.length}개</summary>
-                <div className="contract-grid">
-                  {done.map((contract) => <ContractCard contract={contract} onDeleted={loadContracts} key={contract.id} />)}
-                </div>
-              </details>
-            )}
-          </div>
+        {status === "success" && contracts.length === 0 && (
+          <section className="dashboard-empty" aria-labelledby="dashboard-empty-title">
+            <div className="dashboard-empty__intro">
+              <p>처음이어도 괜찮습니다</p>
+              <h2 id="dashboard-empty-title">첫 계약 점검을 시작해 보세요</h2>
+              <span>계약서 초안을 올리면 읽은 내용을 확인한 뒤, 물어볼 말과 다음 행동을 정리해 드립니다.</span>
+            </div>
+            <ol className="dashboard-empty__steps" aria-label="계약 점검 과정">
+              <li><strong>1</strong><span><b>계약서 올리기</b><small>PDF 또는 사진을 준비합니다.</small></span></li>
+              <li><strong>2</strong><span><b>읽은 내용 확인</b><small>잘못 읽은 내용은 직접 고칩니다.</small></span></li>
+              <li><strong>3</strong><span><b>확인 결과 보기</b><small>물어볼 말과 할 일을 확인합니다.</small></span></li>
+            </ol>
+            <div className="dashboard-empty__actions">
+              <Link className="button-link" to="/contracts/new">계약서 올리고 점검하기</Link>
+              <Link className="button-link secondary" to="/prepare">아직 계약서가 없어요</Link>
+            </div>
+            <Link className="dashboard-practice-link" to="/practice">계약 상황을 먼저 연습하기</Link>
+          </section>
         )}
-        <Link className="button-link" to="/contracts/new">새 계약 점검 시작</Link>
+        {status === "success" && contracts.length > 0 && (
+          <>
+            <section className="dashboard-start-actions" aria-label="새로운 계약 확인">
+              <div>
+                <h2>새로운 계약을 확인할까요?</h2>
+                <p>계약서가 있다면 바로 점검하고, 없다면 준비할 내용을 먼저 확인할 수 있습니다.</p>
+              </div>
+              <div>
+                <Link className="button-link" to="/contracts/new">새 계약 점검</Link>
+                <Link className="button-link secondary" to="/practice">계약 연습</Link>
+              </div>
+            </section>
+            <div className="contract-groups">
+              <ContractGroup title="점검을 시작하지 않은 계약" contracts={notStarted} onDeleted={loadContracts} />
+              <ContractGroup title="확인 중인 계약" contracts={inProgress} onDeleted={loadContracts} />
+              {done.length > 0 && (
+                <details className="contract-group contract-group--done">
+                  <summary>확인을 마친 계약 {done.length}개</summary>
+                  <div className="contract-grid">
+                    {done.map((contract) => <ContractCard contract={contract} onDeleted={loadContracts} key={contract.id} />)}
+                  </div>
+                </details>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </PageShell>
   );

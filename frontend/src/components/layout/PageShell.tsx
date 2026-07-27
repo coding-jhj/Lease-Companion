@@ -29,9 +29,8 @@ const journeySteps = ["시작 방법", "집 등록", "문서 준비", "내용 �
 
 // 지나온 단계로 돌아갈 주소. 5단계(결과 준비)는 분석 실행 화면이라 되돌아가지 않는다.
 function stepPath(step: number, contractId: string | null): string | null {
-  // 1단계는 모드 선택이 아니라 상황 선택(/start)이다. /choose-mode로 두면 집 등록에서
-  // "이전 단계"가 /start를 건너뛰어 두 화면 뒤로 간다. 모드 전환은 머리말 "처음으로"가 맡는다.
-  if (step === 1) return "/start";
+  // 모드·상황 선택은 선택적 안내다. 실전 점검의 기준 시작점은 내 계약이다.
+  if (step === 1) return "/contracts";
   if (step === 2) return "/contracts";
   if (!contractId) return null;
   if (step === 3) return `/contracts/${contractId}/upload`;
@@ -79,7 +78,7 @@ export function PageShell({
   const validStep = Number.isInteger(currentStep) && currentStep >= 1 && currentStep <= journeySteps.length;
   const currentLabel = journey?.currentLabel ?? journeySteps[currentStep - 1];
   const nextLabel = journey?.nextLabel ?? journeySteps[currentStep];
-  const showModeSelect = showLogout && location.pathname !== "/choose-mode";
+  const showContractsLink = showLogout && location.pathname !== "/contracts";
   const contractId = location.pathname.match(/\/contracts\/(\d+)/)?.[1] ?? null;
   // 5단계(결과 준비)처럼 되돌아갈 수 없는 단계는 건너뛰고 그 앞 단계를 찾는다.
   // 건너뛰지 않으면 6단계에서 "이전 단계" 버튼이 사라진다.
@@ -166,7 +165,7 @@ export function PageShell({
         </Link>
         <div className="header-actions">
           <span className="step-badge">{step}</span>
-          {showModeSelect && <Link className="mode-switch-link" to="/choose-mode">처음으로</Link>}
+          {showContractsLink && <Link className="mode-switch-link" to="/contracts">내 계약</Link>}
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>

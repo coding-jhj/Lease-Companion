@@ -23,15 +23,17 @@ afterEach(() => {
 });
 
 describe("DashboardPage grouping", () => {
-  it("keeps only the new contract action below the contract list", async () => {
+  it("guides a first-time user to a real check, preparation, or optional practice", async () => {
     vi.spyOn(mvpService, "getContracts").mockResolvedValue([]);
 
     render(<MemoryRouter><DashboardPage /></MemoryRouter>);
 
-    expect(await screen.findByRole("link", { name: "새 계약 점검 시작" })).toHaveAttribute("href", "/contracts/new");
+    expect(await screen.findByRole("heading", { name: "첫 계약 점검을 시작해 보세요" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "계약서 올리고 점검하기" })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.getByRole("link", { name: "아직 계약서가 없어요" })).toHaveAttribute("href", "/prepare");
+    expect(screen.getByRole("link", { name: "계약 상황을 먼저 연습하기" })).toHaveAttribute("href", "/practice");
     expect(screen.queryByText("실전 계약 점검 모드")).not.toBeInTheDocument();
     expect(screen.queryByText("계약 연습 시뮬레이션 모드")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "계약 연습 시작" })).not.toBeInTheDocument();
   });
 
   it("splits contracts into action groups and collapses completed ones", async () => {
@@ -43,6 +45,8 @@ describe("DashboardPage grouping", () => {
 
     render(<MemoryRouter><DashboardPage /></MemoryRouter>);
 
+    expect(await screen.findByRole("link", { name: "새 계약 점검" })).toHaveAttribute("href", "/contracts/new");
+    expect(screen.getByRole("link", { name: "계약 연습" })).toHaveAttribute("href", "/practice");
     const notStarted = await screen.findByRole("region", { name: "점검을 시작하지 않은 계약 1개" });
     expect(within(notStarted).getByText("미행동 계약건")).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "확인 중인 계약 1개" })).getByText("행동중 계약건")).toBeInTheDocument();

@@ -17,13 +17,13 @@ afterEach(() => {
 });
 
 describe("login mode selection", () => {
-  it("moves a signed-in user to mode selection", async () => {
+  it("moves a signed-in user directly to their contracts", async () => {
     vi.spyOn(mvpService, "login").mockResolvedValue({ access_token: "test-token", token_type: "bearer" });
     render(
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<AuthPage mode="login" />} />
-          <Route path="/choose-mode" element={<ModeSelectPage />} />
+          <Route path="/contracts" element={<h1>내 계약</h1>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -32,7 +32,7 @@ describe("login mode selection", () => {
     fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: "password1!" } });
     fireEvent.click(screen.getByRole("button", { name: "로그인하고 시작" }));
 
-    expect(await screen.findByRole("heading", { name: "슬기로운 계약생활 시작" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "내 계약" })).toBeInTheDocument();
   });
 
   it("routes the mode cards to real check and practice", () => {
@@ -72,7 +72,7 @@ describe("situation selection", () => {
   it("keeps the header exits for a signed-in visitor", () => {
     render(<MemoryRouter><SituationSelectPage /></MemoryRouter>);
 
-    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
+    expect(screen.getByRole("link", { name: "내 계약" })).toHaveAttribute("href", "/contracts");
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
   });
 

@@ -11,26 +11,25 @@ afterEach(cleanup);
 describe("PageShell logout", () => {
   it.each([
     ["계약 연습", "/practice", "계약 연습"],
-    ["실전 계약 점검", "/contracts", "2 / 7"],
-  ])("links the %s screen back to mode selection", (_label, path, step) => {
+    ["실전 계약 점검", "/contracts/12/review", "4 / 7"],
+  ])("links the %s screen back to the contract dashboard", (_label, path, step) => {
     render(
       <MemoryRouter initialEntries={[path]}>
         <PageShell step={step} title="진행 화면" description="진행 중"><p>본문</p></PageShell>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
+    expect(screen.getByRole("link", { name: "내 계약" })).toHaveAttribute("href", "/contracts");
   });
 
-  it("does not show a self-link on the mode selection screen", () => {
+  it("does not show a self-link on the contract dashboard", () => {
     render(
-      <MemoryRouter initialEntries={["/choose-mode"]}>
-        <PageShell step="시작" title="어떤 방식으로 시작할까요?" description="모드 선택"><p>선택</p></PageShell>
+      <MemoryRouter initialEntries={["/contracts"]}>
+        <PageShell step="2 / 7" title="내 계약" description="계약 목록"><p>목록</p></PageShell>
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("link", { name: "처음으로" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "모드 선택" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "내 계약" })).not.toBeInTheDocument();
   });
 
   it("returns authenticated screens to login", () => {
@@ -144,15 +143,14 @@ describe("PageShell logout", () => {
     expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts/12/review");
   });
 
-  // 집 등록 바로 앞 화면은 상황 선택(/start)이다. /choose-mode로 보내면 두 화면 뒤로 건너뛴다.
-  it("walks back one screen at a time from the contract registration step", () => {
+  it("returns from contract registration to the contract dashboard", () => {
     render(
       <MemoryRouter initialEntries={["/contracts/new"]}>
         <PageShell step="2 / 7" title="확인할 집 등록하기" description="등록"><p>내용</p></PageShell>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/start");
+    expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts");
   });
 
   it("shows a standalone back link on screens without the journey bar", () => {

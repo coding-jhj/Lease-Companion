@@ -22,7 +22,7 @@ export function AuthPage({ mode }: { mode: "login" | "signup" }) {
       if (isLogin) {
         const response = await mvpService.login(username, password);
         saveAccessToken(response.access_token);
-        navigate("/choose-mode", { replace: true });
+        navigate("/contracts", { replace: true });
       } else {
         await mvpService.signup(username, email, password);
         navigate("/login", { replace: true });
