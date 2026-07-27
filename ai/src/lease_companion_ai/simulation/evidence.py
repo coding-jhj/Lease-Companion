@@ -61,4 +61,8 @@ def retrieve_action_evidence(
                     retrieval_method=hit.retrieval_method,
                 )
             )
+        # ponytail: 허용 source를 다 찾으면 남은 rule 검색은 결과가 전부 중복 제거로 버려진다.
+        # action 3개 × rule 24개 = 검색 72회가 요청 안에서 동기로 돌아 복기 진입이 지연됐다.
+        if seen == allowed:
+            break
     return tuple(evidence)
