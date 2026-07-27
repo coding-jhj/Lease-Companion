@@ -5,7 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lease_companion_ai.extraction.minimum_mvp import parse_contract, parse_registry
+from lease_companion_ai.extraction.minimum_mvp import (
+    _normalize_extraction_text,
+    parse_contract,
+    parse_registry,
+)
 from lease_companion_ai.rules.judgments import run_judgments
 from lease_companion_ai.schemas.adapters import (
     build_snapshot,
@@ -418,3 +422,34 @@ def test_local_fallback_builds_canonical_input_and_runs_all_judgments():
         # 그중 어느 것도 매칭하지 않으므로 적용 제외다.
         "J13": "적용 제외",
     }
+
+
+def test_clause_text_keeps_the_table_cell_gap_between_label_and_value():
+    """표 칸 여백을 1칸으로 줄이면 화면에서 "보증금금 삼억원정"으로 읽힌다."""
+    fields = _contract("contract_001.txt")
+
+    deposit_clause = next(
+        clause for clause in fields["main_clauses"] if "보증금" in clause
+    )
+
+    assert "보증금  금 삼억원정" in deposit_clause
+    # 낱말 사이 1칸은 그대로 두고 2칸 이상만 2칸으로 줄인다.
+    assert "   " not in deposit_clause
+
+
+def test_justified_form_labels_are_joined_back_into_words():
+    """표 라벨 칸의 균등분할 자간("보 증 금")은 띄어쓰기가 아니라 글자 배치다."""
+    text = _normalize_extraction_text(
+        "보 증 금  금 306,000,000 원정  계 약 금  금 30,600,000 원정\n"
+        "중 도 금  잔 금  차 임(월세)  관 리 비 (정액이 아닌 경우)"
+    )
+
+    assert "보증금  금 306,000,000" in text
+    assert "계약금  금 30,600,000" in text
+    assert "중도금  잔금  차임(월세)  관리비" in text
+
+
+def test_spaced_label_rule_leaves_ordinary_sentences_alone():
+    """라벨 목록 밖의 낱말과 1음절 단어 나열은 건드리지 않는다."""
+    assert _normalize_extraction_text("잔 금액을 확인한다") == "잔 금액을 확인한다"
+    assert _normalize_extraction_text("이 법 은 주거용 건물에") == "이 법 은 주거용 건물에"

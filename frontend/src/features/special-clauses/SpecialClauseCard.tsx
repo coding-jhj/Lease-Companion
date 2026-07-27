@@ -1,4 +1,5 @@
 import { EvidenceDisclosure } from "../evidence-sources/EvidenceDisclosure";
+import { cleanClauseLine } from "../extraction-review/viewModel";
 import { displayPriorityForUrgency } from "../judgment-results/PriorityGroups";
 import type { SpecialClauseGuidanceDto, SpecialClauseReviewDto } from "../../types/api";
 
@@ -29,7 +30,7 @@ export function SpecialClauseCard({
       <div><span className="special-clause-card__index">특약 {index + 1}</span><h3>직접 확인할 특약</h3></div>
       <span className="special-clause-card__priority">{priority}</span>
     </header>
-    <blockquote><strong>계약서 원문</strong><p>{review.original_text}</p></blockquote>
+    <blockquote><strong>계약서 원문</strong><p>{cleanClauseLine(review.original_text)}</p></blockquote>
     <p className="special-clause-card__meta">상태: {review.status} · 시급도: {review.urgency}</p>
     <EvidenceDisclosure
       sources={review.evidence_sources}

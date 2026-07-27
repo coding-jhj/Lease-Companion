@@ -8,6 +8,7 @@ import type {
   SpecialClauseReviewDto,
   StageGuidanceDto,
 } from "../../types/api";
+import { cleanClauseLine } from "../extraction-review/viewModel";
 import { buildQuestionGroups } from "../question-cards/DefenseActionHub";
 import { buildActionFirstItems } from "./actionFirstViewModel";
 
@@ -133,7 +134,7 @@ export function ReportPrintSheet({
       {specialClauseReviews.map((review, index) => {
         const item = clauseGuidanceById.get(review.clause_id);
         return <article className="report-print-sheet__clause" key={review.clause_id}>
-          <h3>특약 {index + 1}</h3><blockquote>{review.original_text}</blockquote>
+          <h3>특약 {index + 1}</h3><blockquote>{cleanClauseLine(review.original_text)}</blockquote>
           <p><strong>판정:</strong> {review.status} · {review.urgency}</p>
           <p><strong>쉬운 설명:</strong> {item?.plain_explanation ?? review.reason}</p>
           <p><strong>공식 근거:</strong> {review.evidence_sources.length > 0

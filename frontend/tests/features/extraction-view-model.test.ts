@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cleanClauseLine,
   correctionValue,
   extractionStatusMeta,
   fieldViewModels,
@@ -7,6 +8,7 @@ import {
   formatFieldValue,
   reviewStatusMeta,
   splitClauseText,
+  splitClausesForDisplay,
 } from "../../src/features/extraction-review/viewModel";
 import type {
   DocumentExtractionDto,
@@ -340,5 +342,16 @@ describe("J structured field values", () => {
       "① 임차인은 못한다.",
       "② 임대인은 유지한다.",
     ]);
+  });
+
+  // 표 칸 구분은 공백 2칸 이상이 유일한 신호다. 1칸으로 뭉개면 라벨과 값이 붙어
+  // "보증금  금 306,000,000 원정"이 "보증금금 306,000,000 원정"으로 읽힌다.
+  it("keeps the table cell gap between a form label and its value", () => {
+    const text = "제1조(보증금과 차임) 보 증 금  금 306,000,000 원정  계 약 금  금 30,600,000 원정";
+
+    const [line] = splitClausesForDisplay(text);
+
+    expect(line).toBe("제1조(보증금과 차임) 보 증 금  금 306,000,000 원정  계 약 금  금 30,600,000 원정");
+    expect(cleanClauseLine("보 증 금     금 306,000,000 원정")).toBe("보 증 금  금 306,000,000 원정");
   });
 });

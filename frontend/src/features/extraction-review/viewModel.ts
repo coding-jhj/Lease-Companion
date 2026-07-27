@@ -289,8 +289,11 @@ export function splitClauseText(text: string): string[] {
 }
 
 // 빈 체크박스(□)·선택 표시(☑)는 폼 선택 여부라 유지한다. 공백만 정리.
+// 계약서 표의 칸 구분은 공백 2칸 이상이 유일한 신호다. 1칸으로 뭉개면
+// "보증금  금 306,000,000 원정"이 "보증금금 306,000,000"으로 읽힌다. 2칸으로 남긴다.
+// CSS `white-space: pre-wrap`과 함께 쓴다(`pre-line`은 연속 공백을 접는다).
 export function cleanClauseLine(text: string): string {
-  return text.replace(/\s{2,}/g, " ").trim();
+  return text.replace(/[ \t]{2,}/g, "  ").replace(/\s*\n\s*/g, " ").trim();
 }
 
 // 한 조항 안의 하위항목(1·2·3…)을 줄바꿈으로 분리해 긴 조항을 읽기 쉽게 만든다.
@@ -307,7 +310,7 @@ export function formatClauseText(text: string): string {
 // PDF 줄바꿈(\n)으로 잘게 끊긴 조항을 하나로 이어붙인 뒤, 조 번호(제N조)·항 번호(①)·특약 불릿(•)
 // 기준으로만 다시 나눈다. 문장·단어 중간에서 끊기던 문제를 없앤다. 원래 조 단위면 그대로 복원된다.
 export function splitClausesForDisplay(text: string): string[] {
-  const joined = text.replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+  const joined = text.replace(/\s*\n\s*/g, " ").replace(/[ \t]{2,}/g, "  ").trim();
   return joined
     .split(/\s*[•‣●▪]\s*/)
     .flatMap((segment) => segment.split(/\s*(?=제\s*\d+\s*조(?:의\s*\d+)?\s*[（(])/))
