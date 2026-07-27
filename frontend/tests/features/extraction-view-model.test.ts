@@ -299,7 +299,7 @@ describe("J structured field values", () => {
     expect(fee.field.failure_reason).toContain("고정 관리비 금액이 없습니다");
   });
 
-  it("breaks a run-on special clause at sentence ends without changing the text", () => {
+  it("breaks a run-on special clause at sentence ends and after a form choice", () => {
     const text = "임차인은 전입신고를 마친다. 임대인은 저당권을 설정할 수 없다. ( □ 동의 ☑ 미동의 ) 철거 계획이 있다.";
 
     const formatted = formatClauseText(text);
@@ -307,7 +307,8 @@ describe("J structured field values", () => {
     expect(formatted.split("\n")).toEqual([
       "임차인은 전입신고를 마친다.",
       "임대인은 저당권을 설정할 수 없다.",
-      "( □ 동의 ☑ 미동의 ) 철거 계획이 있다.",
+      "( □ 동의 ☑ 미동의 )",
+      "철거 계획이 있다.",
     ]);
     expect(formatted.replace(/\n/g, " ")).toBe(text);
   });
@@ -320,16 +321,17 @@ describe("J structured field values", () => {
     expect(formatClauseText("가. 첫째 내용 나. 둘째 내용 다. 셋째 내용")).toBe("가. 첫째 내용 나. 둘째 내용 다. 셋째 내용");
   });
 
-  // 화면에서 문제가 된 실제 특약 원문. 문장 끝이 없는 서식 구간은 원문 그대로 이어 붙은 채 남는다.
-  it("breaks the real special clause at sentence ends and leaves the form section intact", () => {
+  // 화면에서 문제가 된 실제 특약 원문. 문장 끝과 서식 항목 경계에서 나눈다.
+  it("breaks the real special clause at sentence ends and between form items", () => {
     const text = "주택을 인도받은 임차인은 2026년 9월 13일까지 주민등록(전입신고)과 주택임대차계약서상 확정일자를 받기로 하고, 임대인은 위 약정일자의 다음날 까지 임차주택에 저당권 등 담보권을 설정할 수 없다. 주택임대차계약과 관련하여 분쟁이 있는 경우 임대인 또는 임차인은 법원에 소를 제기하기 전에 먼저 주택임대차분쟁조정위원회에 조정을 신청한다. ( □ 동의 ☑ 미동의 ) 주택의 철거 또는 재건축에 관한 구체적 계획 ( □ 없음 ☑ 있음 ※공사시기: 2028년경 ※소요기간: 32개월 )";
 
     const lines = formatClauseText(text).split("\n");
 
-    expect(lines).toHaveLength(3);
+    expect(lines).toHaveLength(4);
     expect(lines[0]).toMatch(/^주택을 인도받은 임차인은/);
     expect(lines[1]).toMatch(/^주택임대차계약과 관련하여/);
-    expect(lines[2]).toMatch(/^\( □ 동의/);
+    expect(lines[2]).toBe("( □ 동의 ☑ 미동의 )");
+    expect(lines[3]).toMatch(/^주택의 철거 또는 재건축/);
     expect(lines.join(" ")).toBe(text);
   });
 
@@ -353,5 +355,66 @@ describe("J structured field values", () => {
 
     expect(line).toBe("제1조(보증금과 차임) 보 증 금  금 306,000,000 원정  계 약 금  금 30,600,000 원정");
     expect(cleanClauseLine("보 증 금     금 306,000,000 원정")).toBe("보 증 금  금 306,000,000 원정");
+  });
+
+  // 조 하나가 한 문단으로 뭉쳐 읽기 어렵다는 피드백. 항 번호·번호 목록·서식 항목 경계에서 나눈다.
+  it("breaks a form clause at 항 번호, numbered items, and form item boundaries", () => {
+    const clause = "제1조(보증금과 차임 및 관리비) 보증금  금 8,000,000 원정 (₩ 8,000,000) 계약금  금 1,600,000 원정 (₩ 1,600,000)은 계약시에 지불하고 영수함. 관리비  1.일반관리비 금 30,000원 2.전기료 실비 정산 7.TV 금 20,000원";
+
+    expect(formatClauseText(clause).split(/\n/)).toEqual([
+      "제1조(보증금과 차임 및 관리비)",
+      "보증금  금 8,000,000 원정 (₩ 8,000,000)",
+      "계약금  금 1,600,000 원정 (₩ 1,600,000)은 계약시에 지불하고 영수함. 관리비",
+      "1. 일반관리비 금 30,000원",
+      "2. 전기료 실비 정산",
+      "7. TV 금 20,000원",
+    ]);
+  });
+
+  // 항은 카드를 쪼개지 않고 카드 안에서 줄만 나눈다. 조 단위로 확인해야 하기 때문이다.
+  it("breaks each 항 번호 onto its own line without splitting the clause into cards", () => {
+    const clause = "제4조(임차주택의 사용·관리·수선) ① 임차인은 구조변경을 할 수 없다. ② 임대인은 유지하여야 한다. 소모품 교체 ④ 임차인이 수선비용을 지출한 때에는 청구할 수 있다.";
+
+    expect(splitClausesForDisplay(clause)).toHaveLength(1);
+    expect(formatClauseText(clause).split(/\n/)).toEqual([
+      "제4조(임차주택의 사용·관리·수선)",
+      "① 임차인은 구조변경을 할 수 없다.",
+      "② 임대인은 유지하여야 한다.",
+      "소모품 교체",
+      "④ 임차인이 수선비용을 지출한 때에는 청구할 수 있다.",
+    ]);
+  });
+
+  // 수선 비용 부담은 표의 두 행이 한 줄로 합쳐져 나온다. 라벨과 "예:" 사이 칸 구분이 행 경계다.
+  it("breaks each 예: item in a cost responsibility table onto its own line", () => {
+    const clause = "③ 임대인과 임차인은 다음과 같이 합의한다. 임대인부담  예: 노후·불량으로 인한 수선 임차인부담  예: 전구 등 통상의 간단한 수선, 소모품 교체";
+
+    expect(formatClauseText(clause).split(/\n/)).toEqual([
+      "③ 임대인과 임차인은 다음과 같이 합의한다.",
+      "임대인부담  예: 노후·불량으로 인한 수선",
+      "임차인부담  예: 전구 등 통상의 간단한 수선, 소모품 교체",
+    ]);
+  });
+
+  // 서식 목록은 "1.일반관리비"처럼 번호와 내용이 붙어 나와 번호가 눈에 들어오지 않는다.
+  it("puts one space after a list number that the form ran together", () => {
+    expect(formatClauseText("관리비  1.일반관리비 금 30,000원 2.전기료 실비 정산").split(/\n/)).toEqual([
+      "관리비",
+      "1. 일반관리비 금 30,000원",
+      "2. 전기료 실비 정산",
+    ]);
+    expect(formatClauseText("제4조(사용) ①임차인은 변경할 수 없다.").split(/\n/)).toEqual([
+      "제4조(사용)",
+      "① 임차인은 변경할 수 없다.",
+    ]);
+    // 이미 띄어져 있으면 칸을 더 넣지 않는다.
+    expect(formatClauseText("1. 일반관리비")).toBe("1. 일반관리비");
+  });
+
+  // 산문 특약은 문장 중간 괄호가 흔해, 괄호 뒤에서 나누면 문장이 잘린다.
+  it("does not break a prose clause after a mid-sentence parenthesis", () => {
+    const prose = "연체율은 1.5% 이며 문의는 02-1234-5678 (평일) 이다.";
+
+    expect(formatClauseText(prose)).toBe(prose);
   });
 });

@@ -453,3 +453,14 @@ def test_spaced_label_rule_leaves_ordinary_sentences_alone():
     """라벨 목록 밖의 낱말과 1음절 단어 나열은 건드리지 않는다."""
     assert _normalize_extraction_text("잔 금액을 확인한다") == "잔 금액을 확인한다"
     assert _normalize_extraction_text("이 법 은 주거용 건물에") == "이 법 은 주거용 건물에"
+
+
+def test_circled_paragraph_numbers_survive_nfkc_normalization():
+    """NFKC는 ①을 "1"로 바꾼다. 항 번호가 본문 숫자와 섞이면 항 경계를 찾을 수 없다."""
+    text = _normalize_extraction_text(
+        "제4조(사용·관리·수선)\n① 임차인은 구조변경을 할 수 없다. ② 임대인은 유지한다. ⑳ 마지막 항"
+    )
+
+    assert "① 임차인은" in text
+    assert "② 임대인은" in text
+    assert "⑳ 마지막 항" in text
