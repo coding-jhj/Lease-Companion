@@ -349,6 +349,22 @@ def load_judgment_search_contexts(root: Path | None = None) -> dict[str, str]:
     return contexts
 
 
+# 로컬 원문 파일 상단의 출처 표기 블록. "# ..." 형식과 "자료명:/source_id:/공식 본문 URL:"
+# 형식 두 가지를 쓴다. 이미 metadata로 들어가는 값이라 본문으로 색인하면 검색에 걸려
+# 화면의 "이번 판정과 연결된 근거" 자리에 조문 대신 source_id·URL이 표시된다.
+_SOURCE_HEADER_LINE = re.compile(r"^(?:#|자료명\s*:|source_id\s*:|공식 본문 URL\s*:)")
+
+
+def strip_source_header(text: str) -> str:
+    """파일 맨 위의 연속된 출처 표기 줄만 걷어낸다. 본문은 건드리지 않는다."""
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped and not _SOURCE_HEADER_LINE.match(stripped):
+            return "\n".join(lines[index:])
+    return text
+
+
 def load_local_official_chunks(root: Path | None = None) -> list[RagChunk]:
     repo_root = root or _repo_root()
     manifest = repo_root / "data" / "rag" / "metadata" / "official_sources.jsonl"
@@ -370,7 +386,7 @@ def load_local_official_chunks(root: Path | None = None) -> list[RagChunk]:
             source_sha256=record["content_sha256"],
             usage_terms=record["usage_terms"],
         )
-        text = local_path.read_text(encoding="utf-8")
+        text = strip_source_header(local_path.read_text(encoding="utf-8"))
         chunks.extend(
             chunk_sections(metadata, [(record["article_or_section"], text)])
         )
@@ -394,8 +410,10 @@ def load_source_full_texts(root: Path | None = None) -> dict[str, str]:
         if record["distribution_mode"] != "local_source":
             continue
         local_path = repo_root / record["local_path"]
+        # "원문 더 보기"도 검색 근거와 같은 본문에서 시작한다. 제목·기관·URL은 카드
+        # 머리말과 "공식 원문 열기" 링크로 이미 보여 준다.
         texts[record["source_id"]] = normalize_source_text(
-            local_path.read_text(encoding="utf-8")
+            strip_source_header(local_path.read_text(encoding="utf-8"))
         )
     return texts
 

@@ -120,12 +120,51 @@ def _group_clauses(text: str) -> list[str]:
     return clauses
 
 
+# 표준계약서 표의 라벨 칸은 균등분할 정렬이라 "보 증 금"처럼 글자마다 자간이 벌어져 있고,
+# PDF 텍스트 추출은 그 자간을 공백으로 뽑는다. 띄어쓰기가 아니라 칸 안 글자 배치이므로
+# 서식에 고정된 라벨만 원래 낱말로 되돌린다. 임의 판단이 섞이지 않도록 목록을 못박는다.
+_FORM_LABELS = (
+    "보증금", "계약금", "중도금", "잔금", "차임", "월세", "관리비", "임대료",
+    "임대인", "임차인", "영수자", "소재지", "면적", "구조", "용도", "주소",
+)
+# 글자 사이가 정확히 1칸인 형태만 되돌린다. 앞뒤가 한글이면 낱말 중간이라 건드리지 않는다
+# ("잔 금액"이 "잔금액"이 되지 않게 한다).
+_SPACED_FORM_LABEL = re.compile(
+    "(?<![가-힣])(?:"
+    + "|".join("[ ]".join(label) for label in _FORM_LABELS)
+    + ")(?![가-힣])"
+)
+
+
+def _join_spaced_form_labels(line: str) -> str:
+    return _SPACED_FORM_LABEL.sub(lambda match: match.group().replace(" ", ""), line)
+
+
+# NFKC는 항 번호 원문자를 보통 숫자로 바꾼다(① → "1", ⑳ → "20"). 항 번호가 본문 숫자와
+# 구분되지 않으면 항 경계를 찾을 수 없어 화면에서 항이 한 문단으로 붙어 버린다. 정규화
+# 동안만 사설 영역 문자로 피신시켰다가 되돌린다.
+_CIRCLED_NUMBERS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+_HIDE_CIRCLED = {ord(char): 0xE000 + index for index, char in enumerate(_CIRCLED_NUMBERS)}
+_SHOW_CIRCLED = {0xE000 + index: char for index, char in enumerate(_CIRCLED_NUMBERS)}
+
+
 def _normalize_extraction_text(text: str) -> str:
-    """PDF 글꼴·공백 변형을 통일하되 표의 줄 경계는 유지한다."""
-    normalized = unicodedata.normalize("NFKC", text).replace("\u00a0", " ")
+    """PDF 글꼴·공백 변형을 통일하되 표의 줄·칸 경계와 항 번호는 유지한다.
+
+    칸 사이 여백을 1칸으로 줄이면 라벨과 값이 붙어 "보증금  금 306,000,000 원정"이
+    화면에서 "보증금금 306,000,000 원정"으로 읽힌다. 2칸 이상은 2칸으로만 줄여
+    칸 경계를 남긴다(원문 글자는 더하거나 빼지 않는다).
+    """
+    normalized = (
+        unicodedata.normalize("NFKC", text.translate(_HIDE_CIRCLED))
+        .translate(_SHOW_CIRCLED)
+        .replace("\u00a0", " ")
+    )
     normalized = normalized.replace("\r\n", "\n").replace("\r", "\n")
+    normalized = normalized.replace("\t", " ")
     return "\n".join(
-        re.sub(r"[ \t]+", " ", line).strip() for line in normalized.splitlines()
+        _join_spaced_form_labels(re.sub(r" {2,}", "  ", line).strip())
+        for line in normalized.splitlines()
     )
 
 

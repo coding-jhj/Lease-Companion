@@ -269,7 +269,8 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .guided-clause-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: gc; }
 .guided-clause-list li { position: relative; display: grid; gap: 8px; padding: 14px 16px 15px 46px; border: 1px solid #dde5de; border-radius: 12px; background: #fff; counter-increment: gc; }
 .guided-clause-list li::before { content: counter(gc); position: absolute; left: 14px; top: 15px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #245c38; color: #fff; font-size: 13px; font-weight: 800; }
-.guided-clause-list__text { color: #22302a; font-size: 16px; font-weight: 500; line-height: 1.7; white-space: pre-line; word-break: keep-all; overflow-wrap: break-word; }
+/* pre-wrap: 표 칸을 가르는 공백 2칸을 살린다(pre-line은 연속 공백을 접어 "보증금금"으로 읽힌다). */
+.guided-clause-list__text { color: #22302a; font-size: 16px; font-weight: 500; line-height: 1.7; white-space: pre-wrap; word-break: keep-all; overflow-wrap: break-word; }
 .guided-clause-hint { border-left: 3px solid #7aa585; border-radius: 6px; background: #eef5ef; }
 .guided-clause-hint > summary { padding: 9px 12px; color: #2f5a3c; font-size: 14px; font-weight: 800; list-style: none; cursor: pointer; }
 .guided-clause-hint > summary::-webkit-details-marker { display: none; }
@@ -500,6 +501,8 @@ button:disabled { background: #9eaaa1; cursor: not-allowed; }
 .special-clause-card blockquote { margin: 0; padding: 14px; border: 1px solid #ddd7ca; border-radius: 12px; background: #fff; }
 .special-clause-card blockquote strong { display: block; margin-bottom: 6px; color: #31583d; font-size: 13px; }
 .special-clause-card blockquote p, .special-clause-card__meta { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+/* 특약 원문도 표 칸 구분 공백 2칸을 살린다(cleanClauseLine이 2칸으로 제한). */
+.special-clause-card blockquote p { white-space: pre-wrap; }
 .special-clause-card__meta { color: var(--ink-muted); font-size: 13px; font-weight: 700; }
 .special-clause-card__guidance { padding-top: 12px; border-top: 1px solid #e2ded5; }
 .special-clause-card__guidance h4 { margin: 0 0 8px; font-size: 15px; }
@@ -1232,7 +1235,7 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
   }
   .report-print-sheet__clause > h3 { margin: 0 0 7px; color: #183f28; font-size: 11.5pt; line-height: 1.4; break-after: avoid; }
   .report-print-sheet__clause p, .report-print-sheet__clause blockquote { margin: 0 0 7px; font-size: 10.5pt; line-height: 1.65; orphans: 3; widows: 3; }
-  .report-print-sheet__clause blockquote { padding: 8px 10px; border-left: 3px solid #7aa585; background: #f5f8f5; }
+  .report-print-sheet__clause blockquote { padding: 8px 10px; border-left: 3px solid #7aa585; background: #f5f8f5; white-space: pre-wrap; }
   .report-print-sheet__meta { display: flex; flex-wrap: wrap; gap: 4px 7px; align-items: center; }
   .report-print-sheet__meta span { padding: 2px 6px; border: 1px solid #c7d4c9; border-radius: 999px; color: #2d4935; font-size: 9pt; }
   .report-print-sheet__section--appendix { margin-top: 0; padding-top: 2px; break-before: page; }
