@@ -338,18 +338,21 @@ describe("PracticeSessionPage", () => {
     expect(screen.queryByText("확인 대상")).not.toBeInTheDocument();
   });
 
-  it("shows the opening broker prompt in an otherwise empty conversation", async () => {
+  // 아직 답하지 않은 질문은 아바타 화면에만 둔다. 대화 기록에 미리 넣으면 새 장면마다
+  // 같은 말풍선이 두 번 보인다.
+  it("keeps the conversation log empty until the user has answered", async () => {
     vi.spyOn(practiceService, "getSession").mockResolvedValue(session());
     renderSession();
 
     fireEvent.click(await screen.findByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
 
-    expect(within(conversation).getByText("계약을 바로 진행하시겠습니까?")).toBeInTheDocument();
-    expect(within(conversation).getByText("공인중개사")).toBeInTheDocument();
-    expect(within(conversation).queryByText("아직 주고받은 답변이 없습니다.")).not.toBeInTheDocument();
-    expect(within(conversation).getByText("대화의 시작입니다")).toBeInTheDocument();
+    expect(within(conversation).queryByText("계약을 바로 진행하시겠습니까?")).not.toBeInTheDocument();
+    expect(within(conversation).queryByText("공인중개사")).not.toBeInTheDocument();
+    expect(within(conversation).getByText("아직 주고받은 답변이 없습니다.")).toBeInTheDocument();
     expect(within(conversation).getByText("0개 답변")).toBeInTheDocument();
+    // 질문은 아바타 화면에 그대로 있다.
+    expect(screen.getByRole("heading", { name: "계약을 바로 진행하시겠습니까?" })).toBeInTheDocument();
   });
 
   it("does not expose the actual next fixture turn while the first scene is active", async () => {
@@ -557,8 +560,9 @@ describe("PracticeSessionPage", () => {
     expect(screen.getByLabelText("내 답변")).toBeDisabled();
     await screen.findByText("공인중개사가 말하고 있습니다");
     fireEvent.ended(view.getByTestId("practice-video"));
-    expect(await screen.findByRole("heading", { name: "현재 질문입니다." })).toBeInTheDocument();
-    expect(screen.getByLabelText("내 답변")).toBeEnabled();
+    // 발화가 끝나도 화면 글은 방금 말한 반응 그대로 둔다(듣지 않은 대사로 바뀌지 않게).
+    expect(await screen.findByRole("heading", { name: "현재 질문에 대한 중개사 반응입니다." })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText("내 답변")).toBeEnabled());
   });
 
   it("logs each turn prompt once with the user answers and broker reactions", async () => {
@@ -583,6 +587,15 @@ describe("PracticeSessionPage", () => {
           dialogue_response: "다음 세입자가 들어오면 반환한다고 들었습니다.",
           created_at: "2026-07-23T00:00:02Z",
         },
+        {
+          practice_turn_id: "turn-002-attempt-1",
+          turn_id: "TURN-02",
+          prompt: "구두 약속만으로 진행해도 될까요?",
+          user_answer: "특약에 적어 주세요.",
+          timed_out: false,
+          dialogue_response: "임대인분께 문구 수정을 요청해 보겠습니다.",
+          created_at: "2026-07-23T00:00:03Z",
+        },
       ],
       next_cursor: null,
       has_more: false,
@@ -592,8 +605,10 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(await screen.findByText("이전 대화 보기"));
     const conversation = await screen.findByRole("tabpanel", { name: "지금까지의 대화" });
 
-    // 이어서 답할 질문(prompt)은 같은 TURN 재시도에서 한 번만 남는다
+    // 안내 음성으로 발화된 첫 질문(prompt)만 남고, 발화하지 않은 이후 장면 질문은 남지 않는다
     const openingPrompt = within(conversation).getByText("계약을 바로 진행하시겠습니까?");
+    expect(within(conversation).queryByText("구두 약속만으로 진행해도 될까요?")).not.toBeInTheDocument();
+    expect(within(conversation).getByText("임대인분께 문구 수정을 요청해 보겠습니다.")).toBeInTheDocument();
     const firstAnswer = within(conversation).getByText("조건이 마음에 들지 않습니다.");
     expect(openingPrompt.compareDocumentPosition(firstAnswer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(conversation).getAllByText("계약을 바로 진행하시겠습니까?")).toHaveLength(1);
@@ -617,7 +632,7 @@ describe("PracticeSessionPage", () => {
       user_answer: "자료를 확인하고 보류하겠습니다.",
       timed_out: false,
     })));
-    // 아바타는 방금 답변에 대한 상대방 반응을 말한다.
+    // 아바타는 방금 답변에 대한 상대방 반응만 말한다(발화하지 않은 질문을 덧붙이지 않는다).
     expect(await screen.findByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "다음 상황으로" })).not.toBeInTheDocument();
     expect(screen.queryByText("이어서 확인할 내용")).toBeNull();
@@ -629,12 +644,13 @@ describe("PracticeSessionPage", () => {
     fireEvent.ended(screen.getByTestId("practice-video"));
 
     expect(await screen.findByText("자료를 확인하고 보류하겠습니다.")).toBeInTheDocument();
-    // 대화 기록에는 답변한 TURN의 질문(prompt)과 중개사 반응(dialogue_response)이 함께 남는다
+    // 대화 기록에는 답변한 TURN의 질문(prompt)과 중개사 반응(dialogue_response)만 남는다.
+    // 아직 답하지 않은 다음 질문은 아바타 화면에만 둔다.
     const log = screen.getByRole("tabpanel", { name: "지금까지의 대화" });
     expect(within(log).getByText("계약을 바로 진행하시겠습니까?")).toBeInTheDocument();
     expect(within(log).getByText("확인 요청을 반영했습니다.")).toBeInTheDocument();
-    expect(within(log).getByText("권한 자료도 필요할까요?")).toBeInTheDocument();
-    expect(within(log).getAllByText("공인중개사")).toHaveLength(3);
+    expect(within(log).queryByText("권한 자료도 필요할까요?")).not.toBeInTheDocument();
+    expect(within(log).getAllByText("공인중개사")).toHaveLength(2);
     expect(screen.queryByText("필요한 확인 행동이 전달되었습니다.")).not.toBeInTheDocument();
   });
 
@@ -729,9 +745,10 @@ describe("PracticeSessionPage", () => {
 
     fireEvent.ended(screen.getByTestId("practice-video"));
 
-    // 반응이 끝나면 다음 질문이 나오고 입력이 다시 열린다.
-    expect(await screen.findByRole("heading", { name: "다음 확인 상황입니다." })).toBeInTheDocument();
-    expect(screen.getByLabelText("내 답변")).toBeEnabled();
+    // 반응이 끝나면 입력이 다시 열린다. 화면 글은 방금 발화한 반응을 유지한다.
+    await waitFor(() => expect(screen.getByLabelText("내 답변")).toBeEnabled());
+    expect(screen.getByRole("heading", { name: reaction })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "다음 확인 상황입니다." })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "다음 상황으로" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("이전 대화 보기"));
     expect(within(await screen.findByRole("tabpanel", { name: "지금까지의 대화" })).getByText(reaction)).toBeInTheDocument();
@@ -913,9 +930,9 @@ describe("PracticeSessionPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "전송" }));
     fireEvent.ended(await screen.findByTestId("practice-video"));
 
-    expect(await screen.findByRole("heading", { name: "다음 확인 상황입니다." })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "확인 요청을 반영했습니다." })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /하시겠습니까\?$/ })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("내 답변")).toBeEnabled();
+    await waitFor(() => expect(screen.getByLabelText("내 답변")).toBeEnabled());
   });
 
   it("starts a new session when the user retries the scenario", async () => {
