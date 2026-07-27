@@ -9,6 +9,7 @@ from lease_companion_ai.rag.service import (
     load_judgment_search_contexts,
     load_judgment_source_ids,
     load_local_official_chunks,
+    strip_source_header,
 )
 from lease_companion_ai.schemas.unified import (
     AnalysisRunResult,
@@ -273,6 +274,25 @@ def test_judgment_search_contexts_only_expand_diagnosed_misses():
     assert contexts == {
         "J02": "부동산의 임대차 임차주택 표시 상세주소"
     }
+
+
+def test_source_header_is_not_indexed_as_evidence_body():
+    """출처 표기 블록이 청크가 되면 근거 자리에 조문 대신 source_id·URL이 표시된다."""
+    header_markers = ("source_id:", "공식 본문 URL:", "자료명:")
+
+    for chunk in load_local_official_chunks():
+        assert not chunk.text.lstrip().startswith("#"), chunk.metadata.source_id
+        assert not any(
+            chunk.text.lstrip().startswith(marker) for marker in header_markers
+        ), chunk.metadata.source_id
+
+
+def test_strip_source_header_keeps_body_lines_that_look_like_headers():
+    text = "자료명: 주택임대차보호법\nsource_id: SRC-HTA-LAW\n\n제1조(목적) 이 법은\n자료명: 본문 안의 표기는 남는다"
+
+    assert strip_source_header(text) == (
+        "제1조(목적) 이 법은\n자료명: 본문 안의 표기는 남는다"
+    )
 
 
 def test_j02_mismatch_retrieves_locally_available_standard_lease_source():
