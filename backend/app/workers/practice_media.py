@@ -21,7 +21,10 @@ from sqlalchemy import select
 
 from app.core.db import SessionLocal
 from app.models.practice import PracticeMediaJob
-from app.services.practice_media import practice_media_root
+from app.services.practice_media import (
+    practice_media_root,
+    practice_media_video_enabled,
+)
 
 logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -89,7 +92,8 @@ def _warm_practice_media_runtime() -> None:
             },
             audio_path,
         )
-        _persistent_musetalk_client().ensure_started()
+        if practice_media_video_enabled():
+            _persistent_musetalk_client().ensure_started()
     except Exception:
         logger.exception("Practice media runtime warm-up failed")
     finally:
@@ -544,9 +548,21 @@ def _run_locked_practice_media_job(media_job_id: str) -> None:
             )
             if current is None:
                 return
-            current.status = "generating_video"
             current.audio_relpath = str(audio_path.relative_to(root))
+            # ponytail: 영상 비활성이면 음성만 완료로 남긴다. video_relpath 없음 → Frontend는 음성만 재생.
+            video_on = practice_media_video_enabled()
+            current.status = "generating_video" if video_on else "completed"
+            if not video_on:
+                current.completed_at = datetime.now(timezone.utc)
+                current.error_code = None
+                current.settings_payload = {
+                    **dict(current.settings_payload),
+                    "video_disabled": True,
+                    "timings_ms": {"tts": tts_ms, "end_to_end": tts_ms},
+                }
             db.commit()
+        if not video_on:
+            return
 
         generated_video, generation_metrics = _generate_video(audio_path, job_dir)
         final_video = job_dir / "speaking.mp4"

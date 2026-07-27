@@ -68,6 +68,35 @@ def test_initial_prompt_media_uses_a_non_evaluation_anchor(
     assert anchor.dialogue_response == prompt
 
 
+def test_speech_source_speaks_only_the_reaction(monkeypatch) -> None:
+    """장면 질문은 이미 발화됐으므로 반응에 덧붙이지 않는다."""
+
+    prompt = "이 조건으로 진행해도 괜찮으시죠?"
+    monkeypatch.setattr(
+        practice_media_service,
+        "load_approved_practice_assets",
+        lambda _scenario_id: (
+            SimpleNamespace(
+                dialogue_turns=[SimpleNamespace(turn_id="TURN-02", prompt=prompt)]
+            ),
+            None,
+        ),
+    )
+    session = SimpleNamespace(scenario_id="scenario-001", current_state="TURN-02")
+    reaction = "현재 특약에는 반환 시점이 없습니다."
+
+    assert practice_media_service._speech_source(
+        session,
+        SimpleNamespace(turn_id="TURN-01", dialogue_response=reaction),
+    ) == reaction
+
+    # 반응이 없을 때만 지금 장면 대사를 말한다.
+    assert practice_media_service._speech_source(
+        session,
+        SimpleNamespace(turn_id="TURN-02", dialogue_response=None),
+    ) == prompt
+
+
 def test_generate_video_supports_separate_source_and_asset_roots(
     monkeypatch,
     tmp_path: Path,
@@ -134,6 +163,83 @@ def test_generate_video_supports_separate_source_and_asset_roots(
     assert command[command.index("--parsing-mode") + 1] == "jaw"
     assert command[command.index("--left-cheek-width") + 1] == "80"
     assert command[command.index("--right-cheek-width") + 1] == "80"
+
+
+def _run_job_with_fakes(monkeypatch, tmp_path: Path, video: object) -> SimpleNamespace:
+    """음성 생성만 대체하고 한 건의 미디어 작업을 실제 흐름대로 실행한다."""
+
+    job = SimpleNamespace(
+        media_job_id="job-1",
+        status="queued",
+        speech_text="안녕하세요.",
+        settings_payload={"target_total_seconds": 15},
+        started_at=None,
+        audio_relpath=None,
+        video_relpath=None,
+        error_code=None,
+        completed_at=None,
+    )
+
+    class FakeSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+        def scalar(self, _query):
+            return job
+
+        def commit(self):
+            return None
+
+    monkeypatch.setattr(practice_media, "SessionLocal", FakeSession)
+    monkeypatch.setattr(practice_media, "practice_media_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        practice_media,
+        "_generate_audio",
+        lambda _text, _settings, path: path.write_bytes(b"wav"),
+    )
+    monkeypatch.setattr(practice_media, "_generate_video", video)
+
+    practice_media._run_locked_practice_media_job("job-1")
+    return job
+
+
+def test_video_disabled_job_completes_with_audio_only(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("PRACTICE_MEDIA_VIDEO_ENABLED", "false")
+
+    def fail_video(*_args, **_kwargs):
+        raise AssertionError("영상 생성이 꺼졌는데 MuseTalk이 호출됐다")
+
+    job = _run_job_with_fakes(monkeypatch, tmp_path, fail_video)
+
+    assert job.status == "completed"
+    assert job.audio_relpath == str(Path("job-1") / "speech.wav")
+    assert job.video_relpath is None
+    assert job.settings_payload["video_disabled"] is True
+
+
+def test_video_enabled_job_still_runs_musetalk(monkeypatch, tmp_path: Path) -> None:
+    """기본값(영상 켜짐)에서는 립싱크 생성 경로가 그대로 동작한다."""
+
+    monkeypatch.delenv("PRACTICE_MEDIA_VIDEO_ENABLED", raising=False)
+    calls: list[Path] = []
+
+    def fake_video(audio_path: Path, job_dir: Path):
+        calls.append(audio_path)
+        output = job_dir / "speaking.mp4"
+        output.write_bytes(b"video")
+        return output, {"total_ms": 1, "frames": 25, "effective_fps": 25}
+
+    job = _run_job_with_fakes(monkeypatch, tmp_path, fake_video)
+
+    assert calls == [tmp_path / "job-1" / "speech.wav"]
+    assert job.status == "completed"
+    assert job.video_relpath == str(Path("job-1") / "speaking.mp4")
+    assert job.audio_relpath == str(Path("job-1") / "speech.wav")
+    assert "video_disabled" not in job.settings_payload
+    assert job.settings_payload["timings_ms"]["video"] == 1
 
 
 def test_avatar_speech_text_keeps_full_first_sentence(monkeypatch) -> None:

@@ -248,14 +248,15 @@ export function PracticeSessionPage() {
   }, [avatarMedia?.media_job_id, avatarMedia?.status]);
 
   useEffect(() => {
-    if (
-      avatarMedia?.status !== "completed"
-      || !avatarMedia.video_url
-      || avatarVideoUrl
-    ) return;
+    if (avatarMedia?.status !== "completed" || avatarVideoUrl) return;
+    // 영상 생성이 꺼져 있으면 음성만 온다. <video>가 wav를 그대로 재생한다(포스터 이미지 유지).
+    const mediaUrl = avatarMedia.video_url ?? avatarMedia.audio_url;
+    if (!mediaUrl) return;
     let cancelled = false;
 
-    void practiceService.getMediaVideo(avatarMedia.video_url)
+    void (avatarMedia.video_url
+      ? practiceService.getMediaVideo(mediaUrl)
+      : practiceService.getMediaAudio(mediaUrl))
       .then((video) => {
         if (cancelled) return;
         setAvatarVideoUrl(URL.createObjectURL(video));
@@ -273,7 +274,7 @@ export function PracticeSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl]);
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarMedia?.audio_url, avatarVideoUrl]);
 
   useEffect(() => () => {
     if (avatarVideoUrl) URL.revokeObjectURL(avatarVideoUrl);
@@ -378,11 +379,13 @@ export function PracticeSessionPage() {
       avatarMedia?.status === "queued"
       || avatarMedia?.status === "generating_audio"
       || avatarMedia?.status === "generating_video"
-      || (avatarMedia?.status === "completed" && Boolean(avatarMedia.video_url) && !avatarVideoUrl)
+      || (avatarMedia?.status === "completed"
+        && Boolean(avatarMedia.video_url ?? avatarMedia.audio_url)
+        && !avatarVideoUrl)
     ) return;
     const timer = window.setTimeout(finishReaction, reactionMaxSeconds * 1000);
     return () => window.clearTimeout(timer);
-  }, [avatarMedia?.status, avatarMedia?.video_url, avatarVideoUrl, reactionPlaying]);
+  }, [avatarMedia?.status, avatarMedia?.video_url, avatarMedia?.audio_url, avatarVideoUrl, reactionPlaying]);
 
   // 대화 도중 읽은 행동 의도는 사용자가 확인해야 최종 선택으로 확정된다.
   async function confirmIntent(intent: PracticeSelectedAction) {
@@ -513,7 +516,7 @@ export function PracticeSessionPage() {
   const showConversationStage = reactionPlaying || (!isActionSelection && Boolean(session?.current_turn));
   const avatarStageMediaStatus = (
     avatarMedia?.status === "completed"
-    && avatarMedia.video_url
+    && (avatarMedia.video_url ?? avatarMedia.audio_url)
     && !avatarVideoUrl
   ) ? "generating_video" : avatarMedia?.status ?? null;
   // 상대방 반응은 대화 기록에 쌓이고, 큰 화면에는 지금 답할 대사만 표시한다.
