@@ -190,7 +190,7 @@
       ]
     }
   },
-  "branching_flow": true,
+  "branching_flow": false,
   "dialogue_turns": [
     {
       "turn_id": "TURN-01",

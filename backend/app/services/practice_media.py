@@ -27,6 +27,12 @@ def practice_media_enabled() -> bool:
     return os.getenv("PRACTICE_MEDIA_ENABLED", "false").lower() == "true"
 
 
+def practice_media_video_enabled() -> bool:
+    """TTS만 남기고 립싱크 영상 생성을 끌 수 있게 한다 (저사양 GPU 실검증용)."""
+
+    return os.getenv("PRACTICE_MEDIA_VIDEO_ENABLED", "true").lower() == "true"
+
+
 def practice_media_root() -> Path:
     configured = os.getenv("PRACTICE_MEDIA_ROOT")
     return (
@@ -37,7 +43,11 @@ def practice_media_root() -> Path:
 
 
 def _speech_source(session_row: PracticeSession, turn: PracticeTurn) -> str:
-    """Speak the reaction to the submitted answer; fall back to the scene prompt."""
+    """Speak the reaction to the submitted answer; fall back to the scene prompt.
+
+    장면 질문은 이미 한 번 발화됐으므로 반응에 이어 붙이지 않는다. 화면·대화 기록에
+    남는 중개사 대사는 실제로 발화한 내용과 같아야 한다.
+    """
 
     if turn.dialogue_response:
         return turn.dialogue_response.strip()

@@ -60,23 +60,15 @@ def advance_dialogue(
     )
     if turn is None or evaluation.turn_id != turn.turn_id:
         raise ValueError("평가 turn_id가 현재 대화 상태와 일치하지 않습니다.")
-    # 다음 장면은 평가(LLM) 제안이 아니라 상태 머신이 결정한다. 선형 흐름은 한 번
-    # 저장 후 진행, 분기 흐름은 조건 수용 시 즉시 계약 결정·정답/애매 시 회유 반복.
-    pressure_rounds = session.pressure_counts.get(turn.turn_id, 0)
+    # 다음 장면은 평가(LLM) 제안이 아니라 상태 머신이 결정한다. 사용자 응답은 한 번
+    # 저장하고 다음 장면으로 가며, 분기 흐름만 조건 수용 시 즉시 계약 결정으로 간다.
     expected_state = resolve_next_dialogue_state(
         evaluation.answer_category,
         turn_id=turn.turn_id,
         next_turn_id=turn.next_turn_id,
         action_selection_state=scenario.action_selection.state_id,
-        pressure_rounds=pressure_rounds,
         branching_flow=scenario.branching_flow,
     )
-    pressure_counts = dict(session.pressure_counts)
-    if (
-        expected_state == turn.turn_id
-        and evaluation.answer_category != "needs_review"
-    ):
-        pressure_counts[turn.turn_id] = pressure_rounds + 1
 
     action_by_id = {action.action_id: action for action in scenario.target_actions}
     confirmed_action_ids = list(
@@ -139,7 +131,6 @@ def advance_dialogue(
         payment_held=session.payment_held or "payment_hold" in effects,
         evidence_texts=evidence_texts,
         no_response_counts=no_response_counts,
-        pressure_counts=pressure_counts,
     )
     return PracticeSessionState.model_validate(payload)
 

@@ -123,7 +123,9 @@ def test_short_agreement_keeps_the_previous_topic_instead_of_asking_again():
     assert plan.allowed_fact_ids == ("F01", "F02")
 
 
-def test_repeated_unknown_intent_stops_asking_the_same_clarification():
+def test_unknown_intent_always_asks_what_the_user_means():
+    """의도를 모르면 되묻기만 한다. 두 번째에 임대인 입장 전달로 넘어가지 않는다."""
+
     scenario, _ = _assets()
     first = plan_grounded_dialogue(
         scenario,
@@ -140,7 +142,7 @@ def test_repeated_unknown_intent_stops_asking_the_same_clarification():
     )
 
     assert first.speech_act == "clarify_user_intent"
-    assert second.speech_act == "maintain_position"
+    assert second.speech_act == "clarify_user_intent"
 
 
 def test_other_scenario_keeps_existing_dialogue_path():
