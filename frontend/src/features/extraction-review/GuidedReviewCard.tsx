@@ -40,8 +40,10 @@ export interface GuidedReviewCardProps {
   draftValue: string | string[] | undefined;
   busy: boolean;
   compactUnread?: boolean;
+  inlineCompact?: boolean;
   completionLabel?: string;
   onChange: (value: string | string[]) => void;
+  onConfirm?: () => void;
   onCannotVerify: (reason: CannotVerifyReason) => void;
 }
 
@@ -73,8 +75,10 @@ export function GuidedReviewCard({
   draftValue,
   busy,
   compactUnread = false,
+  inlineCompact = false,
   completionLabel,
   onChange,
+  onConfirm,
   onCannotVerify,
 }: GuidedReviewCardProps) {
   const originalValue = initialValue(item, draftValue);
@@ -85,15 +89,32 @@ export function GuidedReviewCard({
   const generatedId = useId();
   const correctionId = `${generatedId}-correction`;
   const cannotVerifyName = `${generatedId}-cannot-verify`;
-  const [mode, setMode] = useState<"view" | "editing" | "cannot-verify">("view");
+  const [mode, setMode] = useState<"view" | "editing" | "cannot-verify">(inlineCompact ? "editing" : "view");
   const [editedValue, setEditedValue] = useState(originalValue);
   const [showEmptyError, setShowEmptyError] = useState(false);
 
   useEffect(() => {
-    setMode("view");
+    setMode(inlineCompact ? "editing" : "view");
     setEditedValue(originalValue);
     setShowEmptyError(false);
-  }, [item.key, originalValue]);
+  }, [inlineCompact, item.key, originalValue]);
+
+  const numericInput = [
+    "balance_payment",
+    "balance_payment_korean_amount",
+    "contract_payment",
+    "contract_payment_korean_amount",
+    "deposit",
+    "deposit_korean_amount",
+    "estimated_housing_value",
+    "management_fee",
+    "monthly_rent",
+    "monthly_rent_korean_amount",
+    "senior_claim_amount",
+  ].includes(item.fieldName);
+  const compactPrompt = item.fieldName === "monthly_rent"
+    ? "계약서에 적힌 월세를 입력해 주세요."
+    : `${item.view.label} 내용을 확인해 입력해 주세요.`;
 
   const startEditing = () => {
     setEditedValue(originalValue);
@@ -118,11 +139,20 @@ export function GuidedReviewCard({
       : editedValue);
   };
 
+  const confirmDirectly = () => {
+    if (editedValue.trim()) {
+      saveChange();
+      return;
+    }
+    setShowEmptyError(false);
+    onConfirm?.();
+  };
+
   return (
     <article className="guided-review-card">
-      {!compactUnread && <h2>{item.title}</h2>}
-      <p>{item.prompt}</p>
-      <section aria-label="문서에서 읽은 내용">
+      {!inlineCompact && !compactUnread && <h2>{item.title}</h2>}
+      {!inlineCompact && <p>{item.prompt}</p>}
+      {!inlineCompact && <section aria-label="문서에서 읽은 내용">
         <h3>문서에서 읽은 내용</h3>
         {isClauseField && originalValue
           ? (
@@ -144,11 +174,12 @@ export function GuidedReviewCard({
             </ol>
           )
           : <p>{originalValue || "읽은 내용이 없습니다."}</p>}
-      </section>
+      </section>}
 
       {mode === "editing" ? (
         <section aria-label="내용 수정">
-          <label htmlFor={correctionId}>{`${item.view.label} 수정 내용`}</label>
+          <label htmlFor={correctionId}>{inlineCompact ? compactPrompt : `${item.view.label} 수정 내용`}</label>
+          {inlineCompact && item.view.guidance && <p className="guided-review-card__inline-guidance">{item.view.guidance}</p>}
           {multiline ? (
             <textarea
               id={correctionId}
@@ -163,6 +194,8 @@ export function GuidedReviewCard({
             <input
               id={correctionId}
               type="text"
+              inputMode={numericInput ? "numeric" : "text"}
+              placeholder={numericInput ? "금액 입력" : "내용 입력"}
               value={editedValue}
               disabled={busy}
               onChange={(event) => {
@@ -172,8 +205,17 @@ export function GuidedReviewCard({
             />
           )}
           {showEmptyError && <p role="alert">수정할 내용을 입력해 주세요.</p>}
-          <button type="button" disabled={busy} onClick={saveChange}>수정한 내용 사용하기</button>
-          <button type="button" disabled={busy} onClick={cancelEditing}>수정 취소</button>
+          {inlineCompact ? (
+            <div className="guided-review-card__inline-actions">
+              <button type="button" disabled={busy} onClick={saveChange}>저장</button>
+              <button type="button" className="secondary" disabled={busy} onClick={confirmDirectly}>
+                직접 확인했습니다
+              </button>
+            </div>
+          ) : (
+            <button type="button" disabled={busy} onClick={saveChange}>수정한 내용 사용하기</button>
+          )}
+          {!inlineCompact && <button type="button" disabled={busy} onClick={cancelEditing}>수정 취소</button>}
         </section>
       ) : (
         // 확인은 구역 단위 묶음 버튼이 담당한다. 카드에는 손봐야 할 때 쓰는 두 가지만 남긴다.
