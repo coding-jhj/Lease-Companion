@@ -123,16 +123,20 @@ describe("ExtractionReviewPage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "못 읽은 내용 확인" }))
+    expect(await screen.findByRole("heading", { name: "확인할 항목" }))
       .toBeInTheDocument();
-    expect(screen.getByText("문서에서 읽지 못한 항목을 원본 계약서와 비교해 입력해 주세요."))
+    expect(screen.getByText("문서에서 확인하지 못한 내용을 입력하거나 다른 자료에서 확인해 주세요."))
       .toBeInTheDocument();
-    expect(screen.getByText("월세 내용이 계약서와 같나요?")).toBeInTheDocument();
-    expect(screen.getByText("글자를 읽지 못함")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "문서에서 읽은 내용" }))
-      .toBeInTheDocument();
-    expect(screen.getByText("읽은 내용이 없습니다.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "직접 고칠게요" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "직접 입력" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^월세 입력 필요/ })).toBeInTheDocument();
+    expect(screen.getByText("계약서에 적힌 월세를 입력해 주세요.")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "계약서에 적힌 월세를 입력해 주세요." }))
+      .toHaveAttribute("placeholder", "금액 입력");
+    expect(screen.getByRole("button", { name: "저장" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "직접 확인했습니다" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "문서에서 읽은 내용" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "직접 고칠게요" })).not.toBeInTheDocument();
 
     expect(screen.queryByRole("navigation", { name: "확인 묶음" })).not.toBeInTheDocument();
     expect(screen.queryByText("금전 피해로 이어질 수 있는 내용")).not.toBeInTheDocument();
@@ -152,33 +156,29 @@ describe("ExtractionReviewPage", () => {
     }));
 
     renderPage();
-    await screen.findByText("월세 내용이 계약서와 같나요?");
+    await screen.findByRole("button", { name: /^월세 입력 필요/ });
+    await screen.findByText("계약서에 적힌 월세를 입력해 주세요.");
 
-    const finish = screen.getByRole("button", { name: "남은 1개를 입력해 주세요" });
-    expect(finish).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
-    fireEvent.change(await screen.findByRole("textbox", { name: "월세 수정 내용" }), {
+    expect(screen.queryByRole("button", { name: "확인 완료" })).not.toBeInTheDocument();
+    fireEvent.change(await screen.findByRole("textbox", { name: "계약서에 적힌 월세를 입력해 주세요." }), {
       target: { value: "350000" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "직접 확인했습니다" }));
 
-    expect(screen.getByRole("button", { name: "확인 완료" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
+    expect(screen.getByText("직접 확인했습니다")).toBeInTheDocument();
+    const finish = screen.getByRole("button", { name: "확인 완료" });
+    expect(finish).toBeEnabled();
+    fireEvent.click(finish);
 
     expect(screen.getByRole("heading", { name: "분석 준비를 마쳐 주세요" }))
       .toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "계약 유형만 선택해 주세요" }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "계약 상황을 입력해 주세요" }))
-      .toBeDisabled();
-    fireEvent.click(screen.getByRole("radio", { name: "전세" }));
-    expect(screen.queryByRole("group", { name: "계약 유형만 선택해 주세요" }))
+    expect(screen.queryByRole("group", { name: "계약 유형" }))
       .not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }))
+    expect(screen.getByRole("button", { name: "확인 결과 준비하기" }))
       .toBeEnabled();
   });
 
-  it("marks every remaining unread field as unresolved with one button", async () => {
+  it("does not offer bulk or skip controls for unread fields", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
       monthly_rent: extractedField("monthly_rent", null),
       violation_building: extractedField("violation_building", null, {
@@ -187,21 +187,41 @@ describe("ExtractionReviewPage", () => {
     }));
 
     renderPage();
-    const confirmAll = await screen.findByRole("button", { name: "모두 확인하기" });
-    fireEvent.click(confirmAll);
+    expect(await screen.findByRole("heading", { name: "직접 입력" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "다른 자료 확인" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "모두 확인하기" })).not.toBeInTheDocument();
 
-    expect(screen.getByRole("heading", { name: "분석 준비를 마쳐 주세요" }))
-      .toBeInTheDocument();
-    expect(screen.getByText(/확인하지 못한 항목/)).toHaveTextContent("2개");
-    expect(screen.getByText("월세 · 문서에서 글자를 읽지 못함")).toBeInTheDocument();
-    expect(screen.getByText("위반건축물 표시 · 다른 자료에서 직접 확인 필요"))
-      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "지금 확인하기 어려워요" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^위반건축물 표시 건축물대장/ }));
+    expect(screen.queryByRole("button", { name: "지금 확인하기 어려워요" })).not.toBeInTheDocument();
+  });
+
+  it("moves an empty item to completed when the user confirms it directly", async () => {
+    vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
+      balance_payment_date: extractedField("balance_payment_date", null),
+    }));
+
+    renderPage();
+    await screen.findByRole("button", { name: /^잔금 지급일 입력 필요/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "직접 확인했습니다" }));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^잔금 지급일 입력 필요/ }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText("직접 확인했습니다")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "확인 완료" })).toBeEnabled();
   });
 
   it("continues when there are no unread fields", async () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
       deposit: extractedField("deposit", 100000000),
     }));
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue({
+      input_snapshot_id: "SNAP-1001",
+      created_at: "2026-07-16T00:00:00Z",
+    });
+    vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
 
     renderPage();
 
@@ -209,11 +229,18 @@ describe("ExtractionReviewPage", () => {
       .toBeInTheDocument();
     expect(screen.getByRole("button", { name: "확인 완료" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
-    expect(screen.getByRole("group", { name: "계약 유형만 선택해 주세요" }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "계약 유형" }))
+      .not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "확인 결과 준비하기" }));
+
+    await waitFor(() => expect(screen.getByText(/분석 화면/)).toBeInTheDocument());
+    expect(mvpService.saveSituation).toHaveBeenCalledWith(1001, expect.objectContaining({
+      contract_type: "전세",
+    }));
   });
 
   it("saves the correction and contract situation before starting analysis", async () => {
+    mockContract({ contract_type: "전세" });
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
       monthly_rent: extractedField("monthly_rent", null),
     }));
@@ -225,15 +252,14 @@ describe("ExtractionReviewPage", () => {
     vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
 
     renderPage();
-    await screen.findByText("월세 내용이 계약서와 같나요?");
-    fireEvent.click(screen.getByRole("button", { name: "직접 고칠게요" }));
-    fireEvent.change(await screen.findByRole("textbox", { name: "월세 수정 내용" }), {
+    await screen.findByRole("button", { name: /^월세 입력 필요/ });
+    await screen.findByText("계약서에 적힌 월세를 입력해 주세요.");
+    fireEvent.change(await screen.findByRole("textbox", { name: "계약서에 적힌 월세를 입력해 주세요." }), {
       target: { value: "350000" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "수정한 내용 사용하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
     fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
-    fireEvent.click(screen.getByRole("radio", { name: "전세" }));
-    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 결과 준비하기" }));
 
     await waitFor(() => expect(screen.getByText(/분석 화면/)).toBeInTheDocument());
     expect(mvpService.saveSituation).toHaveBeenCalledWith(1001, expect.objectContaining({
@@ -300,10 +326,10 @@ describe("ExtractionReviewPage", () => {
     await screen.findByText("문서에서 못 읽은 내용이 없습니다.");
     fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
 
-    expect(screen.queryByRole("group", { name: "계약 유형만 선택해 주세요" }))
+    expect(screen.queryByRole("group", { name: "계약 유형" }))
       .not.toBeInTheDocument();
     expect(screen.queryByText("계약 상황 알려주기")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }))
+    expect(screen.getByRole("button", { name: "확인 결과 준비하기" }))
       .toBeEnabled();
   });
 });

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { JudgmentResultDto, RuleResultDto, Urgency } from "../../types/api";
 import { EvidenceDisclosure } from "../evidence-sources/EvidenceDisclosure";
 import { plainGuideById } from "./plainGuides";
@@ -33,11 +34,6 @@ function resultName(item: ReportResultDto) {
   return "rule_name" in item ? item.rule_name : item.judgment_name;
 }
 
-function resultScope(item: ReportResultDto) {
-  if ("rule_id" in item) return item.judgment_id ?? "사실 플래그";
-  return "조항 분류 판정";
-}
-
 // 상태 칩 색. 결과 상태 9개를 화면 톤 3개로만 나눈다(판정 자체는 바꾸지 않는다).
 const WARN_STATUSES = new Set(["불일치", "불명확", "미기재", "상충 가능"]);
 const OK_STATUSES = new Set(["일치", "명확"]);
@@ -62,6 +58,29 @@ function ResultCard({ item, idPrefix, action, anchorId }: {
 }) {
   // 판정(J) 가이드 우선, 없으면 규칙 id(R) 가이드로 폴백 — J 미매핑 규칙도 개별 안내를 보이게.
   const guide = plainGuideById(item.judgment_id ?? ("rule_id" in item ? item.rule_id : null));
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = `${idPrefix}-detail-title`;
+  const question = action?.question ?? item.question;
+  const questionTarget = action?.questionTarget ?? "내가 다시 확인";
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsModalOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+      triggerRef.current?.focus();
+    };
+  }, [isModalOpen]);
+
   return (
     <article className="result-card" id={anchorId}>
       <div className="result-card__meta">
@@ -69,30 +88,66 @@ function ResultCard({ item, idPrefix, action, anchorId }: {
         <span className="result-card__status" data-tone={statusTone(item.status)}>{item.status}</span>
       </div>
       <h3>{resultName(item)}</h3>
-      <p>{action?.reason ?? item.reason}</p>
-      {action && (
-        <div className="result-card__question">
-          <strong>{action.questionTarget}</strong>
-          <span>{action.question ?? "이 항목의 문서 내용을 내가 다시 확인해 주세요."}</span>
-        </div>
+      <p className="result-card__summary">{action?.reason ?? item.reason}</p>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="result-card__detail-button"
+        aria-haspopup="dialog"
+        onClick={() => setIsModalOpen(true)}
+      >
+        자세히 보기
+      </button>
+      {isModalOpen && createPortal(
+        <div
+          className="damage-pattern-modal__backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsModalOpen(false);
+          }}
+        >
+          <section
+            className="damage-pattern-modal result-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+          >
+            <header className="damage-pattern-modal__header">
+              <div>
+                <span className="damage-pattern-modal__eyebrow">계약 확인 항목</span>
+                <h2 id={titleId}>{resultName(item)}</h2>
+              </div>
+              <button
+                ref={closeRef}
+                type="button"
+                className="damage-pattern-modal__close"
+                aria-label="창 닫기"
+                onClick={() => setIsModalOpen(false)}
+              >
+                <span className="damage-pattern-modal__close-icon" aria-hidden="true" />
+              </button>
+            </header>
+            <div className="damage-pattern-modal__body">
+              <p className="result-detail-modal__reason">{action?.reason ?? item.reason}</p>
+              {question && (
+                <div className="result-card__question">
+                  <strong>{questionTarget}</strong>
+                  <span>{question}</span>
+                </div>
+              )}
+              <EvidenceDisclosure
+                idPrefix={idPrefix}
+                sources={item.evidence_sources}
+                limitations={item.limitations}
+                explanation={guide.explanation}
+                financialImpact={guide.financialImpact}
+                hideLimitations
+                damagePatternGuide={{ checkText: guide.explanation }}
+              />
+            </div>
+          </section>
+        </div>,
+        document.body,
       )}
-      {/* 접힘을 하나로 합친다. 판정 id·상태·시급도는 그 안 첫 줄에 둔다. */}
-      <details className="result-support">
-        <summary>자세히 보기</summary>
-        <p className="result-meta">
-          <strong>{resultId(item)}</strong>
-          {" · "}{resultScope(item)}
-          {" · 상태: "}{item.status}
-          {" · 시급도: "}{item.urgency}
-        </p>
-        <EvidenceDisclosure
-          idPrefix={idPrefix}
-          sources={item.evidence_sources}
-          limitations={item.limitations}
-          explanation={guide.explanation}
-          financialImpact={guide.financialImpact}
-        />
-      </details>
     </article>
   );
 }
@@ -152,9 +207,7 @@ export function PriorityGroups({
               <span className="collapse-arrow" aria-hidden="true">{expanded ? "▾" : "▸"}</span>
             </button>
             {expanded && <div
-              className={`priority-group__items${
-                priority === "반드시 확인" ? " priority-group__items--three-column" : ""
-              }`}
+              className="priority-group__items priority-group__items--three-column"
               id={`${headingId}-items`}
             >
               {groupItems.length === 0 ? (
@@ -185,7 +238,7 @@ export function PriorityGroups({
             <span className="collapse-arrow" aria-hidden="true">{showUnavailable ? "▾" : "▸"}</span>
           </button>
           {showUnavailable && (
-            <div className="priority-group__items" id={`${idPrefix}-unavailable-items`}>
+            <div className="priority-group__items priority-group__items--three-column" id={`${idPrefix}-unavailable-items`}>
               {unavailableItems.map((item) => (
                 <ResultCard
                   item={item}

@@ -41,10 +41,20 @@ describe("PriorityGroups", () => {
       expect(within(button.closest("section")!).queryByRole("article")).not.toBeInTheDocument();
       fireEvent.click(button);
       expect(within(button.closest("section")!).getAllByRole("article")).toHaveLength(1);
+      expect(button.closest("section")?.querySelector(".priority-group__items"))
+        .toHaveClass("priority-group__items--three-column");
     }
-    expect(screen.getByText("R03").closest("article")).toHaveTextContent("사실 플래그");
-    expect(document.querySelectorAll(".result-support")).toHaveLength(3);
-    expect(screen.getAllByText("자세히 보기")).toHaveLength(3);
+    const generalCard = screen.getByRole("heading", { name: "R03 확인 항목" }).closest("article")!;
+    fireEvent.click(within(generalCard).getByRole("button", { name: "자세히 보기" }));
+    const dialog = screen.getByRole("dialog", { name: "R03 확인 항목" });
+    expect(dialog).not.toHaveTextContent("사실 플래그");
+    expect(dialog).not.toHaveTextContent("확인 한계");
+    expect(within(dialog).getByText("금전 피해로 이어질 수 있어요")).toBeVisible();
+    expect(within(dialog).getByText("무엇을 확인해야 하나요?")).toBeVisible();
+    expect(within(dialog).getByText("등기사항증명서에 근저당권 등 담보가 잡혀 있는지 확인하는 항목입니다."))
+      .toBeVisible();
+    expect(within(dialog).getByText("선순위 담보가 있으면 집이 경매로 넘어갈 때 보증금을 온전히 돌려받지 못할 수 있습니다."))
+      .toBeVisible();
   });
 
   it("uses the agreed urgency mapping", () => {
@@ -64,12 +74,14 @@ describe("PriorityGroups", () => {
     const unavailableToggle = currentView.getByRole("button", { name: "지금 판단할 수 없는 항목 2개" });
     expect(unavailableToggle).toHaveAttribute("aria-expanded", "false");
     expect(currentView.queryByText("R20")).not.toBeInTheDocument();
-    expect(currentView.getByText("R01")).toBeInTheDocument();
+    expect(currentView.getByRole("heading", { name: "R01 확인 항목" })).toBeInTheDocument();
 
     fireEvent.click(unavailableToggle);
 
-    expect(currentView.getByText("R04")).toBeInTheDocument();
-    expect(currentView.getByText("R20")).toBeInTheDocument();
+    expect(currentView.getByRole("heading", { name: "R04 확인 항목" })).toBeInTheDocument();
+    expect(currentView.getByRole("heading", { name: "R20 확인 항목" })).toBeInTheDocument();
+    expect(container.querySelector(".unavailable-results .priority-group__items"))
+      .toHaveClass("priority-group__items--three-column");
   });
 
   it("keeps the priority groups in the requested display order", () => {

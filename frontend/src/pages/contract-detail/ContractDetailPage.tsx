@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
@@ -42,6 +42,24 @@ const analysisStatusLabels: Record<AnalysisRunSummaryDto["status"], string> = {
 // 처음에는 남은 항목 5개만 보여준다. 22개가 한 번에 쌓이면 화면이 4배로 길어진다.
 const INITIAL_VISIBLE_ITEMS = 5;
 
+const CHECKLIST_PHASES = [
+  "계약 전",
+  "계약 중",
+  "계약 후",
+  "잔금 및 입주 당일",
+  "보관해야 할 자료",
+] as const;
+
+type ChecklistPhase = (typeof CHECKLIST_PHASES)[number];
+
+function checklistPhaseFor(text: string): ChecklistPhase {
+  if (/보관|기록|이체내역|영수증|송금증|확인설명서/.test(text)) return "보관해야 할 자료";
+  if (/잔금|입주|열쇠|인도|송금 직전/.test(text)) return "잔금 및 입주 당일";
+  if (/계약 후|계약 체결 후|전입신고|확정일자|반환보증/.test(text)) return "계약 후";
+  if (/계약서|특약|조항|기재|수정|서명|협의|관리비|날짜|금액 표기/.test(text)) return "계약 중";
+  return "계약 전";
+}
+
 export function ContractDetailPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -56,6 +74,9 @@ export function ContractDetailPage() {
   const [updateError, setUpdateError] = useState("");
   const [savingItemKey, setSavingItemKey] = useState("");
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [guideModalKey, setGuideModalKey] = useState<string | null>(null);
+  const guideTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const guideCloseRef = useRef<HTMLButtonElement | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -158,6 +179,22 @@ export function ContractDetailPage() {
 
   useEffect(() => { void loadContractDetail(); }, [contractId]);
 
+  useEffect(() => {
+    if (!guideModalKey) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    guideCloseRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGuideModalKey(null);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+      guideTriggerRef.current?.focus();
+    };
+  }, [guideModalKey]);
+
   async function toggle(item: ChecklistViewItem) {
     setSavingItemKey(item.item_key);
     setUpdateError("");
@@ -209,7 +246,7 @@ export function ContractDetailPage() {
 
   function printChecklist() {
     const previousTitle = document.title;
-    document.title = `서명전_체크리스트_계약_${contractId}`;
+    document.title = `체크리스트_계약_${contractId}`;
     window.print();
     document.title = previousTitle;
   }
@@ -235,6 +272,7 @@ export function ContractDetailPage() {
     hideWhenEmpty = false,
     total = entries.length,
     groupByPhase = false,
+    groupChecklistByPhase = false,
   }: {
     title: string;
     /** 제목 아래 안내 문구. 남은 항목을 보여주는 섹션에만 전달한다(완료 섹션에는 넣지 않는다). */
@@ -249,6 +287,8 @@ export function ContractDetailPage() {
     total?: number;
     /** 계약 후 행동만 시기 4개로 묶어 보여준다. */
     groupByPhase?: boolean;
+    /** 왼쪽 체크리스트를 계약 흐름 5단계로 묶어 보여준다. */
+    groupChecklistByPhase?: boolean;
   }) {
     // 항목이 없으면 빈 칸을 만들지 않는다. 화면 절반이 비어 보이던 원인이다.
     if (hideWhenEmpty && entries.length === 0) return null;
@@ -256,12 +296,12 @@ export function ContractDetailPage() {
     const expanded = expandedSections.includes(title);
     const visibleEntries = collapsible || expanded ? entries : entries.slice(0, INITIAL_VISIBLE_ITEMS);
     const hiddenCount = entries.length - visibleEntries.length;
+    const canToggleVisibleItems = !collapsible && entries.length > INITIAL_VISIBLE_ITEMS;
     const renderItems = (list: ChecklistViewItem[]) => (
       <ul className="checklist-section__items">
         {list.map((item) => {
             const label = item.done ? completedActionLabel : actionLabel;
             const saving = savingItemKey === item.item_key;
-            const guide = guideForItem(item);
             return (
               <li className={`check-item check-item--row${item.done ? " check-item--complete" : ""}`} key={item.kind + ":" + item.item_key}>
                 {item.writable
@@ -277,45 +317,39 @@ export function ContractDetailPage() {
                   </button>
                   : <span className="check-item__status" aria-label="변경 불가">✕</span>}
                 <span className="check-item__text">{item.text}</span>
-                {item.resultIds.length > 0 && (
-                  <span className="check-item__source">근거 판정 {item.resultIds.join(" · ")}</span>
-                )}
-                <details className="check-item__guide">
-                  <summary>{item.standardGuide ? "방법과 공식 근거" : "쉽게 보기"}</summary>
-                  <div className="check-item__guide-body">
-                    {item.standardGuide ? (
-                      <>
-                        <p>{item.standardGuide.method}</p>
-                        <p className="check-item__sources">
-                          {item.standardGuide.sources.map((source, index) => (
-                            <span key={source.url}>
-                              {index > 0 && " · "}
-                              <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
-                            </span>
-                          ))}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p>{guide.explanation}</p>
-                        <p className="check-item__guide-money">
-                          <strong>확인하지 않으면</strong> {guide.financialImpact}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </details>
+                <button
+                  className="check-item__guide-button"
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={(event) => {
+                    guideTriggerRef.current = event.currentTarget;
+                    setGuideModalKey(`${item.kind}:${item.item_key}`);
+                  }}
+                >
+                  <span aria-hidden="true">▸</span>
+                  {item.standardGuide ? "방법과 공식 근거" : "쉽게 보기"}
+                </button>
               </li>
             );
         })}
       </ul>
     );
 
-    // 계약 후 행동은 시기 순으로 묶어 보여준다. 그 외 목록은 그대로 한 줄씩 둔다.
     const content = entries.length === 0
       ? <p className="checklist-section__empty">{emptyMessage}</p>
       : <>
-        {groupByPhase
+        {groupChecklistByPhase
+          ? CHECKLIST_PHASES.map((phase) => {
+            const phaseItems = visibleEntries.filter((item) => checklistPhaseFor(item.text) === phase);
+            if (phaseItems.length === 0) return null;
+            return (
+              <section className="post-action-phase" key={phase}>
+                <h3>{phase}</h3>
+                {renderItems(phaseItems)}
+              </section>
+            );
+          })
+          : groupByPhase
           ? POST_ACTION_PHASES.map((phase) => {
             const phaseItems = visibleEntries.filter((item) => phaseForAction(item.text) === phase);
             if (phaseItems.length === 0) return null;
@@ -327,13 +361,15 @@ export function ContractDetailPage() {
             );
           })
           : renderItems(visibleEntries)}
-        {hiddenCount > 0 && (
+        {canToggleVisibleItems && (
           <button
             className="text-button checklist-section__more"
             type="button"
-            onClick={() => setExpandedSections((current) => [...current, title])}
+            onClick={() => setExpandedSections((current) => expanded
+              ? current.filter((section) => section !== title)
+              : [...current, title])}
           >
-            남은 항목 {hiddenCount}개 더 보기
+            {expanded ? "항목 접기" : `남은 항목 ${hiddenCount}개 더 보기`}
           </button>
         )}
       </>;
@@ -372,6 +408,12 @@ export function ContractDetailPage() {
     );
   }
 
+  const guideModalItem = [...checklistItems, ...postActions].find(
+    (item) => `${item.kind}:${item.item_key}` === guideModalKey,
+  ) ?? null;
+  const guideModalGuide = guideModalItem ? guideForItem(guideModalItem) : null;
+  const guideModalTitle = guideModalItem?.standardGuide ? "방법과 공식 근거" : "쉽게 보기";
+
   return (
     <PageShell layout="workspace" step="7 / 7" title="체크리스트와 계약 후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
       <div className="stack">
@@ -382,14 +424,14 @@ export function ContractDetailPage() {
           <div className="checklist-flow">
             {printableChecklistItems.length > 0 && (
               <div className="checklist-export-toolbar">
-                <p>현재 서명 전 체크리스트를 인쇄하거나 PDF 파일로 저장할 수 있습니다.</p>
+                <p>현재 체크리스트를 인쇄하거나 PDF 파일로 저장할 수 있습니다.</p>
                 <button className="secondary" type="button" onClick={printChecklist}>체크리스트 PDF 저장</button>
               </div>
             )}
             {createPortal(<article className="checklist-print-sheet" aria-hidden="true">
               <header>
                 <p>슬기로운 계약생활</p>
-                <h1>서명 전 체크리스트</h1>
+                <h1>체크리스트</h1>
                 <dl>
                   <div><dt>계약 건</dt><dd>#{contractId}</dd></div>
                   <div><dt>확인 결과 기준</dt><dd>{latestCompletedAnalysis ? new Date(latestCompletedAnalysis.created_at).toLocaleString("ko-KR") : "최신 완료 확인 결과"}</dd></div>
@@ -403,22 +445,87 @@ export function ContractDetailPage() {
                     <div>
                       <strong>{item.text}</strong>
                       <span>{item.done ? "확인 완료" : "미확인"}</span>
-                      {item.resultIds.length > 0 && <small>근거 판정 {item.resultIds.join(" · ")}</small>}
                     </div>
                   </li>
                 ))}
               </ol>
               <footer>이 체크리스트는 확인한 문서 내용을 바탕으로 확인할 항목을 정리한 자료이며, 계약의 안전성이나 적법성을 확정하지 않습니다.</footer>
             </article>, document.body)}
+            {guideModalItem && guideModalGuide && createPortal(
+              <div
+                className="damage-pattern-modal__backdrop"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) setGuideModalKey(null);
+                }}
+              >
+                <section
+                  className="damage-pattern-modal check-item-guide-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="check-item-guide-modal-title"
+                >
+                  <header className="damage-pattern-modal__header">
+                    <div>
+                      <span className="damage-pattern-modal__eyebrow">체크리스트 안내</span>
+                      <h2 id="check-item-guide-modal-title">{guideModalTitle}</h2>
+                    </div>
+                    <button
+                      ref={guideCloseRef}
+                      type="button"
+                      className="damage-pattern-modal__close"
+                      aria-label="창 닫기"
+                      onClick={() => setGuideModalKey(null)}
+                    >
+                      <span className="damage-pattern-modal__close-icon" aria-hidden="true" />
+                    </button>
+                  </header>
+                  <div className="damage-pattern-modal__body">
+                    <p className="check-item-guide-modal__item">{guideModalItem.text}</p>
+                    {guideModalItem.standardGuide ? (
+                      <div className="check-item-guide-modal__content">
+                        <section>
+                          <strong>확인 방법</strong>
+                          <p>{guideModalItem.standardGuide.method}</p>
+                        </section>
+                        <section>
+                          <strong>공식 근거</strong>
+                          <p className="check-item__sources">
+                            {guideModalItem.standardGuide.sources.map((source, index) => (
+                              <span key={source.url}>
+                                {index > 0 && " · "}
+                                <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
+                              </span>
+                            ))}
+                          </p>
+                        </section>
+                      </div>
+                    ) : (
+                      <div className="damage-pattern-guide">
+                        <section className="damage-pattern-guide__check">
+                          <strong>확인할 이유</strong>
+                          <p>{guideModalGuide.explanation}</p>
+                        </section>
+                        <section className="damage-pattern-guide__impact">
+                          <strong><span aria-hidden="true">△</span> 확인하지 않으면</strong>
+                          <p>{guideModalGuide.financialImpact}</p>
+                        </section>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>,
+              document.body,
+            )}
             <div className="checklist-active-grid">
               {renderActionItems({
-                title: "서명 전 체크리스트",
-                description: "서명하기 전, 금전 피해와 분쟁으로 이어질 수 있는 항목을 한 번 더 확인해 보세요.",
+                title: "체크리스트",
+                description: "계약서와 확인 자료를 대조하고, 서명 전에 필요한 내용을 확인해 보세요.",
                 entries: pendingChecklistItems,
                 actionLabel: "확인",
                 completedActionLabel: "확인 취소",
-                emptyMessage: "모든 서명 전 체크리스트 항목을 확인했습니다.",
+                emptyMessage: "모든 체크리스트 항목을 확인했습니다.",
                 total: checklistItems.length,
+                groupChecklistByPhase: true,
               })}
               {renderActionItems({
                 title: "계약 후 해야 할 행동",

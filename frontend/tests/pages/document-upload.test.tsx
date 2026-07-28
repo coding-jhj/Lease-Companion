@@ -40,7 +40,8 @@ describe("DocumentUploadPage", () => {
     expect(screen.getByText("계약서 초안은 필수이며, 등기사항증명서는 있다면 함께 올려주세요.")).toBeInTheDocument();
     expect(screen.queryByText("먼저 계약서 초안을 준비해 주세요.")).not.toBeInTheDocument();
     expect(screen.getByText("계약서 초안은 필수이며, 등기사항증명서는 있다면 함께 올려주세요.").closest(".description")).not.toHaveTextContent("현재 시연용 서비스입니다.");
-    expect(screen.getByText(/서명 전에 중개사에게 받아볼 수 있습니다/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "어떤 문서인가요?" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/비식별 처리된 문서만 사용해 주세요/)).not.toBeInTheDocument();
     expect(screen.getByText(/지금 없어도 계약서부터 확인할 수 있습니다/)).toBeInTheDocument();
     expect(screen.queryByText(/모의 등기/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/사례 번호/)).not.toBeInTheDocument();

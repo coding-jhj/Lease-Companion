@@ -62,7 +62,7 @@ describe("ContractDetailPage", () => {
     expect(completedDetails).toHaveAttribute("open");
     expect(completedPostActionDetails).not.toHaveAttribute("open");
     expect(within(completedSection).getByText(actionText)).toBeInTheDocument();
-    expect(within(completedSection).getByText(/근거 판정 R01/)).toBeInTheDocument();
+    expect(within(completedSection).queryByText(/근거 판정 R01/)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "완료된 계약 후 행동" })).toBeInTheDocument();
     expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /확인 결과 보기/ })).toHaveAttribute(
@@ -78,7 +78,7 @@ describe("ContractDetailPage", () => {
 
     fireEvent.click(within(completedSection).getByRole("button", { name: `${actionText} 확인 취소` }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(1001, "checklist", action.item_key, false));
-    const pendingSection = screen.getByRole("heading", { name: "서명 전 체크리스트" }).closest("section")!;
+    const pendingSection = screen.getByRole("heading", { name: "체크리스트" }).closest("section")!;
     expect(within(pendingSection).getByRole("button", { name: `${actionText} 확인` })).toBeInTheDocument();
   });
 
@@ -113,7 +113,7 @@ describe("ContractDetailPage", () => {
       </MemoryRouter>,
     );
 
-    const pendingSection = (await screen.findByRole("heading", { name: "서명 전 체크리스트" })).closest("section")!;
+    const pendingSection = (await screen.findByRole("heading", { name: "체크리스트" })).closest("section")!;
     expect(pendingSection.querySelectorAll(".check-item--row")).toHaveLength(5);
     const moreButton = within(pendingSection).getByRole("button", { name: /^남은 항목 \d+개 더 보기$/ });
 
@@ -121,7 +121,22 @@ describe("ContractDetailPage", () => {
 
     expect(pendingSection.querySelectorAll(".check-item--row").length).toBeGreaterThan(5);
     expect(within(pendingSection).queryByRole("button", { name: /더 보기$/ })).not.toBeInTheDocument();
+    expect(within(pendingSection).getByRole("button", { name: "항목 접기" })).toBeInTheDocument();
     expect(within(pendingSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "0");
+    for (const phase of ["계약 전", "계약 중", "잔금 및 입주 당일", "보관해야 할 자료"]) {
+      expect(within(pendingSection).getByRole("heading", { name: phase })).toBeInTheDocument();
+    }
+    expect(within(pendingSection).queryByText("남은 항목 더 보기를 누르면 표시됩니다.")).not.toBeInTheDocument();
+    expect(within(pendingSection).queryByRole("heading", { name: "계약 후" })).not.toBeInTheDocument();
+    expect(within(pendingSection).queryByText(/근거 판정 R\d+/)).not.toBeInTheDocument();
+    fireEvent.click(within(pendingSection).getAllByRole("button", { name: "쉽게 보기" })[0]);
+    const plainGuideDialog = screen.getByRole("dialog", { name: "쉽게 보기" });
+    expect(within(plainGuideDialog).getByText("확인할 이유")).toBeInTheDocument();
+    expect(within(plainGuideDialog).getByText("확인하지 않으면")).toBeInTheDocument();
+    fireEvent.click(within(plainGuideDialog).getByRole("button", { name: "창 닫기" }));
+    fireEvent.click(within(pendingSection).getByRole("button", { name: "항목 접기" }));
+    expect(pendingSection.querySelectorAll(".check-item--row")).toHaveLength(5);
+    expect(within(pendingSection).getByRole("button", { name: /^남은 항목 \d+개 더 보기$/ })).toBeInTheDocument();
     // 생성된 계약 후 행동이 없어도 공식 기본 행동을 시기별 카드로 표시한다.
     const postSection = screen.getByRole("heading", { name: "계약 후 해야 할 행동" }).closest("section")!;
     expect(within(postSection).getByText("0 / 12 확인 완료")).toBeInTheDocument();
@@ -131,6 +146,14 @@ describe("ContractDetailPage", () => {
     }
     expect(within(postSection).getByText("기존 세입자 퇴거와 실제 주택 상태를 확인해 즉시 입주 가능한지 점검하세요.")).toBeInTheDocument();
     expect(within(postSection).getByText("전세보증금 반환보증 가입 조건과 신청 기한을 확인하세요.")).toBeInTheDocument();
+    fireEvent.click(within(postSection).getAllByRole("button", { name: "방법과 공식 근거" })[0]);
+    const officialGuideDialog = screen.getByRole("dialog", { name: "방법과 공식 근거" });
+    expect(within(officialGuideDialog).getByText("확인 방법")).toBeInTheDocument();
+    expect(within(officialGuideDialog).getByText("공식 근거")).toBeInTheDocument();
+    expect(within(officialGuideDialog).getByRole("link", { name: /국토교통부/ })).toHaveAttribute("target", "_blank");
+    fireEvent.click(within(officialGuideDialog).getByRole("button", { name: "창 닫기" }));
+    fireEvent.click(within(postSection).getByRole("button", { name: "항목 접기" }));
+    expect(postSection.querySelectorAll(".check-item--row")).toHaveLength(5);
 
     fireEvent.click(within(postSection).getByRole("button", { name: `${officialAction.text} 완료` }));
     await waitFor(() => expect(update).toHaveBeenCalledWith(
@@ -188,7 +211,7 @@ describe("ContractDetailPage", () => {
     );
 
     expect(screen.queryByRole("heading", { name: "완료된 체크리스트 항목" })).not.toBeInTheDocument();
-    const activeGrid = (await screen.findByRole("heading", { name: "서명 전 체크리스트" })).closest(".checklist-active-grid")!;
+    const activeGrid = (await screen.findByRole("heading", { name: "체크리스트" })).closest(".checklist-active-grid")!;
     expect(within(activeGrid).getByRole("heading", { name: "계약 후 해야 할 행동" })).toBeInTheDocument();
     expect(within(activeGrid).getByText(postActionText)).toBeInTheDocument();
 
@@ -240,7 +263,6 @@ describe("ContractDetailPage", () => {
     );
 
     const postSection = (await screen.findByRole("heading", { name: "계약 후 해야 할 행동" })).closest("section")!;
-    // 생성 항목과 겹치지 않는 공식 기본 행동도 저장 가능한 진행률에 포함한다.
     expect(within(postSection).getByText("1 / 12 확인 완료")).toBeInTheDocument();
     expect(within(postSection).getByRole("progressbar", { name: /확인 완료/ })).toHaveAttribute("aria-valuenow", "1");
     fireEvent.click(within(postSection).getByRole("button", { name: /^남은 항목 \d+개 더 보기$/ }));
@@ -249,8 +271,8 @@ describe("ContractDetailPage", () => {
     }
     expect(screen.getByText("도배·장판·수리 등 임대인이 약속한 특약이 이행됐는지 확인하세요.")).toBeInTheDocument();
     expect(within(postSection).getByText("계약 후 보증금과 임차인의 권리를 보호하기 위해 필요한 조치를 확인해 보세요.")).toBeInTheDocument();
-    const signingSection = screen.getByRole("heading", { name: "서명 전 체크리스트" }).closest("section")!;
-    expect(within(signingSection).getByText("서명하기 전, 금전 피해와 분쟁으로 이어질 수 있는 항목을 한 번 더 확인해 보세요.")).toBeInTheDocument();
+    const signingSection = screen.getByRole("heading", { name: "체크리스트" }).closest("section")!;
+    expect(within(signingSection).getByText("계약서와 확인 자료를 대조하고, 서명 전에 필요한 내용을 확인해 보세요.")).toBeInTheDocument();
     // 완료 섹션에는 안내 문구가 새어 나오지 않는다.
     const completedSection = screen.getByRole("heading", { name: "완료된 계약 후 행동" }).closest("section")!;
     expect(completedSection).not.toHaveTextContent("계약 후 보증금과 임차인의 권리를");

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
@@ -9,8 +9,6 @@ import {
   displayPriorityForUrgency,
   type DisplayPriority,
 } from "../../features/judgment-results/PriorityGroups";
-import { QuestionHub, StageActions } from "../../features/question-cards/DefenseActionHub";
-import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
 import { DamagePatternTable } from "../../features/damage-patterns/DamagePatternTable";
 import { ReportPrintSheet } from "../../features/result-report/ReportPrintSheet";
 import { buildActionFirstItems } from "../../features/result-report/actionFirstViewModel";
@@ -29,14 +27,6 @@ import type {
 import { contractIdFromRoute } from "../../utils/contractId";
 
 const priorities: DisplayPriority[] = ["반드시 확인", "확인 권장", "일반 확인"];
-
-const TABS = [
-  { key: "items", label: "확인 항목" },
-  { key: "questions", label: "확인할 내용" },
-  { key: "stages", label: "단계별 행동" },
-] as const;
-
-type TabKey = (typeof TABS)[number]["key"];
 
 function actionHeroTitle(stage: StageGuidanceDto["contract_context"]["contract_stage"] | undefined, count: number) {
   if (stage === "계약금 입금 전") return `계약금을 보내기 전에 ${count}가지를 먼저 확인해 주세요`;
@@ -61,8 +51,6 @@ export function ResultReportPage() {
   const [generationFailed, setGenerationFailed] = useState(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  const [tab, setTab] = useState<TabKey>("items");
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   async function loadReport() {
     setStatus("loading");
@@ -115,19 +103,6 @@ export function ResultReportPage() {
     document.title = previousTitle;
   }
 
-  function moveTabFocus(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    const last = TABS.length - 1;
-    let next = index;
-    if (event.key === "ArrowRight") next = index === last ? 0 : index + 1;
-    else if (event.key === "ArrowLeft") next = index === 0 ? last : index - 1;
-    else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = last;
-    else return;
-    event.preventDefault();
-    setTab(TABS[next].key);
-    tabRefs.current[next]?.focus();
-  }
-
   return (
     <PageShell layout="report" step="6 / 7" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 직접 확인할 내용을 순서대로 살펴보세요.">
       <div className="stack">
@@ -162,27 +137,11 @@ export function ResultReportPage() {
                 <DamagePatternTable items={damagePatterns} />
               </section>
             )}
-            <div className="report-tabs" role="tablist" aria-label="확인 결과 보기 방식">
-              {TABS.map((item, index) => (
-                <button
-                  className="report-tabs__tab"
-                  type="button"
-                  role="tab"
-                  id={`report-tab-${item.key}`}
-                  aria-selected={tab === item.key}
-                  aria-controls={`report-panel-${item.key}`}
-                  tabIndex={tab === item.key ? 0 : -1}
-                  ref={(node) => { tabRefs.current[index] = node; }}
-                  onClick={() => setTab(item.key)}
-                  onKeyDown={(event) => moveTabFocus(event, index)}
-                  key={item.key}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            {/* 탭을 옮겨도 펼쳐 둔 그룹·"더 보기" 상태가 풀리지 않도록 감추기만 한다. */}
-            <div className="report-panel stack" role="tabpanel" id="report-panel-items" aria-labelledby="report-tab-items" hidden={tab !== "items"}>
+            <section className="report-items-section stack" aria-labelledby="report-items-title">
+              <div className="section-heading">
+                <h2 id="report-items-title">확인 항목</h2>
+                <p>문서와 상대방에게 확인할 내용을 우선순위별로 정리합니다</p>
+              </div>
               <PriorityGroups
                 items={userFacingResults}
                 idPrefix="all-results-priority"
@@ -190,17 +149,7 @@ export function ResultReportPage() {
                 actionById={actionById}
               />
               <SpecialClauseReviewSection reviews={specialClauseReviews} guidance={specialClauseGuidance} generationFailed={generationFailed} />
-            </div>
-            <div className="report-panel" role="tabpanel" id="report-panel-questions" aria-labelledby="report-tab-questions" hidden={tab !== "questions"}>
-              <QuestionHub results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
-            </div>
-            <div className="report-panel" role="tabpanel" id="report-panel-stages" aria-labelledby="report-tab-stages" hidden={tab !== "stages"}>
-              <StageActions results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
-            </div>
-            <details className="feedback-fold">
-              <summary>리포트 의견 보내기</summary>
-              <ResultFeedback contractId={contractId} />
-            </details>
+            </section>
           </>
         )}
         <button type="button" onClick={() => navigate(`/contracts/${contractId}`)}>이제 할 일 확인하기</button>
