@@ -1,0 +1,207 @@
+{
+  "accuracy": 0.9666666666666667,
+  "case_count": 10,
+  "extraction_path": "gemini_provider",
+  "field_count": 240,
+  "limitations": [
+    "합성 test 10건 기준이며 실제 계약서 일반화 성능이 아닙니다.",
+    "로컬 폴백이 사용된 케이스가 있으면 그 값은 provider 성능이 아닙니다."
+  ],
+  "local_fallback_case_count": 0,
+  "matched_count": 232,
+  "measured_at": "2026-07-28",
+  "model": "gemini-3.5-flash",
+  "per_case": [
+    {
+      "case_id": "TEST-001",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-002",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-003",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-004",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-005",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-006",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-007",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-008",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-009",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    },
+    {
+      "case_id": "TEST-010",
+      "fallback_reasons": [],
+      "local_fallback_used": false,
+      "read_ok": true
+    }
+  ],
+  "per_field": {
+    "contract.account_holder": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.agent_name": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.balance_payment": {
+      "accuracy": 0.9,
+      "item_count": 10,
+      "matched_count": 9
+    },
+    "contract.contract_payment": {
+      "accuracy": 0.9,
+      "item_count": 10,
+      "matched_count": 9
+    },
+    "contract.contract_type": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.deposit": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.deposit_return_condition": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.end_date": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.landlord_name": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.monthly_rent": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.move_in_date": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.property_address": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.repair_responsibility": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.rights_change_clause_present": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.start_date": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "contract.tenant_name": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "registry.is_joint_ownership": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "registry.issue_date": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "registry.mortgage_present": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "registry.owner_names": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "registry.property_address": {
+      "accuracy": 1.0,
+      "item_count": 10,
+      "matched_count": 10
+    },
+    "registry.provisional_seizure_present": {
+      "accuracy": 0.9,
+      "item_count": 10,
+      "matched_count": 9
+    },
+    "registry.seizure_present": {
+      "accuracy": 0.7,
+      "item_count": 10,
+      "matched_count": 7
+    },
+    "registry.trust_present": {
+      "accuracy": 0.8,
+      "item_count": 10,
+      "matched_count": 8
+    }
+  },
+  "rules_on_provider_extraction": {
+    "status_accuracy": 0.97,
+    "status_item_count": 100,
+    "status_matched_count": 97,
+    "urgency_accuracy": 1.0,
+    "urgency_item_count": 27,
+    "urgency_matched_count": 27
+  },
+  "split": "test"
+}

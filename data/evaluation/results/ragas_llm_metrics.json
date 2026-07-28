@@ -1,0 +1,44 @@
+{
+  "case_scores": [
+    {
+      "answer_relevancy": 0.7664065527857744,
+      "case_id": "RAGAS-LLM-001",
+      "faithfulness": 0.5
+    },
+    {
+      "answer_relevancy": 0.883538512682544,
+      "case_id": "RAGAS-LLM-002",
+      "faithfulness": 1.0
+    },
+    {
+      "answer_relevancy": 0.8242571018144247,
+      "case_id": "RAGAS-LLM-003",
+      "faithfulness": 0.6666666666666666
+    }
+  ],
+  "config_version": "ragas-llm-gemini-v1",
+  "embedding_model": "gemini-embedding-001",
+  "evaluated_case_count": 3,
+  "external_provider_calls_required": true,
+  "failed_score_count": 0,
+  "failures": [],
+  "judge_model": "gemini/gemini-3.5-flash",
+  "limitations": [
+    "Gemini judge 기반 점수이며 사람 법률 검토를 대체하지 않습니다.",
+    "오프라인 ID 기반 Context Precision·Recall과 별도 지표입니다.",
+    "잠긴 비식별·합성 test split에만 적용합니다."
+  ],
+  "measured_at": "2026-07-28",
+  "metrics": {
+    "answer_relevancy": {
+      "macro_average": 0.824734,
+      "scored_case_count": 3
+    },
+    "faithfulness": {
+      "macro_average": 0.722222,
+      "scored_case_count": 3
+    }
+  },
+  "ragas_version": "0.3.9",
+  "split": "test"
+}

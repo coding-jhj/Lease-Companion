@@ -17,3 +17,8 @@
 - `evaluate_retrieval.py` — `--split dev|test|all`로 로컬 BM25 retrieval을 분리 평가.
 - `evaluate_ai_pipeline.py` — 외부 provider 호출 없이 A 파이프라인 test 기준선을 생성.
 - `evaluate_ragas_offline.py` — 외부 provider 호출 없이 일반·특약 RAG의 RAGAS ID Precision·Recall 기준선을 생성.
+- `evaluate_ragas_online.py` — Gemini judge·embedding으로 Faithfulness·Response Relevancy 측정. 유료 호출 있음.
+- `generate_provider_report.py` — provider JSONL 메타데이터를 발표용 JSON·CSV·SVG로 집계. 외부 호출 없음.
+- `measure_gemini_ttfb.py` — 개인정보 없는 합성 prompt를 Gemini streaming으로 반복 호출해 실제 TTFB 기록.
+- `collect_mode_cycle_metrics.py` — 실제 계약 점검 또는 승인된 3턴 시뮬레이션의 전체 1사이클 provider 메타데이터를 별도 JSONL로 기록.
+- `generate_ppt_metrics_assets.py` — Offline/Online RAGAS와 모드별 사이클 요약을 PPT용 CSV·SVG로 생성.

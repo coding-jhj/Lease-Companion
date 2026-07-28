@@ -1,0 +1,391 @@
+{
+  "case_scores": [
+    {
+      "case_id": "TEST-001:R01",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-001:R03",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-001:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-002:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-003:R02",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-CONFIRM-FORM"
+      ],
+      "retrieved_context_ids": [
+        "SRC-CONFIRM-FORM",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-003:R04",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-003:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-004:R05",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-004:R06",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-004:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-005:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-005:R08",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE"
+      ],
+      "retrieved_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW"
+      ]
+    },
+    {
+      "case_id": "TEST-005:R09",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE"
+      ],
+      "retrieved_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-HTA-LAW"
+      ]
+    },
+    {
+      "case_id": "TEST-005:R10",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-006:R03",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-006:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-006:R08",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE"
+      ],
+      "retrieved_context_ids": [
+        "SRC-HTA-LAW",
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-007:R01",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-007:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-008:R04",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-008:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-008:R10",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-HTA-LAW",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-009:R06",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-STD-LEASE",
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE",
+        "SRC-STD-LEASE"
+      ]
+    },
+    {
+      "case_id": "TEST-009:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-010:R03",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-010:R05",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    },
+    {
+      "case_id": "TEST-010:R07",
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "reference_context_ids": [
+        "SRC-MOLIT-CHECKLIST"
+      ],
+      "retrieved_context_ids": [
+        "SRC-MOLIT-CHECKLIST",
+        "SRC-MOLIT-CHECKLIST"
+      ]
+    }
+  ],
+  "embedding_model": "gemini-embedding-001",
+  "limitations": [
+    "허용 출처 화이트리스트가 정답 출처와 같아 precision은 구조적으로 1.0입니다.",
+    "의미 있는 값은 recall이며 코퍼스는 6출처·37청크입니다.",
+    "provider 폴백이 발생한 쿼리는 BM25 결과이며 provider 성능이 아닙니다."
+  ],
+  "macro_context_precision": 1.0,
+  "macro_context_recall": 1.0,
+  "measured_at": "2026-07-28",
+  "provider_fallback_query_count": 6,
+  "query_count": 27,
+  "rerank_model": "rerank-v4.0-pro",
+  "retrieval_path": "gemini_embedding_bm25_hybrid_then_cohere_rerank",
+  "special_clauses": {
+    "evaluated_case_count": 6,
+    "section_macro_context_precision": 0.7777777777777777,
+    "section_macro_context_recall": 0.8055555555555555,
+    "source_macro_context_precision": 0.9166666666666666,
+    "source_macro_context_recall": 0.861111111111111
+  },
+  "split": "test"
+}

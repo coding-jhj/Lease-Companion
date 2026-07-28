@@ -9,8 +9,14 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeVar
+from datetime import datetime, timezone
+from typing import Iterator, TypeVar
 
+from lease_companion_ai.evaluation.provider_metrics import (
+    ProviderCallMetric,
+    extract_gemini_usage,
+    metric_recorder_from_env,
+)
 from lease_companion_ai.providers.errors import (
     ProviderError,
     ProviderQuotaError,
@@ -99,6 +105,8 @@ class GeminiGateway:
         monotonic: Callable[[], float] = time.monotonic,
         jitter: Callable[[], float] = random.random,
         max_concurrency: int | None = None,
+        metric_sink: Callable[[ProviderCallMetric], None] | None = None,
+        timestamp: Callable[[], str] | None = None,
     ) -> None:
         configured_concurrency = max_concurrency or int(
             os.getenv("GEMINI_MAX_CONCURRENCY", "1")
@@ -111,6 +119,10 @@ class GeminiGateway:
         self._sleep = sleep
         self._monotonic = monotonic
         self._jitter = jitter
+        self._metric_sink = metric_sink or metric_recorder_from_env()
+        self._timestamp = timestamp or (
+            lambda: datetime.now(timezone.utc).isoformat()
+        )
 
     @staticmethod
     def _minimum_interval() -> float:
@@ -158,13 +170,32 @@ class GeminiGateway:
             try:
                 with self._semaphore:
                     result = operation()
+                latency_ms = int((self._monotonic() - started) * 1000)
                 logger.info(
                     "Gemini 호출 성공 task=%s model=%s attempt=%d latency_ms=%d",
                     task,
                     model,
                     attempt,
-                    int((self._monotonic() - started) * 1000),
+                    latency_ms,
                 )
+                if self._metric_sink is not None:
+                    usage = extract_gemini_usage(result)
+                    self._metric_sink(
+                        ProviderCallMetric(
+                            timestamp=self._timestamp(),
+                            provider="gemini",
+                            model=model,
+                            task=task,
+                            status="success",
+                            attempt=attempt,
+                            latency_ms=latency_ms,
+                            ttfb_ms=None,
+                            input_tokens=usage["input_tokens"],
+                            output_tokens=usage["output_tokens"],
+                            cached_tokens=usage["cached_tokens"],
+                            search_units=0,
+                        )
+                    )
                 return result
             except ProviderError:
                 raise
@@ -244,6 +275,67 @@ class GeminiGateway:
                 self._sleep(delay)
                 waited += delay
         raise ProviderError("Gemini 호출에 실패했습니다.")
+
+    def call_stream(
+        self,
+        *,
+        task: str,
+        model: str,
+        operation: Callable[[], Iterator[T]],
+        policy: GeminiCallPolicy,
+    ) -> list[T]:
+        """stream 첫 chunk와 완료 시각을 분리 계측한다."""
+        waited = 0.0
+        for attempt in range(1, policy.max_attempts + 1):
+            waited += self._wait_for_rate_slot(
+                model, policy.max_total_wait_seconds - waited
+            )
+            started = self._monotonic()
+            first_chunk_at: float | None = None
+            chunks: list[T] = []
+            try:
+                with self._semaphore:
+                    for chunk in operation():
+                        if first_chunk_at is None:
+                            first_chunk_at = self._monotonic()
+                        chunks.append(chunk)
+                if not chunks or first_chunk_at is None:
+                    raise ProviderError("Gemini stream 응답이 비어 있습니다.")
+                finished = self._monotonic()
+                usage = extract_gemini_usage(chunks[-1])
+                if self._metric_sink is not None:
+                    self._metric_sink(
+                        ProviderCallMetric(
+                            timestamp=self._timestamp(),
+                            provider="gemini",
+                            model=model,
+                            task=task,
+                            status="success",
+                            attempt=attempt,
+                            latency_ms=int((finished - started) * 1000),
+                            ttfb_ms=int((first_chunk_at - started) * 1000),
+                            input_tokens=usage["input_tokens"],
+                            output_tokens=usage["output_tokens"],
+                            cached_tokens=usage["cached_tokens"],
+                            search_units=0,
+                        )
+                    )
+                return chunks
+            except ProviderError:
+                raise
+            except Exception as exc:
+                logger.error(
+                    "Gemini stream 호출 실패 task=%s model=%s attempt=%d "
+                    "status=%s type=%s",
+                    task,
+                    model,
+                    attempt,
+                    _status_code(exc),
+                    type(exc).__name__,
+                )
+                if attempt == policy.max_attempts:
+                    raise ProviderError("Gemini stream 호출에 실패했습니다.") from None
+        raise ProviderError("Gemini stream 호출에 실패했습니다.")
 
 
 _gateway: GeminiGateway | None = None
