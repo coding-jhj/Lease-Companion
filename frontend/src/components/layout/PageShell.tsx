@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { clearAccessToken } from "../../services/authToken";
 
@@ -12,7 +12,7 @@ interface PageShellProps {
   step: string;
   journey?: JourneyDisplay;
   title: string;
-  description: string;
+  description: ReactNode;
   children: ReactNode;
   showLogout?: boolean;
   showJourney?: boolean;
@@ -78,7 +78,6 @@ export function PageShell({
   const currentStep = journey?.current ?? Number(step.split("/")[0].trim());
   const validStep = Number.isInteger(currentStep) && currentStep >= 1 && currentStep <= journeySteps.length;
   const currentLabel = journey?.currentLabel ?? journeySteps[currentStep - 1];
-  const nextLabel = journey?.nextLabel ?? journeySteps[currentStep];
   const showModeSelect = showLogout && location.pathname !== "/choose-mode";
   const contractId = location.pathname.match(/\/contracts\/(\d+)/)?.[1] ?? null;
   // 5단계(결과 준비)처럼 되돌아갈 수 없는 단계는 건너뛰고 그 앞 단계를 찾는다.
@@ -91,26 +90,6 @@ export function PageShell({
     }
     return null;
   })();
-  const currentStepRef = useRef<HTMLDivElement | null>(null);
-  const [showFullJourney, setShowFullJourney] = useState(false);
-
-  // 진행 표시가 좁은 화면에서 가로로 넘칠 때, 현재 단계가 화면 밖에
-  // 숨지 않도록 진행 표시 안에서만 가로 스크롤한다. 포커스는 옮기지 않는다.
-  useEffect(() => {
-    const element = currentStepRef.current;
-    if (!element || typeof element.scrollIntoView !== "function") return;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    try {
-      element.scrollIntoView({
-        block: "nearest",
-        inline: "center",
-        behavior: reduceMotion ? "auto" : "smooth",
-      });
-    } catch {
-      // jsdom 등 scrollIntoView 미구현 환경은 무시한다.
-    }
-  }, [currentStep, showFullJourney]);
-
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
@@ -143,7 +122,7 @@ export function PageShell({
           );
         }
         return (
-          <div className={className} ref={state === "current" ? currentStepRef : undefined} aria-current={state === "current" ? "step" : undefined} key={label}>
+          <div className={className} aria-current={state === "current" ? "step" : undefined} key={label}>
             {body}
           </div>
         );
@@ -166,11 +145,11 @@ export function PageShell({
         </Link>
         <div className="header-actions">
           <span className="step-badge">{step}</span>
-          {showModeSelect && <Link className="mode-switch-link" to="/choose-mode">처음으로</Link>}
+          {showModeSelect && <Link className="mode-switch-link" to="/contracts">처음으로</Link>}
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>
-      {backTo && (
+      {backTo && !(showJourney && validStep) && (
         <Link className="page-back" to={backTo}>
           <span aria-hidden="true">←</span> {backLabel}
         </Link>
@@ -188,31 +167,18 @@ export function PageShell({
             <div className="journey-progress__fill" style={{ width: `${(currentStep / journeySteps.length) * 100}%` }} />
           </div>
           <div className="journey-progress__row">
+            <div className="journey-progress__full" id="full-journey">{journeyMap}</div>
             {previousPath && (
               <Link className="journey-progress__back" to={previousPath}>
                 <span aria-hidden="true">←</span> 이전 단계
               </Link>
             )}
-            <p className="journey-progress__head">
-              <JourneyIcon index={currentStep - 1} className="journey-progress__icon" />
-              <span className="journey-progress__kicker">{`${currentStep}/${journeySteps.length}단계`}</span>
-              <strong className="journey-progress__title">{currentLabel}</strong>
-            </p>
-            <div className="journey-progress__meta">
-              {nextLabel && <span className="journey-progress__next">{`다음: ${nextLabel}`}</span>}
-              <button
-                aria-controls="full-journey"
-                aria-expanded={showFullJourney}
-                aria-label={showFullJourney ? "전체 과정 접기" : "전체 과정 보기"}
-                className="journey-progress__toggle"
-                type="button"
-                onClick={() => setShowFullJourney((isOpen) => !isOpen)}
-              >
-                {showFullJourney ? "접기" : "전체"}
-              </button>
-            </div>
+            {!previousPath && backTo && (
+              <Link className="journey-progress__back" to={backTo}>
+                <span aria-hidden="true">←</span> {backLabel}
+              </Link>
+            )}
           </div>
-          {showFullJourney && <div className="journey-progress__full" id="full-journey">{journeyMap}</div>}
         </div>
       )}
       {hero ? (

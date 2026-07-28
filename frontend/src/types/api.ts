@@ -176,6 +176,20 @@ export interface ReferenceCaseDto {
   verification_scope: string;
 }
 
+export interface RecentPressReleaseItemDto {
+  title: string;
+  publisher: string;
+  published_at: string;
+  source_url: string;
+}
+
+export interface RecentPressReleaseResponseDto {
+  pattern_id: string;
+  items: RecentPressReleaseItemDto[];
+  retrieved_at: string;
+  notice: string;
+}
+
 export interface DamagePatternComparisonDto {
   pattern_id: string;
   pattern_name: string;

@@ -175,15 +175,33 @@ describe("ResultReportPage", () => {
     expect(screen.getByRole("button", { name: /^잔금·입주 당일/ })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: /^보관할 자료/ })).toHaveAttribute("aria-expanded", "false");
 
-    expect(screen.getByRole("heading", { name: "비슷한 상황에서 확인할 점" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "주요 금전피해 유형 비교" })).toBeInTheDocument();
+    expect(screen.queryByText("입금·서명 전에 먼저 확인할 항목")).not.toBeInTheDocument();
+    const actionableDamage = screen.getByRole("heading", {
+      name: "현재 자료에서 먼저 확인할 금전 피해 유형",
+    });
+    const unknownDamage = screen.getByRole("heading", { name: "자료 부족으로 확인 불가" });
+    const noSignalDamage = screen.getByRole("heading", {
+      name: "제출 자료에서 관련 신호 미확인",
+    });
+    expect(
+      actionableDamage.compareDocumentPosition(unknownDamage)
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      unknownDamage.compareDocumentPosition(noSignalDamage)
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     const firstPatternDetails = document.querySelector(".damage-patterns details") as HTMLDetailsElement;
-    fireEvent.click(within(firstPatternDetails).getByText("근거와 분석 한계"));
-    const referenceCases = within(firstPatternDetails).getByRole("region", { name: /검증된 유사 참고 사례$/ });
-    expect(within(referenceCases).getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeInTheDocument();
-    expect(within(referenceCases).getByRole("link")).toHaveAttribute("href", expect.stringMatching(/^https:\/\//));
+    fireEvent.click(within(firstPatternDetails).getByText("근거와 실제 사례"));
+    const referenceCases = within(firstPatternDetails).getByRole("region", { name: /실제 사례$/ });
+    expect(within(referenceCases).getByRole("heading", { name: "실제 사례" })).toBeInTheDocument();
+    expect(within(referenceCases).getByRole("button", { name: "최근 공개 사례 찾기" }))
+      .toBeInTheDocument();
+    expect(within(firstPatternDetails).queryByText(/가짜 임대인과의 계약 유형/))
+      .not.toBeInTheDocument();
+    expect(within(firstPatternDetails).queryByText("확인 한계")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeInTheDocument();
-    // 전체 비교표는 접힌 상태로 시작한다(자료 부족 행이 화면을 차지하지 않게).
-    expect((document.querySelector(".damage-table-fold") as HTMLDetailsElement).open).toBe(false);
     expect((document.querySelector(".feedback-fold") as HTMLDetailsElement).open).toBe(false);
 
     const hero = document.querySelector(".report-hero")!;
@@ -191,10 +209,10 @@ describe("ResultReportPage", () => {
     const panel = document.querySelector(".report-panel")!;
     const damageReference = document.querySelector(".damage-reference-section")!;
     const feedback = document.querySelector(".feedback-fold")!;
-    expect(hero.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hero.compareDocumentPosition(damageReference) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(damageReference.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(tabs.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(panel.compareDocumentPosition(damageReference) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(damageReference.compareDocumentPosition(feedback) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(panel.compareDocumentPosition(feedback) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     expect(screen.queryByText("R01")).not.toBeInTheDocument();
 

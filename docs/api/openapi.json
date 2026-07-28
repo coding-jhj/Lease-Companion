@@ -1789,6 +1789,55 @@
         }
       }
     },
+    "/api/public-cases/recent-press-releases": {
+      "get": {
+        "tags": [
+          "public-cases"
+        ],
+        "summary": "Get Recent Press Releases",
+        "description": "선택한 피해 유형과 관련된 최근 공식 보도자료를 최대 2건 조회한다.",
+        "operationId": "get_recent_press_releases_api_public_cases_recent_press_releases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pattern_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^DP0[1-8]$",
+              "title": "Pattern Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentPressReleaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -3887,6 +3936,69 @@
           "session"
         ],
         "title": "PracticeTurnResponse"
+      },
+      "RecentPressReleaseItem": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "publisher",
+          "published_at",
+          "source_url"
+        ],
+        "title": "RecentPressReleaseItem"
+      },
+      "RecentPressReleaseResponse": {
+        "properties": {
+          "pattern_id": {
+            "type": "string",
+            "title": "Pattern Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecentPressReleaseItem"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Items"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Retrieved At"
+          },
+          "notice": {
+            "type": "string",
+            "title": "Notice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pattern_id",
+          "items",
+          "retrieved_at",
+          "notice"
+        ],
+        "title": "RecentPressReleaseResponse"
       },
       "ReferenceCase": {
         "properties": {

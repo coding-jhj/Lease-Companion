@@ -39,6 +39,7 @@ export interface GuidedReviewCardProps {
   item: ReviewQueueItem;
   draftValue: string | string[] | undefined;
   busy: boolean;
+  compactUnread?: boolean;
   completionLabel?: string;
   onChange: (value: string | string[]) => void;
   onCannotVerify: (reason: CannotVerifyReason) => void;
@@ -71,6 +72,7 @@ export function GuidedReviewCard({
   item,
   draftValue,
   busy,
+  compactUnread = false,
   completionLabel,
   onChange,
   onCannotVerify,
@@ -118,7 +120,7 @@ export function GuidedReviewCard({
 
   return (
     <article className="guided-review-card">
-      <h2>{item.title}</h2>
+      {!compactUnread && <h2>{item.title}</h2>}
       <p>{item.prompt}</p>
       <section aria-label="문서에서 읽은 내용">
         <h3>문서에서 읽은 내용</h3>
@@ -179,19 +181,21 @@ export function GuidedReviewCard({
           {completionLabel && <p className="guided-review-card__state" role="status">{completionLabel}</p>}
           <div className="guided-review-card__buttons">
             <button type="button" className="secondary" disabled={busy} onClick={startEditing}>직접 고칠게요</button>
-            <button
-              type="button"
-              className="ghost-button"
-              disabled={busy}
-              onClick={() => setMode("cannot-verify")}
-            >
-              문서에서 확인하기 어려워요
-            </button>
+            {!compactUnread && (
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={busy}
+                onClick={() => setMode("cannot-verify")}
+              >
+                문서에서 확인하기 어려워요
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {mode === "cannot-verify" && (
+      {!compactUnread && mode === "cannot-verify" && (
         <fieldset disabled={busy}>
           <legend>확인하기 어려운 이유</legend>
           <label>

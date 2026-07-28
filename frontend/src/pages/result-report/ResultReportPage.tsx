@@ -12,7 +12,6 @@ import {
 import { QuestionHub, StageActions } from "../../features/question-cards/DefenseActionHub";
 import { ResultFeedback } from "../../features/result-feedback/ResultFeedback";
 import { DamagePatternTable } from "../../features/damage-patterns/DamagePatternTable";
-import { DetectedSignalSection } from "../../features/damage-patterns/DetectedSignalSection";
 import { ReportPrintSheet } from "../../features/result-report/ReportPrintSheet";
 import { buildActionFirstItems } from "../../features/result-report/actionFirstViewModel";
 import { SpecialClauseReviewSection } from "../../features/special-clauses/SpecialClauseReviewSection";
@@ -109,12 +108,6 @@ export function ResultReportPage() {
     actionableResults.filter((item) => displayPriorityForUrgency(item.urgency) === priority).length,
   ])) as Record<DisplayPriority, number>;
   const firstPriority = priorities.find((priority) => counts[priority] > 0);
-  const patternCounts = {
-    signal: damagePatterns.filter((item) => item.status === "관련 확인 신호 있음").length,
-    clear: damagePatterns.filter((item) => item.status === "제출 자료에서 관련 신호 미확인").length,
-    unknown: damagePatterns.filter((item) => item.status === "자료 부족으로 확인 불가").length,
-  };
-
   function printReport() {
     const previousTitle = document.title;
     document.title = `내_계약_확인_결과_계약_${contractId}`;
@@ -164,6 +157,11 @@ export function ResultReportPage() {
               <button className="report-hero__print" type="button" onClick={printReport}>확인 결과 PDF 저장</button>
             </section>
             {createPortal(<ReportPrintSheet contractId={contractId} patterns={damagePatterns} actionResults={userFacingResults} results={allResults} guidance={allGuidance} specialClauseReviews={specialClauseReviews} specialClauseGuidance={specialClauseGuidance} stageGuidance={stageGuidance} />, document.body)}
+            {damagePatterns.length > 0 && (
+              <section className="damage-reference-section stack" aria-label="금전 피해 유형 비교">
+                <DamagePatternTable items={damagePatterns} />
+              </section>
+            )}
             <div className="report-tabs" role="tablist" aria-label="확인 결과 보기 방식">
               {TABS.map((item, index) => (
                 <button
@@ -199,20 +197,6 @@ export function ResultReportPage() {
             <div className="report-panel" role="tabpanel" id="report-panel-stages" aria-labelledby="report-tab-stages" hidden={tab !== "stages"}>
               <StageActions results={allResults} guidance={allGuidance} stageGuidance={stageGuidance} />
             </div>
-            {damagePatterns.length > 0 && (
-              <section className="damage-reference-section stack" aria-labelledby="damage-reference-title">
-                <div className="section-heading">
-                  <h2 id="damage-reference-title">비슷한 상황에서 확인할 점</h2>
-                </div>
-                <DetectedSignalSection patterns={damagePatterns} guidance={allGuidance} />
-                <details className="damage-table-fold">
-                  <summary>
-                    전체 비교표 보기 — 관련 확인 신호 {patternCounts.signal}건 · 관련 신호 미확인 {patternCounts.clear}건 · 자료 부족 {patternCounts.unknown}건
-                  </summary>
-                  <DamagePatternTable items={damagePatterns} />
-                </details>
-              </section>
-            )}
             <details className="feedback-fold">
               <summary>리포트 의견 보내기</summary>
               <ResultFeedback contractId={contractId} />

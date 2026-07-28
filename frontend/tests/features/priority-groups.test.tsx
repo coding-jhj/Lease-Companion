@@ -33,6 +33,8 @@ describe("PriorityGroups", () => {
 
     const mandatory = screen.getByRole("heading", { name: "반드시 확인" }).closest("section")!;
     expect(within(mandatory).getAllByRole("article")).toHaveLength(1);
+    expect(mandatory.querySelector(".priority-group__items"))
+      .toHaveClass("priority-group__items--three-column");
     for (const label of ["확인 권장", "일반 확인"]) {
       const button = screen.getByRole("button", { name: new RegExp(`^${label}`) });
       expect(button).toHaveAttribute("aria-expanded", "false");
@@ -68,5 +70,26 @@ describe("PriorityGroups", () => {
 
     expect(currentView.getByText("R04")).toBeInTheDocument();
     expect(currentView.getByText("R20")).toBeInTheDocument();
+  });
+
+  it("keeps the priority groups in the requested display order", () => {
+    const { container } = render(<PriorityGroups items={[
+      item("R01", "즉시 확인"),
+      item("R02", "계약 전 확인"),
+      item("R03", "참고"),
+      { ...item("R04", "분석 불가"), status: "확인 불가" },
+    ]} />);
+
+    const mandatory = container.querySelector('[data-priority="반드시 확인"]')!;
+    const recommended = container.querySelector('[data-priority="확인 권장"]')!;
+    const general = container.querySelector('[data-priority="일반 확인"]')!;
+    const unavailable = container.querySelector(".unavailable-results")!;
+
+    expect(mandatory.compareDocumentPosition(recommended) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
+    expect(recommended.compareDocumentPosition(general) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
+    expect(general.compareDocumentPosition(unavailable) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
   });
 });

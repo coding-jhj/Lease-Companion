@@ -19,7 +19,7 @@ describe("PageShell logout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
+    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/contracts");
   });
 
   it("does not show a self-link on the mode selection screen", () => {
@@ -74,22 +74,14 @@ describe("PageShell logout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("3/7단계")).toBeInTheDocument();
-    expect(screen.getByText("문서 준비", { selector: ".journey-progress__title" })).toBeInTheDocument();
-    expect(screen.getByText("다음: 내용 확인")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: /3 \/ 7단계/ })).toHaveAttribute("aria-valuenow", "3");
-    // full 7-step map is disclosed only after expanding
-    expect(screen.queryByRole("navigation", { name: "계약 확인 진행 단계" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
-
     const journey = screen.getByRole("navigation", { name: "계약 확인 진행 단계" });
     for (const label of ["시작 방법", "집 등록", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"]) {
       expect(journey).toHaveTextContent(label);
     }
   });
 
-  it("shows current and next actions before disclosing the full journey", () => {
+  it("shows the full journey horizontally with the current step marked", () => {
     render(
       <MemoryRouter>
         <PageShell
@@ -102,13 +94,6 @@ describe("PageShell logout", () => {
         </PageShell>
       </MemoryRouter>,
     );
-
-    expect(screen.getByText("문서 내용 확인", { selector: ".journey-progress__title" })).toBeInTheDocument();
-    expect(screen.getByText("다음: 확인 결과 준비")).toBeInTheDocument();
-    expect(screen.queryByText("시작 방법")).not.toBeInTheDocument();
-    expect(screen.queryByText("집 등록")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
 
     expect(screen.getByText("시작 방법")).toBeInTheDocument();
     expect(screen.getByText("집 등록")).toBeInTheDocument();
@@ -123,8 +108,6 @@ describe("PageShell logout", () => {
     );
 
     expect(screen.getByRole("link", { name: /이전 단계/ })).toHaveAttribute("href", "/contracts/12/upload");
-
-    fireEvent.click(screen.getByRole("button", { name: "전체 과정 보기" }));
 
     expect(screen.getByRole("link", { name: /집 등록/ })).toHaveAttribute("href", "/contracts");
     expect(screen.getByRole("link", { name: /문서 준비/ })).toHaveAttribute("href", "/contracts/12/upload");

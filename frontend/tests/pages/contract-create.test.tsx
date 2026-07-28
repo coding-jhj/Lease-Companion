@@ -46,28 +46,27 @@ afterEach(() => {
 });
 
 describe("ContractCreatePage", () => {
-  it("explains the contract name and reports an inline error", async () => {
+  it("shows only the contract name field", () => {
+    renderContractCreate();
+
+    expect(screen.getByText("2 / 7", { selector: ".step-badge" })).toBeInTheDocument();
+    expect(screen.getByLabelText(/계약 이름/)).toHaveAttribute("placeholder", "예: 신림동 원룸 전세");
+    expect(screen.queryByLabelText(/계약 유형/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/주소/)).not.toBeInTheDocument();
+  });
+
+  it("requires a contract name before submitting", async () => {
     const createContract = vi.spyOn(mvpService, "createContract");
     renderContractCreate();
 
-    expect(screen.getByText("집 등록", { selector: ".journey-progress__title" })).toBeInTheDocument();
-    expect(screen.getByText(/여러 계약을 구분하기 위한 이름/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다음: 문서 올리기" }));
-
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "나중에 알아볼 수 있도록 계약 이름을 입력해 주세요.",
     );
     expect(createContract).not.toHaveBeenCalled();
   });
 
-  it("shows the second step and example placeholder", () => {
-    renderContractCreate();
-
-    expect(screen.getByText("2 / 7", { selector: ".step-badge" })).toBeInTheDocument();
-    expect(screen.getByLabelText(/계약 이름/)).toHaveAttribute("placeholder", "예: 신림동 원룸 전세");
-  });
-
-  it("trims a valid title and moves to the upload page", async () => {
+  it("trims the contract name and moves to the upload page", async () => {
     const createContract = vi.spyOn(mvpService, "createContract").mockResolvedValue(contract(37));
     renderContractCreate();
 

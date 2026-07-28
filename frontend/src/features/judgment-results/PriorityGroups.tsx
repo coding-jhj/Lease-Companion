@@ -151,7 +151,12 @@ export function PriorityGroups({
               <span className="priority-count" aria-label={`${priority} ${groupItems.length}개`}>{groupItems.length}</span>
               <span className="collapse-arrow" aria-hidden="true">{expanded ? "▾" : "▸"}</span>
             </button>
-            {expanded && <div className="priority-group__items" id={`${headingId}-items`}>
+            {expanded && <div
+              className={`priority-group__items${
+                priority === "반드시 확인" ? " priority-group__items--three-column" : ""
+              }`}
+              id={`${headingId}-items`}
+            >
               {groupItems.length === 0 ? (
                 <p className="group-empty">해당하는 확인 항목이 없습니다.</p>
               ) : groupItems.map((item, index) => (
