@@ -111,6 +111,7 @@ export function EvidenceDisclosure({
   financialImpactLabel = "돈에 미치는 영향",
   idPrefix,
   order = "explanation-first",
+  hideLimitations = false,
 }: {
   sources: OfficialSourceDto[];
   limitations: string;
@@ -119,6 +120,7 @@ export function EvidenceDisclosure({
   financialImpactLabel?: string;
   idPrefix: string;
   order?: "sources-first" | "explanation-first";
+  hideLimitations?: boolean;
 }) {
   const evidenceTitleId = `${idPrefix}-official-evidence-title`;
   const explanationTitleId = `${idPrefix}-plain-explanation-title`;
@@ -164,10 +166,12 @@ export function EvidenceDisclosure({
   return (
     <div className="evidence-disclosure">
       {order === "explanation-first" ? <>{explanationSection}{sourceSection}</> : <>{sourceSection}{explanationSection}</>}
-      <aside className="limitation-card" aria-labelledby={limitationTitleId}>
-        <strong id={limitationTitleId}>확인 한계</strong>
-        <p>{limitations}</p>
-      </aside>
+      {!hideLimitations && (
+        <aside className="limitation-card" aria-labelledby={limitationTitleId}>
+          <strong id={limitationTitleId}>확인 한계</strong>
+          <p>{limitations}</p>
+        </aside>
+      )}
     </div>
   );
 }

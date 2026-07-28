@@ -105,12 +105,15 @@ export function DocumentUploadPage() {
   }
 
   return (
-    <PageShell layout="narrow" step="3 / 7" title="가지고 있는 문서 올리기" description="계약서는 필요하며, 다른 문서는 가지고 있는 것만 추가하면 됩니다.">
+    <PageShell
+      layout="narrow"
+      step="3 / 7"
+      title="문서 업로드"
+      description={(
+        <span>계약서 초안은 필수이며, 등기사항증명서는 있다면 함께 올려주세요.</span>
+      )}
+    >
       <form className="stack" onSubmit={submit}>
-        <div className="helper-banner">
-          <strong>먼저 계약서 초안을 준비해 주세요.</strong>
-          <p>등기사항증명서나 확인설명서가 없어도 진행할 수 있습니다. 없는 자료의 내용은 추측하지 않고 ‘확인하지 못함’으로 알려드립니다.</p>
-        </div>
         <section className="upload-preparation" aria-labelledby="upload-preparation-title">
           <h2 id="upload-preparation-title">어떤 문서인가요?</h2>
           <ul>

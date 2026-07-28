@@ -31,6 +31,7 @@ from app.api.routes import (  # noqa: E402
     extractions,
     feedback,
     practice,
+    public_cases,
 )
 from app.core.db import Base, engine  # noqa: E402
 from app.core.errors import register_error_handlers  # noqa: E402
@@ -66,6 +67,7 @@ app.include_router(analyses.router)
 app.include_router(checklists.router)
 app.include_router(feedback.router)
 app.include_router(practice.router)
+app.include_router(public_cases.router)
 
 
 @app.get("/health")

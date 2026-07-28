@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DamagePatternTable } from "../../src/features/damage-patterns/DamagePatternTable";
 import type { DamagePatternComparisonDto } from "../../src/types/api";
 
@@ -22,12 +22,15 @@ const pattern = (
 });
 
 describe("DamagePatternTable", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("shows the linked rule/judgment plain explanation, not the comparison boilerplate", () => {
     render(<DamagePatternTable items={[pattern()]} />);
 
-    fireEvent.click(screen.getByText("근거와 분석 한계"));
+    fireEvent.click(screen.getByText("근거와 실제 사례"));
 
     const explanation = screen.getByLabelText("쉬운 설명과 돈에 미치는 영향");
     // DP01 → J01 큐레이션 설명이 들어가야 한다.
@@ -47,9 +50,53 @@ describe("DamagePatternTable", () => {
       related_rule_ids: ["R11", "R20"],
     })]} />);
 
-    fireEvent.click(screen.getByText("근거와 분석 한계"));
+    fireEvent.click(screen.getByText("근거와 실제 사례"));
 
     // DP03 → R11 큐레이션 설명.
     expect(screen.getByText(/보증금이 집 시세 대비 어느 정도인지/)).toBeInTheDocument();
+  });
+
+  it("loads up to two recent HUG press releases only after the user clicks", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      pattern_id: "DP01",
+      items: [
+        {
+          title: "HUG, 전세사기 위험 정보 개방한다",
+          publisher: "주택도시보증공사(HUG)",
+          published_at: "2026-07-15",
+          source_url: "https://www.khug.or.kr/khmb/m/hs/nd/hsnd000002.jsp?idx=37967",
+        },
+        {
+          title: "전세사기 피해지원 및 예방 확대 업무협약",
+          publisher: "주택도시보증공사(HUG)",
+          published_at: "2026-06-10",
+          source_url: "https://www.khug.or.kr/khmb/m/hs/nd/hsnd000002.jsp?idx=37757",
+        },
+      ],
+      retrieved_at: "2026-07-28T00:00:00Z",
+      notice: "외부 공개 보도자료이며 현재 계약의 판정 근거가 아닙니다.",
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<DamagePatternTable items={[pattern()]} />);
+    fireEvent.click(screen.getByText("근거와 실제 사례"));
+
+    expect(screen.getByText(/‘소유자 사칭 계약’과 관련된/)).toBeInTheDocument();
+    expect(screen.queryByText("HUG, 전세사기 위험 정보 개방한다")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "최근 공개 사례 찾기" }));
+
+    const firstTitle = await screen.findByText("HUG, 전세사기 위험 정보 개방한다");
+    expect(firstTitle).toBeInTheDocument();
+    expect(screen.getByText("전세사기 피해지원 및 예방 확대 업무협약")).toBeInTheDocument();
+    const links = screen.getAllByRole("link", { name: /보도자료 출처 열기/ });
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute("href", expect.stringContaining("khug.or.kr"));
+    expect(screen.getByText(/현재 계약의 판정 근거가 아닙니다/)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/public-cases/recent-press-releases?pattern_id=DP01",
+      expect.any(Object),
+    );
   });
 });

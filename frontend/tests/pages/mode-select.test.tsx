@@ -62,6 +62,8 @@ describe("situation selection", () => {
   it("routes by the renter's current situation", () => {
     render(<MemoryRouter><SituationSelectPage /></MemoryRouter>);
 
+    expect(screen.getByRole("progressbar", { name: /1 \/ 7단계 · 시작 방법/ })).toHaveAttribute("aria-valuenow", "1");
+    expect(screen.getByText("시작 방법").parentElement).toHaveAttribute("aria-current", "step");
     expect(screen.getByRole("link", { name: /아직 계약서를 받지 않았어요/ })).toHaveAttribute("href", "/prepare");
     expect(screen.getByRole("link", { name: /계약서 초안을 받았어요/ })).toHaveAttribute("href", "/contracts/new");
     expect(screen.queryByRole("link", { name: /이미 계약했어요/ })).not.toBeInTheDocument();
@@ -72,7 +74,7 @@ describe("situation selection", () => {
   it("keeps the header exits for a signed-in visitor", () => {
     render(<MemoryRouter><SituationSelectPage /></MemoryRouter>);
 
-    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/choose-mode");
+    expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/contracts");
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
   });
 

@@ -1,7 +1,7 @@
 import type { ContractStage, ContractSummaryDto, ContractType } from "../../types/api";
 
-// 문서에서 읽을 수 없어 사용자만 답할 수 있는 값. 별도 화면을 두지 않고
-// "직접 알려주실 내용" 구역 안에서 함께 받는다. 저장은 기존 상황 저장 API를 그대로 쓴다.
+// 문서에서 읽을 수 없어 사용자만 답할 수 있는 값. 문서의 못 읽은 항목 확인과 분리해
+// 분석 준비 단계에서 받고, 저장은 기존 상황 저장 API를 그대로 쓴다.
 export interface SituationAnswer {
   contractType: ContractType | null;
   contractStage: ContractStage;
