@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { DamagePatternTable } from "../../src/features/damage-patterns/DamagePatternTable";
 import type { DamagePatternComparisonDto } from "../../src/types/api";
 
@@ -22,19 +22,17 @@ const pattern = (
 });
 
 describe("DamagePatternTable", () => {
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-  });
+  afterEach(cleanup);
 
   it("shows the linked rule/judgment plain explanation, not the comparison boilerplate", () => {
     render(<DamagePatternTable items={[pattern()]} />);
 
     fireEvent.click(screen.getByText("근거와 실제 사례"));
 
-    const explanation = screen.getByLabelText("쉬운 설명과 돈에 미치는 영향");
-    // DP01 → J01 큐레이션 설명이 들어가야 한다.
-    expect(within(explanation).getByText(/등기사항증명서에 적힌 소유자와 같은 사람인지/)).toBeInTheDocument();
+    const explanation = screen.getByLabelText("금전 피해와 확인 방법");
+    // DP01에 맞는 확인 행동이 들어가야 한다.
+    expect(within(explanation).getByText(/소유자 이름을 비교하세요/)).toBeInTheDocument();
+    expect(within(explanation).getByText(/위임장·인감증명서/)).toBeInTheDocument();
     // 메타 문구가 조항 설명 자리를 차지하면 안 된다.
     expect(explanation).not.toHaveTextContent("이 비교는 기존 규칙 판정을 피해 유형 관점으로");
     // 금전 문제 자리에는 한계 캐비앗이 아니라 실제 금전 영향이 와야 한다.
@@ -52,51 +50,15 @@ describe("DamagePatternTable", () => {
 
     fireEvent.click(screen.getByText("근거와 실제 사례"));
 
-    // DP03 → R11 큐레이션 설명.
-    expect(screen.getByText(/보증금이 집 시세 대비 어느 정도인지/)).toBeInTheDocument();
+    // DP03에 맞는 확인 행동.
+    expect(screen.getByText(/주택 시세와 보증금의 비율을 비교하세요/)).toBeInTheDocument();
   });
 
-  it("loads up to two recent HUG press releases only after the user clicks", async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      pattern_id: "DP01",
-      items: [
-        {
-          title: "HUG, 전세사기 위험 정보 개방한다",
-          publisher: "주택도시보증공사(HUG)",
-          published_at: "2026-07-15",
-          source_url: "https://www.khug.or.kr/khmb/m/hs/nd/hsnd000002.jsp?idx=37967",
-        },
-        {
-          title: "전세사기 피해지원 및 예방 확대 업무협약",
-          publisher: "주택도시보증공사(HUG)",
-          published_at: "2026-06-10",
-          source_url: "https://www.khug.or.kr/khmb/m/hs/nd/hsnd000002.jsp?idx=37757",
-        },
-      ],
-      retrieved_at: "2026-07-28T00:00:00Z",
-      notice: "외부 공개 보도자료이며 현재 계약의 판정 근거가 아닙니다.",
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }));
-    vi.stubGlobal("fetch", fetchMock);
+  it("does not show the removed recent case lookup section", () => {
     render(<DamagePatternTable items={[pattern()]} />);
     fireEvent.click(screen.getByText("근거와 실제 사례"));
 
-    expect(screen.getByText(/‘소유자 사칭 계약’과 관련된/)).toBeInTheDocument();
-    expect(screen.queryByText("HUG, 전세사기 위험 정보 개방한다")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "최근 공개 사례 찾기" }));
-
-    const firstTitle = await screen.findByText("HUG, 전세사기 위험 정보 개방한다");
-    expect(firstTitle).toBeInTheDocument();
-    expect(screen.getByText("전세사기 피해지원 및 예방 확대 업무협약")).toBeInTheDocument();
-    const links = screen.getAllByRole("link", { name: /보도자료 출처 열기/ });
-    expect(links).toHaveLength(2);
-    expect(links[0]).toHaveAttribute("href", expect.stringContaining("khug.or.kr"));
-    expect(screen.getByText(/현재 계약의 판정 근거가 아닙니다/)).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/public-cases/recent-press-releases?pattern_id=DP01",
-      expect.any(Object),
-    );
+    expect(screen.queryByRole("heading", { name: "실제 사례" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "최근 공개 사례 찾기" })).not.toBeInTheDocument();
   });
 });

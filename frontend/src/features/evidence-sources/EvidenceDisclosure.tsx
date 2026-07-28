@@ -112,6 +112,8 @@ export function EvidenceDisclosure({
   idPrefix,
   order = "explanation-first",
   hideLimitations = false,
+  sourceLabel = "공식자료",
+  damagePatternGuide,
 }: {
   sources: OfficialSourceDto[];
   limitations: string;
@@ -121,6 +123,11 @@ export function EvidenceDisclosure({
   idPrefix: string;
   order?: "sources-first" | "explanation-first";
   hideLimitations?: boolean;
+  sourceLabel?: string;
+  damagePatternGuide?: {
+    checkText: string;
+    additionalCheck?: string;
+  };
 }) {
   const evidenceTitleId = `${idPrefix}-official-evidence-title`;
   const explanationTitleId = `${idPrefix}-plain-explanation-title`;
@@ -130,8 +137,8 @@ export function EvidenceDisclosure({
     <details className="evidence-disclosure__sources" aria-labelledby={evidenceTitleId}>
         {/* 펼치기 버튼이 하는 일을 문장으로 다시 쓰지 않는다. 제목 + 건수만 남긴다. */}
         <summary className="evidence-disclosure__intro">
-          <strong id={evidenceTitleId}>공식자료</strong>
-          <span className="evidence-count" aria-label={`공식자료 ${sources.length}건`}>{sources.length}건</span>
+          <strong id={evidenceTitleId}>{sourceLabel}</strong>
+          <span className="evidence-count" aria-label={`${sourceLabel} ${sources.length}건`}>{sources.length}건</span>
           <span className="collapse-arrow" aria-hidden="true">▸</span>
         </summary>
         <div className="evidence-disclosure__sources-body">
@@ -148,13 +155,25 @@ export function EvidenceDisclosure({
     </details>
   );
   // 카드 본문과 같은 내용을 "조항을 쉽게 설명하면" 소제목으로 한 번 더 쓰지 않는다.
-  const explanationSection = (
+  const explanationSection = damagePatternGuide ? (
+    <section className="damage-pattern-guide" aria-label="금전 피해와 확인 방법">
+      <section className="damage-pattern-guide__impact">
+        <strong><span aria-hidden="true">△</span> 금전 피해로 이어질 수 있어요</strong>
+        <p>{financialImpact}</p>
+      </section>
+      <section className="damage-pattern-guide__check">
+        <strong>무엇을 확인해야 하나요?</strong>
+        <p>{damagePatternGuide.checkText}</p>
+        {damagePatternGuide.additionalCheck && <p>{damagePatternGuide.additionalCheck}</p>}
+      </section>
+    </section>
+  ) : (
     <section className="plain-evidence-card" aria-label="쉬운 설명과 돈에 미치는 영향">
         <div className="plain-evidence-card__explanation">
+          <strong className="plain-evidence-card__label">확인할 이유</strong>
           <p id={explanationTitleId}>{explanation}</p>
         </div>
         <div className="financial-impact">
-          <span className="financial-impact__icon" aria-hidden="true">!</span>
           <div>
             <strong>{financialImpactLabel}</strong>
             <p>{financialImpact}</p>

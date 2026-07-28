@@ -114,19 +114,11 @@ export function DocumentUploadPage() {
       )}
     >
       <form className="stack" onSubmit={submit}>
-        <section className="upload-preparation" aria-labelledby="upload-preparation-title">
-          <h2 id="upload-preparation-title">어떤 문서인가요?</h2>
-          <ul>
-            <li><strong>계약서</strong><span>금액·기간·특약이 적힌 계약서 초안 또는 작성 중인 계약서</span></li>
-            <li><strong>등기사항증명서</strong><span>서명 전에 중개사에게 받아볼 수 있습니다.</span></li>
-          </ul>
-        </section>
         <div className="privacy-notice">
           <span className="privacy-notice__icon" aria-hidden="true">⚠️</span>
           <p>
             <strong>현재 시연용 서비스입니다.</strong>{" "}
             실제 주민등록번호·연락처·계좌번호가 포함된 문서는 올리지 마세요.
-            비식별 처리된 문서만 사용해 주세요.
           </p>
         </div>
         <div className="upload-section">

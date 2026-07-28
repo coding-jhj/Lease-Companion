@@ -121,11 +121,9 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     name: "확인 결과 준비 완료",
   })).toBeVisible();
   await page.getByRole("button", { name: "확인 결과 보기" }).click();
-  // 확인 항목 탭이 기본이며, 질문·단계별 행동은 탭 전환으로만 보인다.
-  for (const label of ["확인 항목", "확인할 내용", "단계별 행동"]) {
-    await expect(page.getByRole("tab", { name: label })).toBeVisible();
-  }
-  await expect(page.getByRole("tab", { name: "확인 항목" })).toHaveAttribute("aria-selected", "true");
+  // 확인 항목은 금전 피해 유형 비교와 같은 독립 섹션으로 보여준다.
+  await expect(page.getByRole("heading", { name: "확인 항목" })).toBeVisible();
+  await expect(page.getByRole("tab")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "비슷한 상황에서 확인할 점" })).toBeVisible();
   const headingDomPositions = await page.evaluate(
     (ids) => ids.map((id) => {
@@ -167,9 +165,9 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
   }
   if ((page.viewportSize()?.width ?? 0) >= 1024) {
     await expect(page.locator("main.app-shell")).toHaveClass(/app-shell--report/);
-    await expect(page.locator("#report-panel-items")).toBeVisible();
+    await expect(page.locator(".report-items-section")).toBeVisible();
   }
-  const allResults = page.locator("#report-panel-items");
+  const allResults = page.locator(".report-items-section");
   const firstSupport = allResults.locator(".result-support").first();
   const firstInternalId = firstSupport.locator(".result-meta strong");
   await expect(firstInternalId).toBeHidden();
@@ -196,19 +194,10 @@ test("v1.9 signup through saved checklist follows the complete MVP flow", async 
     await expect(refundPattern.getByRole("heading", { name: "검증된 유사 참고 사례" })).toBeVisible();
     await expect(refundPattern.getByRole("link", { name: "계약기간 종료 후 보증금 미반환 유형" })).toBeVisible();
   }
-  await page.getByRole("tab", { name: "확인할 내용" }).click();
-  // 질문이 없는 대상 묶음은 숨긴다(hideWhenEmpty). 이 합성 계약서에서는 중개사 질문이 없다.
-  for (const title of ["상대방에게 직접 확인할 내용", "임대인에게 확인해야 할 사항", "문서에서 다시 확인할 내용"]) {
-    await expect(page.getByRole("heading", { name: title })).toBeVisible();
-  }
-  await page.getByRole("tab", { name: "단계별 행동" }).click();
-  for (const title of ["계약 전", "계약 중", "잔금·입주 당일", "계약 후", "보관할 자료"]) {
-    await expect(page.getByRole("heading", { name: title })).toBeVisible();
-  }
   await expect(page.getByRole("button", { name: "확인 결과 PDF 저장" })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("tab", { name: "확인 항목" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "확인 항목" })).toBeVisible();
   await expandAllResultGroups(page);
   await expect(allResults).toContainText("J01");
   await expect(allResults).toContainText("J12");

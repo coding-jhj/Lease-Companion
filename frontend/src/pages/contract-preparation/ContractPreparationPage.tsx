@@ -41,16 +41,35 @@ const preparationSections = [
   },
 ] as const;
 
-// 접힌 카드에도 안에 무엇이 몇 개 있는지 남긴다. 자료 요청 묶음은 주의할 점까지 함께 센다.
+// 주의 문구는 체크 대상이 아니므로 실제 사용자가 확인할 항목만 센다.
 function itemCountOf(section: (typeof preparationSections)[number]): number {
   return "items" in section
     ? section.items.length
-    : section.requestItems.length + section.warnings.length;
+    : section.requestItems.length;
 }
 
 export function ContractPreparationPage() {
   const [copyMessage, setCopyMessage] = useState<"success" | "error" | null>(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const [checkedItems, setCheckedItems] = useState<string[]>([]);
   const requestSection = preparationSections[1];
+  const activeSection = preparationSections[activeStep];
+  const totalCount = preparationSections.reduce((total, section) => total + itemCountOf(section), 0);
+  const checkedCount = checkedItems.length;
+
+  function toggleItem(item: string) {
+    setCheckedItems((current) => current.includes(item)
+      ? current.filter((value) => value !== item)
+      : [...current, item]);
+  }
+
+  function advanceStep() {
+    if (activeStep < preparationSections.length - 1) {
+      setActiveStep((current) => current + 1);
+      return;
+    }
+    document.getElementById("preparation-next-actions")?.scrollIntoView({ behavior: "smooth" });
+  }
 
   async function copyRequest() {
     if (!("script" in requestSection) || !navigator.clipboard) {
@@ -81,46 +100,93 @@ export function ContractPreparationPage() {
         <strong>급하게 결정하지 않아도 괜찮아요</strong>
         <p>확인하지 못한 내용은 계약서 작성·송금 전에 중개사·임대인에게 먼저 물어보세요.</p>
       </section>
-      {/* 안내 항목 12개를 한 번에 펼치면 화면이 스크롤 두 번 분량이 된다. 제목만 먼저 보이게
-          접고 첫 묶음만 펼쳐 둔다. 안내 내용은 하나도 줄이지 않는다. */}
-      <section className="preparation-grid" aria-label="계약 준비 안내">
-        {preparationSections.map((section, index) => (
-          <details className="preparation-card" key={section.title} open={index === 0}>
-            <summary>
-              <h2>{section.title}</h2>
-              <span className="preparation-card__count">{itemCountOf(section)}개</span>
-              <span className="collapse-arrow" aria-hidden="true">▸</span>
-            </summary>
-            {/* details는 summary를 뺀 나머지를 보이지 않는 상자 하나로 묶는다. 그 상자 안쪽에는
-                바깥 gap이 닿지 않아 내용이 서로 붙는다. 감싸는 상자를 직접 두고 간격을 준다. */}
-            <div className="preparation-card__body">
-              <p>{section.description}</p>
-              {"items" in section ? (
-                <ul>
-                  {section.items.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              ) : (
-                <>
-                  <ul>
-                    {section.requestItems.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                  <aside className="preparation-warning" aria-labelledby="preparation-warning-title">
-                    <h3 id="preparation-warning-title">{section.warningTitle}</h3>
-                    <ul>
-                      {section.warnings.map((warning) => <li key={warning}>{warning}</li>)}
-                    </ul>
-                  </aside>
-                  <p className="preparation-script">{section.script}</p>
-                  <button type="button" onClick={copyRequest}>문구 복사</button>
-                  {copyMessage === "success" && <p role="status">요청 문장을 복사했습니다.</p>}
-                  {copyMessage === "error" && <p role="alert">문장을 복사하지 못했습니다. 직접 선택해 복사해 주세요.</p>}
-                </>
-              )}
-            </div>
-          </details>
-        ))}
+      <section className="preparation-workflow" aria-label="계약 준비 안내">
+        <div className="preparation-workflow__progress" aria-label={`전체 ${checkedCount} / ${totalCount}`}>
+          <span>전체 <strong>{checkedCount} / {totalCount}</strong></span>
+          <div aria-hidden="true"><span style={{ width: `${totalCount ? (checkedCount / totalCount) * 100 : 0}%` }} /></div>
+        </div>
+        <div className="preparation-workflow__layout">
+          <aside className="preparation-workflow__steps" aria-label="준비 단계">
+            <h2>준비 단계</h2>
+            {preparationSections.map((section, index) => {
+              const sectionItems = "items" in section ? section.items : section.requestItems;
+              const sectionChecked = sectionItems.filter((item) => checkedItems.includes(item)).length;
+              return (
+                <button
+                  type="button"
+                  className={`preparation-workflow__step${activeStep === index ? " preparation-workflow__step--active" : ""}`}
+                  aria-pressed={activeStep === index}
+                  aria-controls={`preparation-step-${index + 1}`}
+                  onClick={() => setActiveStep(index)}
+                  key={section.title}
+                >
+                  <span className="preparation-workflow__number" aria-hidden="true">{index + 1}</span>
+                  <span>
+                    <strong>{section.title}</strong>
+                    <small>{sectionChecked} / {sectionItems.length} 완료</small>
+                  </span>
+                </button>
+              );
+            })}
+          </aside>
+          <div className="preparation-workflow__content">
+            <header>
+              <h2>{activeSection.title}</h2>
+              <p>{activeSection.description}</p>
+            </header>
+            {preparationSections.map((section, index) => {
+              const sectionItems = "items" in section ? section.items : section.requestItems;
+              return (
+                <section
+                  className="preparation-workflow__panel"
+                  id={`preparation-step-${index + 1}`}
+                  aria-label={section.title}
+                  hidden={activeStep !== index}
+                  key={section.title}
+                >
+                  <div className="preparation-workflow__checklist">
+                    {sectionItems.map((item) => (
+                      <label key={item}>
+                        <input
+                          type="checkbox"
+                          checked={checkedItems.includes(item)}
+                          onChange={() => toggleItem(item)}
+                        />
+                        <span>{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {"requestItems" in section && (
+                    <>
+                      <aside className="preparation-warning" aria-labelledby="preparation-warning-title">
+                        <h3 id="preparation-warning-title">{section.warningTitle}</h3>
+                        <ul>
+                          {section.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                        </ul>
+                      </aside>
+                      <div className="preparation-script-row">
+                        <p className="preparation-script">{section.script}</p>
+                        <button type="button" onClick={copyRequest}>요청 문구 복사</button>
+                      </div>
+                      {copyMessage === "success" && <p role="status">요청 문장을 복사했습니다.</p>}
+                      {copyMessage === "error" && <p role="alert">문장을 복사하지 못했습니다. 직접 선택해 복사해 주세요.</p>}
+                    </>
+                  )}
+                </section>
+              );
+            })}
+            <footer>
+              <span>체크한 내용은 이 화면에서 유지됩니다.</span>
+              <button type="button" onClick={advanceStep}>
+                {activeStep < preparationSections.length - 1
+                  ? `다음 단계: ${preparationSections[activeStep + 1].title}`
+                  : "준비 확인 마치기"}
+              </button>
+            </footer>
+          </div>
+        </div>
       </section>
-      <section className="preparation-actions" aria-label="다음 단계">
+      <section className="preparation-actions" id="preparation-next-actions" aria-label="다음 단계">
         <div className="preparation-actions__heading">
           <h2>다음에 무엇을 해볼까요?</h2>
         </div>

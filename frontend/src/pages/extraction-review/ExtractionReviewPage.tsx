@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EmptyState, ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
@@ -66,58 +66,15 @@ const UNREAD_SECTION = {
   description: "원본 계약서를 보면서 빈 내용을 채워 주세요.",
 };
 
-function displayViewValue(view: FieldViewModel, drafts: Record<string, DraftValue>): string {
-  const draft = drafts[view.key];
-  if (Array.isArray(draft)) return draft.join(" · ");
-  if (typeof draft === "string") return draft;
-  return view.formattedValue || "문서에서 읽은 내용이 없습니다.";
-}
-
-function displayValue(item: ReviewQueueItem, drafts: Record<string, DraftValue>): string {
-  return displayViewValue(item.view, drafts);
-}
-
-function sourceUnresolvedReason(item: ReviewQueueItem): CannotVerifyReason {
-  if (requiresExternalConfirmation(item.view)) return "external_confirmation";
-  switch (item.view.field.issue_code) {
-    case "not_stated":
-      return "not_stated";
-    case "unreadable":
-      return "unreadable";
-    case "parse_failed":
-      return "parse_failed";
-    default:
-      return "unknown_location";
-  }
-}
-
-// 특약처럼 원문이 긴 항목은 카드 한 칸에 담으면 그 줄만 길어져 읽기 어렵다.
-// 이런 항목은 나누지 않고 한 줄을 통째로 쓴다.
-const WIDE_ITEM_TEXT_LENGTH = 100;
-
-// 조항 원문 항목은 값 길이와 상관없이 항상 한 줄을 쓴다. 정규화 값이 짧게 들어와도
-// 카드를 열면 조항이 여러 개로 펼쳐지기 때문에 값으로만 판단하면 놓친다.
-const WIDE_FIELD_NAMES = new Set([
-  "special_clauses",
-  "main_clauses",
-  "deposit_return_clause",
-  "repair_responsibility_clause",
-]);
-
-function isWideItem(item: ReviewQueueItem, drafts: Record<string, DraftValue>): boolean {
-  if (item.view.editor === "clause-list") return true;
-  if (WIDE_FIELD_NAMES.has(item.fieldName)) return true;
-  const draft = drafts[item.key];
-  if (Array.isArray(draft)) return draft.length > 1;
-  return displayValue(item, drafts).length >= WIDE_ITEM_TEXT_LENGTH;
-}
-
-// 긴 항목을 뺀 나머지 개수로 열 수를 정한다. 3의 배수면 3열(6개는 2줄로 고르게 나뉜다),
-// 그 외 짝수면 2열, 홀수면 3열.
-function reviewColumnCount(regularItemCount: number): number {
-  if (regularItemCount <= 1) return 1;
-  if (regularItemCount % 3 === 0) return 3;
-  return regularItemCount % 2 === 0 ? 2 : 3;
+function externalSourceLabel(fieldName: string): string {
+  const labels: Record<string, string> = {
+    violation_building: "건축물대장",
+    estimated_housing_value: "시세 자료",
+    guarantee_eligibility_confirmed: "HUG 기준",
+    lessor_sublease_authority_confirmed: "권한 자료",
+    senior_claim_amount: "임대인 확인",
+  };
+  return labels[fieldName] ?? "확인 자료";
 }
 
 export function ExtractionReviewPage() {
@@ -144,6 +101,8 @@ export function ExtractionReviewPage() {
   const [extractionConfirmed, setExtractionConfirmed] = useState(false);
   const [confirmedInputSnapshotId, setConfirmedInputSnapshotId] = useState<string | null>(null);
   const [analysisStartUncertain, setAnalysisStartUncertain] = useState(false);
+  const [expandedReviewKey, setExpandedReviewKey] = useState<string | null | undefined>(undefined);
+  const [expandedReviewGroups, setExpandedReviewGroups] = useState<string[]>([]);
   const activePoll = useRef<AbortController | null>(null);
 
   const fields = fieldViewModels(documents);
@@ -151,7 +110,6 @@ export function ExtractionReviewPage() {
     (item) => item.section === UNREAD_SECTION.key,
   );
   const reviewedKeySet = new Set(reviewedKeys);
-  const completedCount = queue.filter((item) => reviewedKeys.includes(item.key)).length;
   const reviewedItems = queue.filter((item) => reviewedKeys.includes(item.key));
   const unresolvedItems = queue.filter((item) => unresolvedReasonByKey[item.key] !== undefined);
   const sectionHandledCount = queue.filter(
@@ -160,17 +118,16 @@ export function ExtractionReviewPage() {
   const allHandled = queue.every(
     (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
   );
-  const situationReady = situationAnswered(situation);
-  // 원문이 긴 항목은 한 줄을 통째로 쓰고, 남은 항목 수로 열 수를 정한다.
-  const wideItemKeys = new Set(
-    queue.filter((item) => isWideItem(item, drafts)).map((item) => item.key),
+  const completedCount = sectionHandledCount;
+  const pendingItems = queue.filter(
+    (item) => !reviewedKeySet.has(item.key) && unresolvedReasonByKey[item.key] === undefined,
   );
-  const sectionColumnCount = reviewColumnCount(queue.length - wideItemKeys.size);
-  // 한 줄짜리 항목이 중간에 끼면 그 앞뒤 줄에 빈칸이 생긴다. 순서를 유지한 채 뒤로 모은다.
-  const orderedSectionItems = [
-    ...queue.filter((item) => !wideItemKeys.has(item.key)),
-    ...queue.filter((item) => wideItemKeys.has(item.key)),
-  ];
+  const unreadItems = pendingItems.filter((item) => !requiresExternalConfirmation(item.view));
+  const externalItems = pendingItems.filter((item) => requiresExternalConfirmation(item.view));
+  const handledItems = queue.filter(
+    (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
+  );
+  const situationReady = situationAnswered(situation);
   const currentSectionReady = allHandled;
   const pendingCorrectionKeys = Object.keys(drafts).filter(
     (key) => !savedDraftKeys.includes(key),
@@ -178,6 +135,8 @@ export function ExtractionReviewPage() {
   const schemaVersion: SchemaVersion = documents.find(
     (document) => document.document_type === "contract",
   )?.schema_version ?? documents[0]?.schema_version ?? "1.8.0";
+  const initiallyExpandedKey = unreadItems[0]?.key ?? externalItems[0]?.key;
+  const activeExpandedKey = expandedReviewKey === undefined ? initiallyExpandedKey : expandedReviewKey;
 
   async function loadExtraction() {
     activePoll.current?.abort();
@@ -218,6 +177,8 @@ export function ExtractionReviewPage() {
       setDrafts({});
       setSavedDraftKeys([]);
       setReviewFinished(false);
+      setExpandedReviewKey(undefined);
+      setExpandedReviewGroups([]);
       setUnresolvedReasonByKey({});
       setExtractionConfirmed(false);
       setConfirmedInputSnapshotId(null);
@@ -322,20 +283,16 @@ export function ExtractionReviewPage() {
     setUnresolvedReasonByKey((current) => ({ ...current, [item.key]: reason }));
   }
 
-  function markAllUnreadReviewed() {
-    const pendingItems = queue.filter(
-      (item) => !reviewedKeySet.has(item.key) && unresolvedReasonByKey[item.key] === undefined,
-    );
-    if (pendingItems.length === 0) return;
-
+  function confirmCurrent(item: ReviewQueueItem) {
     setExtractionConfirmed(false);
     setAnalysisStartUncertain(false);
+    setReviewedKeys((current) => [...new Set([...current, item.key])]);
+    setVerificationByKey((current) => ({ ...current, [item.key]: "confirmed" }));
     setUnresolvedReasonByKey((current) => {
       const next = { ...current };
-      for (const item of pendingItems) next[item.key] = sourceUnresolvedReason(item);
+      delete next[item.key];
       return next;
     });
-    setReviewFinished(true);
   }
 
   function advanceSection() {
@@ -481,8 +438,9 @@ export function ExtractionReviewPage() {
     <PageShell
       layout="workspace"
       step="4 / 7"
-      title="못 읽은 내용 확인"
-      description="문서에서 읽지 못한 항목을 원본 계약서와 비교해 입력해 주세요."
+      title="확인할 항목"
+      description="문서에서 확인하지 못한 내용을 입력하거나 다른 자료에서 확인해 주세요."
+      eyebrow=""
     >
       <div className="stack extraction-review-workspace">
         {status === "loading" && (
@@ -513,15 +471,12 @@ export function ExtractionReviewPage() {
         )}
         {status === "success" && fields.length > 0 && (
           <>
-            <div className="guided-review-progress">
-              <div className="guided-review-progress__head">
-                <span className="guided-review-progress__label">확인한 못 읽은 내용</span>
-                <span className="guided-review-progress__count" role="status">
-                  {completedCount}<em>{` / ${queue.length}`}</em>
-                </span>
-              </div>
+            <div className="review-overall-progress">
+              <span className="review-overall-progress__count" role="status">
+                완료 {completedCount}<em>{` / ${queue.length}`}</em>
+              </span>
               <div
-                className="guided-review-progress__bar"
+                className="review-overall-progress__bar"
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={queue.length}
@@ -534,92 +489,135 @@ export function ExtractionReviewPage() {
 
             {!reviewFinished && (
               <section className="guided-review-step" aria-label="현재 확인할 내용">
-                <header className="review-current-section">
-                  <div>
-                    <h2>{UNREAD_SECTION.title}</h2>
-                    <p>{UNREAD_SECTION.description}</p>
-                  </div>
-                  <span className="review-current-section__count">
-                    {`${queue.length}개`}
-                  </span>
-                </header>
-                <section className="grouped-review-panel" aria-labelledby="grouped-review-title">
-                  <header className="grouped-review-panel__head">
-                    <div>
-                      <h3 id="grouped-review-title">못 읽은 내용 모아보기</h3>
-                      <p>
-                        전체 {queue.length}개 · 확인 {sectionHandledCount}개 · 남은 항목{" "}
-                        {queue.length - sectionHandledCount}개
-                      </p>
-                    </div>
-                    {sectionHandledCount < queue.length && (
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={markAllUnreadReviewed}
-                      >
-                        모두 확인하기
-                      </button>
-                    )}
-                  </header>
+                <section className="review-accordion" aria-label="확인할 항목 목록">
                   {queue.length === 0 ? (
                     <div className="grouped-review-panel__empty">
                       문서에서 못 읽은 내용이 없습니다.
                     </div>
                   ) : (
-                    <ul
-                      className="grouped-review-list"
-                      style={{ "--review-columns": sectionColumnCount } as CSSProperties}
-                    >
-                      {orderedSectionItems.map((item) => {
-                        const meta = fieldStatusMeta(item.view);
-                        const reviewed = reviewedKeySet.has(item.key);
-                        const unresolved = unresolvedReasonByKey[item.key] !== undefined;
-                        const wide = wideItemKeys.has(item.key);
+                    <div className="compact-review-groups">
+                      {([
+                        { title: "직접 입력", items: unreadItems, action: "입력하기" },
+                        { title: "다른 자료 확인", items: externalItems, action: "확인 방법" },
+                      ] as const).map((group) => {
+                        if (group.items.length === 0) return null;
+                        const groupExpanded = expandedReviewGroups.includes(group.title);
+                        const visibleItems = groupExpanded ? group.items : group.items.slice(0, 3);
+                        const hiddenCount = group.items.length - visibleItems.length;
                         return (
-                          <li
-                            className={`grouped-review-list__item${wide ? " grouped-review-list__item--wide" : ""}`}
-                            key={item.key}
-                          >
-                            <div
-                              className="grouped-review-list__summary"
+                        <section className="compact-review-group" aria-labelledby={`compact-${group.action}-title`} key={group.title}>
+                          <div className="compact-review-group__head">
+                            <h3 id={`compact-${group.action}-title`}>{group.title}</h3>
+                            <span>{group.items.length}개</span>
+                          </div>
+                          <ul className="compact-review-list">
+                            {visibleItems.map((item) => {
+                              const expanded = activeExpandedKey === item.key;
+                              return (
+                                <li className={`compact-review-item${expanded ? " compact-review-item--expanded" : ""}`} key={item.key}>
+                                  <button
+                                    type="button"
+                                    className="compact-review-item__row"
+                                    aria-expanded={expanded}
+                                    aria-controls={`review-detail-${item.key}`}
+                                    onClick={() => setExpandedReviewKey(expanded ? null : item.key)}
+                                  >
+                                    <strong>{item.title}</strong>
+                                    <span className={`compact-review-item__badge${group.title === "직접 입력" ? " compact-review-item__badge--manual" : ""}`}>
+                                      {group.title === "직접 입력" ? "입력 필요" : externalSourceLabel(item.fieldName)}
+                                    </span>
+                                    <span className="compact-review-item__action">
+                                      <em>{group.action}</em>
+                                      <span
+                                        className={`compact-review-item__chevron${expanded ? " compact-review-item__chevron--open" : ""}`}
+                                        aria-hidden="true"
+                                      />
+                                    </span>
+                                  </button>
+                                  {expanded && (
+                                    <div className="compact-review-item__detail" id={`review-detail-${item.key}`}>
+                                      <GuidedReviewCard
+                                        item={item}
+                                        draftValue={drafts[item.key]}
+                                        busy={submitting}
+                                        compactUnread
+                                        inlineCompact
+                                        onChange={(value) => {
+                                          changeCurrent(item, value);
+                                          setExpandedReviewKey(null);
+                                        }}
+                                        onConfirm={() => {
+                                          confirmCurrent(item);
+                                          setExpandedReviewKey(null);
+                                        }}
+                                        onCannotVerify={(reason) => {
+                                          markCannotVerify(item, reason);
+                                          setExpandedReviewKey(null);
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {group.items.length > 3 && (
+                            <button
+                              className="compact-review-group__more"
+                              type="button"
+                              onClick={() => setExpandedReviewGroups((current) => groupExpanded
+                                ? current.filter((title) => title !== group.title)
+                                : [...current, group.title])}
                             >
-                              <span className="grouped-review-list__title">
-                                <strong>{item.title}</strong>
-                              </span>
-                              <span className="grouped-review-list__status">
-                                <span className={`review-status-chip review-status-chip--${meta.tone}`}>
-                                  {meta.label}
-                                </span>
-                              </span>
-                            </div>
-                            <div className="grouped-review-list__body">
-                              <GuidedReviewCard
-                                item={item}
-                                draftValue={drafts[item.key]}
-                                busy={submitting}
-                                compactUnread
-                                completionLabel={reviewed ? "확인 완료" : unresolved ? "확인하지 못함" : undefined}
-                                onChange={(value) => changeCurrent(item, value)}
-                                onCannotVerify={(reason) => markCannotVerify(item, reason)}
-                              />
-                            </div>
-                          </li>
+                              {groupExpanded ? "접기" : `나머지 ${hiddenCount}개 보기`} <span aria-hidden="true">⌄</span>
+                            </button>
+                          )}
+                        </section>
                         );
                       })}
-                    </ul>
+
+                      {handledItems.length > 0 && (
+                        <details className="compact-review-completed">
+                          <summary>
+                            <span>직접 확인했습니다</span>
+                            <strong>{handledItems.length}개</strong>
+                          </summary>
+                          <ul>
+                            {handledItems.map((item) => {
+                              const meta = fieldStatusMeta(item.view);
+                              return (
+                                <li key={item.key}>
+                                  <span>{item.title}</span>
+                                  <strong>{meta.label}</strong>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </details>
+                      )}
+
+                      {pendingItems.length > 0 && (
+                        <button
+                          className="compact-review-start"
+                          type="button"
+                          onClick={() => setExpandedReviewKey(pendingItems[0].key)}
+                        >
+                          확인 시작하기
+                        </button>
+                      )}
+                    </div>
                   )}
                 </section>
-                <button
-                  className="guided-review-step__finish"
-                  type="button"
-                  disabled={submitting || !currentSectionReady}
-                  onClick={advanceSection}
-                >
-                  {currentSectionReady
-                    ? "확인 완료"
-                    : `남은 ${queue.length - sectionHandledCount}개를 입력해 주세요`}
-                </button>
+                {currentSectionReady && (
+                  <button
+                    className="guided-review-step__finish"
+                    type="button"
+                    disabled={submitting}
+                    onClick={advanceSection}
+                  >
+                    확인 완료
+                  </button>
+                )}
               </section>
             )}
 

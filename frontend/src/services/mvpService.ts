@@ -12,7 +12,6 @@ import type {
   ExtractionStateDto,
   FeedbackCreateRequestDto,
   FeedbackDto,
-  RecentPressReleaseResponseDto,
   SituationRequestDto,
   SnapshotResponseDto,
   UploadDocumentType,
@@ -95,10 +94,6 @@ export const mvpService = {
     ),
   getAnalysisRuns: (contractId: number) =>
     apiClient<AnalysisRunSummaryDto[]>(`/api/contracts/${contractId}/analysis-runs`),
-  getRecentPressReleases: (patternId: string) =>
-    apiClient<RecentPressReleaseResponseDto>(
-      `/api/public-cases/recent-press-releases?pattern_id=${encodeURIComponent(patternId)}`,
-    ),
   getAnalysisDetail: async (contractId: number, analysisRunId?: string): Promise<AnalysisRunDetailDto> => {
     const summaries = analysisRunId ? [] : await apiClient<AnalysisRunSummaryDto[]>(
       `/api/contracts/${contractId}/analysis-runs`,
