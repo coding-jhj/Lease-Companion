@@ -172,14 +172,9 @@ describe("ExtractionReviewPage", () => {
 
     expect(screen.getByRole("heading", { name: "분석 준비를 마쳐 주세요" }))
       .toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "계약 유형만 선택해 주세요" }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "계약 상황을 입력해 주세요" }))
-      .toBeDisabled();
-    fireEvent.click(screen.getByRole("radio", { name: "전세" }));
-    expect(screen.queryByRole("group", { name: "계약 유형만 선택해 주세요" }))
+    expect(screen.queryByRole("group", { name: "계약 유형" }))
       .not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }))
+    expect(screen.getByRole("button", { name: "확인 결과 준비하기" }))
       .toBeEnabled();
   });
 
@@ -222,6 +217,11 @@ describe("ExtractionReviewPage", () => {
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
       deposit: extractedField("deposit", 100000000),
     }));
+    vi.spyOn(mvpService, "confirmExtraction").mockResolvedValue({
+      input_snapshot_id: "SNAP-1001",
+      created_at: "2026-07-16T00:00:00Z",
+    });
+    vi.spyOn(mvpService, "startAnalysis").mockResolvedValue(analysisRun());
 
     renderPage();
 
@@ -229,11 +229,18 @@ describe("ExtractionReviewPage", () => {
       .toBeInTheDocument();
     expect(screen.getByRole("button", { name: "확인 완료" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
-    expect(screen.getByRole("group", { name: "계약 유형만 선택해 주세요" }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "계약 유형" }))
+      .not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "확인 결과 준비하기" }));
+
+    await waitFor(() => expect(screen.getByText(/분석 화면/)).toBeInTheDocument());
+    expect(mvpService.saveSituation).toHaveBeenCalledWith(1001, expect.objectContaining({
+      contract_type: "전세",
+    }));
   });
 
   it("saves the correction and contract situation before starting analysis", async () => {
+    mockContract({ contract_type: "전세" });
     vi.spyOn(mvpService, "getLatestExtraction").mockResolvedValue(extractionWith({
       monthly_rent: extractedField("monthly_rent", null),
     }));
@@ -252,8 +259,7 @@ describe("ExtractionReviewPage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
     fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
-    fireEvent.click(screen.getByRole("radio", { name: "전세" }));
-    fireEvent.click(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 결과 준비하기" }));
 
     await waitFor(() => expect(screen.getByText(/분석 화면/)).toBeInTheDocument());
     expect(mvpService.saveSituation).toHaveBeenCalledWith(1001, expect.objectContaining({
@@ -320,10 +326,10 @@ describe("ExtractionReviewPage", () => {
     await screen.findByText("문서에서 못 읽은 내용이 없습니다.");
     fireEvent.click(screen.getByRole("button", { name: "확인 완료" }));
 
-    expect(screen.queryByRole("group", { name: "계약 유형만 선택해 주세요" }))
+    expect(screen.queryByRole("group", { name: "계약 유형" }))
       .not.toBeInTheDocument();
     expect(screen.queryByText("계약 상황 알려주기")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "이 내용으로 확인 결과 준비하기" }))
+    expect(screen.getByRole("button", { name: "확인 결과 준비하기" }))
       .toBeEnabled();
   });
 });
