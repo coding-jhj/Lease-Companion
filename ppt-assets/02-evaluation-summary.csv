@@ -1,0 +1,15 @@
+﻿metric,score,sample,evaluation_type,tier,caveat
+필드 추출 정확도 (Gemini),0.9666666666666667,240 fields · 10 cases,provider,provider,운영 추출 경로 실측. 로컬 폴백 0건. PII 토크나이저 버그 2건 수정 후 값
+R01–R10 규칙 상태 정확도 (Gemini 추출 입력),0.97,100 items / 10 cases,provider,provider,규칙 엔진은 결정론. 남은 감점 3건은 추출 오류가 전파된 것
+R01–R10 시급도 정확도 (Gemini 추출 입력),1.0,27 items,provider,provider,PII 버그로 62.96%까지 떨어졌던 값이 수정 후 회복
+특약 RAG Source Precision (운영 검색),0.9166666666666666,6 cases,provider,provider,gemini-embedding-001 + BM25 hybrid → Cohere rerank
+특약 RAG Source+Section Precision (운영 검색),0.7777777777777777,6 cases,provider,provider,BM25 단독(66.67%) 대비 개선된 값
+필드 추출 정확도 (정규식 폴백),1.0,240 fields,offline,regression,합성 템플릿 문서를 정규식으로 되읽은 값. 14필드는 정답이 null
+R01–R10 규칙 상태 정확도 (정규식 입력),1.0,100 items / 10 cases,offline,regression,추출이 완벽하다는 가정 위의 값. R11–R24는 goldset 없음
+J01–J13 판정 상태 정확도,1.0,51 items / 13 judgments,offline,regression,사용자 확인 완료 입력 기준이라 추출 오류가 전파되지 않음. 판정당 3~5건
+End-to-End 무오류 실행,1.0,10 cases,offline,structural,정확도 아님. 케이스 실패 시 평가가 중단되므로 100% 미만이 나올 수 없음
+일반 RAG 정답 출처 Recall,1.0,27 queries · 6 sources,offline_ragas,structural,허용 출처 화이트리스트(=정답 출처) 안에서만 검색되므로 precision은 항상 1.0
+특약 RAG Source Precision,0.9166666666666666,6 cases,offline_ragas,regression,BM25 단독 기준선. 운영 검색 값은 위 그룹 참조
+특약 RAG Source+Section Precision,0.6666666666666666,6 cases,offline_ragas,regression,BM25 단독 기준선. 운영 검색은 77.78%
+Faithfulness,0.722222,3 cases,online_ragas,quality,손으로 쓴 고정 QA 3건에 대한 judge 점수. 파이프라인 생성 결과 아님
+Answer Relevancy,0.824734,3 cases,online_ragas,quality,손으로 쓴 고정 QA 3건에 대한 judge 점수. 파이프라인 생성 결과 아님

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<text x="85" y="85" font-family="Malgun Gothic,sans-serif" font-size="42" font-weight="700" fill="#0F172A">모드별 전체 1사이클 실측</text>
+<text x="85" y="128" font-family="Malgun Gothic,sans-serif" font-size="21" fill="#475569">Gemini 3.5 Flash Standard · Cohere Evaluation · 1 USD = 1,470 KRW 단순 환산</text>
+<text x="90" y="210" font-family="Malgun Gothic,sans-serif" font-size="31" font-weight="700" fill="#0F172A">실제 계약 점검</text>
+<rect x="90" y="245" width="900" height="55" rx="10" fill="#E2E8F0"/>
+<rect x="90" y="245" width="900" height="55" rx="10" fill="#2563EB"/>
+<text x="1030" y="288" font-family="Malgun Gothic,sans-serif" font-size="32" font-weight="700" fill="#0F172A">$0.103267</text>
+<text x="90" y="340" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#334155">약 151.80원 · 79콜 · 입력 33,847 / 출력 5,833 tokens</text>
+<text x="90" y="378" font-family="Malgun Gothic,sans-serif" font-size="18" fill="#64748B">벽시계 304.1초 · provider 1콜 평균 $0.001307</text>
+<text x="90" y="455" font-family="Malgun Gothic,sans-serif" font-size="31" font-weight="700" fill="#0F172A">시뮬레이션(3턴)</text>
+<rect x="90" y="490" width="900" height="55" rx="10" fill="#E2E8F0"/>
+<rect x="90" y="490" width="129" height="55" rx="10" fill="#0D9488"/>
+<text x="1030" y="533" font-family="Malgun Gothic,sans-serif" font-size="32" font-weight="700" fill="#0F172A">$0.014766</text>
+<text x="90" y="585" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#334155">약 21.71원 · 6콜 · 입력 6,142 / 출력 617 tokens</text>
+<text x="90" y="623" font-family="Malgun Gothic,sans-serif" font-size="18" fill="#64748B">벽시계 110.0초 · provider 1콜 평균 $0.002461</text>
+<line x1="85" y1="745" x2="1515" y2="745" stroke="#CBD5E1" stroke-width="2"/>
+<text x="85" y="790" font-family="Malgun Gothic,sans-serif" font-size="19" font-weight="700" fill="#B45309">주의: 실제 계약 사이클의 조항 분류도 provider 경로로 완료.</text>
+<text x="85" y="828" font-family="Malgun Gothic,sans-serif" font-size="18" fill="#64748B">각 모드 1회 표본이므로 평균 추정의 기준선. embedding 응답은 token usage를 제공하지 않아 해당 비용이 0으로 기록됨.</text>
+<text x="85" y="862" font-family="Malgun Gothic,sans-serif" font-size="18" fill="#64748B">세금·환율·재시도·모델 가격 변경에 따라 실제 청구액은 달라질 수 있음.</text>
+</svg>

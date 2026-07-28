@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<text x="40" y="52" font-family="Malgun Gothic,sans-serif" font-size="26" font-weight="700" fill="#0F172A">Gemini 3.5 Flash 스트리밍 TTFB 10회 (ms)</text>
+<text x="40" y="82" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#475569">최소 11,093 · 중앙값 13,632 · 평균 13,761 · 최대 16,093 · 합성 prompt(입력 30 / 출력 124 토큰), 분당 5회, 재시도 없음</text>
+<text x="40" y="125" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">1회</text>
+<rect x="90" y="112" width="760" height="18" rx="3" fill="#DC2626"/>
+<text x="858" y="126" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">16,093</text>
+<text x="40" y="155" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">2회</text>
+<rect x="90" y="142" width="637" height="18" rx="3" fill="#4F46E5"/>
+<text x="735" y="156" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">13,484</text>
+<text x="40" y="185" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">3회</text>
+<rect x="90" y="172" width="631" height="18" rx="3" fill="#4F46E5"/>
+<text x="729" y="186" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">13,360</text>
+<text x="40" y="215" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">4회</text>
+<rect x="90" y="202" width="624" height="18" rx="3" fill="#4F46E5"/>
+<text x="722" y="216" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">13,218</text>
+<text x="40" y="245" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">5회</text>
+<rect x="90" y="232" width="524" height="18" rx="3" fill="#059669"/>
+<text x="622" y="246" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">11,093</text>
+<text x="40" y="275" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">6회</text>
+<rect x="90" y="262" width="667" height="18" rx="3" fill="#4F46E5"/>
+<text x="765" y="276" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">14,125</text>
+<text x="40" y="305" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">7회</text>
+<rect x="90" y="292" width="593" height="18" rx="3" fill="#4F46E5"/>
+<text x="691" y="306" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">12,563</text>
+<text x="40" y="335" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">8회</text>
+<rect x="90" y="322" width="697" height="18" rx="3" fill="#4F46E5"/>
+<text x="795" y="336" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">14,750</text>
+<text x="40" y="365" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">9회</text>
+<rect x="90" y="352" width="715" height="18" rx="3" fill="#4F46E5"/>
+<text x="813" y="366" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">15,139</text>
+<text x="40" y="395" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#475569">10회</text>
+<rect x="90" y="382" width="651" height="18" rx="3" fill="#4F46E5"/>
+<text x="749" y="396" font-family="Malgun Gothic,sans-serif" font-size="13" fill="#0F172A">13,781</text>
+<text x="40" y="438" font-family="Malgun Gothic,sans-serif" font-size="14" fill="#94A3B8">measured 2026-07-28 · gemini/gemini-3.5-flash · outputs/provider-metrics/gemini-3.5-flash-ttfb-2026-07-28.jsonl</text>
+</svg>

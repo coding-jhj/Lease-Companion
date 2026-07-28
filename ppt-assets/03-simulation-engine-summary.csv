@@ -1,0 +1,2 @@
+﻿provider,model,call_count,success_count,failure_count,input_tokens,output_tokens,cached_tokens,search_units,average_latency_ms,p95_latency_ms,average_ttfb_ms,estimated_cost,currency
+gemini,gemini-3.5-flash,6,6,0,6142,617,0,0,18103,26062,,0.014766,USD
