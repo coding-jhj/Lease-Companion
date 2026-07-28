@@ -6,7 +6,6 @@ import { GuidedReviewCard } from "../../features/extraction-review/GuidedReviewC
 import {
   emptySituationAnswer,
   situationAnswerFromContract,
-  situationAnswered,
   type SituationAnswer,
 } from "../../features/extraction-review/SituationAnswers";
 import {
@@ -77,6 +76,37 @@ function externalSourceLabel(fieldName: string): string {
   return labels[fieldName] ?? "확인 자료";
 }
 
+function amountValue(
+  fields: FieldViewModel[],
+  drafts: Record<string, DraftValue>,
+  fieldName: "deposit" | "monthly_rent",
+): number | null {
+  const view = fields.find((item) => (
+    item.document_type === "contract" && item.field.field_name === fieldName
+  ));
+  if (!view) return null;
+  const value = drafts[view.key]
+    ?? view.field.user_corrected_value
+    ?? view.field.normalized_value
+    ?? view.field.extracted_value;
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return null;
+  const normalized = Number(value.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(normalized) ? normalized : null;
+}
+
+function inferredContractType(
+  fields: FieldViewModel[],
+  drafts: Record<string, DraftValue>,
+): ContractType {
+  const monthlyRent = amountValue(fields, drafts, "monthly_rent");
+  if (monthlyRent !== null && monthlyRent > 0) {
+    const deposit = amountValue(fields, drafts, "deposit");
+    return deposit !== null && deposit > 0 ? "보증부 월세" : "일반 월세";
+  }
+  return "전세";
+}
+
 export function ExtractionReviewPage() {
   const { contractId: routeContractId } = useParams();
   const contractId = contractIdFromRoute(routeContractId);
@@ -127,7 +157,6 @@ export function ExtractionReviewPage() {
   const handledItems = queue.filter(
     (item) => reviewedKeySet.has(item.key) || unresolvedReasonByKey[item.key] !== undefined,
   );
-  const situationReady = situationAnswered(situation);
   const currentSectionReady = allHandled;
   const pendingCorrectionKeys = Object.keys(drafts).filter(
     (key) => !savedDraftKeys.includes(key),
@@ -313,11 +342,11 @@ export function ExtractionReviewPage() {
     setAnalysisError("");
     setSubmitting(true);
 
-    // 계약 상황은 문서에서 읽을 수 없는 값이라 확인 완료 시점에 함께 저장한다.
-    if (situation.contractType !== null) {
-      try {
-        await mvpService.saveSituation(contractId, {
-          contract_type: situation.contractType,
+    // 별도 선택 UI 없이 확인한 보증금·월세 값으로 계약 유형을 정리해 함께 저장한다.
+    const contractType = situation.contractType ?? inferredContractType(fields, drafts);
+    try {
+      await mvpService.saveSituation(contractId, {
+          contract_type: contractType,
           contract_stage: situation.contractStage,
           deposit_paid: situation.depositPaid,
           signed: situation.signed,
@@ -326,14 +355,13 @@ export function ExtractionReviewPage() {
           is_proxy_contract: situation.proxyStatus === "unknown"
             ? null
             : situation.proxyStatus === "yes",
-        });
-      } catch {
-        setConfirmationError(
-          "계약 상황을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        );
-        setSubmitting(false);
-        return;
-      }
+      });
+    } catch {
+      setConfirmationError(
+        "계약 상황을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+      setSubmitting(false);
+      return;
     }
 
     if (pendingCorrectionKeys.length > 0) {
@@ -638,28 +666,6 @@ export function ExtractionReviewPage() {
                     ))}
                   </ul>
                 )}
-                {!situationReady && (
-                  <fieldset className="contract-type-inline" disabled={submitting}>
-                    <legend>계약 유형만 선택해 주세요</legend>
-                    <div>
-                      {(["전세", "보증부 월세", "일반 월세"] as ContractType[]).map((type) => (
-                        <label key={type}>
-                          <input
-                            type="radio"
-                            name="review-contract-type"
-                            value={type}
-                            checked={situation.contractType === type}
-                            onChange={() => {
-                              setSituation((current) => ({ ...current, contractType: type }));
-                              setExtractionConfirmed(false);
-                            }}
-                          />
-                          {type}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
                 {correctionError && <p className="error" role="alert">{correctionError}</p>}
                 {confirmationError && <p className="error" role="alert">{confirmationError}</p>}
                 {analysisError && <p className="error" role="alert">{analysisError}</p>}
@@ -674,14 +680,12 @@ export function ExtractionReviewPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={submitting || !situationReady}
+                    disabled={submitting}
                     onClick={() => void confirm()}
                   >
                     {submitting
                       ? "확인 결과를 준비하는 중…"
-                      : situationReady
-                        ? "이 내용으로 확인 결과 준비하기"
-                        : "계약 상황을 입력해 주세요"}
+                      : "확인 결과 준비하기"}
                   </button>
                 </div>
               </section>
