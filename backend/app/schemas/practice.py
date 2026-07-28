@@ -100,6 +100,8 @@ class PracticeMediaJobResponse(BaseModel):
     error_code: str | None = None
     created_at: datetime
     completed_at: datetime | None = None
+    # 디버깅 데모용 타이밍 지표(개인정보 없음). 화면 노출 여부는 프런트가 정한다.
+    debug_metrics: dict[str, object] | None = None
 
 
 class PracticeTurnResponse(BaseModel):

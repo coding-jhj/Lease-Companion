@@ -539,6 +539,8 @@ export interface PracticeMediaJobDto {
   error_code: string | null;
   created_at: string;
   completed_at: string | null;
+  // 디버깅 데모용 타이밍 지표(개인정보 없음). `?debug=1` 오버레이에서만 표시한다.
+  debug_metrics?: Record<string, unknown> | null;
 }
 
 export interface PracticeConversationTurnDto {

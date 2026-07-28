@@ -262,7 +262,23 @@ def media_job_response(
         error_code=job.error_code,
         created_at=job.created_at,
         completed_at=job.completed_at,
+        debug_metrics=_debug_metrics(job),
     )
+
+
+def _debug_metrics(job: PracticeMediaJob) -> dict[str, object] | None:
+    """디버깅 데모용 타이밍만 추린다. 답변 텍스트·경로는 넣지 않는다."""
+    payload = job.settings_payload or {}
+    keys = (
+        "timings_ms",
+        "generated_frames",
+        "effective_fps",
+        "video_encoder",
+        "target_met",
+        "video_disabled",
+    )
+    metrics = {key: payload[key] for key in keys if key in payload}
+    return metrics or None
 
 
 def resolve_media_file(relpath: str) -> Path:

@@ -562,6 +562,11 @@ def _run_locked_practice_media_job(media_job_id: str) -> None:
                 }
             db.commit()
         if not video_on:
+            logger.info(
+                "연습 미디어 완료(음성만) job=%s tts_ms=%s video=disabled",
+                media_job_id,
+                tts_ms,
+            )
             return
 
         generated_video, generation_metrics = _generate_video(audio_path, job_dir)
@@ -600,6 +605,19 @@ def _run_locked_practice_media_job(media_job_id: str) -> None:
                 "target_met": total_ms <= target_ms,
             }
             db.commit()
+        # 디버깅 데모 영상에서 육안 확인용. 값만 남기고 답변 텍스트는 찍지 않는다.
+        logger.info(
+            "연습 미디어 완료 job=%s tts_ms=%s video_ms=%s frames=%s fps=%s "
+            "encoder=%s end_to_end_ms=%s target_met=%s",
+            media_job_id,
+            tts_ms,
+            generation_metrics.get("total_ms"),
+            generation_metrics.get("frames"),
+            generation_metrics.get("effective_fps"),
+            generation_metrics.get("video_encoder"),
+            total_ms,
+            total_ms <= target_ms,
+        )
     except PracticeMediaGenerationError as exc:
         logger.warning("Practice media job %s failed: %s", media_job_id, exc.code)
         _mark_failed(media_job_id, exc.code)
