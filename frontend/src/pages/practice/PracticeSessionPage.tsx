@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/feedback/AsyncState";
 import { PageShell } from "../../components/layout/PageShell";
 import { createPracticeRequestId, practiceService } from "../../services/practiceService";
+import { debugLog, formatMediaMetrics } from "../../utils/debugLog";
 import { PracticeAvatarStage } from "./PracticeAvatarStage";
 import { PracticeChatPanel } from "./PracticeChatPanel";
 import type {
@@ -229,6 +230,10 @@ export function PracticeSessionPage() {
       try {
         const latest = await practiceService.getMediaJob(avatarMedia!.media_job_id);
         if (cancelled) return;
+        if (latest.status !== avatarMedia!.status) {
+          const channel = latest.status === "generating_video" || latest.video_url ? "VIDEO" : "TTS";
+          debugLog(channel, `job=${latest.media_job_id.slice(0, 8)} status=${latest.status} ${formatMediaMetrics(latest.debug_metrics)}`);
+        }
         setAvatarMedia(latest);
         if (latest.status !== "failed") {
           timer = window.setTimeout(() => void poll(), 1500);
@@ -287,6 +292,8 @@ export function PracticeSessionPage() {
     const submittedAnswer = timedOut ? null : answer.trim();
     setSubmitting(true);
     setErrorMessage("");
+    const submitStartedAt = performance.now();
+    debugLog("LLM", `제출 turn=${session.current_turn.turn_id} chars=${submittedAnswer?.length ?? 0} timed_out=${timedOut}`);
     try {
       const response = await practiceService.submitTurn(sessionId, {
         request_id: createPracticeRequestId("turn"),
@@ -295,6 +302,11 @@ export function PracticeSessionPage() {
         timed_out: timedOut,
         response_time_seconds: elapsedSeconds(turnStartedAt.current),
       });
+      debugLog(
+        "LLM",
+        `응답 ${Math.round(performance.now() - submitStartedAt)}ms category=${response.evaluation?.answer_category ?? "-"} `
+          + `intent=${response.evaluation?.action_intent ?? "-"} media=${response.media ? response.media.status : "none"}`,
+      );
       setLastResponse(response);
       setAvatarMedia(response.media ?? null);
       // 아바타는 방금 answer에 대한 상대방 반응을 말한다. 반응이 없으면 현재 장면 대사.
@@ -437,6 +449,9 @@ export function PracticeSessionPage() {
 
     const recognition = new SpeechRecognition();
     let endedWithError = false;
+    // 디버깅 로그용 계측값. 인식된 문장은 남기지 않고 글자 수·시간만 센다.
+    const startedAt = performance.now();
+    let interimCount = 0;
     speechBaseAnswerRef.current = answer.trim();
     recognition.lang = "ko-KR";
     recognition.continuous = false;
@@ -446,22 +461,33 @@ export function PracticeSessionPage() {
         .map((result) => result[0]?.transcript ?? "")
         .join(" ")
         .trim();
+      interimCount += 1;
+      debugLog(
+        "STT",
+        `중간결과 #${interimCount} chars=${transcript.length} +${Math.round(performance.now() - startedAt)}ms`,
+      );
       const nextAnswer = [speechBaseAnswerRef.current, transcript].filter(Boolean).join(" ");
       setAnswer(nextAnswer.slice(0, 2000));
     };
     recognition.onerror = (event) => {
       endedWithError = true;
+      debugLog("STT", `오류 error=${event.error} +${Math.round(performance.now() - startedAt)}ms`);
       setSpeechMessage(speechRecognitionErrorMessage(event.error));
       setIsListening(false);
     };
     recognition.onend = () => {
       recognitionRef.current = null;
+      debugLog(
+        "STT",
+        `종료 results=${interimCount} total=${Math.round(performance.now() - startedAt)}ms error=${endedWithError}`,
+      );
       setIsListening(false);
       if (!endedWithError) setSpeechMessage("음성 입력이 완료되었습니다.");
     };
 
     recognitionRef.current = recognition;
     setSpeechMessage("듣고 있습니다. 말씀해 주세요.");
+    debugLog("STT", `시작 lang=ko-KR interim=on base_chars=${speechBaseAnswerRef.current.length}`);
     setIsListening(true);
     try {
       recognition.start();

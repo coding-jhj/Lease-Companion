@@ -1,0 +1,3 @@
+﻿mode,cycle_count,provider_call_count,input_tokens,output_tokens,search_units,wall_clock_seconds,known_cost_usd,known_cost_krw,average_cost_usd_per_provider_call
+실제 계약 점검,1,79,33847,5833,23,304.067,0.1032675,151.8,0.001307184
+시뮬레이션(3턴),1,6,6142,617,0,109.95,0.014766,21.71,0.002461

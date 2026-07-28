@@ -1,0 +1,329 @@
+<title>PPT 2·3번 자료 (2026-07-28 · gemini-3.5-flash)</title>
+<style>
+  :root{
+    --ground:#F4F5F7; --panel:#FFFFFF; --ink:#171A21; --ink-2:#4A5160; --ink-3:#798195;
+    --line:#DDE1E8; --accent:#2F3F94; --accent-soft:#E4E8F7; --accent-2:#0F7A6E;
+    --ok:#1B6B4C; --warn:#8A6410; --crit:#9E3527;
+    --ok-bg:#E2F1EA; --warn-bg:#F6EDDA; --crit-bg:#F7E4E1;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#0F1218; --panel:#171B23; --ink:#EDEFF4; --ink-2:#AEB6C6;
+      --ink-3:#7C8596; --line:#2A313D; --accent:#8FA2F0; --accent-soft:#232C4A; --accent-2:#4FBFAE;
+      --ok:#66C79E; --warn:#D6A94A; --crit:#E58A7C;
+      --ok-bg:#173328; --warn-bg:#332913; --crit-bg:#331E1A;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0F1218; --panel:#171B23; --ink:#EDEFF4; --ink-2:#AEB6C6;
+    --ink-3:#7C8596; --line:#2A313D; --accent:#8FA2F0; --accent-soft:#232C4A; --accent-2:#4FBFAE;
+    --ok:#66C79E; --warn:#D6A94A; --crit:#E58A7C;
+    --ok-bg:#173328; --warn-bg:#332913; --crit-bg:#331E1A;
+  }
+  :root[data-theme="light"]{
+    --ground:#F4F5F7; --panel:#FFFFFF; --ink:#171A21; --ink-2:#4A5160; --ink-3:#798195;
+    --line:#DDE1E8; --accent:#2F3F94; --accent-soft:#E4E8F7; --accent-2:#0F7A6E;
+    --ok:#1B6B4C; --warn:#8A6410; --crit:#9E3527;
+    --ok-bg:#E2F1EA; --warn-bg:#F6EDDA; --crit-bg:#F7E4E1;
+  }
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Segoe UI",system-ui,sans-serif;
+    font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:48px 20px 96px; display:flex; flex-direction:column; gap:40px;}
+  header{display:flex; flex-direction:column; gap:10px; border-bottom:2px solid var(--ink); padding-bottom:20px;}
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-weight:600;}
+  h1{margin:0; font-size:30px; line-height:1.25; letter-spacing:-.02em; text-wrap:balance;}
+  .sub{color:var(--ink-2); font-size:14px;}
+  section{display:flex; flex-direction:column; gap:16px;}
+  h2{margin:0; font-size:20px; letter-spacing:-.01em; display:flex; align-items:baseline; gap:10px;}
+  h2 .n{font-size:12px; color:var(--accent); font-weight:700; letter-spacing:.1em;}
+  h3{margin:0; font-size:15px; color:var(--ink-2); font-weight:600;}
+  p{margin:0; color:var(--ink-2);}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:20px; display:flex; flex-direction:column; gap:14px;}
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px;}
+  .tile{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 16px; display:flex; flex-direction:column; gap:4px;}
+  .tile .k{font-size:12px; color:var(--ink-3); letter-spacing:.04em;}
+  .tile .v{font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+  .tile .m{font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums;}
+  .scroll{overflow-x:auto;}
+  table{border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums;}
+  th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;}
+  th{font-size:12px; color:var(--ink-3); font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
+  td.num,th.num{text-align:right;}
+  tbody tr:last-child td{border-bottom:none;}
+  tfoot td{font-weight:700; border-top:2px solid var(--ink); border-bottom:none;}
+  .bars{display:flex; flex-direction:column; gap:9px;}
+  .bar{display:grid; grid-template-columns:minmax(130px,235px) 1fr auto; gap:12px; align-items:center; font-size:13px;}
+  .bar .lab{color:var(--ink-2); overflow:hidden; text-overflow:ellipsis;}
+  .track{background:var(--accent-soft); border-radius:3px; height:14px; overflow:hidden;}
+  .fill{background:var(--accent); height:100%; border-radius:3px;}
+  .fill.ok{background:var(--ok);} .fill.warn{background:var(--warn);} .fill.crit{background:var(--crit);}
+  .fill.alt{background:var(--accent-2);}
+  .val{font-variant-numeric:tabular-nums; font-weight:600; min-width:88px; text-align:right;}
+  .pill{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; letter-spacing:.03em;}
+  .pill.ok{background:var(--ok-bg); color:var(--ok);}
+  ul{margin:0; padding-left:18px; color:var(--ink-2); display:flex; flex-direction:column; gap:7px;}
+  li strong{color:var(--ink);}
+  code{font-family:"Cascadia Mono",Consolas,ui-monospace,monospace; font-size:.88em; background:var(--accent-soft); padding:1px 5px; border-radius:3px;}
+  .note{font-size:13px; color:var(--ink-3);}
+  footer{border-top:1px solid var(--line); padding-top:16px; font-size:12px; color:var(--ink-3);}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">슬기로운 계약생활 · 측정일 2026-07-28</div>
+  <h1>평가 리포트 · 응답 엔진 호출 로그 요약</h1>
+  <div class="sub">
+    확정 운영 모델 <code>gemini-3.5-flash</code>(유료 API 키) 기준 실측이다.
+    검색은 <code>gemini-embedding-001</code> + BM25 → <code>cohere rerank-v4.0-pro</code>,
+    판정은 Python 규칙 엔진이 결정한다.
+  </div>
+</header>
+
+<!-- 자료 2 -->
+<section>
+  <h2><span class="n">자료 2</span>평가 리포트</h2>
+
+  <div class="tiles">
+    <div class="tile"><span class="k">필드 추출 (Gemini 실측)</span><span class="v">96.7%</span><span class="m">232/240 · 로컬 폴백 0건</span></div>
+    <div class="tile"><span class="k">R01–R10 규칙 상태</span><span class="v">97.0%</span><span class="m">Gemini 추출값 입력 · 100건</span></div>
+    <div class="tile"><span class="k">R01–R10 시급도</span><span class="v">100%</span><span class="m">27건 · PII 버그 수정 후 회복</span></div>
+    <div class="tile"><span class="k">특약 검색 (운영 경로)</span><span class="v">77.8%</span><span class="m">source+section · BM25 66.7% 대비 개선</span></div>
+  </div>
+
+  <div class="panel">
+    <h3>운영 경로 실측 — Gemini 3.5 Flash · Cohere rerank</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">필드 추출 정확도 <span class="note">240필드 · 10케이스</span></span><span class="track"><span class="fill ok" style="width:96.67%"></span></span><span class="val">96.7%</span></div>
+      <div class="bar"><span class="lab">R01–R10 규칙 상태 정확도 <span class="note">100건</span></span><span class="track"><span class="fill ok" style="width:97%"></span></span><span class="val">97.0%</span></div>
+      <div class="bar"><span class="lab">R01–R10 시급도 정확도 <span class="note">27건</span></span><span class="track"><span class="fill ok" style="width:100%"></span></span><span class="val">100.0%</span></div>
+      <div class="bar"><span class="lab">특약 RAG source precision <span class="note">6건</span></span><span class="track"><span class="fill ok" style="width:91.67%"></span></span><span class="val">91.7%</span></div>
+      <div class="bar"><span class="lab">특약 RAG source+section precision <span class="note">6건</span></span><span class="track"><span class="fill warn" style="width:77.78%"></span></span><span class="val">77.8%</span></div>
+      <div class="bar"><span class="lab">Answer Relevancy <span class="note">고정 QA 3건</span></span><span class="track"><span class="fill warn" style="width:82.47%"></span></span><span class="val">82.5%</span></div>
+      <div class="bar"><span class="lab">Faithfulness <span class="note">고정 QA 3건</span></span><span class="track"><span class="fill warn" style="width:72.22%"></span></span><span class="val">72.2%</span></div>
+    </div>
+    <p class="note">실제 서비스가 타는 경로다. 추출·분류는 <code>gemini-3.5-flash</code>, 검색은 <code>gemini-embedding-001</code> + BM25 hybrid → <code>cohere rerank-v4.0-pro</code>. 추출 10케이스 모두 provider로 처리됐고 로컬 폴백은 0건이다.</p>
+  </div>
+
+  <div class="scroll panel">
+    <h3>PII 처리 버그 2건 — 발견·수정·재측정</h3>
+    <p>측정 도중 발견해 고쳤다. 아래 수치는 <strong>수정 후</strong> 값이다.</p>
+    <table>
+      <thead><tr><th>버그</th><th>증상</th><th class="num">수정 전 → 후</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>ISO 날짜를 계좌번호로 오탐<br><span class="note"><code>guardrails/pii.py</code> 계좌 정규식</span></td>
+          <td><code>발급일자: 2026-08-01</code> → <code>[ACCOUNT_1]</code> → 모델이 판독 불가로 보고 <code>null</code> 반환</td>
+          <td class="num"><code>issue_date</code> 0/10 → <strong>10/10</strong><br>시급도 62.96% → <strong>100%</strong></td>
+        </tr>
+        <tr>
+          <td>대괄호 없는 토큰 복원 실패<br><span class="note"><code>PiiTokenizer.restore</code></span></td>
+          <td>Gemini가 JSON 배열에 <code>"PERSON_1"</code>처럼 대괄호를 빼고 내면 복원되지 않고 토큰 문자열이 그대로 남음</td>
+          <td class="num"><code>owner_names</code> 0/10 → <strong>10/10</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">두 번째 버그는 모델 출력 흔들림에 따라 간헐적으로 나타나 1차 측정에서는 8/10으로 가려져 있었다. <code>owner_names</code>는 R01(임대인=등기 소유자)의 입력이라 영향이 크다. 회귀 테스트 3건을 추가했고 AI 테스트 903건이 통과한다.</p>
+  </div>
+
+  <div class="scroll panel">
+    <h3>남은 추출 오류 8건 — 규칙으로 번지는 경로</h3>
+    <table>
+      <thead><tr><th>필드</th><th class="num">정답률</th><th>영향</th></tr></thead>
+      <tbody>
+        <tr><td><code>registry.seizure_present</code> 압류</td><td class="num">7/10</td><td>R03 권리관계</td></tr>
+        <tr><td><code>registry.trust_present</code> 신탁</td><td class="num">8/10</td><td>R03 권리관계</td></tr>
+        <tr><td><code>contract.balance_payment</code> 잔금</td><td class="num">9/10</td><td>금액 정합 규칙</td></tr>
+        <tr><td><code>contract.contract_payment</code> 계약금</td><td class="num">9/10</td><td>금액 정합 규칙</td></tr>
+        <tr><td><code>registry.provisional_seizure_present</code> 가압류</td><td class="num">9/10</td><td>R03 권리관계</td></tr>
+      </tbody>
+    </table>
+    <p class="note">규칙 엔진은 결정론이다. 같은 goldset에서 정규식 입력이면 100/100, Gemini 입력이면 97/100 — 남은 감점 3건은 전부 위 추출 오류가 전파된 결과다. 압류·신탁 같은 tri-state 플래그가 약점이며, 프롬프트는 판독 불가를 <code>false</code>가 아닌 <code>null</code>로 두라고 지시한다.</p>
+  </div>
+
+  <div class="panel">
+    <h3>로컬 회귀 기준선 — 외부 호출 0건</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">필드 추출 (정규식 폴백) <span class="note">240필드</span></span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">100.0%</span></div>
+      <div class="bar"><span class="lab">R01–R10 규칙 (정규식 입력) <span class="note">100건</span></span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">100.0%</span></div>
+      <div class="bar"><span class="lab">J01–J13 판정 상태 <span class="note">51건 / 13판정</span></span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">100.0%</span></div>
+      <div class="bar"><span class="lab">특약 RAG source (BM25) <span class="note">6건</span></span><span class="track"><span class="fill" style="width:91.67%"></span></span><span class="val">91.7%</span></div>
+      <div class="bar"><span class="lab">특약 RAG source+section (BM25) <span class="note">6건</span></span><span class="track"><span class="fill" style="width:66.67%"></span></span><span class="val">66.7%</span></div>
+    </div>
+    <p class="note">폴백 경로 값이다. 코드 회귀를 잡는 용도이며 서비스 성능이 아니다. J01–J13은 사용자 확인 완료 입력 기준이라 추출 오류가 전파되지 않는다 — 흐름상 "추출값 확인·수정 후 판정" 단계와 같다.</p>
+  </div>
+
+  <div class="panel">
+    <h3>해석 주의 — 구조적으로 100%가 나오는 값</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">End-to-End 무오류 실행 <span class="note">10건</span></span><span class="track"><span class="fill" style="width:100%;background:var(--ink-3)"></span></span><span class="val">100.0%</span></div>
+      <div class="bar"><span class="lab">일반 RAG 정답 출처 recall <span class="note">27쿼리 · 6출처</span></span><span class="track"><span class="fill" style="width:100%;background:var(--ink-3)"></span></span><span class="val">100.0%</span></div>
+    </div>
+    <ul>
+      <li><strong>완주율은 정확도가 아니다.</strong> <code>len(analyses)/case_count</code>이고 케이스가 하나라도 실패하면 평가 자체가 예외로 중단된다(<code>evaluation/offline.py:548</code>). 100% 미만이 나올 수 없는 구조다.</li>
+      <li><strong>일반 RAG precision은 화이트리스트가 보장한다.</strong> 검색 서비스가 <code>allowed_source_ids</code> 밖 결과를 필터로 제거하는데(<code>rag/service.py:139</code>), 27개 쿼리 전부에서 허용 출처 = 정답 출처다. 오답 출처가 결과에 들어올 수 없으므로 precision은 항상 1.0이다. 남는 의미는 recall이며, 코퍼스가 6출처·37청크로 작다.</li>
+    </ul>
+  </div>
+
+  <div class="scroll panel">
+    <h3>온라인 RAGAS 케이스별 (표본 3건)</h3>
+    <table>
+      <thead><tr><th>케이스</th><th class="num">Faithfulness</th><th class="num">Answer Relevancy</th></tr></thead>
+      <tbody>
+        <tr><td>RAGAS-LLM-001</td><td class="num">0.500</td><td class="num">0.766</td></tr>
+        <tr><td>RAGAS-LLM-002</td><td class="num">1.000</td><td class="num">0.884</td></tr>
+        <tr><td>RAGAS-LLM-003</td><td class="num">0.667</td><td class="num">0.824</td></tr>
+      </tbody>
+      <tfoot><tr><td>매크로 평균</td><td class="num">0.722</td><td class="num">0.825</td></tr></tfoot>
+    </table>
+    <p class="note">
+      judge = <code>gemini-3.5-flash</code>, embedding = <code>gemini-embedding-001</code>, RAGAS 0.3.9, split = test.
+      <strong>평가 대상 답변은 파이프라인 생성 결과가 아니라 <code>data/evaluation/ragas_llm_test.jsonl</code>에 손으로 써둔 고정 QA 3건이다.</strong>
+      실제 모델이 관여하는 건 judge뿐이다. 같은 날 재실행 시 Faithfulness는 3건 모두 동일하게 재현됐고 Relevancy 평균은 0.839였다.
+      표본 3건이라 케이스 1건이 평균을 크게 흔든다 — 사람 검토를 대체하지 않는다.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>채점 로직 검증 (변이 테스트)</h3>
+    <p>100% 값이 채점기의 자명한 출력인지 확인하려고 입력을 일부러 틀리게 바꿔봤다. 전부 점수가 떨어졌다 — 비교는 실제로 수행된다.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>변이</th><th class="num">원본</th><th class="num">변이 후</th><th>영향 항목</th></tr></thead>
+        <tbody>
+          <tr><td>보증금 금액 변조</td><td class="num">16/16</td><td class="num">15/16</td><td><code>deposit</code></td></tr>
+          <tr><td>계약 종료일 변조</td><td class="num">16/16</td><td class="num">15/16</td><td><code>end_date</code></td></tr>
+          <tr><td>예금주 변조</td><td class="num">16/16</td><td class="num">15/16</td><td><code>account_holder</code></td></tr>
+          <tr><td>보증금 반환 특약 삭제</td><td class="num">16/16</td><td class="num">15/16</td><td><code>deposit_return_condition</code></td></tr>
+          <tr><td>등기 소유자를 임대인과 동일하게 변조</td><td class="num">100/100</td><td class="num">99/100</td><td>R01</td></tr>
+          <tr><td>J01 기대 상태 변조</td><td class="num">51/51</td><td class="num">50/51</td><td>J01</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">또한 데이터 생성기(<code>data/gen_dataset.py</code>)는 프로덕션 규칙 엔진을 import하지 않는다(<code>csv</code>·<code>json</code>·<code>os</code>만). goldset이 엔진 출력을 그대로 받아 적은 순환 구조는 아니다.</p>
+  </div>
+
+  <div class="panel">
+    <h3>해석 시 주의</h3>
+    <ul>
+      <li><strong>발표에 쓸 성능 수치는 운영 경로 그룹이다.</strong> 회귀 기준선의 100%는 정규식·BM25 폴백(<code>offline-regex-bm25-template-v3</code>) 값이며 서비스 성능이 아니다.</li>
+      <li><strong>전 구간 합성 test 기준이다.</strong> 실제 계약서 일반화 성능이나 법률적 정확도를 뜻하지 않는다. 문서는 생성기가 템플릿으로 찍은 10건이다.</li>
+      <li><strong>일반 RAG는 provider 경로로도 recall 1.0이다.</strong> 다만 27쿼리 중 6건은 rerank 없이 hybrid 순위로 확정됐고(로그상 rerank 18~21콜), precision은 화이트리스트 때문에 항상 1.0이다.</li>
+      <li><strong>가드레일은 별도로 검증된다.</strong> 근거 없는 생성 6건을 전부 차단했고(6/6), 금지 표현 0건, grounding 위반 0건이다.</li>
+      <li><strong>RAG 코퍼스 무결성은 측정 당일 확인했다.</strong> 공식 출처 6건의 <code>content_sha256</code>·<code>metadata_sha256</code>과 런타임 청크 메타데이터가 원문 파일과 모두 일치했고 <code>data/check_dataset.py</code>도 통과했다. 이전에 보고된 <code>SRC-HTA-LAW</code>·<code>SRC-HTA-DECREE</code> 해시 불일치는 현재 브랜치·main 모두에서 재현되지 않는다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 자료 3 -->
+<section>
+  <h2><span class="n">자료 3</span>응답 엔진 호출 로그 요약</h2>
+
+  <div class="tiles">
+    <div class="tile"><span class="k">실제 계약 점검 1사이클</span><span class="v">79콜</span><span class="m">$0.10327 · 약 152원 · 5분 4초</span></div>
+    <div class="tile"><span class="k">시뮬레이션 3턴 1사이클</span><span class="v">6콜</span><span class="m">$0.01477 · 약 22원 · 1분 50초</span></div>
+    <div class="tile"><span class="k">1콜 평균 (실제 계약)</span><span class="v">$0.001307</span><span class="m">약 1.92원 / 콜</span></div>
+    <div class="tile"><span class="k">스트리밍 TTFB 중앙값</span><span class="v">13.6초</span><span class="m">10회 측정 · 최소 11.1초</span></div>
+  </div>
+
+  <div class="scroll panel">
+    <h3>모드별 사용량·비용</h3>
+    <table>
+      <thead><tr><th>모드</th><th class="num">호출</th><th class="num">입력 토큰</th><th class="num">출력 토큰</th><th class="num">rerank 단위</th><th class="num">소요(초)</th><th class="num">비용(USD)</th><th class="num">환산(원)</th><th class="num">1콜 평균(USD)</th></tr></thead>
+      <tbody>
+        <tr><td>실제 계약 점검</td><td class="num">79</td><td class="num">33,847</td><td class="num">5,833</td><td class="num">23</td><td class="num">304.1</td><td class="num">0.1032675</td><td class="num">151.80</td><td class="num">0.0013072</td></tr>
+        <tr><td>시뮬레이션 (3턴)</td><td class="num">6</td><td class="num">6,142</td><td class="num">617</td><td class="num">0</td><td class="num">110.0</td><td class="num">0.0147660</td><td class="num">21.71</td><td class="num">0.0024610</td></tr>
+      </tbody>
+    </table>
+    <p class="note">1 USD = 1,470 KRW 단순 환산. 두 사이클 모두 실패 0건·재시도 0건. 실제 계약 점검은 캐시 입력 1,880토큰을 포함한다.</p>
+  </div>
+
+  <div class="scroll panel">
+    <h3>엔진 종류별 집계</h3>
+    <table>
+      <thead><tr><th>모드</th><th>엔진</th><th>역할</th><th class="num">호출</th><th class="num">입력</th><th class="num">출력</th><th class="num">평균 지연</th><th class="num">p95</th><th class="num">비용(USD)</th></tr></thead>
+      <tbody>
+        <tr><td>실제 계약</td><td>gemini-3.5-flash</td><td>추출 2 · 조항분류 1 · 생성 7</td><td class="num">10</td><td class="num">33,847</td><td class="num">5,833</td><td class="num">17,267 ms</td><td class="num">34,250 ms</td><td class="num">0.1032675</td></tr>
+        <tr><td>실제 계약</td><td>gemini-embedding-001</td><td>임베딩</td><td class="num">46</td><td class="num">—</td><td class="num">—</td><td class="num">436 ms</td><td class="num">625 ms</td><td class="num">0 (미집계)</td></tr>
+        <tr><td>실제 계약</td><td>cohere rerank-v4.0-pro</td><td>재순위 (23 unit)</td><td class="num">23</td><td class="num">—</td><td class="num">—</td><td class="num">3,131 ms</td><td class="num">12,484 ms</td><td class="num">0 (Trial)</td></tr>
+        <tr><td>시뮬레이션</td><td>gemini-3.5-flash</td><td>답변분류 3 · 대사생성 3</td><td class="num">6</td><td class="num">6,142</td><td class="num">617</td><td class="num">18,103 ms</td><td class="num">26,062 ms</td><td class="num">0.0147660</td></tr>
+      </tbody>
+    </table>
+    <p class="note">임베딩과 Cohere Trial 재순위는 token usage·과금 정보를 주지 않아 비용이 <code>0</code>으로 기록된다. 사이클 비용은 이 값의 <strong>하한</strong>이다.</p>
+  </div>
+
+  <div class="panel">
+    <h3>비용 구성 — 실제 계약 $0.1033 중 80%가 리포트 생성</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">report_generation <span class="note">7콜</span></span><span class="track"><span class="fill" style="width:79.7%"></span></span><span class="val">$0.082346</span></div>
+      <div class="bar"><span class="lab">document_extraction <span class="note">2콜</span></span><span class="track"><span class="fill" style="width:10.5%"></span></span><span class="val">$0.010826</span></div>
+      <div class="bar"><span class="lab">clause_classification <span class="note">1콜</span></span><span class="track"><span class="fill" style="width:9.8%"></span></span><span class="val">$0.010097</span></div>
+      <div class="bar"><span class="lab">embedding + rerank <span class="note">69콜 · usage 미제공</span></span><span class="track"><span class="fill crit" style="width:1.5%"></span></span><span class="val">$0 (미집계)</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>시간 구성 — provider 지연 265초</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">report_generation <span class="note">7콜 · 평균 13,345ms</span></span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">93.4s</span></div>
+      <div class="bar"><span class="lab">rerank <span class="note">23콜 · 평균 3,131ms</span></span><span class="track"><span class="fill" style="width:77.1%"></span></span><span class="val">72.0s</span></div>
+      <div class="bar"><span class="lab">document_extraction <span class="note">2콜 · 평균 26,445ms</span></span><span class="track"><span class="fill" style="width:56.6%"></span></span><span class="val">52.9s</span></div>
+      <div class="bar"><span class="lab">clause_classification <span class="note">1콜</span></span><span class="track"><span class="fill" style="width:28.2%"></span></span><span class="val">26.4s</span></div>
+      <div class="bar"><span class="lab">embedding <span class="note">46콜 · 평균 436ms</span></span><span class="track"><span class="fill" style="width:21.4%"></span></span><span class="val">20.0s</span></div>
+    </div>
+    <p class="note">provider 지연 합 265초 &lt; 실측 소요 304초. 차이는 Chroma 인덱스 구축·규칙 엔진 등 provider 외 처리다. 재순위 지연에는 Cohere Trial 분당 10회 제한 대기가 섞여 있다.</p>
+  </div>
+
+  <div class="panel">
+    <h3>시뮬레이션 3턴 — 총 109초</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">practice_dialogue_generation <span class="note">3콜 · 평균 19,937ms</span></span><span class="track"><span class="fill alt" style="width:100%"></span></span><span class="val">59.8s</span></div>
+      <div class="bar"><span class="lab">practice_classification <span class="note">3콜 · 평균 16,269ms</span></span><span class="track"><span class="fill alt" style="width:81.6%"></span></span><span class="val">48.8s</span></div>
+    </div>
+    <p class="note">시나리오 <code>PRACTICE-DEFERRED-REFUND-001</code>. 3턴 모두 <code>partial_check</code>로 분류되고 세션 완주.</p>
+  </div>
+
+  <div class="panel">
+    <h3>스트리밍 TTFB 10회 — 중앙값 13,632ms</h3>
+    <div class="bars">
+      <div class="bar"><span class="lab">1회차</span><span class="track"><span class="fill crit" style="width:100.0%"></span></span><span class="val">16,093 ms</span></div>
+      <div class="bar"><span class="lab">2회차</span><span class="track"><span class="fill" style="width:83.8%"></span></span><span class="val">13,484 ms</span></div>
+      <div class="bar"><span class="lab">3회차</span><span class="track"><span class="fill" style="width:83.0%"></span></span><span class="val">13,360 ms</span></div>
+      <div class="bar"><span class="lab">4회차</span><span class="track"><span class="fill" style="width:82.1%"></span></span><span class="val">13,218 ms</span></div>
+      <div class="bar"><span class="lab">5회차</span><span class="track"><span class="fill ok" style="width:68.9%"></span></span><span class="val">11,093 ms</span></div>
+      <div class="bar"><span class="lab">6회차</span><span class="track"><span class="fill" style="width:87.8%"></span></span><span class="val">14,125 ms</span></div>
+      <div class="bar"><span class="lab">7회차</span><span class="track"><span class="fill" style="width:78.1%"></span></span><span class="val">12,563 ms</span></div>
+      <div class="bar"><span class="lab">8회차</span><span class="track"><span class="fill" style="width:91.7%"></span></span><span class="val">14,750 ms</span></div>
+      <div class="bar"><span class="lab">9회차</span><span class="track"><span class="fill" style="width:94.1%"></span></span><span class="val">15,139 ms</span></div>
+      <div class="bar"><span class="lab">10회차</span><span class="track"><span class="fill" style="width:85.6%"></span></span><span class="val">13,781 ms</span></div>
+    </div>
+    <p class="note">최소 11,093 · 중앙값 13,632 · 평균 13,761 · 최대 16,093 ms. 개인정보 없는 합성 prompt(입력 30토큰·출력 124토큰), 분당 5회 제한, 자동 재시도 없음. 사용자가 첫 글자를 보기까지의 시간이다.</p>
+  </div>
+</section>
+
+<!-- 한계 -->
+<section>
+  <h2><span class="n">한계</span>발표 전 붙일 단서</h2>
+  <div class="panel">
+    <ul>
+      <li><strong>비용은 하한값이다.</strong> 임베딩 46콜·재순위 23콜이 usage를 반환하지 않아 <code>$0</code>으로 기록된다. Cohere는 Trial key라 실제 청구도 0이지만 유료 전환 시 추가된다.</li>
+      <li><strong>표본 1회다.</strong> 각 모드 1사이클, TTFB 10회, 온라인 RAGAS 3건. 통계적 평균이 아니라 발표용 실측 기준선이다.</li>
+      <li><strong>cold-start 측정이다.</strong> 실제 계약 사이클은 로컬 Chroma 인덱스를 새로 만드는 시간을 포함한다.</li>
+      <li><strong>단가는 2026-07-28 Standard 요금 기준이다.</strong> <code>gemini-3.5-flash</code> 입력 $1.50 / 출력 $9.00 (100만 토큰), <code>gemini-embedding-001</code> 입력 $0.15. Batch·캐시 할인은 적용하지 않았다.</li>
+      <li><strong>판정은 LLM이 바꾸지 않는다.</strong> R 24건·J 13건은 Python 규칙 엔진이 결정론으로 냈고, Gemini는 추출·분류·설명 생성만 담당했다.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  원본 로그 — 실제 계약: <code>outputs/provider-metrics/actual-contract-cycle-2026-07-28-paid35.jsonl</code> ·
+  시뮬레이션: <code>simulation-cycle-2026-07-28.jsonl</code> ·
+  TTFB: <code>gemini-3.5-flash-ttfb-2026-07-28.jsonl</code> ·
+  평가: <code>data/evaluation/results/{offline_test,ragas_offline,ragas_llm}_metrics.json</code>.
+  요약 JSON·CSV와 원본 JSONL을 재합산 대조 완료(호출 수·토큰·비용·태스크별 집계 전부 일치).
+</footer>
+
+</div>

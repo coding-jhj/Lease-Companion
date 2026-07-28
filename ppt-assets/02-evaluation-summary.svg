@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1654" viewBox="0 0 1600 1654">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<text x="80" y="76" font-family="Malgun Gothic,sans-serif" font-size="42" font-weight="700" fill="#0F172A">평가 리포트 핵심 결과</text>
+<text x="80" y="118" font-family="Malgun Gothic,sans-serif" font-size="21" fill="#475569">고정 합성 test · Offline ID RAGAS · Gemini judge Online RAGAS · 측정 성격별로 묶어 표기</text>
+<rect x="80" y="158" width="7" height="30" rx="3" fill="#0D9488"/>
+<text x="102" y="182" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">운영 경로 실측 — Gemini 3.5 Flash · Cohere rerank</text>
+<text x="102" y="208" font-family="Malgun Gothic,sans-serif" font-size="17" fill="#64748B">실제 서비스가 타는 경로. 발표에 쓸 성능 수치는 이 그룹이다</text>
+<text x="100" y="258" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">필드 추출 정확도 (Gemini)</text>
+<rect x="560" y="234" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="234" width="599" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="259" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">96.67%</text>
+<text x="1320" y="259" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">240 fields · 10 cases</text>
+<text x="100" y="285" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">운영 추출 경로 실측. 로컬 폴백 0건. PII 토크나이저 버그 2건 수정 후 값</text>
+<text x="100" y="326" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">R01–R10 규칙 상태 정확도 (Gemini 추출 입력)</text>
+<rect x="560" y="302" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="302" width="601" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="327" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">97.00%</text>
+<text x="1320" y="327" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">100 items / 10 cases</text>
+<text x="100" y="353" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">규칙 엔진은 결정론. 남은 감점 3건은 추출 오류가 전파된 것</text>
+<text x="100" y="394" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">R01–R10 시급도 정확도 (Gemini 추출 입력)</text>
+<rect x="560" y="370" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="370" width="620" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="395" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">100.00%</text>
+<text x="1320" y="395" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">27 items</text>
+<text x="100" y="421" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">PII 버그로 62.96%까지 떨어졌던 값이 수정 후 회복</text>
+<text x="100" y="462" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">특약 RAG Source Precision (운영 검색)</text>
+<rect x="560" y="438" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="438" width="568" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="463" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">91.67%</text>
+<text x="1320" y="463" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">6 cases</text>
+<text x="100" y="489" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">gemini-embedding-001 + BM25 hybrid → Cohere rerank</text>
+<text x="100" y="530" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">특약 RAG Source+Section Precision (운영 검색)</text>
+<rect x="560" y="506" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="506" width="482" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="531" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">77.78%</text>
+<text x="1320" y="531" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">6 cases</text>
+<text x="100" y="557" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">BM25 단독(66.67%) 대비 개선된 값</text>
+<rect x="80" y="600" width="7" height="30" rx="3" fill="#0D9488"/>
+<text x="102" y="624" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">품질 측정 — 실제 검색·생성 결과</text>
+<text x="102" y="650" font-family="Malgun Gothic,sans-serif" font-size="17" fill="#64748B">개선 여지가 남아 있는 구간</text>
+<text x="100" y="700" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">Faithfulness</text>
+<rect x="560" y="676" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="676" width="448" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="701" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">72.22%</text>
+<text x="1320" y="701" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">3 cases</text>
+<text x="100" y="727" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">손으로 쓴 고정 QA 3건에 대한 judge 점수. 파이프라인 생성 결과 아님</text>
+<text x="100" y="768" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">Answer Relevancy</text>
+<rect x="560" y="744" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="744" width="511" height="33" rx="7" fill="#0D9488"/>
+<text x="1198" y="769" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">82.47%</text>
+<text x="1320" y="769" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">3 cases</text>
+<text x="100" y="795" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">손으로 쓴 고정 QA 3건에 대한 judge 점수. 파이프라인 생성 결과 아님</text>
+<rect x="80" y="838" width="7" height="30" rx="3" fill="#2563EB"/>
+<text x="102" y="862" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">로컬 회귀 기준선 — 외부 호출 0건</text>
+<text x="102" y="888" font-family="Malgun Gothic,sans-serif" font-size="17" fill="#64748B">정규식·BM25 폴백 경로. 코드 회귀 감지용이며 서비스 성능이 아님</text>
+<text x="100" y="938" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">필드 추출 정확도 (정규식 폴백)</text>
+<rect x="560" y="914" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="914" width="620" height="33" rx="7" fill="#2563EB"/>
+<text x="1198" y="939" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">100.00%</text>
+<text x="1320" y="939" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">240 fields</text>
+<text x="100" y="965" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">합성 템플릿 문서를 정규식으로 되읽은 값. 14필드는 정답이 null</text>
+<text x="100" y="1006" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">R01–R10 규칙 상태 정확도 (정규식 입력)</text>
+<rect x="560" y="982" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="982" width="620" height="33" rx="7" fill="#2563EB"/>
+<text x="1198" y="1007" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">100.00%</text>
+<text x="1320" y="1007" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">100 items / 10 cases</text>
+<text x="100" y="1033" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">추출이 완벽하다는 가정 위의 값. R11–R24는 goldset 없음</text>
+<text x="100" y="1074" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">J01–J13 판정 상태 정확도</text>
+<rect x="560" y="1050" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="1050" width="620" height="33" rx="7" fill="#2563EB"/>
+<text x="1198" y="1075" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">100.00%</text>
+<text x="1320" y="1075" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">51 items / 13 judgments</text>
+<text x="100" y="1101" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">사용자 확인 완료 입력 기준이라 추출 오류가 전파되지 않음. 판정당 3~5건</text>
+<text x="100" y="1142" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">특약 RAG Source Precision</text>
+<rect x="560" y="1118" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="1118" width="568" height="33" rx="7" fill="#2563EB"/>
+<text x="1198" y="1143" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">91.67%</text>
+<text x="1320" y="1143" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">6 cases</text>
+<text x="100" y="1169" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">BM25 단독 기준선. 운영 검색 값은 위 그룹 참조</text>
+<text x="100" y="1210" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">특약 RAG Source+Section Precision</text>
+<rect x="560" y="1186" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="1186" width="413" height="33" rx="7" fill="#2563EB"/>
+<text x="1198" y="1211" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">66.67%</text>
+<text x="1320" y="1211" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">6 cases</text>
+<text x="100" y="1237" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">BM25 단독 기준선. 운영 검색은 77.78%</text>
+<rect x="80" y="1280" width="7" height="30" rx="3" fill="#94A3B8"/>
+<text x="102" y="1304" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">해석 주의 — 구조적으로 100%가 나오는 값</text>
+<text x="102" y="1330" font-family="Malgun Gothic,sans-serif" font-size="17" fill="#64748B">성능 근거로 쓰지 않는다</text>
+<text x="100" y="1380" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">End-to-End 무오류 실행</text>
+<rect x="560" y="1356" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="1356" width="620" height="33" rx="7" fill="#94A3B8"/>
+<text x="1198" y="1381" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">100.00%</text>
+<text x="1320" y="1381" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">10 cases</text>
+<text x="100" y="1407" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">정확도 아님. 케이스 실패 시 평가가 중단되므로 100% 미만이 나올 수 없음</text>
+<text x="100" y="1448" font-family="Malgun Gothic,sans-serif" font-size="20" fill="#1E293B">일반 RAG 정답 출처 Recall</text>
+<rect x="560" y="1424" width="620" height="33" rx="7" fill="#E2E8F0"/>
+<rect x="560" y="1424" width="620" height="33" rx="7" fill="#94A3B8"/>
+<text x="1198" y="1449" font-family="Malgun Gothic,sans-serif" font-size="23" font-weight="700" fill="#0F172A">100.00%</text>
+<text x="1320" y="1449" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#64748B">27 queries · 6 sources</text>
+<text x="100" y="1475" font-family="Malgun Gothic,sans-serif" font-size="16" fill="#94A3B8">허용 출처 화이트리스트(=정답 출처) 안에서만 검색되므로 precision은 항상 1.0</text>
+<line x1="80" y1="1524" x2="1520" y2="1524" stroke="#CBD5E1" stroke-width="2"/>
+<text x="80" y="1562" font-family="Malgun Gothic,sans-serif" font-size="18" font-weight="700" fill="#B45309">해석: 발표에 쓸 성능 수치는 초록(운영 경로)이다. 파란 회귀 기준선의 100%는 정규식·BM25 폴백 경로 값이며 서비스 성능이 아니다.</text>
+<text x="80" y="1594" font-family="Malgun Gothic,sans-serif" font-size="17" fill="#64748B">규칙 엔진은 결정론이다. 규칙 감점 3건은 엔진이 아니라 Gemini 추출 오류(압류·신탁·금액 필드)가 전파된 결과다.</text>
+<text x="80" y="1624" font-family="Malgun Gothic,sans-serif" font-size="17" fill="#64748B">회색 두 항목은 성능 지표가 아니다 — 완주율은 실패 시 평가가 중단되는 구조, 일반 RAG는 정답 출처 화이트리스트 안에서만 검색된다. 전 구간 합성 test 기준.</text>
+</svg>

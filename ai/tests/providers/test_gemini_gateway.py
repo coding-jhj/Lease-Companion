@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pytest
 
@@ -179,3 +180,74 @@ def test_http_options_disable_sdk_level_retries() -> None:
 
     assert options.timeout == 30_000
     assert options.retry_options.attempts == 1
+
+
+def test_gateway_emits_usage_metric_without_prompt_content() -> None:
+    clock = FakeClock()
+    metrics = []
+    gateway = GeminiGateway(
+        monotonic=clock.monotonic,
+        sleep=clock.sleep,
+        metric_sink=metrics.append,
+        timestamp=lambda: "2026-07-28T12:00:00+00:00",
+    )
+
+    response = SimpleNamespace(
+        usage_metadata=SimpleNamespace(
+            prompt_token_count=12,
+            candidates_token_count=3,
+            cached_content_token_count=2,
+            total_token_count=15,
+        )
+    )
+    result = gateway.call(
+        task="generation",
+        model="test-model",
+        operation=lambda: response,
+        policy=GeminiCallPolicy(max_attempts=1, max_total_wait_seconds=0),
+    )
+
+    assert result is response
+    assert len(metrics) == 1
+    assert metrics[0].provider == "gemini"
+    assert metrics[0].input_tokens == 12
+    assert metrics[0].output_tokens == 3
+    assert metrics[0].ttfb_ms is None
+
+
+def test_gateway_stream_measures_first_chunk_ttfb_and_total_latency() -> None:
+    clock = FakeClock()
+    metrics = []
+    gateway = GeminiGateway(
+        monotonic=clock.monotonic,
+        sleep=clock.sleep,
+        metric_sink=metrics.append,
+        timestamp=lambda: "2026-07-28T12:00:00+00:00",
+    )
+
+    def operation():
+        clock.now += 0.125
+        yield SimpleNamespace(text="첫", usage_metadata=None)
+        clock.now += 0.375
+        yield SimpleNamespace(
+            text=" 응답",
+            usage_metadata=SimpleNamespace(
+                prompt_token_count=10,
+                candidates_token_count=2,
+                cached_content_token_count=0,
+                total_token_count=12,
+            ),
+        )
+
+    chunks = gateway.call_stream(
+        task="ttfb_measurement",
+        model="test-model",
+        operation=operation,
+        policy=GeminiCallPolicy(max_attempts=1, max_total_wait_seconds=0),
+    )
+
+    assert [chunk.text for chunk in chunks] == ["첫", " 응답"]
+    assert metrics[0].ttfb_ms == 125
+    assert metrics[0].latency_ms == 500
+    assert metrics[0].input_tokens == 10
+    assert metrics[0].output_tokens == 2

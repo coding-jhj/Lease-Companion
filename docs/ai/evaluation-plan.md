@@ -45,6 +45,21 @@
 - RAGAS ID 지표는 사례별 ID 집합 점수의 macro 평균이다. 기존 `13/15`, `10/15` 전체 기대 항목 회수율과 집계 방식이 달라 수치를 직접 비교하지 않는다.
 - 외부 provider 호출 0회. Faithfulness 등 LLM 기반 RAGAS 지표는 측정하지 않았다.
 
+## RAGAS 온라인 LLM 평가
+
+`python scripts/evaluate_ragas_online.py`는 잠긴 비식별·합성 test 사례에
+Gemini judge를 적용한다.
+
+- `Faithfulness`: 생성 응답의 주장이 검색 context로 뒷받침되는 비율
+- `Response Relevancy`: 사용자 질문과 생성 응답의 관련성
+- judge: `GEMINI_MODEL_RAGAS_JUDGE`(기본 `gemini-3.5-flash`)
+- embedding: `gemini-embedding-001`
+- 결과: `data/evaluation/results/ragas_llm_metrics.json`
+
+이 평가는 외부 API를 쓰므로 “온라인 평가”다. 기존
+`evaluate_ragas_offline.py`의 ID 기반 검색 지표와 분리 기록하고 두 점수를
+합산하지 않는다. 실제 개인정보·계약 원문은 평가셋에 넣지 않는다.
+
 추출·R 수치는 고정 합성 TEST-001~010의 정형 문서 기준이며 실제 문서 일반화 성능을 뜻하지 않는다. 검색 개선은 로컬 가용 원문인데 누락된 사례만 BM25·query 구성 대상으로 삼고, 원문 부재는 자료 확보 작업으로 분리한다. 목표치·배포 gate는 합의 전 임의로 설정하지 않는다.
 
 ## 미정 (TODO)

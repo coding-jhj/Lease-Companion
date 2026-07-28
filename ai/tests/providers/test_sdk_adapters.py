@@ -97,3 +97,30 @@ def test_cohere_adapter_does_not_require_key_until_real_call(monkeypatch):
     monkeypatch.delenv("COHERE_API_KEY", raising=False)
     with pytest.raises(ProviderError, match="설정"):
         CohereRerankProvider().rerank("질의", ["문서"], top_n=1)
+
+
+def test_cohere_adapter_emits_search_unit_metric():
+    class UsageClient(FakeCohereClient):
+        def rerank(self, **kwargs):
+            response = super().rerank(**kwargs)
+            response.meta = SimpleNamespace(
+                billed_units=SimpleNamespace(search_units=1),
+                tokens=SimpleNamespace(input_tokens=25, output_tokens=0),
+            )
+            return response
+
+    metrics = []
+    provider = CohereRerankProvider(
+        client=UsageClient(),
+        metric_sink=metrics.append,
+        monotonic=lambda: 1.0,
+        timestamp=lambda: "2026-07-28T12:00:00+00:00",
+    )
+
+    provider.rerank("질의", ["첫 문서", "둘째 문서"], top_n=1)
+
+    assert len(metrics) == 1
+    assert metrics[0].provider == "cohere"
+    assert metrics[0].search_units == 1
+    assert metrics[0].input_tokens == 25
+    assert metrics[0].ttfb_ms is None

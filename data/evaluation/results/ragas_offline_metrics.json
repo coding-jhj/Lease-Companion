@@ -382,7 +382,7 @@
     "정답 context ID가 없는 근거 없음 사례는 macro 평균에서 제외하고 별도 집계했습니다.",
     "잠긴 합성 test 기준선이며 실제 계약서나 독립 사람 검토 성능이 아닙니다."
   ],
-  "measured_at": "2026-07-27",
+  "measured_at": "2026-07-28",
   "ragas_version": "0.3.9",
   "special_clause_sections": {
     "case_scores": [

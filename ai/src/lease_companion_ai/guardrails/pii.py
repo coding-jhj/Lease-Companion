@@ -68,7 +68,13 @@ _DIRECT_PATTERNS: tuple[tuple[PiiKind, re.Pattern[str]], ...] = (
     ),
     (
         PiiKind.ACCOUNT,
-        re.compile(r"(?<!\d)\d{2,6}(?:-\d{2,6}){2,4}(?!\d)"),
+        # YYYY-MM-DD는 계좌번호가 아니다. 토큰화하면 추출 프롬프트가 날짜를
+        # 판독 불가로 보고 null을 내서 등기 발급일 기반 판정이 무너진다.
+        # 라벨 있는 패턴(`계좌: …`)은 위에서 이미 처리하므로 여기서만 제외한다.
+        re.compile(
+            r"(?!(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])(?!\d))"
+            r"(?<!\d)\d{2,6}(?:-\d{2,6}){2,4}(?!\d)"
+        ),
     ),
 )
 _TOKEN_PATTERN = re.compile(r"\[[A-Z_]+_\d+\]")
@@ -108,6 +114,14 @@ class PiiTokenizer:
         restored = text
         for token, replacement in self._by_token.items():
             restored = restored.replace(token, replacement.original)
+            # provider가 JSON 배열 등에서 대괄호를 떼고 `PERSON_1`만 내는
+            # 경우가 있다. 발급한 토큰 이름에 한해 그것도 복원한다.
+            bare = token[1:-1]
+            restored = re.sub(
+                rf"(?<![A-Z0-9_]){re.escape(bare)}(?![A-Z0-9_])",
+                replacement.original,
+                restored,
+            )
         return restored
 
     def _replace_labeled(self, kind: PiiKind, match: re.Match[str]) -> str:

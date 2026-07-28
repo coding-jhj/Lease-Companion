@@ -6,6 +6,7 @@ import { AnalysisTimeline, type AnalysisStage } from "../../features/analysis-pr
 import { mvpService } from "../../services/mvpService";
 import type { AnalysisRunDetailDto, AsyncRunStatus } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
+import { debugLog } from "../../utils/debugLog";
 import { PollTimeoutError, pollUntilTerminal } from "../../utils/pollUntilTerminal";
 
 type PageStatus = AsyncRunStatus | "timeout";
@@ -30,9 +31,19 @@ export function AnalysisProgressPage() {
 
   async function pollRun(initialRun: AnalysisRunDetailDto, controller: AbortController) {
     setAnalysisRunId(initialRun.analysis_run_id);
+    debugLog("API", `분석 실행 시작 run=${initialRun.analysis_run_id} status=${initialRun.status}`);
     const run = await pollUntilTerminal({
       initialValue: initialRun,
-      poll: () => mvpService.getAnalysisRun(contractId, initialRun.analysis_run_id, controller.signal),
+      poll: async () => {
+        // 느려지는 구간이 백엔드 대기인지 화면 렌더인지 구분하려고 왕복 시간을 남긴다.
+        const startedAt = performance.now();
+        const current = await mvpService.getAnalysisRun(contractId, initialRun.analysis_run_id, controller.signal);
+        debugLog(
+          "API",
+          `분석 폴링 ${Math.round(performance.now() - startedAt)}ms status=${current.status} generation=${current.generation_status ?? "-"}`,
+        );
+        return current;
+      },
       signal: controller.signal,
       onUpdate: (current) => {
         if (current.status === "pending" || current.status === "running") {

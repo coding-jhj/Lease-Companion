@@ -28,6 +28,8 @@
 | 14 | 근거 없는 출력·단정 표현 비율 | `generation`·`guardrails` | guardrail 위반(단정 표현·근거 없는 출력) 비율 | 위반/전체, % |
 | 15 | RAGAS ID Context Precision | `rag` | 검색 context ID 중 정답 ID 비율을 사례별 계산 후 macro 평균 | 값 + split + top-k + ID 단위 |
 | 16 | RAGAS ID Context Recall | `rag` | 정답 context ID 중 검색된 ID 비율을 사례별 계산 후 macro 평균 | 값 + split + top-k + ID 단위 |
+| 17 | RAGAS Faithfulness | `generation`·`rag` | 생성 응답의 주장을 검색 context와 Gemini judge로 대조 | 사례별·macro 값 + judge 모델 |
+| 18 | RAGAS Response Relevancy | `generation` | 질문과 생성 응답의 관련성을 Gemini judge·embedding으로 측정 | 사례별·macro 값 + judge·embedding 모델 |
 
 ## 원칙
 
