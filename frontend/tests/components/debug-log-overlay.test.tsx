@@ -93,4 +93,9 @@ describe("formatMediaMetrics", () => {
   it("지표가 없으면 없다고 표시한다", () => {
     expect(formatMediaMetrics(null)).toBe("지표 없음");
   });
+
+  it("진행 중 상태는 생성 시작 문구로 표시한다", () => {
+    expect(formatMediaMetrics(null, "generating_audio")).toBe("TTS 생성 시작");
+    expect(formatMediaMetrics({}, "generating_video")).toBe("립싱크 영상 생성 시작");
+  });
 });
