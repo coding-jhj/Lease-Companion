@@ -142,9 +142,20 @@ export function startRenderFpsProbe(
   };
 }
 
+// 진행 중 상태는 지표가 아직 없다. 완료 시점에만 기록되므로 진행 문구로 대체한다.
+const MEDIA_PROGRESS_LABEL: Record<string, string> = {
+  queued: "대기 중",
+  generating_audio: "TTS 생성 시작",
+  generating_video: "립싱크 영상 생성 시작",
+};
+
 /** 미디어 잡 응답의 타이밍 지표를 한 줄로 요약한다. */
-export function formatMediaMetrics(metrics: Record<string, unknown> | null | undefined): string {
-  if (!metrics) return "지표 없음";
+export function formatMediaMetrics(
+  metrics: Record<string, unknown> | null | undefined,
+  status?: string,
+): string {
+  const fallback = (status && MEDIA_PROGRESS_LABEL[status]) || "지표 없음";
+  if (!metrics) return fallback;
   const timings = (metrics.timings_ms ?? {}) as Record<string, unknown>;
   const parts = [
     timings.tts !== undefined ? `tts=${timings.tts}ms` : null,
@@ -156,5 +167,5 @@ export function formatMediaMetrics(metrics: Record<string, unknown> | null | und
     metrics.target_met !== undefined ? `target_met=${metrics.target_met}` : null,
     metrics.video_disabled === true ? "video=disabled" : null,
   ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : "지표 없음";
+  return parts.length > 0 ? parts.join(" ") : fallback;
 }

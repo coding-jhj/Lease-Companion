@@ -232,7 +232,7 @@ export function PracticeSessionPage() {
         if (cancelled) return;
         if (latest.status !== avatarMedia!.status) {
           const channel = latest.status === "generating_video" || latest.video_url ? "VIDEO" : "TTS";
-          debugLog(channel, `job=${latest.media_job_id.slice(0, 8)} status=${latest.status} ${formatMediaMetrics(latest.debug_metrics)}`);
+          debugLog(channel, `job=${latest.media_job_id.slice(0, 8)} status=${latest.status} ${formatMediaMetrics(latest.debug_metrics, latest.status)}`);
         }
         setAvatarMedia(latest);
         if (latest.status !== "failed") {
