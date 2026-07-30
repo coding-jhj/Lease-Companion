@@ -94,6 +94,8 @@ docs_dev/
 .agents/
 .superpowers/
 docs/superpowers/
+BC_HANDOFF.md
+BC_JOINT_REPLY.md
 
 # === IDE / OS ===
 .idea/
