@@ -531,6 +531,15 @@ def test_extended_rules_calculate_inputs_and_keep_deferred_rules_honest():
 
     assert "60.0%" in by_id["R11"].reason
     assert "60,000,000원" in by_id["R12"].reason
+    # 공식 기준 비교: 보증금 + 선순위 합계(240,000,000 = 80.0%)와 공식 자료 근거를 함께 제시한다.
+    assert "240,000,000원" in by_id["R11"].reason
+    assert "80.0%" in by_id["R11"].reason
+    assert "국토교통부 체크리스트" in by_id["R11"].reason
+    assert "20.0%" in by_id["R12"].reason
+    assert "2분의 1" in by_id["R12"].reason
+    # 기준 비교를 붙여도 판정 상태·시급도는 규칙 엔진 값 그대로여야 한다.
+    assert by_id["R11"].status == "확인 필요"
+    assert by_id["R12"].status == "확인 필요"
     assert by_id["R13"].status == "명확"
     assert by_id["R14"].status == "명확"
     assert by_id["R15"].status == "명확"
