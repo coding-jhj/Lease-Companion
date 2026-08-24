@@ -450,7 +450,7 @@
           "documents"
         ],
         "summary": "List Documents",
-        "description": "업로드 이력 전체 (최신순). 같은 종류 재업로드도 모두 남는다.",
+        "description": "업로드 이력 전체 (최신순). 같은 종류 재업로드도 모두 남는다.\n\n`kind=evidence`면 증빙 보관물만, `kind=analysis`면 분석 입력 문서만 돌려준다.",
         "operationId": "list_documents_api_contracts__contract_id__documents_get",
         "security": [
           {
@@ -465,6 +465,22 @@
             "schema": {
               "type": "integer",
               "title": "Contract Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
             }
           }
         ],
@@ -482,6 +498,111 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/documents/{document_id}/file": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Download Document",
+        "description": "보관한 원본 내려받기 (분쟁 상담·조정 자료로 제출할 때 사용).",
+        "operationId": "download_document_api_contracts__contract_id__documents__document_id__file_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts/{contract_id}/documents/{document_id}": {
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete Document",
+        "description": "증빙 보관물 삭제. 분석 입력 문서는 추출 이력의 원본이라 삭제하지 않는다.",
+        "operationId": "delete_document_api_contracts__contract_id__documents__document_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contract Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -2070,7 +2191,11 @@
             "enum": [
               "계약서",
               "등기사항증명서",
-              "중개대상물 확인설명서"
+              "중개대상물 확인설명서",
+              "이체내역",
+              "대화기록",
+              "현장사진",
+              "기타 증빙"
             ],
             "title": "Doc Type"
           }
@@ -3325,6 +3450,18 @@
               }
             ],
             "title": "Completed At"
+          },
+          "debug_metrics": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debug Metrics"
           }
         },
         "type": "object",
