@@ -27,6 +27,12 @@ import type {
 import { contractIdFromRoute } from "../../utils/contractId";
 
 const priorities: DisplayPriority[] = ["반드시 확인", "확인 권장", "일반 확인"];
+// 색만으로 우선순위를 구분하지 않도록 문구와 함께 쓰는 보조 기호 (기획서 목업의 3개 아이콘).
+const priorityIcons: Record<DisplayPriority, string> = {
+  "반드시 확인": "⚠️",
+  "확인 권장": "🔍",
+  "일반 확인": "✅",
+};
 
 function actionHeroTitle(stage: StageGuidanceDto["contract_context"]["contract_stage"] | undefined, count: number) {
   if (stage === "계약금 입금 전") return `계약금을 보내기 전에 ${count}가지를 먼저 확인해 주세요`;
@@ -104,7 +110,16 @@ export function ResultReportPage() {
   }
 
   return (
-    <PageShell layout="report" step="6 / 7" title="내 계약 확인 결과" description="가장 먼저 확인할 내용과 상대방에게 직접 확인할 내용을 순서대로 살펴보세요.">
+    <PageShell
+      layout="report"
+      step="6 / 7"
+      title="내 계약 확인 결과"
+      description="가장 먼저 확인할 내용과 상대방에게 직접 확인할 내용을 순서대로 살펴보세요."
+      context={[
+        stageGuidance?.contract_context.contract_type,
+        stageGuidance?.contract_context.contract_stage,
+      ].filter(Boolean).join(" · ") || undefined}
+    >
       <div className="stack">
         {status === "loading" && <LoadingState title="확인 결과를 불러오는 중" description="항목별 확인 우선순위를 정리하고 있습니다." />}
         {status === "error" && <ErrorState title="확인 결과를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadReport()} />}
@@ -123,8 +138,9 @@ export function ResultReportPage() {
                 <ul className="report-hero__counts" aria-label="확인 우선순위 전체 개수">
                   {priorities.map((priority) => (
                     <li data-priority={priority} key={priority}>
+                      <i className="report-hero__counts-icon" aria-hidden="true">{priorityIcons[priority]}</i>
                       <span>{priority}</span>
-                      <strong>{counts[priority]}<em>개</em></strong>
+                      <strong>{counts[priority]}<em>건</em></strong>
                     </li>
                   ))}
                 </ul>

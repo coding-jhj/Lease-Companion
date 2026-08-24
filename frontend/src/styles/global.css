@@ -20,10 +20,53 @@ button, input, select { font: inherit; }
 .app-shell--narrow { width: min(100%, 880px); }
 .app-shell--workspace { width: min(100%, 1200px); }
 .app-shell--report { width: min(100%, 1320px); }
-.app-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; padding: 11px 16px; border: 1px solid #e7e0d2; border-radius: 14px; background: #fff; box-shadow: 0 1px 3px rgba(60, 50, 30, .06); }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; text-decoration: none; color: #1f4a30; }
-.brand__mark { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: #245c38; color: #fff; }
+/* 머리말은 기획서 목업대로 짙은 녹색 띠다. 안쪽 요소는 모두 흰 글자 기준으로 맞춘다. */
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding: 11px 16px; border: 1px solid #163a24; border-radius: 14px; background: #1d4b30; box-shadow: 0 2px 8px rgba(16, 40, 25, .18); }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; text-decoration: none; color: #fff; }
+.brand__mark { display: grid; flex: 0 0 auto; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: rgba(255, 255, 255, .14); color: #fff; }
 .brand__name { font-size: 17px; letter-spacing: -0.01em; }
+/* 화면 값이 합성·비식별 자료임을 항상 보이게 한다. */
+.data-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; background: rgba(255, 255, 255, .2); color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; }
+/* 지금 보는 계약의 유형·단계 띠 (목업: "전세 · 계약금 입금 전"). */
+.page-context { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding: 11px 16px; border: 1px solid #dfe6e0; border-radius: 12px; background: #fff; color: var(--ink-strong); font-size: 15px; font-weight: 800; }
+/* 모든 화면 아래 고정 고지. 종합 안전·위험 판정을 하지 않는다는 원칙을 사용자에게 직접 알린다. */
+.service-disclaimer { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 0; padding: 12px 14px; border: 1px dashed #c2ccc4; border-radius: 12px; background: rgba(255, 255, 255, .6); color: var(--ink-muted); font-size: 13px; line-height: 1.55; }
+.service-disclaimer p { margin: 0; }
+.privacy-notice__list { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+/* 일정 알림 — 저장된 잔금일·입주일과 남은 확인 항목으로 만든 "지금 챙길 일". */
+.schedule-reminders { display: grid; gap: 10px; }
+.schedule-reminders ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.schedule-reminders li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 14px; border: 1px solid #dfe6e0; border-left: 4px solid #7f9a89; border-radius: 12px; background: #fff; }
+.schedule-reminders li strong { display: block; color: var(--ink-strong); font-size: 15px; }
+.schedule-reminders li p { margin: 4px 0 0; color: var(--ink-muted); font-size: 14px; line-height: 1.5; }
+.schedule-reminders li small { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 12px; }
+.schedule-reminders__dday { display: inline-flex; align-items: center; min-width: 62px; height: 26px; justify-content: center; border-radius: 999px; background: #eef3ef; color: #245236; font-size: 13px; font-weight: 800; }
+.schedule-reminders li[data-tone="due"], .schedule-reminders li[data-tone="passed"] { border-left-color: #c2621a; background: #fff8f0; }
+.schedule-reminders li[data-tone="due"] .schedule-reminders__dday,
+.schedule-reminders li[data-tone="passed"] .schedule-reminders__dday { background: #f6e0cb; color: #8a3f0b; }
+.schedule-reminders li[data-tone="soon"] { border-left-color: #a06b09; }
+
+/* 증빙 보관함 — 계약 건에 이체내역·대화기록·사진을 모아 둔다. */
+.evidence-vault { display: grid; gap: 10px; }
+.evidence-vault__form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 10px; align-items: end; }
+.evidence-vault__field { display: grid; gap: 4px; min-width: 0; font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.evidence-vault__field select, .evidence-vault__field input { min-height: 40px; width: 100%; border: 1px solid #cbd6cd; border-radius: 10px; padding: 0 10px; background: #fff; }
+.evidence-vault__form button { width: auto; min-height: 40px; white-space: nowrap; }
+.evidence-vault__hint { margin: 0; color: var(--ink-muted); font-size: 13px; }
+.evidence-vault__items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.evidence-vault__items li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid #dfe6e0; border-radius: 12px; background: #fff; }
+.evidence-vault__items strong { display: block; overflow-wrap: anywhere; font-size: 15px; }
+.evidence-vault__items small { color: var(--ink-muted); font-size: 12px; }
+.evidence-vault__type { display: inline-flex; margin-bottom: 4px; border-radius: 999px; padding: 2px 9px; background: #e5eee7; color: #245236; font-size: 12px; font-weight: 800; }
+.evidence-vault__item-actions { display: flex; flex: 0 0 auto; gap: 10px; }
+.checklist-section__count em { font-style: normal; font-weight: 700; }
+
+@media (max-width: 640px) {
+  .evidence-vault__form { grid-template-columns: 1fr; }
+  .evidence-vault__form button { width: 100%; }
+  .evidence-vault__items li { align-items: flex-start; flex-direction: column; }
+}
 .step-badge, .priority { display: inline-flex; width: fit-content; border-radius: 999px; padding: 6px 10px; background: #e5eee7; color: #245236; font-size: 13px; font-weight: 700; }
 .page-card { min-width: 0; padding: 24px; border: 1px solid #ddd5c6; border-radius: 24px; background: #fffdf8; box-shadow: 0 18px 55px rgba(59, 51, 36, 0.09); }
 .eyebrow { margin: 0 0 6px; color: #2f6743; font-size: 14px; font-weight: 800; letter-spacing: -0.01em; }
@@ -933,9 +976,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .header-actions { display: flex; align-items: center; gap: 8px; }
 /* 셋 다 동일 높이·pill. 컨텍스트 badge=채운 초록, 액션 버튼=흰 배경+테두리 */
-.header-actions .step-badge { min-height: 36px; align-items: center; padding: 0 14px; border: 1px solid transparent; border-radius: 999px; background: #dfeae2; color: #204e31; font-size: 13px; font-weight: 800; }
-.mode-switch-link, .logout-button { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 36px; padding: 0 14px; border: 1px solid #bccdc1; border-radius: 999px; background: #fff; color: #245236; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; white-space: nowrap; }
-.mode-switch-link:hover, .logout-button:hover { border-color: #7ea78c; background: #f1f6f2; color: #1f4a30; }
+.header-actions .step-badge { min-height: 36px; align-items: center; padding: 0 14px; border: 1px solid transparent; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #204e31; font-size: 13px; font-weight: 800; }
+.mode-switch-link, .logout-button { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 36px; padding: 0 14px; border: 1px solid rgba(255, 255, 255, .55); border-radius: 999px; background: transparent; color: #fff; font-size: 13px; font-weight: 800; text-align: center; text-decoration: none; white-space: nowrap; }
+.mode-switch-link:hover, .logout-button:hover { border-color: #fff; background: rgba(255, 255, 255, .16); color: #fff; }
 textarea { width: 100%; min-height: 120px; padding: 13px 14px; border: 1px solid #bdc9bf; border-radius: 12px; resize: vertical; font: inherit; }
 textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .guidance-list, .history-section { display: grid; gap: 12px; }
@@ -1077,6 +1120,7 @@ textarea:focus-visible { outline: 3px solid #1f6feb; outline-offset: 3px; }
 .report-hero__counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0 0; padding: 0; list-style: none; }
 .report-hero__counts li { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid #dfe6e0; border-top: 4px solid #b9c4bb; border-radius: 14px; background: #fff; }
 .report-hero__counts li > span { color: #1d3326; font-size: 17px; font-weight: 800; }
+.report-hero__counts-icon { font-size: 22px; font-style: normal; line-height: 1; }
 .report-hero__counts strong { font-size: 26px; line-height: 1.1; }
 .report-hero__counts strong em { margin-left: 2px; font-size: 15px; font-style: normal; font-weight: 700; }
 .report-hero__counts [data-priority="반드시 확인"] { border-top-color: #9f2d2d; }

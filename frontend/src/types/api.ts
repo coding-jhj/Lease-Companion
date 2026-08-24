@@ -58,10 +58,19 @@ export interface ContractContextDto extends SituationRequestDto {
 }
 
 export type UploadDocumentType = "계약서" | "등기사항증명서" | "중개대상물 확인설명서";
+/** 증빙 보관 4종 — 분석 입력이 아니라 분쟁 대비 보관물이다. */
+export type EvidenceDocumentType = "이체내역" | "대화기록" | "현장사진" | "기타 증빙";
+
+export const EVIDENCE_DOCUMENT_TYPES: EvidenceDocumentType[] = [
+  "이체내역",
+  "대화기록",
+  "현장사진",
+  "기타 증빙",
+];
 
 export interface DocumentDto {
   id: number;
-  doc_type: UploadDocumentType;
+  doc_type: UploadDocumentType | EvidenceDocumentType;
   filename: string;
   size_bytes: number;
   created_at: string;

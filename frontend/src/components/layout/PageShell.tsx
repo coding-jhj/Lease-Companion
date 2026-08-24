@@ -22,7 +22,14 @@ interface PageShellProps {
   /** 7단계 진행 표시 밖 화면(모드 선택 갈래·계약 연습)의 뒤로 가기 주소. 바로 앞 화면 하나만 가리킨다. */
   backTo?: string;
   backLabel?: string;
+  /** 머리말 아래 상황 띠 — "전세 · 계약금 입금 전"처럼 지금 보는 계약의 유형·단계. */
+  context?: ReactNode;
 }
+
+// 화면 어디서나 같은 문구로 보이는 고정 고지. 종합 안전·위험 판정을 하지 않는다는
+// 루트 AGENTS.md 원칙을 사용자에게 직접 알린다.
+export const SERVICE_DISCLAIMER =
+  "'슬기로운 계약생활'은 사기 여부를 단정하지 않습니다. 법률 자문은 가까운 변호사에게 상담해 주세요.";
 
 // 계약 상황 입력은 별도 화면 대신 "내용 확인"에서 함께 받는다. 그래서 전체가 7단계다.
 const journeySteps = ["시작 방법", "집 등록", "문서 준비", "내용 확인", "결과 준비", "확인 결과", "다음 행동"];
@@ -72,6 +79,7 @@ export function PageShell({
   hero,
   backTo,
   backLabel = "뒤로",
+  context,
 }: PageShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -135,20 +143,28 @@ export function PageShell({
       <header className="app-header">
         <Link className="brand" to="/contracts">
           <span className="brand__mark" aria-hidden="true">
-            {/* Phosphor Icons (MIT) — house-duotone */}
-            <svg viewBox="0 0 256 256" width="19" height="19" fill="currentColor">
-              <path d="M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z" opacity="0.2" />
-              <path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z" />
+            {/* Phosphor Icons (MIT) — shield + house. 기획서 목업의 방패 로고와 같은 뜻: 임차권 방어. */}
+            <svg viewBox="0 0 256 256" width="21" height="21" fill="currentColor">
+              <path d="M216,56v56c0,54-44,85-83,98a13,13,0,0,1-10,0C84,197,40,166,40,112V56a8,8,0,0,1,8-8H208A8,8,0,0,1,216,56Z" opacity="0.25" />
+              <path d="M208,40H48A16,16,0,0,0,32,56v56c0,59.6,48.2,92.9,85.8,106.1a21,21,0,0,0,20.4,0C176,205,224,171.6,224,112V56A16,16,0,0,0,208,40Zm0,72c0,50.3-40.8,79.1-75.4,90.9a5,5,0,0,1-5.2,0C92.8,191.1,48,162.3,48,112V56H208ZM96,140v24H80V132.2a8,8,0,0,1,2.9-6.2l40-32.6a8,8,0,0,1,10.2,0l40,32.6a8,8,0,0,1,2.9,6.2V164H160V140l-32-26.1Z" />
             </svg>
           </span>
           <span className="brand__name">슬기로운 계약생활</span>
         </Link>
         <div className="header-actions">
+          {/* 화면의 모든 값은 합성·비식별 자료다. 기획서 목업의 "합성 데이터" 배지와 같다. */}
+          <span className="data-badge">합성 데이터</span>
           <span className="step-badge">{step}</span>
           {showModeSelect && <Link className="mode-switch-link" to="/contracts">처음으로</Link>}
           {showLogout && <button className="logout-button" type="button" onClick={logout}>로그아웃</button>}
         </div>
       </header>
+      {context && (
+        <p className="page-context">
+          <span aria-hidden="true">🏠</span>
+          {context}
+        </p>
+      )}
       {backTo && !(showJourney && validStep) && (
         <Link className="page-back" to={backTo}>
           <span aria-hidden="true">←</span> {backLabel}
@@ -199,6 +215,10 @@ export function PageShell({
           {children}
         </section>
       )}
+      <footer className="service-disclaimer">
+        <span aria-hidden="true">⚖️</span>
+        <p>{SERVICE_DISCLAIMER}</p>
+      </footer>
     </main>
   );
 }

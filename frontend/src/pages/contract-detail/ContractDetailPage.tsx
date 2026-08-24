@@ -12,12 +12,17 @@ import {
   type StandardPostAction,
 } from "../../features/post-contract-actions/phases";
 import { plainGuideById, plainJudgmentGuides } from "../../features/judgment-results/plainGuides";
+import { EvidenceVault } from "../../features/evidence-vault/EvidenceVault";
+import { buildScheduleReminders, ddayLabel } from "../../features/schedule-reminders/reminders";
 import { mvpService } from "../../services/mvpService";
+import { EVIDENCE_DOCUMENT_TYPES } from "../../types/api";
 import type {
   AnalysisRunSummaryDto,
   ChecklistItemKind,
   ChecklistItemStateDto,
+  ContractSummaryDto,
   DocumentDto,
+  EvidenceDocumentType,
   GuidanceActionItemDto,
 } from "../../types/api";
 import { contractIdFromRoute } from "../../utils/contractId";
@@ -69,6 +74,7 @@ export function ContractDetailPage() {
   const [judgmentByResultId, setJudgmentByResultId] = useState<Record<string, string | null>>({});
   const [analysisRuns, setAnalysisRuns] = useState<AnalysisRunSummaryDto[]>([]);
   const [documents, setDocuments] = useState<DocumentDto[]>([]);
+  const [contract, setContract] = useState<ContractSummaryDto | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [updateError, setUpdateError] = useState("");
@@ -84,11 +90,12 @@ export function ContractDetailPage() {
     setStatus("loading");
     setErrorMessage("");
     try {
-      const [states, detail, runs, uploadedDocuments] = await Promise.all([
+      const [states, detail, runs, uploadedDocuments, contractSummary] = await Promise.all([
         mvpService.getChecklist(contractId),
         mvpService.getAnalysisDetail(contractId).catch(() => null),
         mvpService.getAnalysisRuns(contractId),
         mvpService.getDocuments(contractId),
+        mvpService.getContract(contractId).catch(() => null),
       ]);
       const resultToJudgment: Record<string, string | null> = {};
       for (const rule of detail?.result?.results ?? []) resultToJudgment[rule.rule_id] = rule.judgment_id;
@@ -170,6 +177,7 @@ export function ContractDetailPage() {
       setItems([...merged, ...legacy]);
       setAnalysisRuns(runs);
       setDocuments(uploadedDocuments);
+      setContract(contractSummary);
       setStatus("success");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "계약 상세를 불러오지 못했습니다.");
@@ -243,6 +251,19 @@ export function ContractDetailPage() {
   const printableChecklistItems = checklistItems.filter((item) => item.writable);
   const hasCompletedItems = completedChecklistItems.length > 0 || completedPostActions.length > 0;
   const latestCompletedAnalysis = analysisRuns.find((run) => run.status === "completed");
+  const isEvidence = (item: DocumentDto) =>
+    EVIDENCE_DOCUMENT_TYPES.includes(item.doc_type as EvidenceDocumentType);
+  const evidenceDocuments = documents.filter(isEvidence);
+  const analysisDocuments = documents.filter((item) => !isEvidence(item));
+  const reminders = buildScheduleReminders({
+    balancePaymentDate: contract?.balance_payment_date ?? null,
+    moveInDate: contract?.move_in_date ?? null,
+    pendingChecklistCount: pendingChecklistItems.length,
+    pendingPostActionCount: pendingPostActions.length,
+  });
+  const contractContext = contract
+    ? [contract.contract_type, contract.contract_stage].filter(Boolean).join(" · ")
+    : "";
 
   function printChecklist() {
     const previousTitle = document.title;
@@ -395,7 +416,10 @@ export function ContractDetailPage() {
       <section className="history-section checklist-section">
         <div className="checklist-section__head">
           <h2>{title}</h2>
-          <span className="checklist-section__count">{done} / {total} 확인 완료</span>
+          <span className="checklist-section__count">
+            {done} / {total} 확인 완료
+            {entries.length > 0 && <em> · 미완료 {entries.length}개</em>}
+          </span>
         </div>
         {description && <p className="checklist-section__description">{description}</p>}
         {total > 0 && (
@@ -415,8 +439,36 @@ export function ContractDetailPage() {
   const guideModalTitle = guideModalItem?.standardGuide ? "방법과 공식 근거" : "쉽게 보기";
 
   return (
-    <PageShell layout="workspace" step="7 / 7" title="체크리스트와 계약 후 행동" description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다.">
+    <PageShell
+      layout="workspace"
+      step="7 / 7"
+      title="체크리스트와 계약 후 행동"
+      description="확인한 항목을 계약 건에 저장하고 다시 열어볼 수 있습니다."
+      context={contractContext || undefined}
+    >
       <div className="stack">
+        {status === "success" && reminders.length > 0 && (
+          <section className="schedule-reminders" aria-labelledby="schedule-reminders-title">
+            <div className="checklist-section__head">
+              <h2 id="schedule-reminders-title">지금 챙길 일정</h2>
+              <span className="checklist-section__count">{reminders.length}건</span>
+            </div>
+            <ul>
+              {reminders.map((reminder) => (
+                <li data-tone={reminder.tone} key={reminder.id}>
+                  <span className="schedule-reminders__dday">{ddayLabel(reminder.daysLeft)}</span>
+                  <div>
+                    <strong>{reminder.title}</strong>
+                    <p>{reminder.detail}</p>
+                    {reminder.date && (
+                      <small>{new Date(`${reminder.date}T00:00:00`).toLocaleDateString("ko-KR")} 기준</small>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {status === "loading" && <LoadingState title="계약 상세를 불러오는 중" description="체크리스트와 저장 이력을 준비하고 있습니다." />}
         {status === "error" && <ErrorState title="계약 상세를 불러오지 못했습니다" description={errorMessage} onRetry={() => void loadContractDetail()} />}
         {status === "success" && items.length === 0 && <EmptyState title="아직 체크리스트 항목이 없습니다" description="확인 결과가 준비되면 확인 행동이 여기에 표시됩니다." />}
@@ -563,8 +615,15 @@ export function ContractDetailPage() {
         )}
         {updateError && <p className="error" role="alert">{updateError}</p>}
         {status === "success" && (
+          <EvidenceVault
+            contractId={contractId}
+            documents={evidenceDocuments}
+            onChange={(next) => setDocuments([...next, ...analysisDocuments])}
+          />
+        )}
+        {status === "success" && (
           <details className="history-fold">
-            <summary>지난 기록 보기 (확인 결과 {analysisRuns.length}건 · 문서 {documents.length}건)</summary>
+            <summary>지난 기록 보기 (확인 결과 {analysisRuns.length}건 · 문서 {analysisDocuments.length}건)</summary>
             <div className="history-grid">
               <section className="history-section">
                 <h2>확인 결과 이력</h2>
@@ -580,9 +639,9 @@ export function ContractDetailPage() {
               </section>
               <section className="history-section">
                 <h2>문서 이력</h2>
-              {documents.length === 0
+              {analysisDocuments.length === 0
                 ? <p>업로드된 문서가 없습니다.</p>
-                : <ul>{documents.map((document) => <li key={document.id}>{document.doc_type} · {document.filename}</li>)}</ul>}
+                : <ul>{analysisDocuments.map((document) => <li key={document.id}>{document.doc_type} · {document.filename}</li>)}</ul>}
               </section>
             </div>
           </details>

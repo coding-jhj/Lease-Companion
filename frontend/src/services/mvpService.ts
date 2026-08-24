@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import { apiBlobClient, apiClient } from "./apiClient";
 import type {
   AnalysisRunDetailDto,
   AnalysisRunSummaryDto,
@@ -8,6 +8,7 @@ import type {
   ContractSummaryDto,
   CorrectionRequestDto,
   DocumentDto,
+  EvidenceDocumentType,
   ExtractionConfirmationRequestDto,
   ExtractionStateDto,
   FeedbackCreateRequestDto,
@@ -50,9 +51,15 @@ export const mvpService = {
       headers: jsonHeaders,
       body: JSON.stringify(situation),
     }),
-  getDocuments: (contractId: number) =>
-    apiClient<DocumentDto[]>(`/api/contracts/${contractId}/documents`),
-  uploadDocument: (contractId: number, file: File, docType: UploadDocumentType) => {
+  getDocuments: (contractId: number, kind?: "evidence" | "analysis") =>
+    apiClient<DocumentDto[]>(
+      `/api/contracts/${contractId}/documents${kind ? `?kind=${kind}` : ""}`,
+    ),
+  uploadDocument: (
+    contractId: number,
+    file: File,
+    docType: UploadDocumentType | EvidenceDocumentType,
+  ) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("doc_type", docType);
@@ -61,6 +68,12 @@ export const mvpService = {
       body: formData,
     });
   },
+  deleteDocument: (contractId: number, documentId: number) =>
+    apiClient<void>(`/api/contracts/${contractId}/documents/${documentId}`, {
+      method: "DELETE",
+    }),
+  downloadDocument: (contractId: number, documentId: number) =>
+    apiBlobClient(`/api/contracts/${contractId}/documents/${documentId}/file`),
   linkRegistry: (contractId: number, caseId: string) =>
     apiClient<ContractSummaryDto>(`/api/contracts/${contractId}/registry-link`, {
       method: "POST",
