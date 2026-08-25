@@ -254,7 +254,14 @@ def extract_scanned_fields(
     *,
     budget: ExternalCallBudget,
 ) -> dict:
-    """스캔 PDF·이미지 원본을 평문 OCR 단계 없이 한 번에 구조화한다."""
+    """스캔 PDF·이미지 원본을 평문 OCR 단계 없이 한 번에 구조화한다.
+
+    **비식별화 경계**: 텍스트 경로(`_extract`)와 달리 이 경로는 이미지 픽셀을 그대로
+    보내므로 로컬 토큰 치환을 적용할 수 없다(치환하려면 로컬 OCR이 필요한데 OCR을
+    Gemini VLM에 통합한 것이 2026-07-14 결정이다). 그래서 스캔 원본은 개인정보가
+    보이는 상태로 전송된다. 이 사실은 업로드 화면과 docs/data/privacy-policy.md에
+    그대로 고지하며, "전 경로 비식별화"로 표현하지 않는다.
+    """
     try:
         from google.genai import types
     except ImportError as exc:

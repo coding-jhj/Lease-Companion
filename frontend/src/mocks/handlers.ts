@@ -137,6 +137,14 @@ export const handlers = [
     documents.unshift(document);
     return HttpResponse.json(document, { status: 201 });
   }),
+  http.get("/api/contracts/:contractId/documents/:documentId/file", () =>
+    HttpResponse.arrayBuffer(new ArrayBuffer(8)),
+  ),
+  http.delete("/api/contracts/:contractId/documents/:documentId", ({ params }) => {
+    const index = documents.findIndex((item) => item.id === Number(params.documentId));
+    if (index >= 0) documents.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
   http.post("/api/contracts/:contractId/registry-link", async ({ request }) =>
     HttpResponse.json({ ...mockContract, registry_case_id: ((await request.json()) as { case_id: string }).case_id }),
   ),

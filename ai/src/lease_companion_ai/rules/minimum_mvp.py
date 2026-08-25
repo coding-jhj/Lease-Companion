@@ -137,23 +137,61 @@ def _status_map(contract: dict[str, Any], registry: dict[str, Any]) -> dict[str,
     }
 
 
+# 비교에 쓰는 공식 기준. repo의 official_verified 자료에 실제로 있는 문구만 쓴다.
+# 숫자 임계값(전세가율 80%·90% 등)은 공식 출처를 자료로 확보하기 전까지 넣지 않는다 —
+# 임계값을 넣는 순간 "안전·위험" 종합 판정이 되어 루트 AGENTS.md 원칙을 어긴다.
+_MOLIT_MARKET_PRICE_BASIS = (
+    "국토교통부 체크리스트는 시세 대비 전세보증금이 크게 높지 않은지를 "
+    "실거래가 공개시스템·안심전세App·공인중개사 사무소에서 확인하도록 안내합니다."
+)
+_HTA_HALF_VALUE_BASIS = (
+    "주택임대차보호법 시행령은 최우선변제로 보호받는 금액의 총합을 "
+    "주택가액의 2분의 1로 제한합니다."
+)
+
+
+def _combined_ratio_sentence(deposit: int, senior: int, housing_value: int) -> str:
+    """보증금 + 선순위 채권 합계를 주택가치와 비교한 문장. 판정은 하지 않는다."""
+    combined = deposit + senior
+    return (
+        f"선순위 권리·채권 합계 {senior:,}원을 더하면 {combined:,}원으로 "
+        f"주택가치의 {combined / housing_value * 100:.1f}%입니다."
+    )
+
+
 def _reason_override(rule_id: str, contract: dict[str, Any], registry: dict[str, Any]) -> str | None:
+    deposit = contract.get("deposit")
+    housing_value = contract.get("estimated_housing_value")
+    senior = registry.get("senior_claim_amount")
+    housing_known = isinstance(housing_value, int) and housing_value > 0
+
     if rule_id == "R11":
-        deposit = contract.get("deposit")
-        housing_value = contract.get("estimated_housing_value")
-        if isinstance(deposit, int) and isinstance(housing_value, int) and housing_value > 0:
-            ratio = deposit / housing_value * 100
-            return (
+        if isinstance(deposit, int) and housing_known:
+            sentences = [
                 f"확인된 보증금은 {deposit:,}원, 입력된 주택가치는 {housing_value:,}원으로 "
-                f"비율은 {ratio:.1f}%입니다. 이 비율만으로 계약의 안전 여부를 판단하지 않습니다."
+                f"비율은 {deposit / housing_value * 100:.1f}%입니다."
+            ]
+            if isinstance(senior, int) and senior >= 0:
+                sentences.append(_combined_ratio_sentence(deposit, senior, housing_value))
+            sentences.append(_MOLIT_MARKET_PRICE_BASIS)
+            sentences.append(
+                "이 비율만으로 계약의 안전 여부를 판단하지 않습니다. "
+                "입력한 주택가치가 최신 시세와 맞는지 공식 자료로 함께 확인하세요."
             )
+            return " ".join(sentences)
     if rule_id == "R12":
-        amount = registry.get("senior_claim_amount")
-        if isinstance(amount, int) and amount >= 0:
-            return (
-                f"확인된 선순위 권리·채권 합계 입력값은 {amount:,}원입니다. "
+        if isinstance(senior, int) and senior >= 0:
+            sentences = [f"확인된 선순위 권리·채권 합계 입력값은 {senior:,}원입니다."]
+            if housing_known:
+                sentences.append(
+                    f"입력된 주택가치 {housing_value:,}원의 "
+                    f"{senior / housing_value * 100:.1f}%에 해당합니다."
+                )
+                sentences.append(_HTA_HALF_VALUE_BASIS)
+            sentences.append(
                 "실제 우선순위와 회수 가능성은 최신 등기 및 관련 자료로 별도 확인해야 합니다."
             )
+            return " ".join(sentences)
     return None
 
 

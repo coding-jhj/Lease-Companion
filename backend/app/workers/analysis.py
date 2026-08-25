@@ -6,7 +6,6 @@ LLM 파이프라인 장시간화·재시도가 필요해지면 별도 워커 프
 
 import logging
 import os
-from pathlib import Path
 
 from sqlalchemy import select
 
@@ -28,6 +27,7 @@ from lease_companion_ai.schemas.unified import (
     validate_generation_result_for_analysis,
 )
 
+from app.core.crypto import read_document_bytes
 from app.core.db import SessionLocal
 from app.models.analysis import (
     STATUS_COMPLETED,
@@ -82,8 +82,8 @@ def run_extraction(extraction_run_id: int, contract_path: str, contract_filename
         logger.info("[1/4] 문서 추출 시작 (extraction_run_id=%s)", extraction_run_id)
         try:
             extracted = extract_documents(
-                Path(contract_path).read_bytes(), contract_filename,
-                Path(registry_path).read_bytes() if registry_path else None, registry_filename,
+                read_document_bytes(contract_path), contract_filename,
+                read_document_bytes(registry_path) if registry_path else None, registry_filename,
             )
             failures = [
                 f"{label}: {doc['error']}"

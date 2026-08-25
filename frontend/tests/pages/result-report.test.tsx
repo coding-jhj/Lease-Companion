@@ -130,7 +130,7 @@ describe("ResultReportPage", () => {
     for (const priority of ["반드시 확인", "확인 권장", "일반 확인"]) {
       const top = document.querySelector(`[aria-label="확인 우선순위 전체 개수"] [data-priority="${priority}"] strong`);
       const bottom = document.querySelector(`.priority-group[data-priority="${priority}"] .priority-count`);
-      expect(top?.textContent).toBe(`${bottom?.textContent}개`);
+      expect(top?.textContent).toBe(`${bottom?.textContent}건`);
     }
 
     // 병합된 카드가 시점·상태·확인할 내용을 함께 보여준다.

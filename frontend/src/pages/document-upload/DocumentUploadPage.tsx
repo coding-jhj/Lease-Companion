@@ -116,10 +116,25 @@ export function DocumentUploadPage() {
       <form className="stack" onSubmit={submit}>
         <div className="privacy-notice">
           <span className="privacy-notice__icon" aria-hidden="true">⚠️</span>
-          <p>
-            <strong>현재 시연용 서비스입니다.</strong>{" "}
-            실제 주민등록번호·연락처·계좌번호가 포함된 문서는 올리지 마세요.
-          </p>
+          <div>
+            <p>
+              <strong>현재 시연용 서비스입니다.</strong>{" "}
+              실제 주민등록번호·연락처·계좌번호가 포함된 문서는 올리지 마세요.
+            </p>
+            {/* 텍스트 경로는 토큰 치환 후 전송하지만 스캔 원본은 치환할 수 없다.
+                경로별 차이를 업로드 시점에 그대로 알린다. */}
+            <ul className="privacy-notice__list">
+              <li>업로드한 파일은 서버에 <strong>암호화해서</strong> 보관합니다.</li>
+              <li>
+                글자를 읽을 수 있는 PDF는 이름·주소·계좌번호를 <strong>토큰으로 바꾼 뒤</strong>{" "}
+                분석 AI에 보냅니다.
+              </li>
+              <li>
+                사진·스캔본은 이미지 그대로 분석 AI에 전달되어{" "}
+                <strong>치환 없이 원본이 전송</strong>됩니다. 가릴 정보가 있으면 미리 가리고 올려주세요.
+              </li>
+            </ul>
+          </div>
         </div>
         <div className="upload-section">
         <p className="file-help" id="upload-file-help">PDF·JPG·JPEG·PNG 파일을 20MB 이하로 올려주세요.</p>

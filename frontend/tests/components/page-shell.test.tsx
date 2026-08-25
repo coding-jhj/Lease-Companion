@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
-import { PageShell } from "../../src/components/layout/PageShell";
+import { PageShell, SERVICE_DISCLAIMER } from "../../src/components/layout/PageShell";
 
 afterEach(cleanup);
 
@@ -20,6 +20,22 @@ describe("PageShell logout", () => {
     );
 
     expect(screen.getByRole("link", { name: "처음으로" })).toHaveAttribute("href", "/contracts");
+  });
+
+  it("always shows the service disclaimer and the synthetic-data badge", () => {
+    render(
+      <MemoryRouter initialEntries={["/contracts"]}>
+        <PageShell step="2 / 7" title="진행 화면" description="진행 중" context="전세 · 계약금 입금 전">
+          <p>본문</p>
+        </PageShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(SERVICE_DISCLAIMER)).toBeInTheDocument();
+    expect(screen.getByText("사기 여부를 단정하지 않습니다.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("법률 자문은 가까운 변호사에게 상담해 주세요.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("합성 데이터")).toBeInTheDocument();
+    expect(screen.getByText("전세 · 계약금 입금 전")).toBeInTheDocument();
   });
 
   it("does not show a self-link on the mode selection screen", () => {

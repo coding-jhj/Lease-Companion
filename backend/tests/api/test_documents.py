@@ -126,6 +126,71 @@ def test_registry_link_unknown_case(client, owner, contract_id):
     assert res.json()["error"]["code"] == "not_found"
 
 
+def test_uploaded_file_is_encrypted_at_rest(client, owner, contract_id):
+    """평문 원본이 디스크에 남지 않아야 한다 (기획서: 개인정보는 암호화해서 저장)."""
+    secret = b"%PDF-1.4 landlord 010-1234-5678"
+    client.post(
+        f"/api/contracts/{contract_id}/documents",
+        files={"file": ("secret.pdf", secret, "application/pdf")},
+        data={"doc_type": "계약서"},
+        headers=owner,
+    )
+    # 수집 시점에 다른 테스트 모듈이 UPLOAD_DIR을 덮어쓸 수 있어 실행 시점 값을 읽는다.
+    stored = list(pathlib.Path(os.environ["UPLOAD_DIR"]).iterdir())
+    assert stored, "업로드 파일이 저장되지 않았습니다."
+    assert all(path.suffix == ".enc" for path in stored)
+    assert not any(secret in path.read_bytes() for path in stored)
+
+
+def test_evidence_upload_list_download_delete(client, owner, contract_id):
+    """증빙 보관: 업로드 → 목록 분리 → 원본 내려받기 → 삭제."""
+    receipt = b"%PDF-1.4 transfer receipt"
+    created = client.post(
+        f"/api/contracts/{contract_id}/documents",
+        files={"file": ("receipt.pdf", receipt, "application/pdf")},
+        data={"doc_type": "이체내역"},
+        headers=owner,
+    )
+    assert created.status_code == 201
+    document_id = created.json()["id"]
+
+    evidence = client.get(
+        f"/api/contracts/{contract_id}/documents?kind=evidence", headers=owner
+    ).json()
+    assert [d["doc_type"] for d in evidence] == ["이체내역"]
+    analysis_docs = client.get(
+        f"/api/contracts/{contract_id}/documents?kind=analysis", headers=owner
+    ).json()
+    assert "이체내역" not in {d["doc_type"] for d in analysis_docs}
+
+    downloaded = client.get(
+        f"/api/contracts/{contract_id}/documents/{document_id}/file", headers=owner
+    )
+    assert downloaded.status_code == 200
+    assert downloaded.content == receipt  # 복호화해서 원본 그대로 돌려준다
+
+    assert client.delete(
+        f"/api/contracts/{contract_id}/documents/{document_id}", headers=owner
+    ).status_code == 204
+    assert client.get(
+        f"/api/contracts/{contract_id}/documents?kind=evidence", headers=owner
+    ).json() == []
+
+
+def test_analysis_document_cannot_be_deleted(client, owner, contract_id):
+    created = client.post(
+        f"/api/contracts/{contract_id}/documents",
+        files={"file": PDF},
+        data={"doc_type": "계약서"},
+        headers=owner,
+    ).json()
+    res = client.delete(
+        f"/api/contracts/{contract_id}/documents/{created['id']}", headers=owner
+    )
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "not_evidence_document"
+
+
 def test_other_user_cannot_upload_or_list(client, contract_id):
     client.post(
         "/api/auth/signup",

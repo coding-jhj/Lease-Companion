@@ -168,6 +168,63 @@ describe("ContractDetailPage", () => {
     expect(within(completedPostSection).getByText(officialAction.text)).toBeInTheDocument();
   });
 
+  it("keeps evidence separate from analysis documents and shows schedule reminders", async () => {
+    const generation = generationResultFixture as GenerationResultDto;
+    const detail: AnalysisRunDetailDto = {
+      analysis_run_id: "RUN-1001-001",
+      input_snapshot_id: "SNAP-1001-001",
+      status: "completed",
+      error: null,
+      created_at: "2026-07-18T00:00:00Z",
+      result: analysisRunResultFixture as AnalysisRunResultDto,
+      generation_result: generation,
+      generation_status: "completed",
+      generation_error: null,
+    };
+    vi.spyOn(mvpService, "getAnalysisDetail").mockResolvedValue(detail);
+    vi.spyOn(mvpService, "getAnalysisRuns").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getChecklist").mockResolvedValue([]);
+    vi.spyOn(mvpService, "getDocuments").mockResolvedValue([
+      { id: 1, doc_type: "계약서", filename: "contract.pdf", size_bytes: 100, created_at: "2026-07-18T00:00:00Z" },
+      { id: 2, doc_type: "이체내역", filename: "receipt.pdf", size_bytes: 2048, created_at: "2026-07-19T00:00:00Z" },
+    ]);
+    vi.spyOn(mvpService, "getContract").mockResolvedValue({
+      id: 1001,
+      title: "테스트 계약",
+      contract_type: "전세",
+      contract_stage: "계약금 입금 전",
+      deposit_paid: false,
+      signed: false,
+      move_in_date: "2026-09-01",
+      balance_payment_date: "2026-08-28",
+      is_proxy_contract: null,
+      registry_case_id: null,
+      created_at: "2026-07-18T00:00:00Z",
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/contracts/1001"]}>
+        <Routes><Route path="/contracts/:contractId" element={<ContractDetailPage />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    // 증빙은 분석 입력 문서와 분리해 보관함에만 보인다.
+    const vault = (await screen.findByRole("heading", { name: "증빙 보관함" })).closest("section") as HTMLElement;
+    expect(within(vault).getByText("receipt.pdf")).toBeInTheDocument();
+    expect(within(vault).queryByText("contract.pdf")).not.toBeInTheDocument();
+    expect(within(vault).getByText("1건 보관")).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/지난 기록 보기/));
+    expect(screen.getByText("계약서 · contract.pdf")).toBeInTheDocument();
+    expect(screen.queryByText("이체내역 · receipt.pdf")).not.toBeInTheDocument();
+
+    // 저장된 잔금일·입주일에서 일정 알림을 만든다.
+    const reminders = screen.getByRole("heading", { name: "지금 챙길 일정" }).closest("section") as HTMLElement;
+    expect(within(reminders).getByText(/잔금 보내기 전에 등기사항증명서를 다시 확인하세요/)).toBeInTheDocument();
+    expect(within(reminders).getByText(/입주 후 전입신고와 확정일자를 확인하세요/)).toBeInTheDocument();
+    // 계약 유형·단계 띠도 함께 보여준다.
+    expect(screen.getByText("전세 · 계약금 입금 전")).toBeInTheDocument();
+  });
+
   it("moves a confirmed signing item below and reveals post-contract actions", async () => {
     const generation = structuredClone(generationResultFixture) as GenerationResultDto;
     const signingAction = generation.items[0].signing_checklist_items[0];
