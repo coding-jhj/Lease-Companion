@@ -31,7 +31,7 @@
 | 작업 8 — Backend 저장·API | ✅ 완료 | 기존 result·generation_result 저장·canonical 재조회 |
 | 작업 9 — Frontend 특약 카드·PDF | ✅ 완료 | canonical DTO·결과 섹션·인쇄 리포트·빈/실패 상태 |
 | 작업 10 | ✅ 완료 | API 키 없는 오프라인 종단 검증·실측·문서·J10 데모 |
-| 작업 11 | ⏸ 의도적으로 보류 | 독립 검토·실제 Gemini/Cohere·운영 활성화 |
+| 작업 11 | ✅ 2026-07-28 검증 완료(역사 기록) | 실제 Gemini/Cohere·운영 활성화 — [`../testing/provider-evaluation-report.md`](../testing/provider-evaluation-report.md) 참고. 독립 검토만 당시 기준 보류 |
 
 `feat/lmk`에서 선행 구현된 canonical 스키마와 결정론적 매칭 기반은 작업 4 이후에 다시 만들지 않고 재사용한다.
 
@@ -138,7 +138,7 @@ Codex가 지적한 4가지 부족 자료 — **전부 초안 완료**, 단 검�
 - J10 신규 임차인·주택 매각·임대인 자금 사정별 fallback 질문·수정 요청을 구분했다.
 - 실측은 `data/evaluation/results/offline_test_metrics.json`에 기록한다.
 - 전체 회귀: AI `762 passed, 2 skipped`, Backend `80 passed`, Frontend `110 passed`, production build 성공. Ruff·mypy 통과.
-- 평가셋은 `draft_pending_human_review`다. 실제 Gemini·Cohere와 운영 활성화는 작업 11로 보류한다.
+- 평가셋은 `draft_pending_human_review`다. 실제 Gemini·Cohere와 운영 활성화는 작업 11로 보류했으나, 2026-07-28 검증 완료(역사 기록, [`../testing/provider-evaluation-report.md`](../testing/provider-evaluation-report.md) 참고).
 
 ---
 

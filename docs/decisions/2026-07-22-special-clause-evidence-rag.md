@@ -1,7 +1,9 @@
 # 특약 공식근거 RAG 오프라인 구현 경계
 
+> **역사 기록:** 아래 "보류" 항목 중 실제 Gemini·Cohere 운영 활성화는 2026-07-28 [`../testing/provider-evaluation-report.md`](../testing/provider-evaluation-report.md)와 [`../testing/real-contract-validation.md`](../testing/real-contract-validation.md)에서 검증 완료되었습니다.
+
 - 날짜: 2026-07-22
-- 상태: 오프라인 구현·자동 검증 완료, 운영 활성화 보류
+- 상태: 오프라인 구현·자동 검증 완료, 운영 활성화는 이후 검증 완료(위 역사 기록 참고)
 
 ## 배경
 
@@ -28,11 +30,11 @@ API 키 없는 `offline-regex-bm25-template-v3` 기준:
 
 실측 원본은 `data/evaluation/results/offline_test_metrics.json`에 둔다.
 
-## 보류
+## 보류 (당시 기준 — 역사 기록 참고)
 
 - 잠긴 test 라벨의 독립 검토
 - 실제 Gemini embedding 재인덱싱
-- 실제 Cohere rerank와 Gemini 생성 검증
-- 운영 활성화
+- 실제 Cohere rerank와 Gemini 생성 검증 — ✅ 2026-07-28 검증 완료
+- 운영 활성화 — ✅ 2026-07-28 검증 완료
 
 이 단계 전에는 평가셋을 `human_reviewed`, 결과를 운영 검증 완료로 표시하지 않는다.
