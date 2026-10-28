@@ -118,7 +118,7 @@ python -m pip install -r requirements-minimum-mvp.txt
 
 | 항목 | 내용 |
 |---|---|
-| 프로젝트 | ESTCamp 3차 프로젝트 (K-디지털 트레이닝) |
+| 프로젝트 | 이스트소프트 AI 휴먼 4기 프로젝트 (K-디지털 트레이닝) |
 | 팀 규모 | 3인 (coding-jhj · myungkwang · jaehyun7849) |
 | 내 역할 | 팀장 · AI·LLM 담당 (역할분담표 기준: 모델 선정·프롬프트·정보 추출·질문 생성·성능 평가) |
 
