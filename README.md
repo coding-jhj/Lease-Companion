@@ -9,6 +9,18 @@
 > [!IMPORTANT]
 > 계약의 안전성·전세사기·적법성을 단정하지 않습니다. 확인 항목, 질문, 체크리스트, 증빙 행동을 제공합니다.
 
+## 스크린샷
+
+| 실제 계약 점검 | |
+|---|---|
+| <img src="docs/assets/readme/screenshots/01-checklist.png" width="380"> | <img src="docs/assets/readme/screenshots/02-result.png" width="380"> |
+| ① 빠진 항목 체크리스트로 진행 관리 | ② 조항별 공식 법령·표준계약서 근거로 판정 |
+
+| AI 아바타 계약 연습 | |
+|---|---|
+| <img src="docs/assets/readme/screenshots/03-avatar-practice.png" width="380"> | <img src="docs/assets/readme/screenshots/04-practice-report.png" width="380"> |
+| ③ 가상 중개사와 실시간 대화 연습 | ④ 대화 내용 기반 평가 리포트 |
+
 ## 핵심 기능
 
 - 계약 건 생성과 계약 문서 관리
