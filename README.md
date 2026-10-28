@@ -52,7 +52,7 @@ AI 추출값과 계약 상황은 분석 전에 사용자가 확인·수정합니
 | Backend | Python · FastAPI |
 | DB / 검색 | PostgreSQL · Chroma · BM25 |
 | AI | Gemini 3.5 Flash · gemini-embedding-001 · Cohere rerank-v4.0-pro |
-| 문서 처리 | PyMuPDF · PDF.js · Gemini VLM |
+| 문서 처리 | PyMuPDF · Gemini VLM |
 | 통합 스키마 | Pydantic (`ai/src/lease_companion_ai/schemas/`) |
 
 ## 빠른 실행
