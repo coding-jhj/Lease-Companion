@@ -47,7 +47,7 @@
 - 로컬 모델·규칙·RAG·상용 LLM의 산출을 섞지 않고 각 컴포넌트 책임대로 분리해 반환한다.
 - 모든 AI 결과는 구조화된 스키마(`src/lease_companion_ai/schemas/`)로 반환한다. 이 경로의 **Pydantic 모델이 런타임 통합 스키마의 단일 원본(canonical runtime schema)**이며, Backend가 공통 타입을 import해 재사용한다. JSON Schema는 Pydantic에서 생성한다. → [`../docs/decisions/2026-07-16-shared-pydantic-schema.md`](../docs/decisions/2026-07-16-shared-pydantic-schema.md)
 - 통합 스키마 필드 규약: 사용자 수정값 `user_corrected_value`, 확인 상태 `verification_status`, 추출 신뢰도는 3등급(`추출됨`/`불확실`/`실패`), 원문 증거는 `page`/`text`(둘 다 null 허용).
-- 구현 순서: **R01~R10 기반 실전 계약 점검 MVP를 먼저 완성하고, J01~J13 전체 판정으로 후속 확장한다.** J 확장 시 기존 R01~R10 필드의 이름·의미를 바꾸지 않는다(하위 호환).
+- 구현 순서: **R01–R10 기반 실전 계약 점검 MVP를 먼저 완성하고, J01–J13 전체 판정으로 후속 확장한다.** J 확장 시 기존 R01–R10 필드의 이름·의미를 바꾸지 않는다(하위 호환).
 - 근거가 부족하면 추측하지 않고 `확인 필요` / `확인 불가` 상태로 반환한다.
 - 프롬프트를 코드에 길게 하드코딩하지 않는다. 원본은 `prompts/`에 두고 버전을 관리한다. (`../docs/ai/prompt-management.md`)
 - 로컬 7B 가중치·체크포인트는 Git에 커밋하지 않는다. `training/`에는 설정·전처리·평가·메타데이터만 둔다. (`../docs/ai/fine-tuning-plan.md`)
@@ -65,7 +65,7 @@
 | `classification/` | Gemini 또는 선택 실험 출력을 조항 유형·명확성 후보 구조로 정리하고 safe fallback 제공 (판정 안 함) |
 | `rules/` | 문서 내부 판정·문서 교차검증 (최종 판정) |
 | `rag/` | 공식 근거 검색 (판정 안 함) |
-| `risk_patterns/` | R/J 결과를 DP01~DP08 피해 유형 관점으로 결정적으로 묶음. 판정 변경 안 함 |
+| `risk_patterns/` | R/J 결과를 DP01–DP08 피해 유형 관점으로 결정적으로 묶음. 판정 변경 안 함 |
 | `providers/` | 상용 LLM·임베딩 제공자 어댑터 (추출·재검토·생성·검색 호출) |
 | `generation/` | 쉬운 설명·질문·체크리스트·행동 생성 |
 | `guardrails/` | 단정 표현·근거 없는 출력 제한 |

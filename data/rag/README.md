@@ -45,7 +45,7 @@
 - 법령 3개(`SRC-HTA-LAW`·`SRC-HTA-DECREE`·`SRC-CIVIL-LEASE`), 법령 서식 `SRC-CONFIRM-FORM`, 법무부 표준 주택임대차계약서는 자유이용·공공누리 제1유형 근거를 확인해 정규화 원문과 SHA-256을 보존한다. `SRC-MOLIT-CHECKLIST`는 2026-07-20 팀 예외 규정으로 로컬 원문을 적재한다. 나머지 4개는 `metadata_only`로 원문을 커밋하지 않는다.
 - 배치 1 완료: 공식 source ID 전용 map·dev/test goldset 계약, RAG 내부 모델, 결정적 청킹, 로컬 BM25, provider protocol과 fake provider 검증.
 - 배치 2 완료: Chroma 로컬 인덱스·stale 탐지, Gemini embedding, RRF hybrid, Cohere rerank 어댑터와 offline 검증. 생성 인덱스는 Git에서 제외한다.
-- 배치 3 완료: R01~R10 공식 근거 enrichment와 분리된 dev/test retrieval 평가.
+- 배치 3 완료: R01–R10 공식 근거 enrichment와 분리된 dev/test retrieval 평가.
 - 배치 6 완료: `SRC-STD-LEASE` 로컬 원문 승격과 R/J retrieval 평가 갱신.
 - 배치 8 완료(2026-07-20): `SRC-MOLIT-CHECKLIST` 팀 예외 규정 로컬 원문 적재. test R recall 15/39→38/39, J recall 30/41→33/41, 로컬 가용 recall 1.0·비공식 노출 0 유지.
 - 배치 9 완료(2026-07-21): 국가법령정보센터 자유이용 정책을 확인한 `SRC-CONFIRM-FORM` 정규화 원문 적재. test R recall 38/39→39/39, J recall 33/41 유지, 로컬 가용 recall 1.0·비공식 노출 0 유지.

@@ -37,7 +37,7 @@ Extraction은 문서에서 읽은 사실과 조항 원문만 반환한다. Class
 - Classification은 조항 유형·명확성·책임 주체·조건 후보만 소유한다.
 - Classification은 별도 실행 단계지만 MVP에서는 Gemini 3.5 Flash provider를 재사용한다.
 - Classification은 RuleStatus·urgency·최종 판정 이유를 만들거나 변경하지 않는다.
-- J10~J12 최종 판정은 Python 규칙 엔진만 수행한다.
+- J10–J12 최종 판정은 Python 규칙 엔진만 수행한다.
 - 로컬 7B는 선택적 비교 실험에서 동일 입출력 계약을 구현할 수 있지만 MVP 경로에는 넣지 않는다.
 
 ## v1.9 전환 계약
@@ -63,7 +63,7 @@ Extraction은 문서에서 읽은 사실과 조항 원문만 반환한다. Class
 | input_snapshot_id | 문자열 | 사용자 확인 완료 입력 식별자 |
 | contract_id | 정수 | 실제 사용자 계약 건 식별자 |
 | case_id | 문자열 또는 null | 합성·평가 사례에서만 사용 |
-| clauses | ClauseInput 목록 | J10~J12 대상 조항 |
+| clauses | ClauseInput 목록 | J10–J12 대상 조항 |
 
 ClauseInput:
 
@@ -131,7 +131,7 @@ Classification 후보가 없거나 검증에 실패하면 규칙은 추측하지
 1. canonical schema v1.9.0에 ClassificationInput·ClassificationResult를 추가하고,
    v1.8.0 읽기 호환을 유지한다.
 2. Backend가 확인 완료 snapshot 뒤 classification 실행·저장 단계를 추가한다.
-3. J10~J12 adapter가 raw clause와 classification 후보를 함께 받도록 변경한다.
+3. J10–J12 adapter가 raw clause와 classification 후보를 함께 받도록 변경한다.
 4. 신규 v1.9 extraction은 deposit_return_condition·repair_responsibility를 null로 반환하고,
    기존 v1.8 payload는 값을 보존한 채 읽는다.
 5. Backend·Frontend·fixture·OpenAPI가 v1.9 계약으로 이동한 뒤 새 runtime/API를 활성화한다.
@@ -141,6 +141,6 @@ Classification 후보가 없거나 검증에 실패하면 규칙은 추측하지
 
 - ai/extraction: 장기적으로 명확성 후보 생성 책임을 제거한다.
 - ai/classification: 별도 실행 코드·prompt·평가 책임을 갖는다.
-- ai/rules: J10~J12에서 raw clause와 후보를 함께 검증한다.
+- ai/rules: J10–J12에서 raw clause와 후보를 함께 검증한다.
 - ai/schemas·backend·frontend: 다음 schema 버전 작업에서 공동 변경이 필요하다.
 - 공동 전환 완료 전까지 현재 v1.8.0 런타임과 API는 그대로 유지한다.

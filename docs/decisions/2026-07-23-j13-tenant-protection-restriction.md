@@ -44,7 +44,7 @@
 
 ### 2. C영역(책임·특약)에 넣는다
 
-E영역을 신설하지 않는다. J10~J12와 J13이 모두 특약 원문을 입력으로 쓰므로 묶이는 근거가
+E영역을 신설하지 않는다. J10–J12와 J13이 모두 특약 원문을 입력으로 쓰므로 묶이는 근거가
 있고, `AGENTS.md`는 "4영역 12항목" → "4영역 13항목" 한 줄만 고치면 된다.
 
 ### 3. 허용 상태는 3개로 제한한다
@@ -109,7 +109,7 @@ J13 연결 카탈로그 항목 1건 이상 매칭               → 확인 필�
 
 매칭 대상은 **`related_judgment_ids`에 `J13`이 있는 카탈로그 항목만**이다. 기존
 독소조항 6종(`SC-DEFERRED-REFUND` 등)이 매칭돼도 J13에는 영향을 주지 않는다. 그쪽은
-각자 연결된 R08·R09·R10·R18·J09~J12가 담당한다.
+각자 연결된 R08·R09·R10·R18·J09–J12가 담당한다.
 
 **(2026-07-24 정정, owner 승인)** 위 문단은 초안 시점의 의도였고 구현되지 않았다.
 `_result()`에는 J13 전용 분기가 없다 — J13은 다른 판정과 동일하게 `judgment_spec.csv`의
@@ -178,7 +178,7 @@ J13이 항상 존재하는 한 R 링크는 쓰이지 않는다. 검증 대상만
 ### 허용 시퀀스는 "저장된 적이 있는 길이" 이력으로 판정한다
 
 **(2026-07-23 재검토 후 결정, owner 승인)** 시퀀스를 2개(레거시/현행)만 하드코딩하면
-J14가 추가되는 순간 이번 릴리스가 저장한 J01~J13 결과가 전부 `ValidationError`로
+J14가 추가되는 순간 이번 릴리스가 저장한 J01–J13 결과가 전부 `ValidationError`로
 읽히지 않는다 — 이 문서 전체가 막으려는 사고를 한 릴리스 뒤로 미루는 것뿐이다.
 
 대신 append-only 상수로 "지금까지 실제로 저장된 적이 있는 시퀀스 길이"의 이력을
@@ -200,7 +200,7 @@ HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS: tuple[int, ...] = (12,)  # J13 이전 레�
 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 먼저 append한다. 이 목록에서 항목을
 지우거나 바꾸지 않는다 — append-only다.
 
-레거시 J01~J12는 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 12가 남아있는 한
+레거시 J01–J12는 `HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS`에 12가 남아있는 한
 영구히 허용된다. DB에 저장된 과거 `AnalysisRun.result`가 계속 읽힌다.
 
 이 변경(또는 이후 유지보수 규칙)을 빠뜨리면 과거 분석 결과 전량이
@@ -216,7 +216,7 @@ HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS: tuple[int, ...] = (12,)  # J13 이전 레�
 | `unified.py:1233` `JudgmentResult.judgment_id` | 같은 정규식 | 같은 방식 |
 | `unified.py:933` `JudgmentInput.judgment_ids` | `max_length=12` | `len(JUDGMENT_IDS)` |
 | `unified.py:1280` `AnalysisRunResult.judgments` | `max_length=12` | `len(JUDGMENT_IDS)` |
-| `unified.py:788` 오류 메시지 | `"J01~J12 canonical 순서"` | 일반 문구 |
+| `unified.py:788` 오류 메시지 | `"J01–J12 canonical 순서"` | 일반 문구 |
 
 정규식을 상수에서 생성하면 두 곳이 어긋날 여지가 사라진다.
 
@@ -234,7 +234,7 @@ TDD로 진행하며 빨간불을 두 번 확인한다.
 ```
 1. RED   J13 포함 시퀀스가 AnalysisRunResult에 들어간다   → 실패 (J13 미존재·정규식 거부)
 2. GREEN JUDGMENT_IDS·정규식·max_length·J13 규칙 구현      → 통과
-3. RED   레거시 J01~J12 결과가 여전히 읽힌다               → 실패 (허용 시퀀스가 하나뿐)
+3. RED   레거시 J01–J12 결과가 여전히 읽힌다               → 실패 (허용 시퀀스가 하나뿐)
 4. GREEN HISTORICAL_JUDGMENT_SEQUENCE_LENGTHS 도입          → 둘 다 통과
 ```
 

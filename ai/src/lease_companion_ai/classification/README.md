@@ -6,7 +6,7 @@
 canonical v1.9.0은 ClassificationInput·ClassificationResult를 제공하고 v1.8.0 payload 읽기를
 허용한다. 현재 확인 완료 InputSnapshot을 ClassificationInput으로 변환하는 순수 builder,
 ClassificationProvider·Gemini adapter·결정적 Fake provider, 후보를 추측하지 않는 safe fallback
-service가 구현됐다. J10~J12 adapter와 Backend worker도 이 계약으로 연결됐으며,
+service가 구현됐다. J10–J12 adapter와 Backend worker도 이 계약으로 연결됐으며,
 classification 결과는 내부 저장하고 API에는 노출하지 않는다.
 
 결정과 전환 순서:
@@ -36,7 +36,7 @@ classification 결과는 내부 저장하고 API에는 노출하지 않는다.
 
 ## 입력
 
-확인 완료 InputSnapshot에서 J10~J12 대상 조항만 복사한 ClassificationInput.
+확인 완료 InputSnapshot에서 J10–J12 대상 조항만 복사한 ClassificationInput.
 
 - schema_version
 - input_snapshot_id
@@ -81,7 +81,7 @@ ExtractedField는 변경하지 않는다.
 
 문구가 없으면 후보를 만들지 않는다. 미기재는 extraction의 null 상태를 Python 규칙이 판단한다.
 
-## J10~J12 연결
+## J10–J12 연결
 
 | 판정 | 원문 입력 | 후보 | 최종 판정 |
 |------|-----------|------|-----------|
@@ -109,5 +109,5 @@ ExtractedField는 변경하지 않는다.
 ## 현재 통합 상태
 
 1. Backend worker가 snapshot 이후 `analyze_with_classification()`을 실행하고 결과를 내부 저장한다.
-2. J10~J12 adapter·fixture·평가는 canonical classification 후보 계약을 사용한다.
+2. J10–J12 adapter·fixture·평가는 canonical classification 후보 계약을 사용한다.
 3. v1.9 신규 extraction은 기존 명확성 후보 필드를 `null`로 반환하고 v1.8 읽기 호환은 유지한다.

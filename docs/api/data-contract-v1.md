@@ -15,14 +15,14 @@
 
 - **준비 완료(A)**: 통합 Pydantic 데이터 계약 + 기존 R01–R10 연결 어댑터 + JSON Schema·fixture 생성 + 회귀 테스트 + 실제 minimum MVP AI 파이프라인 내부 연결.
 - **주의**: 기존 `/api/minimum-mvp` 데모 API는 요청·응답 호환을 위해 평면 dict를 유지하지만, 내부 추출·분석은 `DocumentExtraction`·`InputSnapshot`·`AnalysisRunResult` 검증을 통과한다. 이 legacy 요청은 최초값과 수정값을 따로 보내지 않으므로 전달된 값을 "사용자가 확인한 최종 effective value"로만 해석하며 수정 이력은 보존하지 않는다.
-- **현재 소비 상태**: Backend는 confirm·R01~R10/J01~J13 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend는 v1.8.0·v1.9.0 wire DTO와 v1.9 fixture, R/J 생성 결과 화면을 지원한다.
+- **현재 소비 상태**: Backend는 confirm·R01–R10/J01–J13 분석 worker·결과 저장·ContractContext 기반 단계별 안내·prompt version·안정 action item 분리 저장에서 AI canonical 타입을 직접 사용한다. Frontend는 v1.8.0·v1.9.0 wire DTO와 v1.9 fixture, R/J 생성 결과 화면을 지원한다.
 - **v1.9.0 구현 상태(A·B)**: `ClassificationInput`·`ClassificationResult`, Gemini provider, provider/safe_fallback provenance, classification→규칙 분석 pipeline helper와 CASE-001 fixture를 구현했다. v1.8.0 payload 읽기는 유지한다. Backend worker는 `analyze_with_classification()`을 호출하고 결과를 내부 저장하며 API에는 노출하지 않는다.
 - **v1.4.0 판정 계약**: 기존 R/J 출력 분리를 유지하고, 확인 완료 snapshot에서 판정별 필수 `ExtractedField`를 복사하는 `JudgmentInput`을 추가했다. null J 입력은 구조화 `issue_code`를 요구한다.
 - **v1.5.0 ContractContext 활용 계약**: `GenerationResult.stage_guidance`가 immutable `ContractContext`와 J 결과를 결합해 입금 전 질문·서명 전 체크리스트·계약 직후 행동·보관 대상을 결정론적으로 기록한다.
 - **v1.6.0 생성 추적 계약**: `GenerationResult.prompt_version`이 사용한 prompt set 버전을 기록한다. 같은 버전은 provider 요청의 `prompt_version`과 `questions/checklists/summaries` 파일 헤더에 일치해야 한다.
 - **v1.7.0 J 생성 계약**: `JudgmentGuidance`와 `GenerationResult.judgment_items`를 추가했다. 기존 R `items`와 J `judgment_items`는 별도 ID 축이며, 각 source ID는 해당 분석 항목의 `evidence_sources`만 참조한다.
 - **v1.8.0 안정 action item 계약**: R/J `signing_checklist_items`·`post_contract_action_items`에 `{item_key, text}`를 추가했다. `item_key`는 Python이 `result_id|kind|text`에서 생성하며 Backend가 형식·kind 일치를 검증한다.
-- **v1.9.0 표시용 피해 유형 계약**: `AnalysisRunResult.damage_patterns`에 DP01~DP08 비교를 추가했다. R/J 판정을 변경하지 않으며 상태는 `관련 확인 신호 있음`·`제출 자료에서 관련 신호 미확인`·`자료 부족으로 확인 불가`·`예방 확인 필요`만 사용한다. 검증된 로컬 사례가 있고 현재 비교 상태가 확인 대상이면 `reference_cases`에 연결하며, 없으면 `[]`다.
+- **v1.9.0 표시용 피해 유형 계약**: `AnalysisRunResult.damage_patterns`에 DP01–DP08 비교를 추가했다. R/J 판정을 변경하지 않으며 상태는 `관련 확인 신호 있음`·`제출 자료에서 관련 신호 미확인`·`자료 부족으로 확인 불가`·`예방 확인 필요`만 사용한다. 검증된 로컬 사례가 있고 현재 비교 상태가 확인 대상이면 `reference_cases`에 연결하며, 없으면 `[]`다.
 - **v1.9.0 행동 안내 확장**: R/J 안내에 `request_templates`, 단계 안내에 `before_contract_actions`·`during_contract_actions`·`closing_day_actions`·`after_contract_actions`를 추가했다. 이전 payload에서 필드가 없으면 기존 체크리스트·계약 직후 행동으로 대체한다.
 - **생성 계약 유지**: `GenerationResult`·`RuleGuidance`·`JudgmentGuidance`·`SpecialClauseGuidance`·`StageGuidance`는 공개 canonical 타입이다. `AnalysisRunResult`와 분리하며 `analysis_run_id`·`contract_id`·`rule_id`·`judgment_id`·`clause_id`·공식 `source_ids` 연결을 `validate_generation_result_for_analysis()`로 저장 전에 검증한다.
 
@@ -76,7 +76,7 @@ conda run -n lease-py310 python -m pytest ai/tests/generation/test_gemini_genera
 
 **공통 값 규약**: `contract_id` = Backend DB와 같은 **양의 정수**(fixture `1001`, 문자열·bool 거부) / `case_id` = 합성 평가 문자열(`CASE-001`) / `contract_type` = `전세`·`보증부 월세`·`일반 월세` / `contract_stage` = `계약금 입금 전`·`서명 전`·`계약 직후`.
 
-**공통 규칙**: R01–R10 필수 13키는 값이 null이어도 항상 존재 · 판독 실패 = null + `confidence:"실패"` + `failure_reason` · 빈 목록 금지 · `source_evidence.page`/`text`는 키 상존·값 null 허용 · 필드 타입은 모델이 강제(예: `owner_names`는 비어 있지 않은 `string[]`) · `InputSnapshot`은 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증하며 애플리케이션의 일반 변경 API에서 내부 필드·목록·매핑 수정을 차단 · `AnalysisRunResult.results`는 이전 R01–R10 또는 신규 R01–R24 전체를 순서대로 요구 · `judgments`는 빈 목록 또는 canonical 순서 전체(현재 J01~J13, 레거시 J01~J12 읽기 호환)만 허용 · `damage_patterns`는 빈 목록 또는 DP01~DP08 전체 순서만 허용.
+**공통 규칙**: R01–R10 필수 13키는 값이 null이어도 항상 존재 · 판독 실패 = null + `confidence:"실패"` + `failure_reason` · 빈 목록 금지 · `source_evidence.page`/`text`는 키 상존·값 null 허용 · 필드 타입은 모델이 강제(예: `owner_names`는 비어 있지 않은 `string[]`) · `InputSnapshot`은 `contract_context`를 포함하고 양쪽 `contract_id` 일치를 검증하며 애플리케이션의 일반 변경 API에서 내부 필드·목록·매핑 수정을 차단 · `AnalysisRunResult.results`는 이전 R01–R10 또는 신규 R01–R24 전체를 순서대로 요구 · `judgments`는 빈 목록 또는 canonical 순서 전체(현재 J01–J13, 레거시 J01–J12 읽기 호환)만 허용 · `damage_patterns`는 빈 목록 또는 DP01–DP08 전체 순서만 허용.
 
 **결과 역할·행동 규칙**: `result_type`은 R01·R02·R06·R08·R09=`judgment`, R03·R04·R05·R07·R10=`fact_flag`로 고정된다. `triggers_actions`는 현재 status가 `일치`·`명확`·`적용 제외`면 `false`, 그 외(`불일치`·`불명확`·`미기재`·`상충 가능`·`확인 필요`·`확인 불가`)면 `true`다. 모델은 잘못된 조합을 거부한다.
 
@@ -170,8 +170,8 @@ run.result = analysis.model_dump(mode="json")
 | safe fallback | `classification_method="safe_fallback"`, 안전한 `fallback_reason_code`, `candidates=[]` |
 | `classification_error` | provider 성공과 safe fallback 모두 `null`. fallback 사유를 중복 저장하지 않음 |
 | 오류 정보 | provider 원문 예외·응답 원문·PII를 DB·사용자 응답·일반 로그에 저장하거나 노출하지 않음 |
-| 분석 지속 | provider 미설정·호출 실패·응답 검증 실패는 `ClassificationService`가 safe fallback으로 흡수하며 R01~R10과 J01~J13 분석을 계속함 |
-| 판정 책임 | classification 후보는 J10~J12만 소비. Python 규칙이 `RuleStatus`·`urgency`·최종 이유를 결정하며 classification은 이를 변경하지 않음 |
+| 분석 지속 | provider 미설정·호출 실패·응답 검증 실패는 `ClassificationService`가 safe fallback으로 흡수하며 R01–R10과 J01–J13 분석을 계속함 |
+| 판정 책임 | classification 후보는 J10–J12만 소비. Python 규칙이 `RuleStatus`·`urgency`·최종 이유를 결정하며 classification은 이를 변경하지 않음 |
 | R08·R09 | v1.9 deprecated 후보 필드가 `null`이면 `확인 필요` 유지. classification 후보를 구 필드에 다시 주입하지 않음 |
 
 provider 성공 저장 예시:
@@ -213,14 +213,14 @@ provider 미설정 safe fallback 저장 예시:
 }
 ```
 
-두 결과 모두 정상적인 `ClassificationResult`다. safe fallback은 분석 실행 실패가 아니며, 후보가 없으므로 J10~J12는 원문과 규칙별 입력 경계에 따라 `확인 필요` 또는 `확인 불가`를 반환한다. 내부 classification 결과와 오류는 현재 API에 노출하지 않는다.
+두 결과 모두 정상적인 `ClassificationResult`다. safe fallback은 분석 실행 실패가 아니며, 후보가 없으므로 J10–J12는 원문과 규칙별 입력 경계에 따라 `확인 필요` 또는 `확인 불가`를 반환한다. 내부 classification 결과와 오류는 현재 API에 노출하지 않는다.
 
 Backend 연결 테스트는 최소 다음 경계를 고정한다.
 
 - provider 성공 결과 저장 후 `ClassificationResult.model_validate()` 왕복 성공
 - provider 없음·provider 오류·응답 검증 실패에서 safe fallback 저장 후 분석 `completed`
-- safe fallback에서도 R01~R10 결과 순서와 기존 판정 불변
-- J10~J12만 classification 후보를 소비하고 R08·R09는 `확인 필요` 유지
+- safe fallback에서도 R01–R10 결과 순서와 기존 판정 불변
+- J10–J12만 classification 후보를 소비하고 R08·R09는 `확인 필요` 유지
 - 분석 상세 API 응답에 `classification_result`·`classification_error`·provider 원문 오류가 노출되지 않음
 
 **B 인계 확인 체크리스트** (v1.8.0·v1.9.0 공통 R/J 저장과 생성 계약 소비 확인):
@@ -249,7 +249,7 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 - nullable 원문 증거 처리: `page`/`text`가 null이면 원문 대조 UI를 숨기고 "원문 위치 미확인" 표시(키는 항상 존재).
 - 수정 요청은 `correction_request.json` 구조로 생성해 전송한다.
 - 결과 화면은 `analysis_run_result.json`의 `status`·`urgency`로 구현한다. **status·urgency를 종합 안전·위험 점수로 바꾸지 않는다**(화면 3그룹 매핑은 `frontend/AGENTS.md`).
-- `judgments=[]`이면 R-only 실행으로 처리하고, 값이 있으면 canonical 순서 전체를 별도 판정 목록으로 소비한다. 레거시 J01~J12 또는 현행 J01~J13 중 하나이며, 각각 정확히 1개씩 순서대로 담는다. 과거에 저장된 J01~J12 결과는 계속 읽을 수 있다.
+- `judgments=[]`이면 R-only 실행으로 처리하고, 값이 있으면 canonical 순서 전체를 별도 판정 목록으로 소비한다. 레거시 J01–J12 또는 현행 J01–J13 중 하나이며, 각각 정확히 1개씩 순서대로 담는다. 과거에 저장된 J01–J12 결과는 계속 읽을 수 있다.
 - `result_type`으로 판정(`judgment`)과 사실 플래그(`fact_flag`)를 구분하고, `triggers_actions=true`인 결과만 질문·체크리스트·행동 활성화 대상으로 처리한다.
 - B가 OpenAPI에 공개한 `generation_result`를 canonical `GenerationResult` 구조로 소비한다. `null`·생성 실패·`template_fallback`을 처리하고 규칙 `status`·`urgency`·`reason`은 변경하지 않는다.
 
@@ -270,7 +270,7 @@ Backend 연결 테스트는 최소 다음 경계를 고정한다.
 |---|---|
 | 1. A 패키지 준비 | **완료** — canonical v1.8.0 읽기 호환·v1.9.0 신규 출력, classification·계약 연습 포함 Schema 16개, fixture 9개, J gold 51건 |
 | 2. B 소비 확인 | **완료** — confirm·R/J 분석·생성 분리 저장, classification worker 실행·내부 저장, provider 성공·실패·safe fallback·API 미노출 검증 완료 |
-| 3. Frontend 소비 확인 | **완료** — v1.8.0·v1.9.0 DTO, v1.9 fixture, J10~J12 조항 명확성 화면, classification fallback·내부 오류 미노출, 모바일 E2E 연결 |
+| 3. Frontend 소비 확인 | **완료** — v1.8.0·v1.9.0 DTO, v1.9 fixture, J10–J12 조항 명확성 화면, classification fallback·내부 오류 미노출, 모바일 E2E 연결 |
 
 최종 소비 완료는 위 체크리스트와 OpenAPI 소비자 테스트에서 **필드명 변경이 없음**을 확인한 시점이다.
 

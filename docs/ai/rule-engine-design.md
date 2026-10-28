@@ -10,7 +10,7 @@ Python 규칙 엔진(`rules`)이 정규화된 추출값과 조항 구조화 후�
 - 구조화된 조항 유형·명확성 후보 (`classification` 출력 — 상용 LLM 구조화(Gemini 3.5 Flash) 결과, 선택적으로 로컬 7B 실험 결과를 정리한 값) — 참고 신호이며, 규칙이 최종 판정을 확정한다.
 
 현재 v1.8.0은 공개 schema 호환을 위해 명확성 후보가 Gemini extraction 결과에 포함된다.
-canonical v1.9부터 J10~J12는 확인 완료 조항 원문과 별도 classification 결과를 함께 받는다.
+canonical v1.9부터 J10–J12는 확인 완료 조항 원문과 별도 classification 결과를 함께 받는다.
 경계와 입출력 계약은 [classification ADR](../decisions/2026-07-18-classification-boundary.md)을 따른다.
 
 ## 판정 범위
@@ -36,9 +36,9 @@ canonical v1.9부터 J10~J12는 확인 완료 조항 원문과 별도 classifica
 
 ## 구현 상태
 
-- R01~R10은 `data/rules/rule_spec.csv`와 `rules/minimum_mvp.py`에서 실행한다.
-- J01~J13은 `data/rules/judgment_spec.csv`와 `rules/judgments.py`에서 실행하며 goldset 51건으로 검증한다.
-- `schemas/adapters.py::analyze_snapshot()`이 R01~R10과 J01~J13을 한 번의 canonical 분석 결과로 구성한다.
+- R01–R10은 `data/rules/rule_spec.csv`와 `rules/minimum_mvp.py`에서 실행한다.
+- J01–J13은 `data/rules/judgment_spec.csv`와 `rules/judgments.py`에서 실행하며 goldset 51건으로 검증한다.
+- `schemas/adapters.py::analyze_snapshot()`이 R01–R10과 J01–J13을 한 번의 canonical 분석 결과로 구성한다.
 - `rag/service.py`가 `data/rules/judgment_spec.csv`의 판정별 공식자료 allowlist를 읽어, 행동이 필요한 J 결과에만 공식 근거를 검색·연결한다. 허용된 로컬 원문이 없으면 `evidence_sources=[]`를 유지한다.
 - RAG와 후속 생성은 규칙 엔진이 정한 상태·시급도·판정 이유를 변경하지 않는다.
 

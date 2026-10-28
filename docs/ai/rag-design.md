@@ -47,7 +47,7 @@
 
 ## 배치 3 구현 상태 (2026-07-17)
 
-- R01~R10 행동 발동 결과에 로컬 공식 원문 검색 결과만 연결한다. `RuleStatus`·`urgency`·`reason` 등 판정 필드는 검색 전후 동일하게 유지한다.
+- R01–R10 행동 발동 결과에 로컬 공식 원문 검색 결과만 연결한다. `RuleStatus`·`urgency`·`reason` 등 판정 필드는 검색 전후 동일하게 유지한다.
 - dev 34건과 최종 test 10건을 분리해 Top-5 포함률·전체 및 로컬 가용 expected source recall·인용 메타데이터·비공식 출처 노출을 측정했다. 기대 source 누락은 원문 부재, R allowlist 제외, BM25 Top-20 후보 누락, Top-5 밖으로 분류한다. 원문 부재는 중복 제거 source ID 목록으로, 나머지는 검색 개선을 위해 사례 ID·규칙 ID·source ID를 남긴다. 결과는 `data/rag/evaluation/`에 있다.
 - 검색 가능한 로컬 원문은 법령 3개, 중개대상물 확인·설명서 1개, 표준 주택임대차계약서 1개, 안심 전세계약 체크리스트 1개다. 나머지 정답 출처는 metadata-only이므로 목표값으로 보정하지 않고 실측값과 제한을 함께 기록한다.
 - 배치 3 당시 최종 test 기준 전체 기대 source recall은 4/39(10.26%)이고, 로컬 가용 기대 source recall은 4/5(80%)다. 누락은 원문 부재 34개와 BM25 후보 누락 1개이며, 검색 알고리즘·질의 개선 대상은 후자다.
@@ -62,7 +62,7 @@
 
 ## 배치 5 구현 상태 (2026-07-18)
 
-- R01~R10의 `RetrievalQuery`와 분리된 J01~J13 전용 `JudgmentRetrievalQuery`를 추가했다. J 질의는 판정 ID·판정명·상태·선택적 비식별 문맥과 판정별 허용 source ID를 포함한다.
+- R01–R10의 `RetrievalQuery`와 분리된 J01–J13 전용 `JudgmentRetrievalQuery`를 추가했다. J 질의는 판정 ID·판정명·상태·선택적 비식별 문맥과 판정별 허용 source ID를 포함한다.
 - 판정별 허용 source ID는 `data/rules/judgment_spec.csv`의 `official_source_ids`를 단일 입력으로 읽는다. 검색 후보는 이 allowlist에 포함된 `official_verified` 청크만 남긴 뒤 Top-5를 구성한다.
 - 행동이 발동된 J 판정만 근거를 보강한다. 검색 전후 `status`·`urgency`·`reason`은 동일하며, 허용 원문이 로컬 corpus에 없으면 다른 유사 자료를 붙이지 않고 `evidence_sources=[]`를 유지한다.
 - 표준 주택임대차계약서와 안심 전세계약 체크리스트는 로컬 원문으로 검색할 수 있다. 등기 자료 등 metadata-only 출처만 허용된 J 항목은 기본 로컬 실행에서 `evidence_sources=[]`가 될 수 있으며, 검색 성공률을 임의로 보정하지 않는다.
@@ -85,6 +85,6 @@
 
 - 재배포 조건이 명시적으로 허용된 공식 원문의 실제 문서 구조를 확인한 뒤 기본 청킹 크기(`1200`)·중첩(`120`)을 평가
 - metadata-only 공식자료 4개는 적합한 근거 범위와 이용조건을 추가 확인한 뒤 허용 원문만 적재
-- metadata-only 원문 추가 후 J01~J13 판정별 retrieval goldset·source recall 측정
+- metadata-only 원문 추가 후 J01–J13 판정별 retrieval goldset·source recall 측정
 - 별도 키·비용 승인 후 Gemini·Cohere smoke test와 실측 latency·비용 기록
 - 작업 7에서 `SpecialClauseRetrievalService.enrich()`를 catalog→R/J 뒤, 생성 앞에 연결

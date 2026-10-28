@@ -1,6 +1,6 @@
 # AI 파이프라인
 
-계약 문서 입력부터 저장까지의 단계별 흐름과 컴포넌트 책임을 정의한다. 각 단계 출력은 구조화 스키마(`ai/src/lease_companion_ai/schemas/` — **Pydantic 모델 단일 원본**, → [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md))를 따르고, `pipelines`가 PoC·MVP 흐름을 각각 연결한다. 규칙 엔진은 R01~R10 축을 유지하면서 J01~J13 전체 판정을 별도 축으로 실행한다.
+계약 문서 입력부터 저장까지의 단계별 흐름과 컴포넌트 책임을 정의한다. 각 단계 출력은 구조화 스키마(`ai/src/lease_companion_ai/schemas/` — **Pydantic 모델 단일 원본**, → [`../decisions/2026-07-16-shared-pydantic-schema.md`](../decisions/2026-07-16-shared-pydantic-schema.md))를 따르고, `pipelines`가 PoC·MVP 흐름을 각각 연결한다. 규칙 엔진은 R01–R10 축을 유지하면서 J01–J13 전체 판정을 별도 축으로 실행한다.
 
 ## 단계 흐름
 
@@ -12,7 +12,7 @@
   → 상용 LLM 조항 구조화·불명확성 후보(Gemini 3.5 Flash)   ← (선택)로컬 7B 성능비교 실험은 MVP 크리티컬 패스 제외
   → Python 규칙 엔진 문서 내부 판정·교차검증   ← 최종 판정
   → 공식자료 RAG (근거)
-  → 피해 유형 비교(DP01~DP08, 기존 판정의 표시용 묶음)
+  → 피해 유형 비교(DP01–DP08, 기존 판정의 표시용 묶음)
   → 검증된 유사 참고 사례 (공식 근거와 분리, corpus 없으면 빈 목록)
   → 저신뢰 결과 상용 LLM 재검토
   → 쉬운 설명·질문·체크리스트·행동 생성

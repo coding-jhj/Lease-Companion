@@ -78,9 +78,9 @@ tests/            컴포넌트별·전체 흐름 테스트
 
 ## 현재 상태 / TODO
 
-- 구현됨(실전 계약 점검): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `classification`(Gemini provider·safe fallback), `rules`(R01~R24·J01~J13), `pipelines`, canonical `schemas` v1.8.0 읽기 호환·v1.9.0 신규 출력 경로. Backend worker가 classification과 규칙 결과를 내부 저장한다.
+- 구현됨(실전 계약 점검): `ingestion`(형식·크기·페이지·픽셀 검증, PyMuPDF), `extraction`(스캔 원본 Gemini 구조화·디지털 텍스트 구조화·정규식 폴백), `normalization`, `classification`(Gemini provider·safe fallback), `rules`(R01–R24·J01–J13), `pipelines`, canonical `schemas` v1.8.0 읽기 호환·v1.9.0 신규 출력 경로. Backend worker가 classification과 규칙 결과를 내부 저장한다.
 - 구현됨(RAG·특약): 공식 출처 manifest는 `official_verified` 10건이며 그중 재배포 조건을 충족한 로컬 source 6건을 사용한다. 결정적 청킹·BM25, Chroma·Gemini embedding·Cohere rerank 어댑터, hybrid/RRF·fallback, R/J 근거 enrichment, 특약 6유형 매칭·검색·생성·Guardrail·평가를 구현했다. key·provider·인덱스 실패 시 로컬 BM25 또는 빈 근거로 축소한다. 실제 외부 provider 품질 검증은 미수행이다.
-- 구현됨(생성 배치 4~5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
+- 구현됨(생성 배치 4–5 + A10 offline): 생성 Pydantic 계약·provider protocol·fake provider·버전 프롬프트·결정적 fallback, 외부 요청 PII 토큰화, 금지 단정·grounding·source ID·규칙 불변 Guardrail, Gemini `gemini-3.5-flash` provider와 opt-in CASE-001 smoke 경계. Backend worker가 규칙 결과와 생성 결과를 분리 저장하며 키가 없으면 template fallback을 사용한다. 실제 유료 smoke는 미수행.
 - 구현됨(평가·routing): 추출·사용자 수정·R/J 규칙·RAG·생성·Guardrail·PII·end-to-end offline 평가와 provider 오류·할당량·응답 검증 실패 분류, provider→결정적 fallback·embedding→BM25·Cohere→hybrid fallback 실행 계층.
 - 구현됨(계약 연습): 승인 시나리오 3개, 답변 평가·상태 머신, Gemini/Fake provider, Backend 세션·턴·결과 API, Frontend 텍스트 대화·복기 흐름.
 - 미구현·후속: 선택 실험 `local_model`, 실제 Gemini·Cohere provider 품질·비용 검증, routing 전용 품질 평가, 연습 미디어·음성, 운영 배포.
@@ -88,5 +88,5 @@ tests/            컴포넌트별·전체 흐름 테스트
 - 확정(2026-07-14 변경): 스캔 PDF·이미지는 Gemini 3.5 Flash가 원본에서 고정 Pydantic 필드를 1회 호출로 직접 추출한다. 디지털 PDF는 PyMuPDF 텍스트 경로다. PaddleOCR-VL은 선택 비교실험이다 (`../docs/decisions/2026-07-14-ocr-gemini-integration.md`).
 - 확정·구현(offline 경계): 임베딩 gemini-embedding-001+BM25·리랭커 Cohere rerank-v4.0-pro·Chroma 로컬 모드. 실제 유료 호출 smoke test는 별도 승인 필요 (`../docs/decisions/2026-07-16-mvp-platform-stack.md`).
 - 구현 완료(2026-07-19): `schemas/`의 Pydantic 모델이 런타임 통합 스키마 단일 원본이다. v1.9.0은 v1.8.0 읽기 호환과 `ClassificationInput`·`ClassificationResult`·fallback provenance 계약을 추가했다. Frontend는 두 버전을 지원하며, Backend worker는 classification 실행 결과를 내부 저장하고 API에는 노출하지 않는다 (`../docs/decisions/2026-07-18-classification-boundary.md`).
-- 구현 완료(2026-07-18): R01~R10 기반 분석을 유지하면서 J01~J12 결정론적 판정과 Backend 저장·조회 세로 슬라이스를 연결했다.
+- 구현 완료(2026-07-18): R01–R10 기반 분석을 유지하면서 J01–J12 결정론적 판정과 Backend 저장·조회 세로 슬라이스를 연결했다.
 - TODO: 로컬 7B 베이스 모델(선택 성능비교 실험 — MVP 크리티컬 패스 아님) → `local_model`/`training` 구현 (`../docs/ai/fine-tuning-plan.md`)

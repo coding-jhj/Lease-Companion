@@ -25,7 +25,7 @@ RTX 3070 8GB Windows 환경에서 한국어 Supertonic 3 WAV와 MuseTalk 1.5 MP4
 - 립싱크: 1280×720, 25fps, H.264/AAC, 7.31초 MP4 생성
 - MuseTalk 최초 일반 inference: 모델 로드와 얼굴 전처리를 포함해 약 235초
 - 2026-07-24 최적화 전 최신 일반 inference: 7.66초 입력에 약 149초
-- 상주 모델·avatar cache·NVENC·batch 12 적용 후 7.66초 warm 입력: 13.42~17.09초
+- 상주 모델·avatar cache·NVENC·batch 12 적용 후 7.66초 warm 입력: 13.42–17.09초
 - 아바타 음성을 최대 5.5초로 제한한 첫 사용자 warm 입력: 11.47초
 - Supertonic까지 이미 warm인 대표 짧은 문장 end-to-end: 4.67초
 - 2026-07-25 두 문장·63자 대표 입력: `SUPERTONIC_SPEED=1.0`에서 21.88초, `1.1`에서 12.55초. 65자 제한의 16초 목표는 `1.1` 기본값과 상주 runtime을 전제로 한다.

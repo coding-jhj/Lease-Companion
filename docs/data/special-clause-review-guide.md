@@ -19,7 +19,7 @@
 **대상**: `special_clause_catalog.json`, `special_clause_evidence_map.csv`.
 
 ### 체크리스트 (유형 6개 각각)
-- [ ] `related_judgment_ids`·`related_rule_ids`가 그 특약 유형의 논점과 맞는가? (허용 ID: J09~J12, R08~R10, R18~R19)
+- [ ] `related_judgment_ids`·`related_rule_ids`가 그 특약 유형의 논점과 맞는가? (허용 ID: J09–J12, R08–R10, R18–R19)
 - [ ] `allowed_source_sections`의 **조·항이 실제로 그 논점의 근거인가?** 원문 대조:
   - `data/rag/sources/SRC-HTA-LAW.txt`(주임법), `SRC-STD-LEASE.txt`(표준계약서), `SRC-CIVIL-LEASE.txt`(민법 536/615/623/626/654), `SRC-CONFIRM-FORM.txt`(확인설명서), `SRC-MOLIT-CHECKLIST.txt`
   - 특히 주임법 **제10조(강행규정)** 인용이 과도하지 않은지(모든 유형에 붙일 근거는 아님)
@@ -42,7 +42,7 @@
 - [ ] **라벨 정확성**: 각 문장의 `expected_catalog_ids`가 사람 판단과 일치하는가?
 - [ ] **누출 없음**: `catalog_test`의 문장이 `catalog_dev`와 같지 않은가? (패러프레이즈여야 함)
 - [ ] **5범주 커버**: 유형마다 positive_paraphrase / normal_negative / negation / conditional_exception / compound가 있는가? (혼자 작업용 잠금본은 6유형 × 5범주를 자동 검증함)
-- [ ] **어려운 케이스**: 부정문("~하지 않는다"), 예외("관계없이"), 복합문(한 문장 2논점), 표현 변형이 충분한가? AI가 놓칠 만한 문장을 사람이 추가
+- [ ] **어려운 케이스**: 부정문(예: "하지 않는다" 형태), 예외("관계없이"), 복합문(한 문장 2논점), 표현 변형이 충분한가? AI가 놓칠 만한 문장을 사람이 추가
 - [ ] **retrieval_test**: 문장별 `expected_source_ids`·`expected_sections`가 근거 범위표와 맞는가? 근거 없음 케이스도 있는가?
 - [ ] **generation_cases**: `allowed_core_meaning`이 근거를 넘어서 단정하지 않는가? 금지 표현 목록이 맞는가?
 
@@ -51,7 +51,7 @@
 - `catalog_test.jsonl`은 6유형 × 5범주 30건을 먼저 잠갔다.
 - `retrieval_test.jsonl`과 `generation_cases.jsonl`은 각 6유형과 근거 없음 사례를 잠갔다.
 - SHA256은 `data/evaluation/special-clauses/locked_test_hashes.json`에서 관리한다.
-- 작업 3~10에서는 코드 결과에 맞춰 test 정답을 바꾸지 않는다. 라벨 오류가 확인되면 사유를 기록하고 명시적으로 다시 잠근다.
+- 작업 3–10에서는 코드 결과에 맞춰 test 정답을 바꾸지 않는다. 라벨 오류가 확인되면 사유를 기록하고 명시적으로 다시 잠근다.
 - 현재 자동 검증은 구조·분리·근거 범위를 확인할 뿐, 독립적인 라벨 검토나 품질 측정을 대신하지 않는다.
 
 ### 결과 기록
@@ -72,7 +72,7 @@
 ## 요약: 무엇을 지금, 무엇을 검토 후에
 | 작업 | 사람 검토 필요? |
 |------|----------------|
-| 코드 구현(Task 3 매칭 ~ 8 프론트) | ❌ 지금 빌드 가능(성능은 미검증 표기) |
+| 코드 구현(Task 3 매칭 – 8 프론트) | ❌ 지금 빌드 가능(성능은 미검증 표기) |
 | chroma 재인덱싱 | ❌ 빌드 단계 |
 | 성능 측정·인수(Task 9) | ✅ 게이트 B 후 |
 | 운영 기본값 활성화 | ✅ 게이트 A + B 후 |

@@ -35,14 +35,14 @@
 
 런타임 단일 원본은 `ai/src/lease_companion_ai/schemas/unified.py`의 `JudgmentResult`다.
 
-- `judgment_id`: `J01`~`J12`만 허용한다.
+- `judgment_id`: `J01`–`J12`만 허용한다.
 - `judgment_name`: 사용자에게 표시할 판정명이다.
 - `status`: 아래 판정별 적용 가능 상태만 허용한다.
 - `urgency`: 공통 시급도 5개 중 하나다. `status=확인 불가`이면 반드시 `분석 불가`이며, 그 반대 조합도 금지한다.
 - `triggers_actions`: `불일치`·`불명확`·`미기재`·`상충 가능`·`확인 필요`·`확인 불가`일 때만 `true`다.
 - `reason`·`question`·`recommended_actions`·`evidence_sources`·`limitations`: 판정 이유, 질문, 행동, 공식 근거, 한계를 분리한다.
 
-`AnalysisRunResult.results`와 `judgments`는 별도 축이다. 과거 R01~R10 저장 결과를 읽을 수 있고 신규 실행은 R01~R24를 순서대로 반환한다. 단계 전환 중 R-only 실행은 `judgments=[]`를 사용하며, J 실행은 canonical 순서(현재 J01~J13)를 각각 정확히 1개씩 반환한다. 과거에 저장된 J01~J12 결과는 계속 읽을 수 있다. 일부 J만 반환하는 중간 상태는 허용하지 않는다.
+`AnalysisRunResult.results`와 `judgments`는 별도 축이다. 과거 R01–R10 저장 결과를 읽을 수 있고 신규 실행은 R01–R24를 순서대로 반환한다. 단계 전환 중 R-only 실행은 `judgments=[]`를 사용하며, J 실행은 canonical 순서(현재 J01–J13)를 각각 정확히 1개씩 반환한다. 과거에 저장된 J01–J12 결과는 계속 읽을 수 있다. 일부 J만 반환하는 중간 상태는 허용하지 않는다.
 
 ### Canonical 입력 키 매핑
 
@@ -66,7 +66,7 @@
 
 null 입력은 의미를 잃지 않도록 `issue_code`를 반드시 갖는다: `not_stated`·`unreadable`·`ambiguous`·`parse_failed`·`not_applicable`. 자유문 `failure_reason`은 사용자 설명용이며 판정 분기 키로 사용하지 않는다.
 
-J10~J12는 위 원문 필드와 별도 `ClassificationResult.candidates`를 함께 사용한다. J10은 반환 유형·명확성·조건, J11은 수리 유형·명확성·책임 주체, J12는 본문·특약 후보의 조항 유형·조건을 비교한다. 후보가 없거나 검증되지 않으면 추측하지 않고 `확인 필요` 등 판정별 허용 안전 상태를 반환한다. 구 `deposit_return_condition`·`repair_responsibility`는 v1.8·legacy 읽기 호환 adapter에서만 처리하며 canonical J 입력 키가 아니다.
+J10–J12는 위 원문 필드와 별도 `ClassificationResult.candidates`를 함께 사용한다. J10은 반환 유형·명확성·조건, J11은 수리 유형·명확성·책임 주체, J12는 본문·특약 후보의 조항 유형·조건을 비교한다. 후보가 없거나 검증되지 않으면 추측하지 않고 `확인 필요` 등 판정별 허용 안전 상태를 반환한다. 구 `deposit_return_condition`·`repair_responsibility`는 v1.8·legacy 읽기 호환 adapter에서만 처리하며 canonical J 입력 키가 아니다.
 
 ---
 
@@ -100,7 +100,7 @@ J10~J12는 위 원문 필드와 별도 `ClassificationResult.candidates`를 함�
 
 J12와 J13은 같은 특약 원문을 입력으로 쓰지만 관점이 다르다. J12는 본문과 특약이 서로 어긋나는지를, J13은 특약이 임차인의 법정 보호 장치를 제한하는지를 본다. 같은 특약이 두 판정에 동시에 걸릴 수 있으며 그것이 정상이다. J13의 탐지 단일 출처는 `data/rules/special_clause_catalog.json`의 `related_judgment_ids`에 `J13`이 있는 항목이다. → [`2026-07-23-j13-tenant-protection-restriction.md`](../decisions/2026-07-23-j13-tenant-protection-restriction.md)
 
-특약 카탈로그는 J10~J12의 후보 문맥만 제공하고 상태·시급도를 결정하지 않는다. R08·R09·R10·R19와 J10~J12의 중복 방지·하위호환 경계는 [`2026-07-22-special-clause-rule-judgment-boundary.md`](../decisions/2026-07-22-special-clause-rule-judgment-boundary.md)를 따른다.
+특약 카탈로그는 J10–J12의 후보 문맥만 제공하고 상태·시급도를 결정하지 않는다. R08·R09·R10·R19와 J10–J12의 중복 방지·하위호환 경계는 [`2026-07-22-special-clause-rule-judgment-boundary.md`](../decisions/2026-07-22-special-clause-rule-judgment-boundary.md)를 따른다.
 
 ## D. 행동 안내 (판정 상태가 아니라 산출물)
 

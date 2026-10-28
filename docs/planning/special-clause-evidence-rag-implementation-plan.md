@@ -13,10 +13,10 @@
 - `RuleStatus`와 `urgency`는 Python 규칙 엔진만 결정한다.
 - 카탈로그와 RAG는 새 법률·안전·사기 판정을 만들거나 기존 R/J 판정을 변경하지 않는다.
 - 사용자 표시 이름은 `확인이 필요한 특약` 또는 `특약별 근거와 요청 문구`를 사용하고, `불공정·무효·위법`을 확정 표현으로 사용하지 않는다.
-- 카탈로그는 별도 판정 축을 만들지 않고 기존 `J09~J12`, `R08~R10`, `R18~R19` 중 명시된 ID에만 연결한다.
+- 카탈로그는 별도 판정 축을 만들지 않고 기존 `J09–J12`, `R08–R10`, `R18–R19` 중 명시된 ID에만 연결한다.
 - 허용된 공식 원문에서 근거를 찾지 못하면 `evidence_sources=[]`를 유지한다.
 - 실제 계약서나 개인정보를 평가·fixture 데이터로 커밋하지 않는다.
-- 기존 `risk_patterns`는 DP01~DP08 피해 유형 비교 책임을 유지하며 특약 분류기로 재사용하지 않는다.
+- 기존 `risk_patterns`는 DP01–DP08 피해 유형 비교 책임을 유지하며 특약 분류기로 재사용하지 않는다.
 - Backend는 AI 도메인 타입을 중복 정의하지 않고 canonical Pydantic 모델을 import한다.
 - 신규 패키지나 미정 기술을 추가하지 않는다.
 - 구현 중 `git commit`과 `git push`는 사용자가 명시적으로 요청한 경우에만 수행한다.
@@ -29,7 +29,7 @@
 
 - `ai/src/lease_companion_ai/extraction/minimum_mvp.py::_collect_special_clauses`: 특약 문장 분리 fallback.
 - `DocumentExtraction.special_clauses`와 사용자 확인 스냅샷: 분석 전 확인된 특약 원문.
-- `ai/src/lease_companion_ai/rules/judgments.py`: J09~J12 판정 경계.
+- `ai/src/lease_companion_ai/rules/judgments.py`: J09–J12 판정 경계.
 - `ai/src/lease_companion_ai/rag/`: BM25·vector·RRF·rerank·공식 출처 allowlist·fallback.
 - `ai/src/lease_companion_ai/generation/`: 근거 기반 설명·질문·행동과 guardrail.
 - `AnalysisRun.result`·`generation_result`: 계약 건별 canonical JSON 저장·재조회.
@@ -178,7 +178,7 @@
 
 - [ ] **Step 4: 분류 결과를 기존 규칙 입력 문맥에 연결**
 
-  `classified_analysis.py`에서 후보를 J09~J12/R08~R10/R18~R19 실행 전에 준비하고, 규칙 엔진이 기존 명세에 따라 상태를 결정하도록 전달한다. `risk_patterns/service.py`는 수정하지 않는다.
+  `classified_analysis.py`에서 후보를 J09–J12/R08–R10/R18–R19 실행 전에 준비하고, 규칙 엔진이 기존 명세에 따라 상태를 결정하도록 전달한다. `risk_patterns/service.py`는 수정하지 않는다.
 
 - [ ] **Step 5: 매칭 및 기존 규칙 회귀 테스트 실행**
 
@@ -450,11 +450,11 @@
 - 생성 안내가 참조하는 source ID는 해당 특약 카드 근거의 부분집합이다.
 - Backend 재조회와 Frontend mock이 같은 canonical 형태를 사용한다.
 - 모바일 리포트에서 특약 원문 → 설명 → 공식 근거 → 질문 → 수정 요청 흐름이 한 카드에서 이해된다.
-- 기존 R01~R24, J01~J12, DP01~DP08 결과와 저장 결과의 하위 호환 회귀 테스트가 통과한다.
+- 기존 R01–R24, J01–J12, DP01–DP08 결과와 저장 결과의 하위 호환 회귀 테스트가 통과한다.
 
 ## 계획 자체 검토 결과
 
-- 이미지의 7단계 모두 Task 3~8에 대응한다.
+- 이미지의 7단계 모두 Task 3–8에 대응한다.
 - 부족 자료는 Task 1, 스키마 공백은 Task 2에서 선행 해소한다.
 - `risk_patterns`를 특약 카탈로그로 오용하지 않는다.
 - 의미검색은 판정 폴백이 아니라 근거 검색으로만 사용한다.
